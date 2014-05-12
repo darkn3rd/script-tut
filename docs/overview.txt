@@ -1,5 +1,7 @@
 This is a general tutorial of scripting modeled after typical tasks one would do with shell programming.  Thus it is oriented toward common tasks in system administration.
 
+ - Joaquin Menchac (c) 2014
+
 These are the categories.
 
 A. Output
