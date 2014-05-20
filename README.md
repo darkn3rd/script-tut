@@ -8,7 +8,7 @@ The current languages are supported:
   - BATCH (Windows)
   - Bourne Shell (POSIX)
   - Bourne Again Shell
-  - Koren Shell
+  - Korn Shell
   - Perl
   - PHP
   - PowerShell (Windows)
