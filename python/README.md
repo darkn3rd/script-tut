@@ -16,7 +16,7 @@ This covers notes regarding each section.
    * case on single character
      * **OMITTED**: *Python 2.x does not have switch/case construction* 
    * if on single character
-     * *used* ```python re.compile(*pattern*).match(*string*) to simulate =~ ```
+     * *used* ```python re.compile(*pattern*).match(*string*)``` to simulate ```=~``` 
 6. Looping
    * iterative loop 
       * example: 10 to 1
