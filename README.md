@@ -1,6 +1,6 @@
 # Scripting Tutorial
 
-(c) Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014
 
 ## Overview
 This is a general tutorial of scripting modeled after typical tasks one would do with shell programming.  Thus it is oriented toward common tasks in system administration.  As this is a tutorial that demonstrates basic features of a given language, it doubles as a handy reference.
