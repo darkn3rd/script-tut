@@ -8,22 +8,19 @@
 This covers notes regarding each section.
 
 1. Output
-   * simple output to stdout
 2. Variables
-   * array declaration of number, characters, strings
 3. Arithmetic
-   * basic integer arithmetic
-   * floating point arithmetic
-   * math functions
 4. Input
-   * simple input from stdin
 5. Branch
    * if on number
    * case on single character
+     * **OMITTED**: *Python 2.x does not have switch/case construction* 
    * if on single character
+     * *used* ```python re.compile(*pattern*).match(*string*) to simulate =~ ```
 6. Looping
    * iterative loop 
       * example: 10 to 1
+        * *while loop used for count down loop* 
    * conditional loops
    * collection loop
       * iterate through set of items 
@@ -31,14 +28,12 @@ This covers notes regarding each section.
 7. Arrays
    * Array Initialization
       * initialize array by index
+        * *couldn't set element to string, used array of chars* 
       * array length
       * enumerate all elements
    * Array Enumeration 
       * declare and initialize array
       * enumerate array by collection loop
-   * Array Enumeration
-      * declare and initialize array
-      * enumerate array by index
 8. Associative Arrays
    * Associative Array Initialization
       * initialize associative array by key
@@ -49,5 +44,8 @@ This covers notes regarding each section.
       * merge two associative arrays
       * enumerate associative array by key
 9. Parameters
+   * *TBI*
 10. Subroutines
+   * *TBI*
 11. Options
+   * *TBI*
