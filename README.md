@@ -61,7 +61,7 @@ Not all of the content can adequately be covered for every language.  The script
       * initialize associative array by key
       * enumerate all keys
       * enumerate all values
-   * Assoication Array Enumeration
+   * Assoicative Array Enumeration
       * declate and initizliae associative array
       * merge two associative arrays
       * enumerate associative array by key
