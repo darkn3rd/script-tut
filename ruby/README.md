@@ -21,13 +21,22 @@ This covers notes regarding each section.
         * ```while...end```
         * ```for...downto...do...end```
         * ```downto...do...end```
-        * ```(1..10).to_a.reverse.each do...end```
+        * Range operator with each iterator
           * Range operator ```..``` can only increment, not decrement
         * ```10.times do...end```
    * conditional loops
+      * ```begin...end while```
+      * ```while...do...end```
+      * ```begin...end until```
+      * ```until...do...end```
+      * ```loop do...end```
+        * spin loop example  
    * collection loop
       * iterate through set of items 
       * example: directoy listing
+      * syntax examples
+        * ```for...do...end```
+        * each iterator
 7. Arrays
    * Array Initialization
       * initialize array by index
