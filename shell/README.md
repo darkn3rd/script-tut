@@ -25,26 +25,21 @@ This covers notes regarding each section.
       * iterate through set of items 
       * example: directoy listing
 7. Arrays
-   * Array Initialization
-      * initialize array by index
-        * *couldn't set element to string, used array of chars* 
-      * array length
-      * enumerate all elements
-   * Array Enumeration 
-      * declare and initialize array
-      * enumerate array by collection loop
+   * **OMITTED** * Arrays are not available with Bourne shell or POSIX shell. * Alternatives offered:
+     * Using space delimited strings
 8. Associative Arrays
-   * Associative Array Initialization
-      * initialize associative array by key
-      * enumerate all keys
-      * enumerate all values
-   * Assoicative Array Enumeration
-      * declate and initizliae associative array
-      * merge two associative arrays
-      * enumerate associative array by key
-9. Parameters
-   * *TBI*
-10. Subroutines
-   * *TBI*
-11. Options
-   * *TBI*
+   * **OMITTED**: *POSIX Shell does not support associative arrays.*
+9. Subroutines
+   * Subroutine (Function in POSIX Shell) that prints out the date in friendly format *.
+10. Arguments
+   * Exact Arguments (2):
+     * Add two numbers
+       * Demonstrates, ```$#````, positional parameters, arithmetic using ```$(( expr ))``` 
+   * Unlimited Arguments (n):
+     * Print numbered list of arguments
+       * Demonstrates ```shift```, posiitonal parameters, iterative loop  
+   * Unlimited Arguments (n): 
+     * Print all arguments in reverse order
+       * Demonstrates ```eval```, positional parameters, iterative loop
+11. Parameters
+   * Subroutine that accepts numbers and prints out their summation.
