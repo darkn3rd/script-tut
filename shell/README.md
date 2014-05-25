@@ -35,7 +35,7 @@ This covers notes regarding each section.
 10. Arguments
    * Exact Arguments (2):
      * Add two numbers
-       * Demonstrates, ```$#````, positional parameters, arithmetic using ```$(( expr ))``` 
+       * Demonstrates, ```$#```, positional parameters, arithmetic using ```$(( expr ))``` 
    * Unlimited Arguments (n):
      * Print numbered list of arguments
        * Demonstrates ```shift```, posiitonal parameters, iterative loop  
