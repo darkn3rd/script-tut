@@ -10,12 +10,12 @@ This covers notes regarding each section.
 2. Variables
 3. Arithmetic
 4. Input
-5. Branch
+5. Branch (**Requires** understanding of ```test```)
    * if on number
    * case on single character
-     * **OMITTED**: *Python 2.x does not have switch/case construction* 
+     * demonstrates case's glob pattern with POSIX selector
    * if on single character
-     * *used* ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
+     * demonstrates using POSIX selector with ```tr``` and subshell ```$( command )``` to capture result
 6. Looping
    * iterative loop 
       * example: 10 to 1
