@@ -19,6 +19,8 @@ The current languages are supported:
   - Python
   - Ruby
   - VBScript (Windows)
+  
+In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, bug I'll probably likely moe onto advanced topics in the given langauges, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
 
@@ -65,6 +67,51 @@ Not all of the content can adequately be covered for every language.  The script
       * declate and initizliae associative array
       * merge two associative arrays
       * enumerate associative array by key
-9. Parameters
-10. Subroutines
-11. Options
+9. Subroutine
+   * Demonstrate Subroutine (no return value)
+10. Arguments (Command Line)
+   * Process 2 Arguments & Print Summation
+   * Enumerate All Arguments & Print In Order with Count
+   * Enumerate All Arguments & Print Reverse Order with Count
+11. Parameters
+   * Pass n number of paramters & Print summation of all arguments
+12. Function
+   * Varies: Each language has different features in returning arrays, strings, value, references.
+13. Options (Advanced Command Line Arguments)
+   * Varies: Each language has their own system for this, little overlap
+
+## Future Content (General) 
+
+For future topics that I would like to cover (language set might vary) are below.  Target langauges would include Perl, Python, Ruby, Shell, Awk, and Powershell.  Given free time, I might try to expand this to PHP, TCL, VBScript.
+
+1. String Operations
+2. Array Operations
+3. Text Processing
+   * matching patterns
+   * translaton
+   * substitution
+4. Record Processing
+   * column seperated records
+   * field seperated records
+   * multi-line records
+   * stanzas (if plausible)
+   
+## Future Content (Specialized)
+
+This is some future content that I throught developing with PHP, Perl, Python, Ruby, and PowerShell. Languages may vary depending on topic, so Bash with Curl could perhaps be used.  Also, each language can have contending libraries that vary in popularity.  I hope to have some material that does transactions in the raw, then shows a more simplified way of doing things with a library.
+
+1. Web Data (YAML, XML, JSON)
+2. Web Consumption (RESTful)
+   * Pre-Req is HTTP understanding
+   * Simple pulls simple web resource and grabs the data
+3. Web Processing (HTTP)
+   * Pre-Req requires CGI and HTTP understanding
+   * Wanted to Create Mini-Web Series using Micro-Framework and use data from SQL course
+     * Dancer, Slim, Sinatra, Flask, etc.
+4. Sockets
+5. Database (SQL)
+   * Wanted to Develop Mini-SQL Series using EMP, DEPT style demo tables
+   * Pre-Req will require SQL obviously
+6. Interprocess Communication
+7. Directory (LDAP, DNS)
+8. E-Mail (SMTP, IMAP, POP)
