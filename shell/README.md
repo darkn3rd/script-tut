@@ -25,7 +25,8 @@ This covers notes regarding each section.
       * iterate through set of items 
       * example: directoy listing
 7. Arrays
-   * **OMITTED** * Arrays are not available with Bourne shell or POSIX shell. * Alternatives offered:
+   * **OMITTED** *POSIX Shelll does not support arrays*
+   * Alternatives offered:
      * Using space delimited strings
 8. Associative Arrays
    * **OMITTED**: *POSIX Shell does not support associative arrays.*
