@@ -49,5 +49,5 @@ This covers notes regarding each section.
     * Alternatives:
       * Capture Stdout from sub-shell
       * Use side-effect by setting outer scope variable 
-12. Extra
+13. Extra
    * Test Review I
