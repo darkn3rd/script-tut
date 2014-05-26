@@ -49,5 +49,6 @@ This covers notes regarding each section.
     * Alternatives:
       * Capture Stdout from sub-shell, e.g. ```result=$(myfunction params)```
       * Use side-effect by setting outer scope variable, e.g. ```global_result_var=$return_value_in_function```
+      * Use Error Code to contain resulting value, e.g. ```echo "result=$?"```
 13. Extra
    * Test Review I
