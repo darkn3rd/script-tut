@@ -72,3 +72,6 @@ This covers notes regarding each section.
 	  * ```each``` iterator method
 12. Function
     * Return integer
+      * demonstrates by summing up all integers and returning sum
+    * Return string
+      * demonstrates by capitalize (upper case) a string
