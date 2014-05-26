@@ -54,9 +54,21 @@ This covers notes regarding each section.
       * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
-9. Parameters
-   * *TBI*
-10. Subroutines
-   * *TBI*
-11. Options
-   * *TBI*
+9. Subroutine
+   * Subroutine that prints out formatted date
+10. Arguments
+    * Process 2 arguments
+      * test number of arguments
+      * usage-like output on correct # of arguments
+      * Ruby: need to convert default string to perform math
+    * Print all arguments
+      * ```for...in``` to loop until length of ```ARGV``` array
+      * demonstrate ```Array.shift``` method
+    * Print all arguments in reverse order
+      * use ```downto``` to decrement through ```ARGV``` array
+11. Parameters
+	* Process n number of parameters
+	  * print summation of all parameters added up
+	  * ```each``` iterator method
+12. Function
+    * Return integer
