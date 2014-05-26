@@ -2,11 +2,7 @@
  
 # create function (subroutine)
 show_date() {
-  year=$(date +%Y)
-  mon=$(date +%b)
-  day=$(date +%d)
- 
-  echo "Today is $mon $day, $year"
+  echo Today is $(date +"%b %d, %Y").
 }
  
 # call the function (subroutine)
