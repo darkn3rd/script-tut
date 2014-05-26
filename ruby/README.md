@@ -33,7 +33,7 @@ This covers notes regarding each section.
         * spin loop example  
    * collection loop
       * iterate through set of items 
-      * example: directoy listing
+      * example: directory listing
       * syntax examples
         * ```for...do...end```
         * each iterator
@@ -50,8 +50,8 @@ This covers notes regarding each section.
       * initialize associative array by key
       * enumerate all keys
       * enumerate all values
-   * Assoicative Array Enumeration
-      * declate and initizliae associative array
+   * Associative Array Enumeration
+      * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
 9. Parameters

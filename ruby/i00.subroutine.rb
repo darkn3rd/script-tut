@@ -1,10 +1,10 @@
 #!/usr/bin/ruby
 
-# create function (subroutine)
+# create method (subroutine)
 def show_date
    time = Time.new
    puts "Today is #{time.strftime("%b %d, %Y")}."
 end
 
-# call the function (subroutine)
+# call the method (subroutine)
 show_date
