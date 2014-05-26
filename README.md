@@ -20,7 +20,7 @@ The current languages are supported:
   - Ruby
   - VBScript (Windows)
   
-In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, bug I'll probably likely moe onto advanced topics in the given langauges, as this is more bang for buck in audience, knowledge growth, and job skills.
+In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, bug I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
 
@@ -46,7 +46,7 @@ Not all of the content can adequately be covered for every language.  The script
    * conditional loops
    * collection loop
       * iterate through set of items 
-      * example: directoy listing
+      * example: directory listing
 7. Arrays
    * Array Initialization
       * initialize array by index
@@ -63,8 +63,8 @@ Not all of the content can adequately be covered for every language.  The script
       * initialize associative array by key
       * enumerate all keys
       * enumerate all values
-   * Assoicative Array Enumeration
-      * declate and initizliae associative array
+   * Associative Array Enumeration
+      * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
 9. Subroutine
@@ -74,7 +74,7 @@ Not all of the content can adequately be covered for every language.  The script
    * Enumerate All Arguments & Print In Order with Count
    * Enumerate All Arguments & Print Reverse Order with Count
 11. Parameters
-   * Pass n number of paramters & Print summation of all arguments
+   * Pass n number of parameters & Print summation of all arguments
 12. Function
    * Varies: Each language has different features in returning arrays, strings, value, references.
 13. Options (Advanced Command Line Arguments)
@@ -85,30 +85,30 @@ Not all of the content can adequately be covered for every language.  The script
 The scripts are named with a prefix that follows this pattern:
 
 * [A-Z] - Alphabet letter of category (max of 26 categories)
-* [0-9] - Each number respresents an example sub-category (max of 10 sub-categories)
+* [0-9] - Each number represents an example sub-category (max of 10 sub-categories)
 * (0|[1-9]) 
-  * 0 - represents main category. If absent, then language does not support that feature
+  * 0 - represents main category. If absent, then language does not support that feature syntactically.
   * [1-0] - represents an alternative, as language has multiple ways to do the same thing. Or this represents alternative way to simulate an absent category.
 
 ## Future Content (General) 
 
-For future topics that I would like to cover (language set might vary) are below.  Target langauges would include Perl, Python, Ruby, Shell, Awk, and Powershell.  Given free time, I might try to expand this to PHP, TCL, VBScript.
+For future topics that I would like to cover (language set might vary) are below.  Target languages would include Perl, Python, Ruby, Shell, Awk, and Powershell.  Given free time, I might try to expand this to PHP, TCL, VBScript.
 
 1. String Operations
 2. Array Operations
 3. Text Processing
    * matching patterns
-   * translaton
+   * translation
    * substitution
 4. Record Processing
-   * column seperated records
-   * field seperated records
+   * column separated records
+   * field separated records
    * multi-line records
    * stanzas (if plausible)
    
 ## Future Content (Specialized)
 
-This is some future content that I throught developing with PHP, Perl, Python, Ruby, and PowerShell. Languages may vary depending on topic, so Bash with Curl could perhaps be used.  Also, each language can have contending libraries that vary in popularity.  I hope to have some material that does transactions in the raw, then shows a more simplified way of doing things with a library.
+This is some future content that I thought of developing with PHP, Perl, Python, Ruby, and PowerShell. Languages may vary depending on topic, so Bash with Curl could perhaps be used.  Also, each language can have contending libraries that vary in popularity.  I hope to have some material that does transactions in the raw, then shows a more simplified way of doing things with a library.
 
 1. Web Data (YAML, XML, JSON)
 2. Web Consumption (RESTful)
