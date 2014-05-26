@@ -24,7 +24,7 @@ This covers notes regarding each section.
    * conditional loops
    * collection loop
       * iterate through set of items 
-      * example: directoy listing
+      * example: directory listing
 7. Arrays
    * Array Initialization
       * initialize array by index
@@ -39,13 +39,21 @@ This covers notes regarding each section.
       * initialize associative array by key
       * enumerate all keys
       * enumerate all values
-   * Assoicative Array Enumeration
-      * declate and initizliae associative array
+   * Associative Array Enumeration
+      * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
-9. Parameters
-   * *TBI*
-10. Subroutines
-   * *TBI*
-11. Options
-   * *TBI*
+9. Subroutines
+   * demonstrate declaring and calling subroutine
+10. Arguments
+    * demonstrate processing 2 arguments
+      * **Note:** *Python includes scriptname as first argument in ```sys.argv```*
+    * demonstrate printing all arguments
+      * **Note:** *Did not use shift as not available in Python 2.x, and impossible to shift elements when 1st is the script name* 
+    * demonstrate printing arguments in reverse order
+11. Parameters
+    * demonstrate passing unlimited arguments
+12. Functions
+    * demonstrate function with return int
+    * demonstrate function with return string
+
