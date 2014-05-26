@@ -2,7 +2,7 @@
 count=$#                         # initialize counter
  
 echo "The arguments passed are (reverse order):"
-while [ $count -ge 1 ]; do       # loops while count is 1 or higher
+until [ $count -eq 0 ]; do       # loops until count drecrements to 0
   eval param=\$$count            # store positional parameter
   echo " item $count: $param"    # output result
   count=$(( $count - 1 ))        # decrement counter

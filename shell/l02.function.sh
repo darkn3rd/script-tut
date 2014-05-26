@@ -7,7 +7,7 @@ add() {
     sum=$(( $sum + $num ))  # add num to sum
   done
  
-  result=$sum               # outer scop result set to $sum
+  result=$sum               # outer scope result set to $sum
 }
 
 # call function and use side-effect 
