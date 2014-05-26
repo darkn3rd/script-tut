@@ -45,7 +45,7 @@ This covers notes regarding each section.
 11. Parameters
     * Subroutine that accepts numbers and prints out their summation.
 12. Functions
-    * **OMITTED**: *POSIX Shell does not real functions.  They return error code, but not a value*
+    * **OMITTED**: *POSIX Shell does not have real functions.  They return error code, but not a value*
     * Alternatives:
       * Capture Stdout from sub-shell
       * Use side-effect by setting outer scope variable 
