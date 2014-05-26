@@ -2,7 +2,7 @@
 
 # create method (function)
 def add (*numbers)
-   sum = 0
+   sum = 0                          # initialize starting sum value
    numbers.each {|num| sum += num } # iterate and sum up nums
    sum                              # return value
 end
