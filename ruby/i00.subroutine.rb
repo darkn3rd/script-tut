@@ -3,7 +3,6 @@
 # create function (subroutine)
 def show_date
    time = Time.new
-  
    puts "Today is #{time.strftime("%b %d, %Y")}."
 end
 
