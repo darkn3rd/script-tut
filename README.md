@@ -80,6 +80,16 @@ Not all of the content can adequately be covered for every language.  The script
 13. Options (Advanced Command Line Arguments)
    * Varies: Each language has their own system for this, little overlap
 
+## Key to Naming Convention
+
+The scripts are named with a prefix that follows this pattern:
+
+* [A-Z] - Alphabet letter of category (max of 26 categories)
+* [0-9] - Each number respresents an example sub-category (max of 10 sub-categories)
+* (0|[1-9]) 
+  * 0 - represents main category. If absent, then language does not support that feature
+  * [1-0] - represents an alternative, as language has multiple ways to do the same thing. Or this represents alternative way to simulate an absent category.
+
 ## Future Content (General) 
 
 For future topics that I would like to cover (language set might vary) are below.  Target langauges would include Perl, Python, Ruby, Shell, Awk, and Powershell.  Given free time, I might try to expand this to PHP, TCL, VBScript.
