@@ -46,9 +46,15 @@ This covers notes regarding each section.
     * Subroutine that accepts numbers and prints out their summation.
 12. Functions
     * **OMITTED**: *POSIX Shell does not have real functions.  They return an error code, but not a value.*
-    * Alternatives:
+    * Alternatives (returning integer):
       * Capture Stdout from sub-shell, e.g. ```result=$(myfunction params)```
       * Use side-effect by setting outer scope variable, e.g. ```global_result_var=$return_value_in_function```
       * Use Error Code to contain resulting value, e.g. ```echo "result=$?"```
+    * Alternatives (returning string)
+      * demonstrate capitalize (uppercase) a string
+        * using translate
+        * using awk
+        * using GNU sed
+        * using perl
 13. Extra
    * Test Review I
