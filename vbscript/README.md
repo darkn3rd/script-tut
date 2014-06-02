@@ -28,10 +28,29 @@ This covers notes regarding each section.
 4. Input
    * *Note* Forced to do string concatenation, as interpolation not supported.
 5. Branch
+   * select on number using ```if```
+   * select on character using ```case```
+     * added helper function ```match``` to evaluate pattern and string and return true or false 
+   * select on character using ```if```
+     * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
+   * count loop
+   * conditional loop
+   * collection loop
+     * added helper function ```exec``` to run a commmand and return an array of strings for the output
 7. Arrays
+   * populate array using index
+   * enumerate array using collection loop
+   * enumerate array using interative loop
 8. Associative Arrays
+   * *Note* OLE library ```Scripting.Dictionary``` utilized for this functionality as VBScript does not have native support.
+     * Added helper function ```dictionary``` to accept arrays, ```Scripting.Dictionary``` limited to adding items only one item at a time.
+     * Added helper function ```merge``` to allow merging an array to a ```Scripting.Dictionary``` object.
 9. Subroutines
+   * TBA
 10. Arguments
+    * TBA
 11. Parameters
+    * TBA
 12. Functions
+    * TBA
