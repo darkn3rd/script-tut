@@ -11,7 +11,7 @@ This covers the Windows Command Shell, sometimes referred to as BATCH due to its
 
 The *BATCH* environment has existed since 1981 with the releases of MS-DOS, IBM PC-DOS, and DR-DOS (Digital Research). Different versions of Windows 4.x (a.k.a. Windows '95 to Windows ME) were bundled with MS-DOS, and thus by nature included the the BATCH environment.
 
-A new environment, called *Command Shell*, was introduced with the with OS/2 from IBM, and later with Microsoft Windows NT.  Future versions of Windows NT, marketed as Windows XP, Windows 7, Windows 8, and so forth, continue to carry the *Command Shell*.
+A new environment, called *Command Shell*, was introduced with the with IBM OS/2, and later with Microsoft Windows NT.  Future versions of Windows NT, marketed as Windows XP, Windows 7, Windows 8, and so forth, continue to carry the *Command Shell*.
 
 ## Usage
 
