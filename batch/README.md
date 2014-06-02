@@ -4,8 +4,7 @@
 
 ## Overview
 
-This covers the Windows Command Shell, sometimes referred to as BATCH due to the similarity with historical DOS operating system.
-
+This covers the Windows Command Shell, sometimes referred to as BATCH due to the similarity with historical DOS operating system.  Windows Command Shell scripts will end with the ```.CMD``` extension, but the environment will also execute scripts with the ```.BAT``` extension as well.
 
 ## History 
 
