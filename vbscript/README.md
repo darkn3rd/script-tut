@@ -6,8 +6,9 @@
 
 This area covers VBScript, a language supported by the *Active Scripting* platform embedded into *WSH (Windows Script Host)* (http://en.wikipedia.org/wiki/Windows_Script_Host).  This environment provides access to a plethora of object libraries on Windows through a mechanism called *OLE Automation*.  
 
-The WSH environment added desperated needed scripting tools for the Windows environment, both Windows 4 (Windows '95) and Windows NT, where before there was only *BATCH* and *Command Shell* (http://en.wikipedia.org/wiki/Batch_file), or inconsistent (non-ubiquitious) usage of third party scripting tools.  
+The WSH environment added desperated needed scripting tools for the Windows environment, both Windows 4 (Windows '95) and Windows NT, where before there was only *BATCH* and *Command Shell* (http://en.wikipedia.org/wiki/Batch_file), or inconsistent (non-ubiquitious) usage of third party scripting tools.
 
+The WSH environment has been integrated since Windows 2000.  There's an installer for WSH 5.7 for earlier versions of Windows.  The version 5.8 of WSH is integrated into more recent versions of Windows: Windows 7, Windows 8, Windows 2008, Windows 2012.
 
 ## Active Scripting Environment
 
@@ -16,6 +17,10 @@ Microsoft released modular scripting platform referred to as *Active Scripting* 
 As many might realize that those programs mentioned above have been known for spreading viruses and malicious software.  The inate ability of *OLE Automation*, or the ability to access numerous object libraries on Windows, from a script is both a rich feature for applicaitons, but also problem.
 
 These type fo scripts can can provide backdoor access into a system.  A client program that connects to servers on the Internet and runs scripts from such a server on the client system, can potentialy be dangerous.  Thus a program like a web browser (Internet Explorer) or a mail client (Outlook) that uses such a feature is dangerous.
+
+## Testing
+
+* Windows 7, WSH 5.8
 
 ## Notes 
 
