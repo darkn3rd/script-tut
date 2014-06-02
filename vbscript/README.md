@@ -4,7 +4,16 @@
 
 ## Overview
 
-VBScript is a language running on the platform Active Scripting. The WSH (Windows Script Host) is a software applications that use Active Scripting and provide functions to allow scripts to interact with the shell command and Windows graphical environment. VBScript in WSH enviroment supports a feature called "OLE Automation" which provides access to libraries many software available for Windows.
+This area covers VBScript, a language supported by the *Active Scripting* platform embedded into *WSH (Windows Script Host)*.  This environment provides access to a plethora of object libraries on Windows through a mechanism called *OLE Automation*.  
+
+The WSH environment added desperated needed scripting tools for the Windows environment, both Windows 4 (Windows '95) and Windows NT, where before there was only *BATCH* and *Command Shell*, or non-ubiquitious usage of third party scripting tools.  
+
+
+## Active Scripting Environment
+
+Microsoft released modular scripting platform referred to as *Active Scripting* in 1996, which can host a variety of scripting langauges, such as VBScript and JScript from Microsoft, and PerlScript from ActiveState.  This *Active Scripting* platform could then be embedded into other applications, such as IE (Internet Explorer), IIS (Internet Information Services) ASP (Active Scripting Pages), and WSH (Windows Script Host).  IE with the bundled *Active Scripting* platform was then bundled up and embedded in a variety of software that desired to render web pages, such as WMP (Windows Media Player), Outlook, Outlook Express, Messenger, MSN Messenger, Help, Windows Explorer, etc.
+
+As many might deduce, many of these programs have been known for spreading viruses and malicious software.  The inate ability of *OLE Automation*, or the ability to access numerous object libraries on Windows, is both a rich feature for applicaitons, but also problem, as it can provide backdoor access into a system, especially a programs like a web browser or mail client.
 
 ## Notes 
 
