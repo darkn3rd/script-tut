@@ -24,6 +24,7 @@ Today, Command Shell has added features beyond its earlier BATCH cousin, but it 
 This covers notes regarding each section.
 
 1. Output
+   * demonstrate escaping characters with carrot ```^``` character
 2. Variables
 3. Arithmetic
 4. Input
