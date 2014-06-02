@@ -45,7 +45,7 @@ This covers notes regarding each section.
 8. Associative Arrays
    * **OMMITTED** *Does not existin Command Shell.*
 9. Subroutine
-   * **NOTE** *Utilizes CALL and GOTO for this type of functionality.*
+   * **NOTE** *Utilizes ```CALL``` and ```GOTO``` for this type of functionality.*
 10. Arguments
     * Print all arguments
       * *Note:* Simulated with ```GOTO``` statements as ```SHIFT``` doesn't work in ```FOR``` loops
