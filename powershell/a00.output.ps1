@@ -1,1 +1,1 @@
-
+Write-Host Hello  # force output to console
