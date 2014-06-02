@@ -35,7 +35,11 @@ This covers notes regarding each section.
      * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
    * count loop
+     * ```for ... step ... next``` construction
+     * ```while``` contruction
    * conditional loop
+     * ```do ... loop until ( ... )```
+     * ```do ... loop while ( ... )```
    * collection loop
      * added helper function ```exec``` to run a commmand and return an array of strings for the output
 7. Arrays
