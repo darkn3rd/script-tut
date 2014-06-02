@@ -4,7 +4,7 @@
 
 ## Overview
 
-This covers the Windows Command Shell, sometimes referred to as BATCH due to the similarity with historical DOS operating system.  Windows Command Shell scripts will end with the ```.CMD``` extension, but the environment will also execute scripts with the ```.BAT``` extension as well.
+This covers the Windows Command Shell, sometimes referred to as BATCH due to the similarity with historical DOS operating system.  Windows Command Shell scripts will end with the ```.CMD``` extension, but the environment will also execute scripts with the ```.BAT``` extension as well.  The scripts in this section only work with Windows Command Shell found in flavors of Windows NT.
 
 ## History 
 
@@ -17,6 +17,10 @@ A new environment, called *Command Shell*, was introduced with the with IBM OS/2
 The original BATCH environment was extremely limited, and was extended in a variety of ways.  In MS-DOS, many were able to compile small Assembly language scripts using ```DEBUG```, and with MS-DOS 5.0, Basic scripts using  ```QBASIC /RUN```, and in PC-DOS, there was the REXX scripting environment.  REXX was popular on mainframes and Amiga OS.  An alternative third party called 4DOS was quite popular, as well as MKS Tools, which provided Korn Shell capability to DOS. The toolset DGJPP (http://www.delorie.com/djgpp/) provided UNIX tools to DOS.  
 
 Today, Command Shell has added features beyond its earlier BATCH cousin, but it is still quite limited.  For any heavy lifting, Microsoft has provided WSH (Windows Scripting Host) with support for languages like VBScript and JScript (JavaScript) for scripting the environment.  Also popular were languages like Perl, Python, Ruby, and KiXart (http://www.kixtart.org/).  Today, especially after Windows 2008, PowerShell has become the one ubiquitous language for modern Windows operating systems, but still the Command Shell remains popular for basic chores.
+
+## Testing
+
+* Windows NT 6.1 (Windows 7)
 
 ## Notes 
 
