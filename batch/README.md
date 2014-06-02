@@ -1,6 +1,23 @@
-# Scripting Tutorial: BATCH (Windows Command Shell)
+# Scripting Tutorial: BATCH (Command Shell)
 
 © Joaquin Menchaca, 2014
+
+## Overview
+
+This covers the Windows Command Shell, sometimes referred to as BATCH due to its history.  
+
+
+## History 
+
+The BATCH environment has existed sinced 1981 with the release of MS-DOS, IBM PC-DOS, and DR-DOS (Digital Research).  Different flavors of Windows included were bundled with DOS also had the BATCH environment.
+
+A new environment, called Command Shell, was introduced with the with OS/2 from IBM, and later with WindowsNT.  Future versions of WindowsNT, relabeled as Windows XP, Windows 7, Windows 8, and so forth, continue to carry the Command Shell.
+
+## Usage
+
+The original BATCH environment was extremely limited, and was extended in a variety of ways.  In MS-DOS, many were able to compile small Assembly language scripts using ```DEBUG``` or Basic scripts using  ```QBASIC /RUN```, and in PC-DOS, there was the REXX scripting environment.  REXX was popular on mainframes and Amiga OS.  An alternative third party called 4DOS was quite popular, as well as MKS Tools, which provided Korn Shell capability to DOS. The toolset DGJPP provided UNIX tools to DOS.  
+
+Today, Command Shell has added features beyond its earlier BATCH cousin, but it is still quite limited.  For any heavy lifting, Microsoft has provided WSH (Windows Scripting Host) with support for languages like VBScript and JScript (JavaScript) for scripting the environment.  Also popular were popular languages like Perl, Python, Ruby, and Kix.  Today, most of the community uses PowerShell as the one ubiquitous language for modern Windows operating systems, but Command Shell remains popular for basic chores.
 
 ## Notes 
 
@@ -11,8 +28,10 @@ This covers notes regarding each section.
 3. Arithmetic
 4. Input
 5. Branch
-   * if on number
-   * if on single character - using match operator ```=~```  
+   * IF on number
+   * case statements **OMITTED** *Does not exist in Command Shell.*
+   * IF on single character
+     * Uses external command ```FINDSTR``` to match string pattern.  Note that regular expressions in ```FINDSTR``` cannot distinguish between uppercase and lowercase characters, so ```[a-z]``` is the same as ```[A-Z]```.
 6. Looping
    * iterative loop 
       * example: 10 to 1
