@@ -23,8 +23,10 @@ This covers notes regarding each section.
 
 1. Output
 2. Variables
+   * escaping characteres with quote ```"``` character
 3. Arithmetic
 4. Input
+   * *Note* Forced to do string concatenation, as interpolation not supported.
 5. Branch
 6. Looping
 7. Arrays
