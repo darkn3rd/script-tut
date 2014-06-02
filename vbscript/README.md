@@ -43,7 +43,7 @@ This covers notes regarding each section.
      * ```do until ( ... ) ... loop``` construction 
    * collection loop
      * ```for each ... in ... next``` construction
-     * added helper function ```exec``` to run a commmand and return an array of strings for the output
+     * added helper function ```exec``` to run commands and return an array of strings for the output
 7. Arrays
    * populate array using index
    * enumerate array using collection loop
