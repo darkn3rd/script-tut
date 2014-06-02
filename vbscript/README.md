@@ -34,7 +34,7 @@ This covers notes regarding each section.
    * select on character using ```if```
      * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
-   * count loop
+   * interative (count) loop
      * ```for ... step ... next``` construction
      * ```while ... wend``` contruction
    * conditional loop
