@@ -36,11 +36,13 @@ This covers notes regarding each section.
 6. Looping
    * count loop
      * ```for ... step ... next``` construction
-     * ```while``` contruction
+     * ```while ... wend``` contruction
    * conditional loop
-     * ```do ... loop until ( ... )```
-     * ```do ... loop while ( ... )```
+     * ```do ... loop until ( ... )``` contruction
+     * ```do ... loop while ( ... )``` construction
+     * ```do until ( ... ) ... loop``` construction 
    * collection loop
+     * ```for each ... in ... next``` construction
      * added helper function ```exec``` to run a commmand and return an array of strings for the output
 7. Arrays
    * populate array using index
