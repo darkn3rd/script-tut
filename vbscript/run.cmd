@@ -1,1 +1,1 @@
-@cscript //Nologo %1
+@cscript //Nologo %*
