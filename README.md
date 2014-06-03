@@ -95,6 +95,7 @@ The scripts are named with a prefix that follows this pattern:
 
 For future topics that I would like to cover (language set might vary) are below.  Target languages would include Perl, Python, Ruby, Shell, Awk, and Powershell.  Given free time, I might try to expand this to PHP, TCL, VBScript.
 
+1. Processing Options
 1. String Operations
 2. Array Operations
 3. Text Processing
@@ -106,6 +107,9 @@ For future topics that I would like to cover (language set might vary) are below
    * field separated records
    * multi-line records
    * stanzas (if plausible)
+5. File Input/Output
+   * Text Files
+   * Binary Files
    
 ## Future Content (Specialized)
 
@@ -126,3 +130,5 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 6. Interprocess Communication
 7. Directory (LDAP, DNS)
 8. E-Mail (SMTP, IMAP, POP)
+9. Multi-Processing (Fork, Threads)
+10. Serialization
