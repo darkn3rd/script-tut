@@ -2,7 +2,7 @@
  
 # create function (subroutine)
 show_date() {
-  echo Today is $(date +"%b %d, %Y").
+  echo Today is $(date +"%B %d, %Y").
 }
  
 # call the function (subroutine)
