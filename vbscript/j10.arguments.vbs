@@ -1,5 +1,4 @@
-count = 1
-
+count = 1                                    ' set initial count
 WScript.Echo "The arguemnts passed are:"
 For Each arg In  Wscript.Arguments
            ' collection loop
