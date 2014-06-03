@@ -1,9 +1,8 @@
-Set args = Wscript.Arguments
 count = 1
 
 WScript.Echo "The arguemnts passed are:"
-For Each arg In args
-
-  WScript.Echo " item " & count & ": " & arg
-  count = count + 1
+For Each arg In  Wscript.Arguments
+           ' collection loop
+  WScript.Echo " item " & count & ": " & arg ' print count and current argument
+  count = count + 1                          ' increment count
 Next
