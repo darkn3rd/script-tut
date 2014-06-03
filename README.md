@@ -74,6 +74,7 @@ Not all of the content can adequately be covered for every language.  The script
    * Enumerate All Arguments & Print In Order with Count
    * Enumerate All Arguments & Print Reverse Order with Count
 11. Parameters
+   * Pass a single parameter & Print Celius from Fahrenheit
    * Pass n number of parameters & Print summation of all arguments
 12. Function
    * Varies: Each language has different features in returning arrays, strings, value, references.
