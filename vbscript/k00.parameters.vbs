@@ -7,6 +7,5 @@ Sub celsius(fahrenheit)
   WScript.echo "The Celsius temperature is " & temperature & " degrees."
 End Sub
 
-temperature = 73 
-' call subroutine
-celsius temperature
+temperature = 73     ' set temp in fahrenheit
+celsius temperature  ' call subroutine
