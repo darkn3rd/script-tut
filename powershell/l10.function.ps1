@@ -1,11 +1,7 @@
-
 # create function (subroutine)
 Function Capitalize ($string) { 
-    $string.ToUpper()           # return fully uppdercase $string
+    $string.ToUpper()               # return fully uppdercase $string
 }
 
-# call the function (subroutine)
-$result = Capitalize "ibm"
-
-# output results
-"The resulting string is: $result."
+$result = Capitalize "ibm"          # call the function (subroutine)
+"The resulting string is: $result." # output results
