@@ -1,11 +1,11 @@
 #!/usr/bin/ruby
 
 # create method (subroutine)
-def add (*numbers)
-   sum = 0                          # initialize starting sum value
-   numbers.each {|num| sum += num } # iterate and sum up nums
-   puts "The summation is: #{sum}"  # output results
+def celsius (fahrenheit)
+  temperature = (fahrenheit - 32.0) * 5 / 9 
+  puts "The Celsius temperature is %.1f degrees." % temperature
 end
 
+temperature = 73
 # call the method (subroutine)
-add 5, 2, 4, 3, 6
+celsius temperature 
