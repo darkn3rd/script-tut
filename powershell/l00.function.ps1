@@ -2,7 +2,7 @@
 Function Add-Nums ($nums)
 {
    foreach($num in $nums) { $sum += $num }  # interate and sum up nums
-   $sum
+   $sum                                     # return $sum
 }
 
 # call the function (subroutine)
