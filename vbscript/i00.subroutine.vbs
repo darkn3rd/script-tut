@@ -6,5 +6,5 @@ Sub show_date()
   WScript.echo "Today is " & dateStr & "."  ' output result
 End Sub
 
-' cal the subroutine 
+' call the subroutine 
 show_date
