@@ -1,2 +1,2 @@
 #!/bin/sh
-cscript //Nologo $SCRIPT "$@" 
+cscript //Nologo "$@" 
