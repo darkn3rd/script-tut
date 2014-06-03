@@ -58,10 +58,14 @@ This covers notes regarding each section.
      * Added helper function ```dictionary``` to accept arrays, ```Scripting.Dictionary``` limited to adding items only one item at a time.
      * Added helper function ```merge``` to allow merging an array to a ```Scripting.Dictionary``` object.
 9. Subroutines
-   * TBA
+   * utilize subroutine that prints the current date 
 10. Arguments
     * TBA
 11. Parameters
-    * TBA
+   * demonstrate passing 1 parameter
+     * utilize subroutine that prints celius temperature when supplied fahrenheit temperature
+   * demonstrate passing unlimited parameters
+     * *Note* VBscript does not support unlimited parameters.  Alternative is to create an temporary ```Array``` and pass the array.
+     * utilize subroutine prints sum of all numbers passed into it.
 12. Functions
     * TBA
