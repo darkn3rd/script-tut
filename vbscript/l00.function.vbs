@@ -1,10 +1,10 @@
 ' create function
 Function AddNums(args)
-  For Each num In args
-    sum = sum + num
+  For Each num In args  ' iterate through each argument
+    sum = sum + num     ' sum up all the numbers
   Next
 
-  AddNums = sum  
+  AddNums = sum         ' set return to sum
 End Function
 
 ' call the function
