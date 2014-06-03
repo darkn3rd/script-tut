@@ -3,24 +3,24 @@
 © Joaquin Menchaca, 2014
 
 ## Overview
-This is a general tutorial of scripting modeled after typical tasks one would do with shell programming.  Thus it is oriented toward common tasks in system administration.  As this is a tutorial that demonstrates basic features of a given language, it doubles as a handy reference.
+This is a general tutorial of scripting modeled after typical tasks one would do with shell programming.  Thus it is oriented toward common tasks in system administration.  As this is a tutorial that demonstrates basic features of a given language, and it doubles as a handy reference.
 
 ## Languages
 
 The current languages are supported:
   - Awk
-  - BATCH (Windows)
+  - BATCH (Command Shell) [Windows]
   - Bourne Shell (POSIX)
   - Bourne Again Shell
   - Korn Shell
   - Perl
   - PHP
-  - PowerShell (Windows)
+  - PowerShell [Windows]
   - Python
   - Ruby
-  - VBScript (Windows)
+  - VBScript (WSH) [Windows]
   
-In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, bug I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
+In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
 
