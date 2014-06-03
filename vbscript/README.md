@@ -21,8 +21,13 @@ These type fo scripts can can provide backdoor access into a system.  A client p
 ## Testing
 
 * Windows 7, WSH 5.8
+ 
+## Tools
 
-## Notes 
+* run - shell script for git bash used to run WSH scripts using cscript
+* run.cmd - command shell script used to run WSH scripts using cscript
+
+## Topics with Details 
 
 This covers notes regarding each section.
 
