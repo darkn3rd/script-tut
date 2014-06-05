@@ -1,3 +1,3 @@
-wscript.stdout.write "Enter your name: "
-name = wscript.stdin.readline
-wscript.echo "Hello " & name & "!"
+WScript.stdout.write("Enter your name: ");
+name = WScript.stdin.ReadLine();
+WScript.Echo("Hello " + name + "!");
