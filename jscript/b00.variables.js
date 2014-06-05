@@ -1,7 +1,7 @@
-dim num  : num  = 5
-dim char : char = "a"
-dim str  : str  = "This is a string"
+var num  = 5;
+var char = "a";
+var str  = "This is a string";
 
-wscript.echo "Number is " & num
-wscript.echo "Character is '" & char & "'"
-wscript.echo "String is """ & str & """"
+WScript.Echo("Number is " + num);
+WScript.Echo("Character is \'" + char + "\'");
+WScript.Echo("String is \"" + str + "\"");
