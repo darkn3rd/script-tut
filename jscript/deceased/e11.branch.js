@@ -3,16 +3,23 @@ WScript.stdout.write("Input a character: ");
 keypress = WScript.stdin.read(1);
 
 // find match and print result
-switch (true) {
-  case RegExp("[a-z]").test(keypress):
+switch (keypress) {
+  case /[a-z]/:
     WScript.Echo("Lowercase letter");
     break;
-  case RegExp("[A-Z]").test(keypress):
+  case /[A-Z]/:
     WScript.Echo("Uppercase letter");
     break;
-  case RegExp("[0-9]").test(keypress):
+  case /[0-9]/:
     WScript.Echo("Digit");
     break;
   default:
     WScript.Echo("Punctuation, whitespace, or other");
+}
+
+// match() - returns true if pattern found in string
+function match(pattern, string) 
+{
+  var re = new RegExp(pattern);
+  return re.test(string);
 }
