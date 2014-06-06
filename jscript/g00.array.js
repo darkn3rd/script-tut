@@ -11,6 +11,8 @@ nicknames[6] = "kate"
 
 WScript.echo("The total nicknames are: " + nicknames.length);
 WScript.stdout.write("The nicknames are: ");
+
+// JScript cannot enumerate Array, so must do manually
 for (var index in nicknames) { 
   if (index == nicknames.length - 1) 
     WScript.Echo(nicknames[index]);
