@@ -1,13 +1,19 @@
-' create empty list
-dim nicknames()
-' resize array and insert element by index
-redim preserve nicknames(1) : nicknames(0) = "bob"
-redim preserve nicknames(2) : nicknames(1) = "ed"
-redim preserve nicknames(3) : nicknames(2) = "steve"
-redim preserve nicknames(4) : nicknames(3) = "ralph"
-redim preserve nicknames(5) : nicknames(4) = "joe"
-redim preserve nicknames(6) : nicknames(5) = "deb"
-redim preserve nicknames(7) : nicknames(6) = "kate"
+// create empty list
+var nicknames = new Array()
+// resize array and insert element by index
+nicknames[0] = "bob"
+nicknames[1] = "ed"
+nicknames[2] = "steve"
+nicknames[3] = "ralph"
+nicknames[4] = "joe"
+nicknames[5] = "deb"
+nicknames[6] = "kate"
 
-wscript.echo "The total nicknames are: " & ubound(nicknames)
-wscript.echo "The nicknames are: " & join(nicknames, " ")
+WScript.echo("The total nicknames are: " + nicknames.length);
+WScript.stdout.write("The nicknames are: ");
+for (var index in nicknames) { 
+  if (index == nicknames.length - 1) 
+    WScript.Echo(nicknames[index]);
+  else 
+    WScript.stdout.write(nicknames[index] + ", ");
+}
