@@ -10,6 +10,7 @@ This is a general tutorial of scripting modeled after typical tasks one would do
 The current languages are supported:
   - Awk
   - BATCH (Command Shell) [Windows]
+  - Shell (POSIX)
   - Bourne Again Shell
   - Korn Shell
   - JScript (WSH) [Windows]
@@ -18,7 +19,6 @@ The current languages are supported:
   - PowerShell [Windows]
   - Python
   - Ruby
-  - Shell (POSIX)
   - VBScript (WSH) [Windows]
   
 In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
@@ -47,23 +47,21 @@ Not all of the content can adequately be covered for every language.  The script
       * example: 10 to 1
    * conditional loops
    * collection loop
-      * iterate through set of items 
-      * example: directory listing
+      * iterate through list of items 
+        * example: directory listing
 7. Arrays
    * Array Initialization
-      * initialize array by index
-      * array length
-      * enumerate all elements
+      * initialize array using index
+        * array length
+        * enumerate all elements
    * Array Enumeration 
-      * declare and initialize array
+      * declare and initialize entire array
       * enumerate array by collection loop
-   * Array Enumeration
-      * declare and initialize array
       * enumerate array by index
 8. Associative Arrays
    * Associative Array Initialization
-      * initialize associative array by key
-      * enumerate all keys
+      * initialize associative array using key
+      * enumerate all keys 
       * enumerate all values
    * Associative Array Enumeration
       * declare and initialize associative array
