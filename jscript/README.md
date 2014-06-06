@@ -69,8 +69,11 @@ This covers notes regarding each section.
    * Create Associative Array using supplied list
      * Uses ```array = { "key":value, "key":value }``` syntax
      * Added helper function ```merge``` to allow concatenation of arrays
-9. Subroutines (TBA)
+9. **Subroutines** 
    * utilize subroutine that prints the current date in "Month Day, Year" format
+   * **Note:** *JScript does not have native method to extract the name of the month, so this must be done manually*
+     * example using a months lookup array
+     * example adding ```getMonthName()``` method to ```Date``` class. (*Complex*)
 10. Arguments (TBA)
     * demonstrate testing for two arguments
     * print list of all arguments with count
