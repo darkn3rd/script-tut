@@ -35,17 +35,17 @@ This environment can can provide backdoor access into a system.  A client progra
 
 This covers notes regarding each section.
 
-1. Output
-2. Variables
+1. **Output**
+2. **Variables**
    * escaping characters with quote ```\``` character
-3. Arithmetic
-4. Input
+3. **Arithmetic**
+4. **Input**
    * *Note* Forced to do string concatenation, as interpolation not supported.
-5. Branch
+5. **Branch**
    * select on number using ```if```
    * select on character using ```switch```
    * select on character using ```if```
-6. Looping
+6. **Looping**
    * iterative (count) loop
      * ```for ( ... ; ... ; ... ) { ... }``` construction
      * ```while (...) { ... }``` construction
@@ -56,16 +56,16 @@ This covers notes regarding each section.
      * ```for ( ... in ... )``` construction
      * added helper function ```exec``` to run commands and return an array of strings for the output
      * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
-7. Arrays
+7. **Arrays**
    * populate array using index
      * **Note:** *JScript does not support true arrays, indexes are converted to strings and used as a key to index into a hash*
    * popular array using list of items
      * enumerate array using collection loop
        * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
      * enumerate array using iterative loop
-8. Associative Arrays
+8. **Associative Arrays**
    * Create Associative Array using key value
-     *Uses ```array["key"]=value``` syntax
+     * Uses ```array["key"]=value``` syntax
    * Create Associative Array using supplied list
      * Uses ```array = { "key":value, "key":value }``` syntax
      * Added helper function ```merge``` to allow concatenation of arrays
