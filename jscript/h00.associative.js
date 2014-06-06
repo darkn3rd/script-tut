@@ -1,4 +1,4 @@
-// initialize COM object 
+// initialize Array object 
 var ages = new Array(); 
 
 // add one elment at a time
