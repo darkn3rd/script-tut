@@ -10,17 +10,18 @@ This is a general tutorial of scripting modeled after typical tasks one would do
 The current languages are supported:
   - Awk
   - BATCH (Command Shell) [Windows]
-  - Bourne Shell (POSIX)
   - Bourne Again Shell
   - Korn Shell
+  - JScript (WSH) [Windows]
   - Perl
   - PHP
   - PowerShell [Windows]
   - Python
   - Ruby
+  - Shell (POSIX)
   - VBScript (WSH) [Windows]
   
-In the future, I could expand to other languages such as LUA, JavaScript (Node.js), and JScript (WSH).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
+In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
 
@@ -29,17 +30,18 @@ Not all of the content can adequately be covered for every language.  The script
 1. Output
    * simple output to stdout
 2. Variables
-   * array declaration of number, characters, strings
+   * declaration of number, characters, strings
+     * show escape quote characters of ```'``` and ```"```.
 3. Arithmetic
    * basic integer arithmetic
    * floating point arithmetic
    * math functions
 4. Input
    * simple input from stdin
+     * show using short prompt
 5. Branch
-   * if on number
-   * case on single character
-   * if on single character
+   * select on a number
+   * select on a single character
 6. Looping
    * iterative loop 
       * example: 10 to 1
@@ -132,3 +134,7 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 8. E-Mail (SMTP, IMAP, POP)
 9. Multi-Processing (Fork, Threads)
 10. Serialization
+
+## Document Changes
+
+2014-06-06: Updated findings from JScript (WSH) addition.
