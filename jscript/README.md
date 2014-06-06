@@ -71,7 +71,7 @@ This covers notes regarding each section.
      * Added helper function ```merge``` to allow concatenation of arrays
 9. Subroutines (TBA)
    * utilize subroutine that prints the current date in "Month Day, Year" format
-10. Arguments
+10. Arguments (TBA)
     * demonstrate testing for two arguments
     * print list of all arguments with count
     * print list of all arguments in reverse with count
