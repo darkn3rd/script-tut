@@ -57,8 +57,9 @@ This covers notes regarding each section.
      * added helper function ```exec``` to run commands and return an array of strings for the output
 7. Arrays
    * populate array using index
-   * enumerate array using collection loop
-   * enumerate array using iterative loop
+   * popular array using list of items
+     * enumerate array using collection loop
+     * enumerate array using iterative loop
 8. Associative Arrays
    * *Note* OLE library ```Scripting.Dictionary``` utilized for this functionality as VBScript does not have native support.
      * Added helper function ```dictionary``` to accept arrays, ```Scripting.Dictionary``` limited to adding items only one item at a time.

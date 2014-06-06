@@ -59,9 +59,10 @@ This covers notes regarding each section.
 7. Arrays
    * populate array using index
      * **Note:** *JScript does not support true arrays, indexes are converted to strings and used as a key to index into a hash*
-   * enumerate array using collection loop
-     * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
-   * enumerate array using iterative loop
+   * popular array using list of items
+     * enumerate array using collection loop
+       * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
+     * enumerate array using iterative loop
 8. Associative Arrays
    * Create Associative Array using key value
      *Uses ```array["key"]=value``` syntax
