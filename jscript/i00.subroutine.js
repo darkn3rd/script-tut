@@ -1,10 +1,18 @@
-' create subroutine
-Sub show_date()
-  dateStr = FormatDateTime(Date,vbLongDate) ' fetch full date
-  dateStr = Split(dateStr,", ", 2)(1)       ' remove day of week
+// create subroutine
+function show_date() {
+  var today  = new Date();
+  var months = ['January', 'February', 'March', 'April', 
+                'May', 'June', 'July', 'August', 
+                'September', 'October', 'November', 'December'];
 
-  WScript.echo "Today is " & dateStr & "."  ' output result
-End Sub
+  // create formatted date parts
+  B = months[today.getMonth()];   // Use Lookup array
+  d = today.getDate();
+  Y = today.getFullYear();
 
-' call the subroutine 
-show_date
+  // output result 
+  WScript.Echo("Today is " + B + " " + d + ", " + Y + "."); 
+}
+
+// call the subroutine 
+show_date();
