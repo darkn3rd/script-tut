@@ -37,49 +37,51 @@ This covers notes regarding each section.
 
 1. Output
 2. Variables
-   * escaping characteres with quote ```"``` character
+   * escaping characters with quote ```\``` character
 3. Arithmetic
 4. Input
    * *Note* Forced to do string concatenation, as interpolation not supported.
 5. Branch
    * select on number using ```if```
-   * select on character using ```case```
-     * added helper function ```match``` to evaluate pattern and string and return true or false 
+   * select on character using ```switch```
    * select on character using ```if```
-     * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
-   * interative (count) loop
-     * ```for ... step ... next``` construction
-     * ```while ... wend``` contruction
+   * iterative (count) loop
+     * ```for ( ... ; ... ; ... ) { ... }``` construction
+     * ```while (...) { ... }``` construction
    * conditional loop
-     * ```do ... loop until ( ... )``` contruction
-     * ```do ... loop while ( ... )``` construction
-     * ```do until ( ... ) ... loop``` construction 
+     * ```do { ... } while ( ... )``` construction
+     * ```while ( ... ) { ... }``` construction
    * collection loop
-     * ```for each ... in ... next``` construction
+     * ```for ( ... in ... )``` construction
      * added helper function ```exec``` to run commands and return an array of strings for the output
+     * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
 7. Arrays
    * populate array using index
+     * **Note:** *JScript does not support true arrays, indexes are converted to strings and used as a key to index into a hash*
    * enumerate array using collection loop
-   * enumerate array using interative loop
+     * **Note:** *JScript does not support true arrays, thus cannot enumerate a collection into a list.  At most returns the indexes, which we use to fetch the value.*
+   * enumerate array using iterative loop
 8. Associative Arrays
-   * *Note* OLE library ```Scripting.Dictionary``` utilized for this functionality as VBScript does not have native support.
-     * Added helper function ```dictionary``` to accept arrays, ```Scripting.Dictionary``` limited to adding items only one item at a time.
-     * Added helper function ```merge``` to allow merging an array to a ```Scripting.Dictionary``` object.
-9. Subroutines
+   * Create Associative Array using key value
+     *Uses ```array["key"]=value``` syntax
+   * Create Associative Array using supplied list
+     * Uses ```array = { "key":value, "key":value }``` syntax
+     * Added helper function ```merge``` to allow concatenation of arrays
+9. Subroutines (TBA)
    * utilize subroutine that prints the current date in "Month Day, Year" format
 10. Arguments
     * demonstrate testing for two arguments
     * print list of all arguments with count
     * print list of all arguments in reverse with count
-11. Parameters
+11. Parameters (TBA)
    * demonstrate passing 1 parameter
-     * utilize subroutine that prints celius temperature when supplied fahrenheit temperature
+     * utilize subroutine that prints celsius temperature when supplied fahrenheit temperature
    * demonstrate passing unlimited parameters
      * *Note* VBscript does not support unlimited parameters.  Alternative is to create an temporary ```Array``` and pass the array.
      * utilize subroutine prints sum of all numbers passed into it.
-12. Functions
+12. Functions (TBA)
     * demonstrate returning integer
-      * returns summartion of all numbers passed into function 
+      * returns summation of all numbers passed into function 
     * demonstrate returning string
       * returns capitalized string from lower case string 

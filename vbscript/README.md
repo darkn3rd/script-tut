@@ -34,7 +34,7 @@ This covers notes regarding each section.
 
 1. Output
 2. Variables
-   * escaping characteres with quote ```"``` character
+   * escaping characters with quote ```"``` character
 3. Arithmetic
 4. Input
    * *Note* Forced to do string concatenation, as interpolation not supported.
@@ -45,11 +45,11 @@ This covers notes regarding each section.
    * select on character using ```if```
      * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
-   * interative (count) loop
+   * iterative (count) loop
      * ```for ... step ... next``` construction
-     * ```while ... wend``` contruction
+     * ```while ... wend``` construction
    * conditional loop
-     * ```do ... loop until ( ... )``` contruction
+     * ```do ... loop until ( ... )``` construction
      * ```do ... loop while ( ... )``` construction
      * ```do until ( ... ) ... loop``` construction 
    * collection loop
@@ -58,7 +58,7 @@ This covers notes regarding each section.
 7. Arrays
    * populate array using index
    * enumerate array using collection loop
-   * enumerate array using interative loop
+   * enumerate array using iterative loop
 8. Associative Arrays
    * *Note* OLE library ```Scripting.Dictionary``` utilized for this functionality as VBScript does not have native support.
      * Added helper function ```dictionary``` to accept arrays, ```Scripting.Dictionary``` limited to adding items only one item at a time.
@@ -71,12 +71,12 @@ This covers notes regarding each section.
     * print list of all arguments in reverse with count
 11. Parameters
    * demonstrate passing 1 parameter
-     * utilize subroutine that prints celius temperature when supplied fahrenheit temperature
+     * utilize subroutine that prints celsius temperature when supplied fahrenheit temperature
    * demonstrate passing unlimited parameters
-     * *Note* VBscript does not support unlimited parameters.  Alternative is to create an temporary ```Array``` and pass the array.
+     * *Note* VBScript does not support unlimited parameters.  Alternative is to create an temporary ```Array``` and pass the array.
      * utilize subroutine prints sum of all numbers passed into it.
 12. Functions
     * demonstrate returning integer
-      * returns summartion of all numbers passed into function 
+      * returns summation of all numbers passed into function 
     * demonstrate returning string
       * returns capitalized string from lower case string 
