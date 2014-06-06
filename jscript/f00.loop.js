@@ -1,3 +1,3 @@
-for count = 10 to 0 step -1
-  wscript.echo "Count is " & count
-next
+for(count = 10; count > 0; count--) {
+  WScript.Echo("Count is " + count)
+}
