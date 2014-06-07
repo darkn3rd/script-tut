@@ -142,12 +142,12 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 
 ## Document Changes
 
-2014-06-06: Finished JScript (WSH) addition, reflected findings back.
-2014-06-02: Python - Functions, Parameters, Subroutine
-2014-06-02: Ruby - Functions, Parameters.
-2014-06-02: Finished VBScript (WSH) section.
-2014-06-02: Finished PowerShell section.
-2014-05-26: Ruby - subroutine, arguments
-2014-05-26: Python - arguments, function
-2014-05-23: Ruby, Python - finish sections up to associative arrays
+* 2014-06-06: Finished JScript (WSH) addition, reflected findings back.
+* 2014-06-02: Python - Functions, Parameters, Subroutine
+* 2014-06-02: Ruby - Functions, Parameters.
+* 2014-06-02: Finished VBScript (WSH) section.
+* 2014-06-02: Finished PowerShell section.
+* 2014-05-26: Ruby - subroutine, arguments
+* 2014-05-26: Python - arguments, function
+* 2014-05-23: Ruby, Python - finish sections up to associative arrays
 
