@@ -1,4 +1,4 @@
-WScript.Echo("The arguemnts passed are:");
+WScript.Echo("The arguments passed are:");
 
 // print count and current argument
 for(var count=0; count < WScript.Arguments.length; count++) { 
