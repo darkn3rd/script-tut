@@ -8,11 +8,11 @@ This is a general tutorial of scripting modeled after typical tasks one would do
 ## Languages
 
 The current languages are supported:
-  - Awk
-  - BATCH (Command Shell) [Windows]
-  - Shell (POSIX)
-  - Bourne Again Shell
-  - Korn Shell
+  - Awk*
+  - BATCH (Command Shell) [Windows]†
+  - Shell (POSIX)††
+  - Bourne Again Shell††
+  - Korn Shell††
   - JScript (WSH) [Windows]
   - Perl
   - PHP
@@ -22,6 +22,9 @@ The current languages are supported:
   - TCL
   - VBScript (WSH) [Windows]
   
+† Common consistent utilities may be utilized.
+†† Utilities available with either POSIX Utilities or GNU Core-Utils may be used.
+
 In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
@@ -169,6 +172,7 @@ It is unfortunate that there are a variety of terms, sometiems conflicting, used
 
 ## Document Changes
 
+* 2014-06-07: Added initial Awk, Bash, Ksh, Perl, PHP, and TCL
 * 2014-06-06: Finished JScript (WSH) addition, reflected findings back.
 * 2014-06-02: Python - Functions, Parameters, Subroutine
 * 2014-06-02: Ruby - Functions, Parameters.
