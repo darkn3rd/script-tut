@@ -80,13 +80,17 @@ Not all of the content can adequately be covered for every language.  The script
      * print all arguments in order
      * print all arguments in reverse order
 11. Parameters
-   * explicit number of parameters
+   * explicit number of parameters (1 integer)
      * example: shows controlling decimal precision
-   * variable number of parameters
+   * explicit number of parameters (2 arrays) [TBA]
+     * example: shows sorting an array
+   * variable number of parameters (integers)
+   * variable number of paramters (associative arrays) [TBA]
 12. Function
    * return integer
    * return string
-   * return array
+   * return array [TBA]
+   * return hash [TBA]
 
 ## Key to Naming Convention
 
