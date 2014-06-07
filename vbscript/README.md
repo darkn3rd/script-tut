@@ -4,11 +4,9 @@
 
 ## Overview
 
-VBScript was added to the Microsoft family in 1996 through *ActiveX Scripting Engine*, also called the *Active Scripting* platform.  This component was integrated into Internet Explorer 3.0, along with JScript (JavaScript) to add robust scripting capabilities.  The same engine was integrated into Microsoft's web server called IIS, and was made able for scripting Windows through WSH (Windows Script Host), which is where these scripts will run.
+VBScript was added to the Microsoft family in 1996 through *ActiveX Scripting Engine*, also called the *Active Scripting* platform.  This component was integrated into Internet Explorer 3.0, along with JScript (JavaScript) to add robust scripting capabilities.  The same engine was integrated into Microsoft's web server called IIS, and was made available for scripting Windows systems through WSH (Windows Script Host).  The tutorial scripts here are targeted for WSH 5.6.
 
-VBScript owes its lineage to popular family of Microsoft BASIC language products, like QuickBASIC and later VisualBASIC.  A cousin of VBScript, called VBA (Visual Basic for Applications) was integrated into Microsoft Office, as a general-purpose Macro programing language.  The evolution of BASIC at Microsoft continues with the Microsoft .NET platform (VB.NET).  
-
-These sets of scripts are for the WSH platform, as they provide automation for the Windows environment and command line input or console.
+VBScript owes its lineage to popular family of Microsoft BASIC language products, like QuickBASIC and later VisualBASIC.  A cousin of VBScript, called VBA (Visual Basic for Applications) was integrated into Microsoft Office, as a general-purpose Macro programing language.  The evolution of BASIC at Microsoft continues with the Microsoft .NET platform (VB.NET).
 
 ## Windows Script Host
 
