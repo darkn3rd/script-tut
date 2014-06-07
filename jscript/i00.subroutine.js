@@ -1,5 +1,6 @@
 // create subroutine
-function show_date() {
+function show_date() 
+{
   var today  = new Date();
   var months = ['January', 'February', 'March', 'April', 
                 'May', 'June', 'July', 'August', 
