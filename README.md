@@ -28,7 +28,7 @@ The current languages are supported:
 
 ††† Windows NT family of OSes include Windows 2000, Windows XP, Windows 2003, Windows 2008, Windows 2012, Windows 7, Windows 8.1, and so forth.  Essentially, desktop or server OSes that use the WindowsNT kernel, but may be marketed something else.
 
-In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
+In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely more onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
 ## Content 
 
@@ -91,7 +91,7 @@ Not all of the content can adequately be covered for every language.  The script
    * explicit number of parameters (2 arrays) [TBA]
      * example: shows sorting an array
    * variable number of parameters (integers)
-   * variable number of paramters (associative arrays) [TBA]
+   * variable number of parameters (associative arrays) [TBA]
 12. Function
    * return integer
    * return string
@@ -152,13 +152,13 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 
 ## Terminology 
 
-It is unfortunate that there are a variety of terms, sometiems conflicting, used to decribe consistent and common concepts found throughtout many of these scripting lanaguages.  Here is a list of terms used within this tutorial:
+It is unfortunate that there are a variety of terms, sometimes conflicting, used to describe consistent and common concepts found throughout many of these scripting languages.  Here is a list of terms used within this tutorial:
 
-* **argument** - *item of information provided to a program when it is started. A program can have many command-line arguments that identify sources or destinations of information, or that alter the operation of the program* [http://en.wikipedia.org/wiki/Command-line_argument#Arguments].  The term arguments used here is an abbreviated name of command-line arguments, and thus explictly refers to arguments that are passed in from the command-line.
+* **argument** - *item of information provided to a program when it is started. A program can have many command-line arguments that identify sources or destinations of information, or that alter the operation of the program* [http://en.wikipedia.org/wiki/Command-line_argument#Arguments].  The term arguments used here is an abbreviated name of command-line arguments, and thus explicitly refers to arguments that are passed in from the command-line.
 
-* **flag** - special type of **option** (and thus a special type of **argument**) that is not proceeded or coupled with other data.  The **flag** (also called a **switch**) represents binary state, on or off, or true or false, and its existence on the command line signfies an *on* or *true* state.
+* **flag** - special type of **option** (and thus a special type of **argument**) that is not proceeded or coupled with other data.  The **flag** (also called a **switch**) represents binary state, on or off, or true or false, and its existence on the command line signifies an *on* or *true* state.
 
-* **function** - *a relation between a set of inputs and a set of permissible outputs with the property that each input is related to exactly one output* [http://en.wikipedia.org/wiki/Mathematical_functions]. A function could be thought of as a buroutine that explicitly returns a value.
+* **function** - *a relation between a set of inputs and a set of permissible outputs with the property that each input is related to exactly one output* [http://en.wikipedia.org/wiki/Mathematical_functions]. A function could be thought of as a subroutine that explicitly returns a value.
 
 * **option** - special type of argument that is prepended by a dash ```-``` character.  This signifies that the operation of a command will be modified.
 
@@ -166,7 +166,7 @@ It is unfortunate that there are a variety of terms, sometiems conflicting, used
 
 * **scalar** - see **variable**.
 
-* **subroutine** -  *sequence of program instructions that perform a specific task, packaged as a unit. This unit can then be used in programs wherever that particular task should be performed. Subprograms may be defined within programs, or separately in libraries that can be used by multiple programs* [http://en.wikipedia.org/wiki/Subroutine].  A **subroutine** can be used for code organization, where function could be considered to perform an operation that returns a value.  Many scripting langauges do not distinguish the two, so a subroutine would be a **function** that does not explicitly return a value in this case.
+* **subroutine** -  *sequence of program instructions that perform a specific task, packaged as a unit. This unit can then be used in programs wherever that particular task should be performed. Subprograms may be defined within programs, or separately in libraries that can be used by multiple programs* [http://en.wikipedia.org/wiki/Subroutine].  A **subroutine** can be used for code organization, where function could be considered to perform an operation that returns a value.  Many scripting languages do not distinguish the two, so a subroutine would be a **function** that does not explicitly return a value in this case.
 
 * **switch** - see **flag**.
 
