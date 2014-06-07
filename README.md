@@ -32,7 +32,9 @@ Not all of the content can adequately be covered for every language.  The script
    * simple output to stdout
 2. Variables
    * declaration of number, characters, strings
-     * show escape quote characters of ```'``` and ```"```.
+     * example: shows how to escape quote characters
+   * use string interpolation
+   * use string concatenation
 3. Arithmetic
    * basic integer arithmetic
    * floating point arithmetic
@@ -45,42 +47,46 @@ Not all of the content can adequately be covered for every language.  The script
    * select on a single character
 6. Looping
    * iterative loop 
-      * example: 10 to 1
+      * example: count from 10 to 1
    * conditional loops
    * collection loop
       * iterate through list of items 
-        * example: directory listing
+        * example: directory listing, and test if directory
 7. Arrays
-   * Array Initialization
+   * Array assignment by key
       * initialize array using index
-        * array length
+        * show array length
         * enumerate all elements
-   * Array Enumeration 
+   * Array assignment by list
       * declare and initialize entire array
       * enumerate array by collection loop
       * enumerate array by index
 8. Associative Arrays
-   * Associative Array Initialization
+   * Associative Array assignment by key
       * initialize associative array using key
       * enumerate all keys 
       * enumerate all values
-   * Associative Array Enumeration
+   * Associative Array assignment by list
       * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
 9. Subroutine
    * Demonstrate Subroutine (no return value)
+     * example: using formatted date 
 10. Arguments (Command Line)
-   * Process 2 Arguments & Print Summation
-   * Enumerate All Arguments & Print In Order with Count
-   * Enumerate All Arguments & Print Reverse Order with Count
+   * Process 2 Arguments & Print Usage
+     * example: shows how to reference running file name 
+   * Enumerate All Arguments
+     * print all arguments in order
+     * print all arguments in reverse order
 11. Parameters
-   * Pass a single parameter & Print Celius from Fahrenheit
-   * Pass n number of parameters & Print summation of all arguments
+   * pass a single parameter
+     * example: shows controlling decimal precision
+   * pass unlimited parameters
 12. Function
-   * Varies: Each language has different features in returning arrays, strings, value, references.
-13. Options (Advanced Command Line Arguments)
-   * Varies: Each language has their own system for this, little overlap
+   * return integer
+   * return string
+   * return array
 
 ## Key to Naming Convention
 
@@ -136,4 +142,12 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 
 ## Document Changes
 
-2014-06-06: Updated findings from JScript (WSH) addition.
+2014-06-06: Finished JScript (WSH) addition, reflected findings back.
+2014-06-02: Python - Functions, Parameters, Subroutine
+2014-06-02: Ruby - Functions, Parameters.
+2014-06-02: Finished VBScript (WSH) section.
+2014-06-02: Finished PowerShell section.
+2014-05-26: Ruby - subroutine, arguments
+2014-05-26: Python - arguments, function
+2014-05-23: Ruby, Python - finish sections up to associative arrays
+
