@@ -15,7 +15,8 @@ Date.locale = {
 
 
 // create subroutine
-function show_date() {
+function show_date() 
+{
   var today = new Date();
   B = today.getMonthName();   // Call newly added property
   d = today.getDate();
