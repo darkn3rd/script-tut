@@ -1,11 +1,11 @@
 ' create subroutine
-Sub add(args)
-  For Each num In args
-    sum = sum + num
+Sub addNums(nums)
+  For Each num In nums
+    sum = sum + num       ' sum the nums
   Next
 
   WScript.echo "The summation is " & sum & "."  ' output result
 End Sub
 
-' cal the subroutine 
-add Array(5,2,4,3,6)
+' call the subroutine and pass anonymous Array object
+addNums Array(5,2,4,3,6)
