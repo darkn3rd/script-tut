@@ -1,14 +1,15 @@
-' create function
-Function AddNums(args)
-  For Each num In args  ' iterate through each argument
-    sum = sum + num     ' sum up all the numbers
-  Next
+// create the function
+function addNums(numbers) {
+  var sum = 0;
 
-  AddNums = sum         ' set return to sum
-End Function
+  for (var num in numbers)
+    sum += numbers[num];
 
-' call the function
-result = AddNums(Array(5,2,4,3,6))
+  return sum;
+}
 
-WScript.Echo "The result of summation is: " & result & "."
+// call the function
+result = addNums([5,2,4,3,6])
 
+// output rersults
+WScript.echo("The result of summation is: " + result + ".");
