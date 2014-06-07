@@ -1,11 +1,12 @@
-' create function
-Function Capitalize(string)
-  Capitalize = Ucase(string)  ' return fully upppercase string
-End Function
+// create function
+function capitalize(string)
+{
+  return string.toUpperCase(); // return fully upppercase string
+}
 
-' call the function
-result = Capitalize("ibm")
+// call the function
+result = capitalize("ibm")
 
-' output results
-WScript.Echo "The resulting string is: " & result & "."
+// output results
+WScript.Echo("The resulting string is: " + result + ".");
 
