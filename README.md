@@ -9,10 +9,10 @@ This is a general tutorial of scripting modeled after typical tasks one would do
 
 The current languages are supported:
   - Awk*
-  - BATCH (Command Shell) [Windows]†
-  - Shell (POSIX)††
-  - Bourne Again Shell††
-  - Korn Shell††
+  - BATCH (Command Shell) [Windows] †
+  - Shell (POSIX) ††
+  - Bourne Again Shell ††
+  - Korn Shell ††
   - JScript (WSH) [Windows]
   - Perl
   - PHP
@@ -22,8 +22,11 @@ The current languages are supported:
   - TCL
   - VBScript (WSH) [Windows]
   
-† Common consistent utilities may be utilized.
-†† Utilities available with either POSIX Utilities or GNU Core-Utils may be used.
+† Common consistent utilities on Windows NT family††† of OSes may be utilized.
+
+†† Utilities available with either POSIX Utilities [http://pubs.opengroup.org/onlinepubs/009696699/utilities/contents.html] or GNU Core-Utils [http://www.gnu.org/software/coreutils/] may be used.
+
+††† Windows NT family of OSes include Windows 2000, Windows XP, Windows 2003, Windows 2008, Windows 2012, Windows 7, Windows 8.1, and so forth.  Essentially, desktop or server OSes that use the WindowsNT kernel, but may be marketed something else.
 
 In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
 
