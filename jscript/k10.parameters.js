@@ -1,5 +1,6 @@
 // create subroutine
-function addNums(numbers) {
+function addNums(numbers) 
+{
   var sum = 0;
 
   for (var num in numbers)
