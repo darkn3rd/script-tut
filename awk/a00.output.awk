@@ -1,1 +1,4 @@
-#!//bin/awk -f
+#!/bin/awk -f
+BEGIN {
+  print "Hello"
+}
