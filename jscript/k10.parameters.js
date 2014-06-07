@@ -1,11 +1,12 @@
-' create subroutine
-Sub add(args)
-  For Each num In args
-    sum = sum + num
-  Next
+// create subroutine
+function addNums(numbers) {
+  var sum = 0;
 
-  WScript.echo "The summation is " & sum & "."  ' output result
-End Sub
+  for (var num in numbers)
+    sum += numbers[num];
 
-' cal the subroutine 
-add Array(5,2,4,3,6)
+  WScript.echo("The summation is " + sum + ".");  // output result
+}
+
+// cal the subroutine 
+addNums([5,2,4,3,6])
