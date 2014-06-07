@@ -19,6 +19,7 @@ The current languages are supported:
   - PowerShell [Windows]
   - Python
   - Ruby
+  - TCL
   - VBScript (WSH) [Windows]
   
 In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely moe onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
