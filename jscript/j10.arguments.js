@@ -1,6 +1,8 @@
-count = 1                                    ' set initial count
-WScript.Echo "The arguemnts passed are:"
-For Each arg In  Wscript.Arguments           ' collection loop
-  WScript.Echo " item " & count & ": " & arg ' print count and current argument
-  count = count + 1                          ' increment count
-Next
+WScript.Echo("The arguemnts passed are:");
+
+//for (var count in WScript.Arguments)
+
+// print count and current argument
+for(var count=0; count < WScript.Arguments.length; count++) { 
+  WScript.Echo(" item " + (count+1) + ": " + WScript.Arguments.Item(count)); 
+}
