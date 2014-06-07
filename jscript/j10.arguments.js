@@ -1,7 +1,5 @@
 WScript.Echo("The arguemnts passed are:");
 
-//for (var count in WScript.Arguments)
-
 // print count and current argument
 for(var count=0; count < WScript.Arguments.length; count++) { 
   WScript.Echo(" item " + (count+1) + ": " + WScript.Arguments.Item(count)); 
