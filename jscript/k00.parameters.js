@@ -1,5 +1,6 @@
 // create subroutine
-function celsius(fahrenheit) {
+function celsius(fahrenheit) 
+{
   temperature = (fahrenheit - 32) * 5 / 9; // calculate to internatioanl temp
   temperature = temperature.toFixed(1);    // lower degree of significance
 
