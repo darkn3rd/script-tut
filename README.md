@@ -80,9 +80,9 @@ Not all of the content can adequately be covered for every language.  The script
      * print all arguments in order
      * print all arguments in reverse order
 11. Parameters
-   * pass a single parameter
+   * explicit number of parameters
      * example: shows controlling decimal precision
-   * pass unlimited parameters
+   * variable number of parameters
 12. Function
    * return integer
    * return string
