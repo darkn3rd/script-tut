@@ -1,1 +1,2 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
+print "Hello"
