@@ -1,1 +1,2 @@
-#!//bin/ksh
+#!/bin/ksh
+print "Hello"
