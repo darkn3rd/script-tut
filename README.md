@@ -175,7 +175,8 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Document Changes
 
-* 2014-06-07: Added initial Awk, Bash, Ksh, Perl, PHP, and TCL
+* 2014-06-08: Added initial Bash, Ksh, Perl, PHP
+* 2014-06-07: Added initial Awk and TCL
 * 2014-06-06: Finished JScript (WSH) addition, reflected findings back.
 * 2014-06-02: Python - Functions, Parameters, Subroutine
 * 2014-06-02: Ruby - Functions, Parameters.
