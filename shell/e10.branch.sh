@@ -2,6 +2,7 @@
 echo -n "Input a character: " ; read Keypress
  
 # case construction
+#  with support for POSIX character class expressions
 case "$Keypress" in
   [[:lower:]]   ) echo "Lowercase letter";;
   [[:upper:]]   ) echo "Uppercase letter";;
