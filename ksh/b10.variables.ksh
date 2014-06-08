@@ -6,5 +6,5 @@ string="This is a string"  # set a string
 
 # show the results
 print Number is $num.
-print Character is $char.
-print String is $string.
+print Character is \'$char\'.
+print String is \"$string\".
