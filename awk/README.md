@@ -1,4 +1,4 @@
-# Scripting Tutorial: JScript (WSH)
+# Scripting Tutorial: AWK
 
 © Joaquin Menchaca, 2014
 
