@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/bin/env awk -f
 
 # **************************************
 # array_length() - returns length of array
