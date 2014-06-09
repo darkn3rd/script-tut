@@ -2,6 +2,12 @@
 
 © Joaquin Menchaca, 2014
 
+
+## Testing
+
+* Mac OS X 10.8.5, Bash 3.2.48(1)-release (x86_64_appledarwin12) using ```/bin/sh```
+
+
 ## Notes 
 
 This covers notes regarding each section.
