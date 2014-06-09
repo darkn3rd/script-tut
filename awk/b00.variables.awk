@@ -1,9 +1,12 @@
 #!/bin/awk -f
 BEGIN {
+  # declare variables    
   num = 5
-  char= "a"
+  char = "a"
   string = "This is a string"
-  print "Number is " num
-  print "Character is '" char "'"
-  print "String is \"" string "\""
+  
+  # output values using string concatenation 
+  print "Number is " num "."
+  print "Character is '" char "'."
+  print "String is \"" string "\"."
 }
