@@ -10,7 +10,10 @@ AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (G
 
 ## Issues
 
-For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such a core tool, whether for systems that support POSIX UNIX tool or the GNU Core-Utils, and therefore it should be in ```/bin/awk```:
+For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such an essential and core tool for any UNIX-like system.  It is a part of the POSIX 
+UNIX toolset and also apart of the GNU Core-Utils.  There for it should be placed in the ```/bin``` directory.  
+
+On Mac OS X 10.8.5, you can do this:
 
 ```
 sudo ln -s `which awk` /bin/awk
