@@ -8,6 +8,13 @@ The AWK tool was introducted in Version 7 Unix and named afer the authors: Aho, 
 
 AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
 
+## Issues
+
+For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such a core tool, whether for systems that support POSIX UNIX tool or the GNU Core-Utils, and therefore it should be in ```/bin/awk```:
+
+```
+sudo ln -s `which awk` /bin/awk
+```
 
 ## Testing
 
