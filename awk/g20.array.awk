@@ -15,8 +15,7 @@ BEGIN {
 
   # **************************************
   # array_length() - returns length of array
-  #   Note: required as length() only works on strings in gawk 3.x
-  #    and POSIX awk.
+  #   Note: required as length() only works on strings in POSIX awk 
   #   Note: not needed with gawk 3.1.5 and 4.x as length works on 
   #    array as well
   # **************************************
