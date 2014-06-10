@@ -6,7 +6,11 @@
 
 The AWK tool was introducted in Version 7 Unix and named afer the authors: Aho, Weinberger, and Kernighan.  AWK was a away to add computational features to the Unix pipeline, and at the time was the only other scripting language available besides Bourne Shell.  
 
+AWK was exremely popular in the 1970s and 1980s.  The Bourne shell at that time was extremely limited, and AWK provided rich text processing capabilities, math functions, and the capability to create arrays and associative arrays (hashes).
+
 AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
+
+Today, AWK is apart of the GNU Core-Utilities [http://www.gnu.org/software/coreutils/] found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would have awk as apart of that tool set for compliance toward IEEE Std 1003.1, 2013 Edition [http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html].
 
 ## How It Works
 
