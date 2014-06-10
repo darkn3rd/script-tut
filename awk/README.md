@@ -8,6 +8,17 @@ The AWK tool was introducted in Version 7 Unix and named afer the authors: Aho, 
 
 AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
 
+## How It Works
+
+AWK is quite different in that an AWK script works as a filter.  This means AWK scripts or oriented to receive text from the console, standard-input.  Thus AWK scripts are not generally interactive scripts, where you selectively read lines of input.  Thus most awk scripts will be run with input being sent directly into the script:
+
+```
+some_command | awkscript
+awkscript < somefile.txt
+```
+
+AWK scripts can do some pre-processing and post-processing before and after receiving input through the ```BEGIN``` and ```END``` blocks.  These tutorial scripts here will use the ```BEGIN``` blocks.  These tutorial scripts illustrate that AWK in and of itself is a powerful scripting language, and have the capabilities shared by other modern scripting languages.
+
 ## Issues
 
 For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such an essential and core tool for any UNIX-like system.  It is a part of the POSIX 
