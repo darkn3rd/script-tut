@@ -1,4 +1,5 @@
 #!/bin/awk -f
+# create function
 function capitalize(string) 
 {
   return toupper(string)      # return capitlized string
