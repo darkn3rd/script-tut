@@ -5,7 +5,8 @@
 #   Note: required as length() only works on strings in gawk 3.x
 #    and POSIX awk
 # **************************************
-function array_length (array) {
+function array_length (array) 
+{
   count = 0                   # set initial counter value
   for (i in array) count++    # increment counter
   return count                # return count of last item
