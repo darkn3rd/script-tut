@@ -1,4 +1,5 @@
 #!/bin/awk -f
+# create the function
 function addNums(numbers)
 {
    sum = 0                 # initalize to 0
@@ -17,6 +18,6 @@ BEGIN {
   # call the function
   result = addNums(array)  # pass array of dynamic params
 
-  # output results 
+  # output results with resulting integer
   print "The result of summation is: " result
 }

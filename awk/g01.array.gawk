@@ -1,7 +1,8 @@
-#!/bin/awk -f
+#!/bin/gawk -f
 
 # **************************************
 #   Main Section
+#    Requirements: Gawk 3.1.5 and above required for length(array)
 # **************************************
 BEGIN {
   # build array item by item
@@ -14,23 +15,10 @@ BEGIN {
   nicknames[6]="kate"
  
   # print number of elements
-  print  "The number of nicknames is: " array_length(nicknames)
+  print  "The number of nicknames is: " length(nicknames)
 
   # print all of elements in one line
   printf "The nicknames are: " join(nicknames, ", ") "\n"
-}
-
-# **************************************
-# array_length() - returns length of array
-#   Note: required as length() only works on strings in POSIX awk 
-#   Note: not needed with gawk 3.1.5 and 4.x as length works on 
-#    array as well
-# **************************************
-function array_length (array) 
-{
-  count = 0                   # set initial counter value
-  for (i in array) count++    # increment counter
-  return count                # return count of last item
 }
 
 # **************************************
@@ -40,7 +28,7 @@ function array_length (array)
 function join(array, sep)
 {
     result = array[0]
-    end    = array_length(array)
+    end    = length(array) 
  
     for (i = 1; i < end; i++) {
         result = result sep array[i]

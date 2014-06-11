@@ -1,5 +1,5 @@
 #!/bin/awk -f
-
+# create the subroutine (function)
 function celsius(fahrenheit)
 {
   # convert to new temperature

@@ -1,4 +1,5 @@
 #!/bin/awk -f
+# create the subroutine (function)
 function addNums(numbers)
 {
    sum = 0                        # initalize to 0
@@ -14,6 +15,6 @@ BEGIN {
   string  = "5 2 4 3 6"           # declare string of params
   split(string, array)            # make into array of params
  
-  # call the function
+  # call the subroutine (function)
   addNums(array)                  # pass array of dynamic params
 }

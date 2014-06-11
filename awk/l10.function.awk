@@ -9,6 +9,6 @@ BEGIN {
   # call the function
   result = capitalize("ibm")  # pass string 
 
-  # output results 
+  # output results with resulitng string
   print "The result of capitalization is: " result
 }

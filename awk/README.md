@@ -4,9 +4,9 @@
 
 ## Overview
 
-The AWK tool was introducted in Version 7 Unix and named afer the authors: Aho, Weinberger, and Kernighan.  AWK provided computational features to the Unix pipeline, and at the time, AWK was the only other scripting language available besides Bourne Shell.  
+The AWK tool was introduced in Version 7 Unix and named after the authors: Aho, Weinberger, and Kernighan.  AWK provided computational features to the Unix pipeline, and at the time, AWK was the only other scripting language available besides Bourne Shell.  
 
-AWK was exremely popular in the 1970s and 1980s.  The available shell at the time (Bourne shell) was extremely limited, and AWK provided numerous capabilities absent from Bourne Shell.  This included rich text processing capabilities, math functions, and the capability to create arrays and associative arrays (hashes).
+AWK was extremely popular in the 1970s and 1980s.  The available shell at the time (Bourne shell) was extremely limited, and AWK provided numerous capabilities absent from Bourne Shell.  This included rich text processing capabilities, math functions, and the capability to create arrays and associative arrays (hashes).
 
 AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
 
@@ -58,22 +58,32 @@ This covers notes regarding each section.
 
 1. **Output**
 2. **Variables**
+   * output variables using string concatenation with ```print```
+   * output variables using string interpolation with ```printf```
 3. **Arithmetic**
 4. **Input**
 5. **Branch**
    * select on number using ```if```
    * select on character using ```switch```
-     * **NOTE** *This is not supported by POSIX awk or earlier verions of gawk.  This functionality is available in Gawk 3.1.5 and above*
+     * **NOTE** *This is not supported by POSIX awk or earlier versions of gawk.  This functionality is available in Gawk 3.1.5 and above*
    * select on character using ```if```
 6. **Looping**
    * iterative (count) loop
    * conditional loop
    * collection loop
+     * **OMITTED** *Awk does not have a true collection loop, so a conditional loop pulling form standard-input was used as an alternative*
 7. **Arrays**
    * populate array using index
-   * popular array using list of items
+   * populate array using list of items
+     * **NOTES** Awk does not have syntax support to declare an array on one line.  However, a ```split(string, array)``` function with a space delimited string will work. 
      * enumerate array using collection loop
+       * **NOTES** 
+          * Awk does not have a collection loop, but rather pulls an key from the array
+          * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes in any order.
      * enumerate array using iterative loop
+       * **NOTES** 
+         * Awk does not have support to get the ```length``` of an array. Such functionality was added with GNU Awk (gawk) 3.1.5 and after.
+         * A helper function of ```array_length()``` was created to support this.
 8. **Associative Arrays**
    * Create Associative Array using key value
    * Create Associative Array using supplied list
