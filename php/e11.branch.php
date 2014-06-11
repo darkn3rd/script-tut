@@ -3,13 +3,13 @@
 echo "Input a character: "; $Keypress = fgetc(STDIN);
  
 switch (TRUE) {
-  case preg_match("/[a-z]/", $Keypress):
+  case preg_match("/[[:lower:]]/", $Keypress):
     echo "Lowercase letter\n";
     break;
-  case preg_match("/[A-Z]/", $Keypress):
+  case preg_match("/[[:upper:]]/", $Keypress):
     echo "Uppercase letter\n";
     break;
-  case preg_match("/[0-9]/", $Keypress):
+  case preg_match("/[[:digit:]]/", $Keypress):
     echo "Digit\n";
     break;
   default:
