@@ -71,7 +71,7 @@ This covers notes regarding each section.
    * iterative (count) loop
    * conditional loop
    * collection loop
-     * **OMITTED** *Awk does not have a true collection loop, so a conditional loop pulling form standard-input was used as an alternative*
+     * **OMITTED** *Awk does not have a true collection loop, so a conditional loop that pulls from standard-input was used as an alternative*
 7. **Arrays**
    * populate array using index
    * populate array using list of items
