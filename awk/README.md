@@ -101,7 +101,7 @@ This covers notes regarding each section.
      * **Note** *AWK does not support variable parameters, so an array is passed instead.*
      * utilize subroutine prints sum of all numbers passed into it.
 12. **Functions**
-    * demonstrate returning integer (TBA)
+    * demonstrate returning integer
       * returns summation of all numbers passed into function 
     * demonstrate returning string
       * returns capitalized string from lower case string 
