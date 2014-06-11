@@ -87,6 +87,7 @@ This covers notes regarding each section.
 8. **Associative Arrays**
    * Create Associative Array using key value
    * Create Associative Array using supplied list
+     * **OMITTED** This gets complicated to even demonstrate, especially as Awk has no native syntax for this, and does not support returning arrays from functions.
 9. **Subroutines** 
    * utilize subroutine that prints the current date in "Month Day, Year" format
 10. *Arguments*
