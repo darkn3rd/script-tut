@@ -83,20 +83,20 @@ This covers notes regarding each section.
           * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes (keys) in any order.
      * enumerate array using iterative loop
        * **NOTES** 
-         * Awk doesn't support ```length(array)```. Only available in GNU Awk (gawk) 3.1.5 and after.
-         * A helper function of ```array_length(array)``` was created to support this.
+          * Awk doesn't support ```length(array)```. Only available in GNU Awk (gawk) 3.1.5 and after.
+          * A helper function of ```array_length(array)``` was created to support this.
 8. **Associative Arrays**
    * Create Associative Array using key index
      * **NOTES**
-       * helper function ```keys()``` to return string of all the keys
-       * helper function ```values()``` to return string of all the values
+        * helper function ```keys()``` to return string of all the keys
+        * helper function ```values()``` to return string of all the values
    * Create Associative Array using supplied list of key and value pairs
      * **NOTES**
-       * helper function of ```make_array()``` to create associative array from supplied string
-       * helper function of ```merge()``` to merge to associative arrays
+        * helper function of ```make_array()``` to create associative array from supplied string
+        * helper function of ```merge()``` to merge to associative arrays
 9. **Subroutines** 
    * utilize subroutine that prints the current date in "Month Day, Year" format
-10. *Arguments*
+10. **Arguments**
     * demonstrate testing for two arguments
     * print list of all arguments with count
     * print list of all arguments in reverse with count
