@@ -44,6 +44,8 @@ sudo ln -s `which awk` /bin/awk
 ## Testing
 
 * Windows 7 (32-bit), Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+  * Issues:
+    * ```length()``` only works on string, will not work on array
 * Windows 7 (32-bit), Nawk (UWIN 2012-08-06)
   * Issues:
     * ```length()``` only works on string, will not work on array
