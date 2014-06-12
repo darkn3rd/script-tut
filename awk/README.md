@@ -34,18 +34,17 @@ AWK scripts have the ability to do pre-processing and post-processing before and
 
 ## Issues
 
-For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such an essential and core tool for any UNIX-like system.  It is a part of the POSIX 
-UNIX toolset and also apart of the GNU Core-Utils.  Therefore it should be placed in the ```/bin``` directory.  
+Environments will have AWK in either ```/bin/awk``` or ```/usr/bin/awk``` or both.  These scripts expect AWK to be in ```/bin/awk```.  The workaround, provided you have administration priviledges is to add a symbolic link.
 
 On Mac OS X 10.8.5, you can do this:
-
 ```
 sudo ln -s `which awk` /bin/awk
 ```
 
 ## Testing
 
-* Windows 7, Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+* Windows 7 (32-bit), Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+* Windows 7 (32-bit), Nawk (UWIN 2012-08-06)
   * Issues:
     * ```length()``` only works on string, will not work on array
 * Mac OS X 10.8.5, Awk 20070501
