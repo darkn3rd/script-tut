@@ -28,6 +28,7 @@ BEGIN {
 function make_array(strIn, arrOut)
 {
   split(strIn, couplets)              # craft new array from key:value pairs
+  
   for (i in couplets) {
     split(couplets[i], pair, ":")     # create mini-array of key and value
     
