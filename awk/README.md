@@ -102,7 +102,7 @@ This covers notes regarding each section.
     * demonstrate testing for two arguments
     * print list of all arguments with count
     * print list of all arguments in reverse with count
-11. *Parameters*
+11. **Parameters**
    * demonstrate passing 1 parameter
      * utilize subroutine that prints celsius temperature when supplied fahrenheit temperature
    * demonstrate passing unlimited parameters
