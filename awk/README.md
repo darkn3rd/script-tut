@@ -76,12 +76,14 @@ This covers notes regarding each section.
 7. **Arrays**
    * populate array using index
    * populate array using list of items
-     * **NOTES** Awk does not have syntax support to declare an array on one line.  However, a ```split(string, array)``` function with a space delimited string will work. 
-     * enumerate array using collection loop
+     * **NOTES** 
+        * Awk does not have syntax support to declare an array on one line.  
+        * ```split(string, array)``` function with a space delimited string will work. 
+   * enumerate array using collection loop
        * **NOTES** 
           * Awk does not have a collection loop, but rather pulls an key from the array
           * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes (keys) in any order.
-     * enumerate array using iterative loop
+   * enumerate array using iterative loop
        * **NOTES** 
           * Awk doesn't support ```length(array)```. Only available in GNU Awk (gawk) 3.1.5 and after.
           * A helper function of ```array_length(array)``` was created to support this.
