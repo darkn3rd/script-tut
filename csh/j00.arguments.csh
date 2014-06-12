@@ -9,4 +9,3 @@ else
   @ sum = $argv[1] + $argv[2]
   echo "The sum of $argv[1] and $argv[2] is $sum"
 endif
-
