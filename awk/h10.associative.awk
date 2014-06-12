@@ -48,7 +48,7 @@ function make_array(strIn, arrOut)
 # **************************************
 function merge(arrIn, arrOut)
 { 
-  # put components in arrOut into arrIn
+  # put items from arrOut into arrIn
   #  Note: arrIn dynamically resized to accomodate 
   for (key in arrOut) arrIn[key] = arrOut[key] 
 }
