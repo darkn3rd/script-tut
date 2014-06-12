@@ -80,7 +80,7 @@ This covers notes regarding each section.
      * enumerate array using collection loop
        * **NOTES** 
           * Awk does not have a collection loop, but rather pulls an key from the array
-          * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes in any order.
+          * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes (keys) in any order.
      * enumerate array using iterative loop
        * **NOTES** 
          * Awk does not have support to get the ```length``` of an array. Such functionality was added with GNU Awk (gawk) 3.1.5 and after.
