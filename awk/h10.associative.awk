@@ -29,11 +29,11 @@ function make_array(strIn, arrOut)
 {
   split(strIn, couplets)              # craft new array from key:value pairs
   for (i in couplets) {
-        split(couplets[i], pair, ":") # create mini-array of key and value
+    split(couplets[i], pair, ":")     # create mini-array of key and value
     
     # not the most efficient, but more illustrative
     name = pair[1]                    # save name 
-    age = pair[2]                     # save age
+    age  = pair[2]                    # save age
     
     # build the output associative array
     arrOut[name] = age
