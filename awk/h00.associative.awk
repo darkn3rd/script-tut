@@ -8,19 +8,38 @@ BEGIN {
   ages["deb"]=46
   ages["kate"]=19
  
- 
   # print all key indexes
-  # Note: awk has no mechanism to enumerate all keys,
-  #   so we must loop through array
-  printf "Keys  (names): "
-  for (key in ages) printf key " "
-  printf "\n"
- 
+  print "Keys  (names): " values(ages)
  
   # print all values
-  # Note: awk has no mechanism to enumerate all values,
-  #   so we must loop through array
-  printf "Values (ages): "
-  for (key in ages) printf ages[key] " "
-  printf "\n"
+  print "Values (ages): " keys(ages)
+}
+
+# Helper Functions as Awk has no method to 
+#  enumerate all values or keys from an array
+
+# **************************************
+# values (array) - return list of values as string
+#  values may be completely out of order
+# **************************************
+function values(array)
+{
+    keyStr = ""
+     
+    for (key in ages) keyStr = keyStr " " key
+ 
+    return keyStr
+}
+
+# **************************************
+# keys (array) - return list of keys as string
+#  keys may be completely out of order
+# **************************************
+function keys(array)
+{
+    keyStr = ""
+     
+    for (key in ages) keyStr = keyStr " " ages[key]
+ 
+    return keyStr
 }
