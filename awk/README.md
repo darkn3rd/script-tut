@@ -19,7 +19,7 @@ Thus, with any UNIX or Linux system, you can expect awk to be available.  For Wi
 - UWIN: Toolset from AT&T that contains tool chain typically found with SVR4 UNIX.
   - http://www2.research.att.com/sw/download/
 - GitBash (msysgit): Tools built with Mingw, integrate with Windows and can be used along side Windows tools.  However, the version of awk included is a very old version of gawk.
-- Cygwin: Enviroment on top of Windows that provides GNU tools.
+- Cygwin: Environment on top of Windows that provides GNU tools.
 
 ## How It Works
 
@@ -34,7 +34,7 @@ AWK scripts have the ability to do pre-processing and post-processing before and
 
 ## Issues
 
-Environments will have AWK in either ```/bin/awk``` or ```/usr/bin/awk``` or both.  These scripts expect AWK to be in ```/bin/awk```.  The workaround, provided you have administration priviledges is to add a symbolic link.
+Environments will have AWK in either ```/bin/awk``` or ```/usr/bin/awk``` or both.  These scripts expect AWK to be in ```/bin/awk```.  The workaround, provided you have administration privileges is to add a symbolic link.
 
 On Mac OS X 10.8.5, you can do this:
 ```

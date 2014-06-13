@@ -154,7 +154,11 @@ This is some future content that I thought of developing with PHP, Perl, Python,
 
 It is unfortunate that there are a variety of terms, sometimes conflicting, used to describe consistent and common concepts found throughout many of these scripting languages.  Here is a list of terms used within this tutorial:
 
+* **array** - *collection of elements (values or variables), each selected by one or more indices* [http://en.wikipedia.org/wiki/Array_data_type].  A real array has its elements (items) ordered in a sequence that can be accessed by an integer index.  Some languages, e.g. JavaScript, TCL, and AWK, mimic arrays where the indexes are actually strings, and are thus not organized in any sequential order.
+
 * **argument** - *item of information provided to a program when it is started. A program can have many command-line arguments that identify sources or destinations of information, or that alter the operation of the program* [http://en.wikipedia.org/wiki/Command-line_argument#Arguments].  The term arguments used here is an abbreviated name of command-line arguments, and thus explicitly refers to arguments that are passed in from the command-line.
+
+* **associative array** is a *composed of a collection of (key, value) pairs, such that each possible key appears at most once in the collection* [http://en.wikipedia.org/wiki/Associative_array].  These are sometimes called hash, hash table, map, collection, or dictionary.  Some languages, such as JavaScript, TCL, and AWK simply call them arrays.
 
 * **flag** - special type of **option** (and thus a special type of **argument**) that is not proceeded or coupled with other data.  The **flag** (also called a **switch**) represents binary state, on or off, or true or false, and its existence on the command line signifies an *on* or *true* state.
 
