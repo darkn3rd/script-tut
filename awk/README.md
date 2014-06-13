@@ -34,18 +34,19 @@ AWK scripts have the ability to do pre-processing and post-processing before and
 
 ## Issues
 
-For systems that do not have ```/bin/awk```, such as Mac OS X, you can create a symbolic link to create a ```/bin/awk```.  AWK is such an essential and core tool for any UNIX-like system.  It is a part of the POSIX 
-UNIX toolset and also apart of the GNU Core-Utils.  Therefore it should be placed in the ```/bin``` directory.  
+Environments will have AWK in either ```/bin/awk``` or ```/usr/bin/awk``` or both.  These scripts expect AWK to be in ```/bin/awk```.  The workaround, provided you have administration priviledges is to add a symbolic link.
 
 On Mac OS X 10.8.5, you can do this:
-
 ```
 sudo ln -s `which awk` /bin/awk
 ```
 
 ## Testing
 
-* Windows 7, Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+* Windows 7 (32-bit), Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+  * Issues:
+    * ```length()``` only works on string, will not work on array
+* Windows 7 (32-bit), Nawk (UWIN 2012-08-06)
   * Issues:
     * ```length()``` only works on string, will not work on array
 * Mac OS X 10.8.5, Awk 20070501
@@ -75,26 +76,33 @@ This covers notes regarding each section.
 7. **Arrays**
    * populate array using index
    * populate array using list of items
-     * **NOTES** Awk does not have syntax support to declare an array on one line.  However, a ```split(string, array)``` function with a space delimited string will work. 
-     * enumerate array using collection loop
+     * **NOTES** 
+        * Awk does not have syntax support to declare an array on one line.  
+        * ```split(string, array)``` function with a space delimited string will work. 
+   * enumerate array using collection loop
        * **NOTES** 
           * Awk does not have a collection loop, but rather pulls an key from the array
-          * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes in any order.
-     * enumerate array using iterative loop
+          * Awk does not have real arrays, as indexes are actually strings.  The for loop, i.e.  ```for (key in array)```, can pull indexes (keys) in any order.
+   * enumerate array using iterative loop
        * **NOTES** 
-         * Awk does not have support to get the ```length``` of an array. Such functionality was added with GNU Awk (gawk) 3.1.5 and after.
-         * A helper function of ```array_length()``` was created to support this.
+          * Awk doesn't support ```length(array)```. Only available in GNU Awk (gawk) 3.1.5 and after.
+          * A helper function of ```array_length(array)``` was created to support this.
 8. **Associative Arrays**
-   * Create Associative Array using key value
-   * Create Associative Array using supplied list
-     * **OMITTED** This gets complicated to even demonstrate, especially as Awk has no native syntax for this, and does not support returning arrays from functions.
+   * Create Associative Array using key index
+     * **NOTES**
+        * helper function ```keys()``` to return string of all the keys
+        * helper function ```values()``` to return string of all the values
+   * Create Associative Array using supplied list of key and value pairs
+     * **NOTES**
+        * helper function of ```make_array()``` to create associative array from supplied string
+        * helper function of ```merge()``` to merge to associative arrays
 9. **Subroutines** 
    * utilize subroutine that prints the current date in "Month Day, Year" format
-10. *Arguments*
+10. **Arguments**
     * demonstrate testing for two arguments
     * print list of all arguments with count
     * print list of all arguments in reverse with count
-11. *Parameters*
+11. **Parameters**
    * demonstrate passing 1 parameter
      * utilize subroutine that prints celsius temperature when supplied fahrenheit temperature
    * demonstrate passing unlimited parameters

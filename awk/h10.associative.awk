@@ -17,10 +17,11 @@ BEGIN {
   print "The ages are: "
   for(name in ages)  
       printf " ages[\"%s\"] = %s\n", name, ages[name]
-  }
+}
 
 # Helper Functions as Awk has no method to 
-#  enumerate all values or keys from an array
+#  create associative arrays in one line or 
+#  merge two associative arrays
 
 # **************************************
 # make_array (scalar, array) - populates array given a string scalar
@@ -28,6 +29,7 @@ BEGIN {
 function make_array(strIn, arrOut)
 {
   split(strIn, couplets)              # craft new array from key:value pairs
+  
   for (i in couplets) {
     split(couplets[i], pair, ":")     # create mini-array of key and value
     
@@ -42,8 +44,11 @@ function make_array(strIn, arrOut)
 
 # **************************************
 # merge (array, array) - merges two arrays; left-most array is output
+#   Warning: does not verify uniqueness of key index
 # **************************************
 function merge(arrIn, arrOut)
-{  
+{ 
+  # put items from arrOut into arrIn
+  #  Note: arrIn dynamically resized to accomodate 
   for (key in arrOut) arrIn[key] = arrOut[key] 
 }
