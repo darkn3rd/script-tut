@@ -179,6 +179,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-06-12: Initial CShell (tcsh) - yeah, yeah, I know...
 * 2014-06-11: Exhaustive review/updates of Awk
 * 2014-06-10: Testing Awk (OS X 10.8.5, msysgit 1.9.2 on Win7)
 * 2014-06-08: Added initial Bash, Ksh, Perl, PHP
