@@ -173,8 +173,10 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 * **variable** - *storage location and an associated symbolic name (an identifier) which contains some known or unknown quantity or information, a value* [http://en.wikipedia.org/wiki/Variable_(computer_science)].
 
-## Document Changes
+## Project Changes
 
+* 2014-06-11: Exhaustive review/updates of Awk
+* 2014-06-10: Testing Awk (OS X 10.8.5, msysgit 1.9.2 on Win7)
 * 2014-06-08: Added initial Bash, Ksh, Perl, PHP
 * 2014-06-07: Added initial Awk and TCL
 * 2014-06-06: Finished JScript (WSH) addition, reflected findings back.
