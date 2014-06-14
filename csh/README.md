@@ -15,9 +15,7 @@ and it is unable to keep up with robust feature set afforded in other shells.
 
 # Rants From Author
 
-This language has been frustrating to document, as a quite a bit of documentation out there is incorrect.  This has caused me more motivation to document C Shell.  
-
-The language itself has posed some quirks that are not some randomly discovered bug, but are the actual behavior.  Two that I found quite profound.  Any reserved word that terminates a block, absolutely must be followed by a newline.  If it is not, weird stuff happens.  Spaces followed by one of these block terminators, such as ```endif``` or ```end```, will also cause the block to fail.  Also, found out that when processing input, ```set variable=$<`, only the first word is captured, and a quoted string with spaces causes ```set: Syntax Error.```.
+The language itself has posed some quirks that are not some randomly discovered bug, but are the actual behavior.  Two that I found quite profound.  Any reserved word that terminates a block, absolutely must be followed by a newline.  If it is not, weird stuff happens.  Spaces followed by one of these block terminators, such as ```endif``` or ```end```, will also cause the block to fail.  Also, found out that when processing input, ```set variable=$<```, only the first word is captured, and a quoted string with spaces causes ```set: Syntax Error.```.
 
 Beyond these quirks, the language is extremely limited.  Here are a few of the limitations I have found:
 
