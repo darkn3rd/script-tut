@@ -13,7 +13,7 @@ C Shell was created by Bill Joy in the 1970s and was distributed with BSD UNIX a
 C Shell is widely known to have problems and limitations, and does not have basic features like functions.  So many may have opted out from using C Shell for any professional scripting, but still used the shell environment to interface with UNIX and Linux systems.  Today, C Shell has not fixed many of its issues (which probably requires a rewrite)
 and it is unable to keep up with robust feature set afforded in other shells.
 
-# Rants From Author
+## Language Quirks
 
 The language itself has posed some quirks that are not some randomly discovered bug, but are the actual behavior.  Two that I found quite profound.  Any reserved word that terminates a block, absolutely must be followed by a newline.  If it is not, weird stuff happens.  Spaces followed by one of these block terminators, such as ```endif``` or ```end```, will also cause the block to fail.  Also, found out that when processing input, ```set variable=$<```, only the first word is captured, and a quoted string with spaces causes ```set: Syntax Error.```.
 
