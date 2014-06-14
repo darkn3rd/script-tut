@@ -49,6 +49,7 @@ This covers notes regarding each section.
    * collection loop
 7. Arrays
    * populate array using index
+     * **NOTE** This is not possible in C Shell, but can achieve similar results with concatenation.
    * popular array using list of items
      * enumerate array using collection loop
      * enumerate array using iterative loop
