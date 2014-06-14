@@ -36,7 +36,7 @@ This covers notes regarding each section.
 1. Output
 2. Variables
 3. Arithmetic
-   * **OMITTED** Any sections dealing with float
+   * **OMITTED** Any sections dealing with float as not supported in C Shell
 4. Input
 5. Branch
    * select on number using ```if```
@@ -53,7 +53,7 @@ This covers notes regarding each section.
      * enumerate array using collection loop
      * enumerate array using iterative loop
 8. Associative Arrays
-   *  **OMITTED** 
+   *  **OMITTED** Not supported in C Shell
 9. Subroutines
    *  **OMITTED** Not supported in C Shell
 10. Arguments
