@@ -57,11 +57,11 @@ ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```bash
 ln -s /c/php/php.exe /usr/bin/php
 ```
-Running PHP scripts in Git Bash will **NOT** require the filename to have the ```.php``` extension, but will need the typical shebang line:
+Running PHP scripts in Git Bash will **NOT** require the filename to have the ```.php``` extension, but will need the typical *shebang* line:
 ```bash
 #!/usr/bin/php
 ``` 
-If the script has the shebang and the ```.php``` extension, then it will run in both Git Bash or command shell.
+If the script has the *shebang* and the ```.php``` extension, then it will run in both Git Bash or command shell.
 
 ## Testing
 
