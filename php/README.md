@@ -33,7 +33,7 @@ assoc .php=phpfile
 ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```
 10. (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/), you can run the following command to create virtual symbolic link to PHP program (again assumes PHP is in ```C:\PHP```): 
-```
+```shell
 ln -s /c/php/php.exe /usr/bin/php
 ```
   The PHP scripts will not need to have the ```.php``` extension, but will need to now have ```#!/usr/bin/php``` as the first line of the script.  If the script has this and the ```.php``` extension, it will run in Git Bash or command shell.
