@@ -57,7 +57,11 @@ ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```bash
 ln -s /c/php/php.exe /usr/bin/php
 ```
-  The PHP scripts will not need to have the ```.php``` extension, but will need to now have ```#!/usr/bin/php``` as the first line of the script.  If the script has this and the ```.php``` extension, it will run in Git Bash or command shell.
+  The PHP scripts will not need to have the ```.php``` extension, but will need the shebang line:
+```bash
+#!/usr/bin/php
+``` 
+If the script has the shebang and the ```.php``` extension, it will run in both Git Bash or command shell.
 
 ## Testing
 
