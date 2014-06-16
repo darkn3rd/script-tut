@@ -14,25 +14,25 @@ On *Mac OS X 10.8.5*, a version of PHP comes built it, so you can begin using PH
 
 On Windows NT systems, such as *Windows 7*, you can get PHP from http://windows.php.net/download/.  Download the ZIP file for the binaries.  The process to install PHP can be complex:
 
-1. Create a directory where you want PHP to live, such as C:\PHP.  You can do this in command shell: ```MKDIR C:\PHP```
-2. Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE\DOWNLOADS\``` directory.
-3. Open the the downloaded archive using Windows Explorer or from Command Shell (assumes PHP 5.5.13): ```RUNDLL32.EXE ZIPFLDR.DLL,RouteTheCall %USERPROFILE%\DOWNLOADS\php-5.5.13-nts-Win32-VC11-x86.zip``` 
-4. Copy the the contents in this window and paste them into a directory of your choice, such as C:\PHP.  From Command Shell, assuming we created ```C:\PHP```: ```EXPLORER C:\PHP```
-5. Update the Search Path.  The easiest way is to use the Command Shell. Search for CMD.EXE, and right click on program and select "Run As Administrator", then type (assumes PHP lives in ```C:\PHP```): ```SETX /M PATH "%PATH%;C:\PHP"```.
-6. Close Command Shell windows, as this will not pick up the new path.
-7. PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the C++ Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
-8. Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as: 
+* Create a directory where you want PHP to live, such as C:\PHP.  You can do this in command shell: ```MKDIR C:\PHP```
+* Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE\DOWNLOADS\``` directory.
+* Open the the downloaded archive using Windows Explorer or from Command Shell (assumes PHP 5.5.13): ```RUNDLL32.EXE ZIPFLDR.DLL,RouteTheCall %USERPROFILE%\DOWNLOADS\php-5.5.13-nts-Win32-VC11-x86.zip``` 
+* Copy the the contents in this window and paste them into a directory of your choice, such as C:\PHP.  From Command Shell, assuming we created ```C:\PHP```: ```EXPLORER C:\PHP```
+* Update the Search Path.  The easiest way is to use the Command Shell. Search for CMD.EXE, and right click on program and select "Run As Administrator", then type (assumes PHP lives in ```C:\PHP```): ```SETX /M PATH "%PATH%;C:\PHP"```.
+* Close Command Shell windows, as this will not pick up the new path.
+* PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the C++ Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
+* Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as: 
 ```
 PHP 5.5.13 (cli) (built: May 28 2014 09:48:23)
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 ```
-9. (optional) In order to run scripts in the command shell by simply typing your script's filename, where your script's filename has a ```.php``` extension, you'll need to associate the .php extension with the PHP program.  This can be done on Windows 7 by first opening ```CMD.EXE``` as Administrator (search for ```CMD.EXE```, and right-click, select *Run As Administrator*), and then typing these commands (again assuming PHP lives in ```C:\PHP```).
+* (optional) In order to run scripts in the command shell by simply typing your script's filename, where your script's filename has a ```.php``` extension, you'll need to associate the .php extension with the PHP program.  This can be done on Windows 7 by first opening ```CMD.EXE``` as Administrator (search for ```CMD.EXE```, and right-click, select *Run As Administrator*), and then typing these commands (again assuming PHP lives in ```C:\PHP```).
 ```batch
 assoc .php=phpfile
 ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```
-10. (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/), you can run the following command to create virtual symbolic link to PHP program (again assumes PHP is in ```C:\PHP```): 
+* (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/), you can run the following command to create virtual symbolic link to PHP program (again assumes PHP is in ```C:\PHP```): 
 ```bash
 ln -s /c/php/php.exe /usr/bin/php
 ```
