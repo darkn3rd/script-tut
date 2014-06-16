@@ -16,22 +16,12 @@ On Windows NT systems, such as *Windows 7*, you can get PHP from http://windows.
 
 1. Create a directory where you want PHP to live, such as C:\PHP.  You can do this in command shell: ```MKDIR C:\PHP```
 2. Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE\DOWNLOADS\``` directory.
-3. Open the the downloaded archive using Windows Explorer or from Command Shell (assumes PHP 5.5.13): 
-```
-RUNDLL32.EXE ZIPFLDR.DLL,RouteTheCall %USERPROFILE%\DOWNLOADS\php-5.5.13-nts-Win32-VC11-x86.zip
-``` 
-4. Copy the the contents in this window and paste them into a directory of your choice, such as C:\PHP.  From Command Shell, assuming we created ```C:\PHP```:
-``` 
-EXPLORER C:\PHP
-```
+3. Open the the downloaded archive using Windows Explorer or from Command Shell (assumes PHP 5.5.13): ```RUNDLL32.EXE ZIPFLDR.DLL,RouteTheCall %USERPROFILE%\DOWNLOADS\php-5.5.13-nts-Win32-VC11-x86.zip``` 
+4. Copy the the contents in this window and paste them into a directory of your choice, such as C:\PHP.  From Command Shell, assuming we created ```C:\PHP```: ```EXPLORER C:\PHP```
 5. Update the Search Path.  The easiest way is to use the Command Shell. Search for CMD.EXE, and right click on program and select "Run As Administrator", then type (assumes PHP lives in ```C:\PHP```): ```SETX /M PATH "%PATH%;C:\PHP"```.
-
-5. Close Command Shell windows, as this will not pick up the new path.
-
+6. Close Command Shell windows, as this will not pick up the new path.
 7. PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the C++ Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
-
 8. Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as:
-
 ```
 PHP 5.5.13 (cli) (built: May 28 2014 09:48:23)
 Copyright (c) 1997-2014 The PHP Group
