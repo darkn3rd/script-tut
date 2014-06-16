@@ -65,7 +65,7 @@ If the script has the *shebang* and the ```.php``` extension, then it will run i
 
 ## Testing
 
-* Mac OS X 10.8.5, PHP 5.3.26
+* Mac OS X 10.8.5, PHP 5.3.26 (default)
 * Windows NT 6.1 (Windows 7 SP1 64-bit), MSVCR 11.00.51106.1, PHP 5.5.13 (http://windows.php.net/download/)
 
 ## Topics with Details 
