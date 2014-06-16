@@ -18,7 +18,7 @@ On Windows NT systems, such as *Windows 7*, you can get PHP from http://windows.
 ```batch
 MKDIR C:\PHP
 ```
-* Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE\DOWNLOADS\``` directory.
+* Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE%\DOWNLOADS\``` directory.
 ```batch
 start http://windows.php.net/downloads/releases/php-5.5.13-nts-Win32-VC11-x86.zip
 ```
