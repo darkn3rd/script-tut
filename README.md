@@ -179,6 +179,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-06-15: Finished PHP section (docs including complex Windows configuration)
 * 2014-06-14: Finished (torture) C Shell.
 * 2014-06-12: Initial CShell (tcsh) - yeah, yeah, I know...
 * 2014-06-11: Exhaustive review/updates of Awk
