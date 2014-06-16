@@ -34,16 +34,6 @@ ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```
 10. (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/), you can run the following command to create virtual symbolic link to PHP program (again assumes PHP is in ```C:\PHP```): ```ln -s /c/php/php.exe /usr/bin/php```.  The PHP scripts will not need to have the ```.php``` extension, but will need to now have ```#!/usr/bin/php``` as the first line of the script.  If the script has this and the ```.php``` extension, it will run in Git Bash or command shell.
 
-## How It Works
-
-The PHP utilized here is the PHP-CLI, which means you can use this on the command-line.  The major difference is simply that the output is just raw text strings, rather that markup language.  
-
-In my experience, PHP predominantly popular as language for developing websites, either just for doing a proof-of-concept project and then using another platform, or as the main technology and using other engines to increase performance.
-
-For system administration oriented scripting, PHP has been used in niche products, such as FreeNAS and m0n0wall from what I have heard.  
-
-To use PHP in command-line mode, nothing is needed, and the only tags required are the ```<?php``` and ```?>``` and the beginning and the end, with your code in the middle.  
-
 ## Testing
 
 * Mac OS X 10.8.5, PHP 5.3.26
