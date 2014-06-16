@@ -1,13 +1,15 @@
 #!/usr/bin/perl -w
-# create subroutine with one parameter
-sub celsius {
-  my $fahrenheit = $_[0]; # retreive single parameter
-  
-  # convert to new temperature
-  $temperature = ($fahrenheit - 32) * 5 / 9;
-  # output results with one degree of significance
-  printf "The Celsius temperature is %0.1f degrees.\n", $temperature;
+# create subroutine with variable parameters
+sub addNums {
+   my @numbers = @_;   # retreive variable parameters
+   my $sum = 0;        # initalize to 0
+
+   # add all the $num in @numbers list
+   foreach $num (@numbers) { $sum += $num }              
+     
+   # output results
+   print "The summation is: $sum\n";
 }
 
-my $temperature = 73;     # store original temperature
-celsius $temperature;     # call function to convert and output results
+# call the subroutine (function)
+addNums 5, 2, 4, 3, 6; # pass variable number of numbers
