@@ -1,8 +1,6 @@
 #!/usr/bin/perl
-# acquire num of args
-$arg_count = $#ARGV + 1; # get num of arguments
-$last      = $#ARGV;     # get index of last element
-$first     = 0;          # set index of first element 
+my $last      = $#ARGV;     # get index of last element
+my $first     = 0;          # set index of first element 
 
 print "The arguments passed are:\n";
 # iterative loop to enumerate args
