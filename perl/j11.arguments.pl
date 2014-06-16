@@ -5,5 +5,6 @@ my $first     = 0;          # set index of first element
 print "The arguments passed are:\n";
 # iterative loop to enumerate args
 for ( my $count = $first; $count <= $last ; $count++ ) {
+  # output count and argument using count index
   printf "  item %d: %s\n", $count+1, $ARGV[$count];
 }
