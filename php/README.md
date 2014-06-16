@@ -85,7 +85,7 @@ This covers notes regarding each section.
         * *PHP cannot do pattern matching in scripts, so creative alternative utilized*
         * *POSIX selectors for internationalization are fully supported in PHP*
    * select on character using ```if```
-     * **NOTE** * *POSIX selectors for internationalization are fully supported in PHP*
+     * **NOTE** *POSIX selectors for internationalization are fully supported in PHP*
 6. **Looping**
    * iterative (count) loop
      * alternative shows conditional loop with counter illustrated
