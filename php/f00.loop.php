@@ -1,9 +1,6 @@
 #!/usr/bin/php
 <?php
-// while construction
-$count = 10;
-while ($count > 0) {
-    echo "Count is $count\n";
-    $count--;
-}
+// iterative loop
+for ( $count = 10; $count > 0; $count-- )
+ echo "Count is $count\n";
 ?>
