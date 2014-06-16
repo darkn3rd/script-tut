@@ -31,7 +31,10 @@ EXPLORER C:\PHP
 ```batch
 SETX /M PATH "%PATH%;C:\PHP"
 ```
-* Close Command Shell windows, as this will not pick up the new path.
+* Close Command Shell windows, as the new search patch will not be picked up in the current command shell.
+```batch
+exit
+````
 * PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the C++ Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
 * Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as: 
 ```
