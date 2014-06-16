@@ -53,15 +53,15 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 assoc .php=phpfile
 ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```
-* (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/), you can run the following command to create virtual symbolic link to PHP program (again assumes PHP is in ```C:\PHP```): 
+* (optional) If you are using Git Bash (which is Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/) and have followed the step above, you can run PHP scripts in Git Bash as well.  You'll need to create symlink to where PHP lives (again assumes PHP is in ```C:\PHP```): 
 ```bash
 ln -s /c/php/php.exe /usr/bin/php
 ```
-  The PHP scripts will not need to have the ```.php``` extension, but will need the shebang line:
+Running PHP scripts in Git Bash will require the filename to have the ```.php``` extension, but will need the typical shebang line:
 ```bash
 #!/usr/bin/php
 ``` 
-If the script has the shebang and the ```.php``` extension, it will run in both Git Bash or command shell.
+If the script has the shebang and the ```.php``` extension, then it will run in both Git Bash or command shell.
 
 ## Testing
 
