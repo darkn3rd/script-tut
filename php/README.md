@@ -21,8 +21,7 @@ On Windows NT systems, such as *Windows 7*, you can get PHP from http://windows.
 5. Update the Search Path.  The easiest way is to use the Command Shell. Search for CMD.EXE, and right click on program and select "Run As Administrator", then type (assumes PHP lives in ```C:\PHP```): ```SETX /M PATH "%PATH%;C:\PHP"```.
 6. Close Command Shell windows, as this will not pick up the new path.
 7. PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the C++ Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
-8. Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as:
-```
+8. Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as: ```
 PHP 5.5.13 (cli) (built: May 28 2014 09:48:23)
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
