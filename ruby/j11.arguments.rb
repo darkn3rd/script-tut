@@ -1,8 +1,10 @@
 #!/usr/bin/ruby
-count = 0                             # initialize counter
+arg_count = ARGV.length # get num of arguments
+first     = 0           # set index of first element
+count     = 0           # initialize counter
 
 puts "The arugments passed are:"
 while ARGV.length >= 1 do
- puts " item #{count+=1}: #{ARGV[0]}" # output result of first argument
- ARGV.shift                           # remove first element
+ puts " item #{count+=1}: #{ARGV[first]}" # output result of first argument
+ ARGV.shift                               # remove first element
 end
