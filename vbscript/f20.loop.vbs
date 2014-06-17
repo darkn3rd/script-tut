@@ -12,7 +12,11 @@ for each item in exec("cmd /c dir /b")
    end if
 next
 
-' exec() - given command returns array of result
+' **************************************
+' exec (cmd) - given command returns array of lines from output
+'   Helper function to enable iteration through lines of output
+'    from running a command.
+' **************************************
 function exec (cmd)
   dim files()                              ' create local array
   dim size : size = 0                      ' create starting size
