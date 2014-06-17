@@ -1,5 +1,6 @@
 #!/usr/bin/php
 <?php
+// illustrative variables
 $count       = 1;        // set initial counter
 $script_name = $argv[0]; // get script name
 

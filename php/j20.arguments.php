@@ -1,5 +1,6 @@
 #!/usr/bin/php
 <?php
+// illustrative variables
 $arg_count = $argc - 1;  // get num of arguments
 $first     = 1;          // set index of initial element
 $last      = $arg_count; // set index of last element
