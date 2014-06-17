@@ -1,10 +1,10 @@
 #!/usr/bin/ruby
+arg_count = ARGV.length   # get num of arguments
+first     = 0             # set index of first element
+last      = arg_count - 1 # set index of last element
 
-arg_count = ARGV.length # get num of arguments
-first     = 0           # set index of first element
-
-puts "The arugments passed are:"
-for count in 1..arg_count                # range operator to iterate to max arguments
-   puts " item #{count}: #{ARGV[first]}" # print count and 1st argument
-   ARGV.shift                            # remove first element
+puts "The arguments passed are (reverse order):"
+# iterative loop using array index
+for index in first.upto(last)             # decrement from # of args to 0 
+  puts " item #{index+1}: #{ARGV[index]}" # count & correponding ARGV element
 end

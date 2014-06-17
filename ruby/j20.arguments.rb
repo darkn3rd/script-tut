@@ -4,6 +4,7 @@ first     = 0             # set index of first element
 last      = arg_count - 1 # set index of last element
 
 puts "The arguments passed are (reverse order):"
-for count in last.downto(first)           # decrement from # of args to 0 
-  puts " item #{count+1}: #{ARGV[count]}" # count & correponding ARGV element
+# iterative loop using array index
+for index in last.downto(first)           # decrement from # of args to 0 
+  puts " item #{index+1}: #{ARGV[index]}" # count & correponding ARGV element
 end  
