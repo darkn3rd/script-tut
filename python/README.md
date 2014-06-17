@@ -47,9 +47,11 @@ This covers notes regarding each section.
    * demonstrate declaring and calling subroutine
 10. Arguments
     * demonstrate processing 2 arguments
-      * **Note:** *Python includes scriptname as first argument in ```sys.argv```*
+      * **NOTES:** *Python includes scriptname as first argument in ```sys.argv```
     * demonstrate printing all arguments
-      * **Note:** *Did not use shift as not available in Python 2.x, and impossible to shift elements when 1st is the script name* 
+      * **NOTES:** 
+          * *Did not use shift as not available in Python 2.x, and impossible to shift elements when 1st is the script name*
+          * *Use iterative loops to enumerate arguments* 
     * demonstrate printing arguments in reverse order
 11. Parameters
     * demonstrate passing unlimited arguments
