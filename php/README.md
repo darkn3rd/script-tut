@@ -105,7 +105,7 @@ This covers notes regarding each section.
     * print list of all arguments with count
       * iterative loop with index (default as optimal)
       * collection loop
-        * **NOTE** *Collection loop is sub-optimal PHP includes name of running script in the array, so we must test for it in each iteration to skip it*
+        * **NOTE** *Collection loop is sub-optimal as PHP includes name of running script in the array, so we must test for it in each iteration to skip it*
     * print list of all arguments in reverse with count
 11. **Parameters**
    * demonstrate passing 1 parameter
