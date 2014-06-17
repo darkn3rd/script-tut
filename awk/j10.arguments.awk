@@ -1,11 +1,15 @@
 #!/bin/awk -f
 BEGIN {
-  # acquire num of args and script name
-  arg_count   = ARGC - 1;  # get num of arguments
+  # illustrative variables
+  arg_count   = ARGC - 1;  # get real num of arguments
+  start_count = 1;         # set index of desired starting element 
+  end_count   = arg_count; # set index of desired ending element
 
   print "The arguments passed are:"
 
   # iterative loop used to enumerate arguments
-  for (count = 1; count <= arg_count; count++)
-    printf "  item %d: %s\n", count, ARGV[count]
+  for (count = start_count; count <= end_count; count++) {
+    arg = ARGV[count]                    # fetch arg from index in array
+    printf "  item %d: %s\n", count, arg # display count and arg
+  }
 }
