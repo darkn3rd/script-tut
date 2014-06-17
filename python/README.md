@@ -50,7 +50,7 @@ This covers notes regarding each section.
       * **NOTES:** *Python includes scriptname as first argument in ```sys.argv```
     * demonstrate printing all arguments
       * **NOTES:** 
-          * *Did not use shift as not available in Python 2.x, and impossible to shift elements when 1st is the script name*
+          * *Cannot use shift as not available in Python 2.x, and less optimal in any event as have to contend with script name as one of the elements*
           * *Use iterative loops to enumerate arguments* 
     * demonstrate printing arguments in reverse order
 11. Parameters
