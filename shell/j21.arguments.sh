@@ -1,9 +1,14 @@
 #!/bin/sh
-count=$#                         # initialize counter
+# illustrative variables
+arg_count=$#     # get number of arguments
+min_count=0      # set mininum number of arguments
+# utiltiy variables
+count=$arg_count # initialize counter
  
 echo "The arguments passed are (reverse order):"
-until [ $count -eq 0 ]; do       # loops until count drecrements to 0
-  eval param=\$$count            # store positional parameter
-  echo " item $count: $param"    # output result
-  count=$(( $count - 1 ))        # decrement counter
+#  iterative loop (acutally conditional w/ count) to enumerate args
+until [ $count -eq $min_count ]; do # loops until count drecrements to 0
+  eval arg=\$$count                 # get arg from positional parameter
+  echo " item $count: $arg"         # output count and arg
+  count=$(( $count - 1 ))           # decrement counter
 done
