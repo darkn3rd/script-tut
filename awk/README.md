@@ -101,6 +101,8 @@ This covers notes regarding each section.
 10. **Arguments**
     * demonstrate testing for two arguments
     * print list of all arguments with count
+      * **NOTES**
+         * skipping ```for (key in array)``` as keys fetched out of order and ARGV contains script name.
     * print list of all arguments in reverse with count
 11. **Parameters**
    * demonstrate passing 1 parameter
