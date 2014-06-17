@@ -13,7 +13,10 @@ else
     wscript.echo "Punctuation, whitespace, or other"
 end if
 
-' match() - returns true if pattern found in string
+' **************************************
+' match (pattern, string) - returns true if pattern found in string
+'   Helper function to enable select case to match a pattern
+' **************************************
 function match(pattern, string)
   set re = new regexp
   re.pattern = pattern

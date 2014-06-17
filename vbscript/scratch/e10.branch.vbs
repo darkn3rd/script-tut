@@ -1,6 +1,9 @@
+Set re = New RegExp
 ' prompt and read 1 character
 wscript.stdout.write "Input a character: "
 keypress = wscript.stdin.read(1)
+
+test = regexp("[a-z]").test(keypress)
 
 ' find match and print result
 select case true
