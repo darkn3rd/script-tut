@@ -25,8 +25,11 @@ This covers notes regarding each section.
 6. Looping
    * iterative loop 
       * example: 10 to 1
-        * *while loop used for count down loop* 
+        * ```while``` loop with counter
+        * ```for...in``` loop using ```seq``` to generate range
    * conditional loops
+        * both ```while``` and ```until``` loops demonstrated
+        * spin loop demonstrated
    * collection loop
       * iterate through set of items 
       * example: directory listing
@@ -43,11 +46,16 @@ This covers notes regarding each section.
       * Add two numbers
         * Demonstrates, ```$#```, positional parameters, arithmetic using ```$(( expr ))``` 
     * Unlimited Arguments (n):
-      * Print numbered list of arguments
-        * Demonstrates ```shift```, positional parameters, iterative loop  
+      * Print numbered list of arguments (varies methods)
+        * conditional loop using ```while``` with ```shift``` to change positional parameters
+        * collection loop on ```"$@"```
+        * iterative style loop using ```while``` with ```eval```
+        * iterative style loop uisng ```for``` with range from ```$(seq 1 $#)```
     * Unlimited Arguments (n): 
       * Print all arguments in reverse order
-        * Demonstrates ```eval```, positional parameters, iterative loop
+        * iterative style loop using ```while``` with ```eval```
+        * iterative style loop using ```until``` with ```eval```
+        * iterative style loop uisng ```for``` with range from ```$(seq 1 $#)```
 11. Parameters
     * Subroutine that accepts numbers and prints out their summation.
 12. Functions
