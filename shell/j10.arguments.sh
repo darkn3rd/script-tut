@@ -5,7 +5,7 @@ min_count=0  # set mininum number of arguments
 count=1      # initialize counter
  
 echo "The arugments passed are:"
-#  iterative loop (acutally conditional w/ count) to enumerate args
+#  conditional loop with shift to enumerate args
 while [ $# -gt $min_count ]; do # fetch updated number of arguments
   arg=$1                        # fetch arg from first positional parameter
   echo " item $count: $arg"     # output count and arg

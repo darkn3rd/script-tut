@@ -6,7 +6,7 @@ min_count=0      # set mininum number of arguments
 count=$arg_count # initialize counter
  
 echo "The arguments passed are (reverse order):"
-#  iterative loop (acutally conditional w/ count) to enumerate args
+#  iterative style loop to enumerate args
 while [ $count -gt $min_count ]; do # loops while count is 1 or higher
   eval arg=\$$count                 # get arg from positional parameter
   echo " item $count: $arg"         # output count and arg
