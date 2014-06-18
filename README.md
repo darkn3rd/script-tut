@@ -84,7 +84,7 @@ Show how to use *iterative*, *conditional*, and *collection* looping constructs.
 There may be some subcategories that include these:
   * *range* loop - *iterative* style loop made from *collection* of numbers made from a *range*
   * *index* loop - *iterative* loop that uses an index or counter.
-  * *spin* loop - *conditional* loop that is always true, and thus continiously spins.  The loop will need to terminate or *break* out of the *spin* upon a particular condition.
+  * *spin* loop - *conditional* loop that is always true, and thus continuously spins.  The loop will need to terminate or *break* out of the *spin* upon a particular condition.
 
 ### Arrays
 
@@ -96,52 +96,62 @@ This section demonstrates how to declare and initialize an array in one of two m
 Some other operations on arrays will be demonstrated:
 
   * show array length
-  * enumerate all the elements (in a easy way on one line)
+  * listing the elements (in a easy way one-liner)
   * enumerate elements of an array by:
     * using a pure collection loop
-    * using an interative loop with an index
+    * using an iterative loop with an index
     
 Note that arrays may be called other names, such as a list.  Awk, TCL, and JScript (JavaScript) do not have real arrays, and emulate array-like functionality in some way.    
 
 ### Associative Arrays
 
-This demonstrates how to declare and utilize associative arrays, sometimes called hashes, collections, or dictionaries.  
+This demonstrates how to declare and utilize associative arrays, sometimes called hashes, collections, or dictionaries.  The associative array will be created and initialized in one of two ways:
 
-8. Associative Arrays
-   * Associative Array assignment by key
-      * initialize associative array using key
-      * enumerate all keys 
-      * enumerate all values
-   * Associative Array assignment by list
-      * declare and initialize associative array
-      * merge two associative arrays
-      * enumerate associative array by key
-      
+  * declare empty associative array, and then assign each individual element with key and value.
+  * declare and initialize associative array with supplied list or string containing key and value pairs.
+
+This section will also demonstrate:
+
+  * listing all keys of associative array (in easy one-liner)
+  * listing all values of associative array (in easy one-liner)
+  * concatenate or merge two associative arrays (in easy one-liner hopefully)
+  * enumerate associative array by key
+
+**NOTES** Here's a summary of which languages support this useful feature:
+
+*TCL, AWK, and JScript (JavaScript) arrays are really associative arrays, but may have difficulty to enumerate arrays as there is no support for real arrays, so it'll be difficult to return a array containing keys or values.  
+
+VBScript does not support associative arrays, but doesn't support real arrays (opposite of JScript), and has access to libraries that a class called Dictionary.  This is can be used, but is extremely limited.
+
+Many scripting languages do not have associative arrays, or any indirect support (or even arrays for that matter).  This includes Command Shell (BATCH), C Shell, POSIX Shell, and earlier versions of Bourne Again Shell.  
+
+Korn Shell '93 has support for associative arrays.  Other scripting languages, e.g. Perl, PowerShell, Python, Ruby, have both arrays and associative arrays.*
+    
 ### Subroutine
 
 This demonstrates how to create and call a subroutine.  A subroutine can be called a procedure or function.  There will be no values returned, and no parameters passed to keep this simple.  
 
 The demonstration subroutine shows how to use the date functionality to print out a friendly date.
 
-*BRAINSTORMING*: Considering demonstrating the concept of scope in showing global and local variables. The scripting langauges vary greatly in this area.
+**BRAINSTORMING**: Considering demonstrating the concept of scope in showing global and local variables. The scripting languages vary greatly in this area.
 
 ### Arguments
 
-This section introducers how to process command line arguments.  The first demonstration shows how to get the quantity of arguments passed to the script, and then to print an usage statement should the quantity be incorrect.  The other demonstrations show how to print out all of the argument in order then in reverse order.  This exposes some challenges in various langaugse.
+This section introducers how to process command line arguments.  The first demonstration shows how to get the quantity of arguments passed to the script, and then to print an usage statement should the quantity be incorrect.  The other demonstrations show how to print out all of the argument in order then in reverse order.  This exposes some challenges in various languages.
 
-**NOTE**: This section is in flux as the scripting langauges differ quite a bit in this area.  Thus there are numerous considerations at to ways to process this.  This is probably the most complex section in that the scripting languages vary greatly in this area.
+**NOTE**: This section is in flux as the scripting languages differ quite a bit in this area.  Thus there are numerous considerations at to ways to process this.  This is probably the most complex section in that the scripting languages vary greatly in this area.
      
 ### Parameters
 
 This section shows how to pass parameters to a subroutine (or function).  This section shows how to pass a single parameter, and also shows how to pass a variable number of parameters.
 
-**Brainstorming**: Considering expanding this to show how to pass two arrays, and languages vary in this regard.  This may cause the need to introduce the concept of pass-by-value and pass-by-reference, which is implicit in some langauges.
+**Brainstorming**: Considering expanding this to show how to pass two arrays, and languages vary in this regard.  This may cause the need to introduce the concept of pass-by-value and pass-by-reference, which is implicit in some languages.
 
 ### FUnctions
 
 This section covers creating functions, which essentially is a subroutine the returns something.  Currently this demonstrates returning an integer and a string.
 
-**BRAINSTORMING*: Considerign expanding this section to demonstrate returning an array and returing an associative array (hash).  Some scripting languages, such as AWK, are incapable of returning an array, so an array in this case must be passed in by reference (which is done implicitly in AWK).
+**BRAINSTORMING**: Considering expanding this section to demonstrate returning an array and returning an associative array (hash).  Some scripting languages, such as AWK, are incapable of returning an array, so an array in this case must be passed in by reference (which is done implicitly in AWK).
 
 
 ## Key to Naming Convention
