@@ -1,7 +1,9 @@
 #!/bin/sh
-# conditional loop
-count=10
+count=10   # initialize counter
+
+# iterative style loop emulated 
+#   using conditional loop with counters
 while [ $count -gt 0 ]; do
-   echo "\$count is $count"
+   echo "Count is $count"
    count=$(( $count - 1 ))
 done
