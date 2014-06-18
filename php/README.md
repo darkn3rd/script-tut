@@ -82,7 +82,7 @@ This covers notes regarding each section.
    * select on number using ```if```
    * select on character using ```switch```
      * **NOTES** 
-        * *PHP cannot do pattern matching in scripts, so creative alternative utilized*
+        * *PHP cannot do pattern matching in switch, so creative alternative utilized*
         * *POSIX selectors for internationalization are fully supported in PHP*
    * select on character using ```if```
      * **NOTE** *POSIX selectors for internationalization are fully supported in PHP*
