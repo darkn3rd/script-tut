@@ -4,6 +4,7 @@ $arg_count   = $#ARGV + 1;    # get num of arguments
 $script_name = $0;            # get script name
 
 if ($arg_count != 2) {
+  # print helpful instructions
   print "\nYou need to enter two numbers: \n\n";
   print "   Usage: $script_name [num1] [num2]\n\n";
 } else {
