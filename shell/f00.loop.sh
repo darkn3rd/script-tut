@@ -1,5 +1,5 @@
 #!/bin/sh
-# while construction
+# conditional loop
 count=10
 while [ $count -gt 0 ]; do
    echo "\$count is $count"

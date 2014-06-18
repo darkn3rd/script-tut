@@ -1,5 +1,5 @@
 #!/bin/sh
-#for...in construction
+# collection loop with subshell
 for item in $(ls); do
    if [ -d $item ]; then
       echo "$item is a directory"
