@@ -1,9 +1,9 @@
 #!/bin/sh
-# conditional loop
-until [ "$answer" = "quit" ]; do
-   printf "Enter your name (quit to exit): "
-   read answer
-   if [ $answer != "quit" ] ; then
-    echo Hello $answer!
+# collection loop with subshell
+for item in $(ls); do
+   if [ -d $item ]; then
+      echo "$item is a directory"
+   else
+      echo "$item is not a directory"
    fi
 done
