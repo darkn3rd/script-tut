@@ -3,18 +3,23 @@ BEGIN {
   # illustrative variables
   script_name = ARGV[0]   # get script name
   # utility variables
-  output      = ""
+  output      = ""        # set initial output string
 
   print "The arguments passed are:"
 
-  # pseudo collection loop that enumerates keys
+  # get index from array ARGV  with quasi-collection loop 
+  #  Note: index fetched come out of order in AWK.
   for (count in ARGV) {
-    arg = ARGV[count]                     # fetch arg given index
-    if (arg == script_name) { continue }  # skip if not real arg
+    # fetch arg given current index
+    arg = ARGV[count]
+    # skip to next iteration if invalid arg
+    if (arg == script_name) { continue }
+    # process valid args
     if (output == "") {
       # build initial output string
       output = "  item " count ": " arg "\n"
     } else {
+      # add new content to output string
       if (count > lastcount) {
         # append string to final output
         output = output "  item " count ": " arg "\n"
@@ -24,7 +29,7 @@ BEGIN {
       }
     }
     
-    # save index for later use
+    # save index for next iteration
     lastcount = count
   }
   
