@@ -26,7 +26,7 @@ The current languages are supported:
 
 †† Utilities available with either POSIX Utilities [http://pubs.opengroup.org/onlinepubs/009696699/utilities/contents.html] or GNU Core-Utils [http://www.gnu.org/software/coreutils/] may be used.
 
-In the future, I could expand to other languages such as LUA, JavaScript (Node.js).  If I am really bored I could even do REXX, but I'll probably likely more onto advanced topics in the given languages, as this is more bang for buck in audience, knowledge growth, and job skills.
+*BRAINSTORM* *I may add JavaScript using Node.js environment.  If there was enough interest I could add other languages like REXX, LUA, Haskell, Guile, etc.  At the moment, I am interested in developing OOP tutorials, as well as exploring intermediate (file, socket, arrays, text processing) and advanced (SQL DB, LDAP, Web).*
 
 ## Content 
 
