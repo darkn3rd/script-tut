@@ -233,7 +233,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 * **function** - *a relation between a set of inputs and a set of permissible outputs with the property that each input is related to exactly one output* [http://en.wikipedia.org/wiki/Mathematical_functions]. A function could be thought of as a subroutine that explicitly returns a value.
 
-* **option** - special type of argument that is prepended by a dash ```-``` character.  This signifies that the operation of a command will be modified.
+* **option** - special type of argument that is prepended by a dash ```-``` character.  This signifies that the operation of a command will be modified.  And option will be followed by some data, which is the value of that option.  If there is not data following the option, then it is just a *flag* (see *flag*)
 
 * **parameter** - *special kind of variable, used in a subroutine to refer to one of the pieces of data provided as input to the subroutine* [http://en.wikipedia.org/wiki/Parameter_(computer_programming)].
 
