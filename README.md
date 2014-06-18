@@ -229,7 +229,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 * **associative array** is a *composed of a collection of (key, value) pairs, such that each possible key appears at most once in the collection* [http://en.wikipedia.org/wiki/Associative_array].  These are sometimes called hash, hash table, map, collection, or dictionary.  Some languages, such as JavaScript, TCL, and AWK simply call them arrays.
 
-* **flag** - special type of **option** (and thus a special type of **argument**) that is not proceeded or coupled with other data.  The **flag** (also called a **switch**) represents binary state, on or off, or true or false, and its existence on the command line signifies an *on* or *true* state.
+* **flag** - special type of **option** (and thus a special type of **argument**) that is not proceeded or coupled with other data.  The **flag** (also called a **switch**) represents binary state, on or off, or true or false. Its existence on the command line signifies an *on* or *true* state, while its absence signifies an *off* or *false* state.
 
 * **function** - *a relation between a set of inputs and a set of permissible outputs with the property that each input is related to exactly one output* [http://en.wikipedia.org/wiki/Mathematical_functions]. A function could be thought of as a subroutine that explicitly returns a value.
 
