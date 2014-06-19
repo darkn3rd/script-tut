@@ -2,11 +2,18 @@
 import sys
 
 # illustrative variables 
-first     = 1
-last      = len(sys.argv) 
+script_name = sys.argv[0] # get name of script
+# utility variables
+count = 1                 # initialize counter
 
 print "The arugments passed are:"
-# use iterative loop to enumerate arguments
-for count in range(first,last):     # range operator gen sequence of numbers
+# use collection loop to enumerate arguments
+#   Note: Python includes scriptname into collection
+for arg in sys.argv:
+   # avoid non-arguments
+   if arg == script_name:
+       continue
    # print count and argument using count index
-   print " item %d: %s" % (count,sys.argv[count]) 
+   print " item %d: %s" % (count,arg)
+   # increment counter
+   count += 1

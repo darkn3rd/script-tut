@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 
+# illustrative variables
 arg_count   = len(sys.argv) - 1 # get num of real arguments
 script_name = sys.argv[0]       # get name of script
 
