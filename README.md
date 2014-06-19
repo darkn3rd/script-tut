@@ -13,6 +13,7 @@ The current languages are supported:
   - Shell (POSIX) ††
   - Bourne Again Shell ††
   - Korn Shell ††
+  - JavaScript (Node.js)
   - JScript (WSH) [Windows]
   - Perl
   - PHP
