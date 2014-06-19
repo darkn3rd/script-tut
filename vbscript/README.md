@@ -8,7 +8,7 @@ VBScript was added to the Microsoft family in 1996 through *ActiveX Scripting En
 
 VBScript owes its lineage to popular family of Microsoft BASIC language products, like QuickBASIC and later VisualBASIC.  A cousin of VBScript, called VBA (Visual Basic for Applications) was integrated into Microsoft Office, as a general-purpose Macro programing language.  The evolution of BASIC at Microsoft continues with the Microsoft .NET platform (VB.NET).
 
-## Windows Script Host
+### Windows Script Host
 
 VBScript, is one language supported by the *Active Scripting* platform (also called *ActiveX Scripting Engine*) embedded into *WSH (Windows Script Host)* (http://en.wikipedia.org/wiki/Windows_Script_Host).  This environment provides access to a plethora of object libraries on Windows through a mechanism called *OLE Automation*.  
 
@@ -16,7 +16,7 @@ The WSH environment added desperately needed scripting tools for the Windows env
 
 The WSH environment has been integrated since Windows 2000.  There's an installer for WSH 5.7 for earlier versions of Windows.  The version 5.8 of WSH is integrated into more recent versions of Windows: Windows 7, Windows 8, Windows 2008, Windows 2012.  Unfortunately, WSH 5.8 is not available as an external installer for earlier Windows systems.
 
-## Active Scripting Environment
+### Active Scripting Environment
 
 Microsoft released modular scripting platform referred to as *Active Scripting* (http://en.wikipedia.org/wiki/Active_Scripting) in 1996, which can host a variety of scripting languages, such as VBScript and JScript from Microsoft, and PerlScript from ActiveState.  This *Active Scripting* platform could then be embedded into other applications, such as IE (Internet Explorer), IIS (Internet Information Services) ASP (Active Server Pages), and WSH (Windows Script Host).  IE with the bundled *Active Scripting* platform was then embedded in a variety of software that desired to render web pages, such as WMP (Windows Media Player), Outlook, Outlook Express, Messenger, MSN Messenger, Windows Help, Windows Explorer, etc.
 

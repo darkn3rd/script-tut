@@ -6,7 +6,7 @@
 
 This area covers JScript, Microsoft implementation of JavaScript during the *Browser Wars* days around 1996.  Microsoft JScript is a compatible language to ECMAScript standard, or ECMA-262.  Windows systems with WSH 5.6 installed are compatible ECMA-262 3rd Edition.  Later editions of WSH, such as WSH 5.8, which is bundled with Windows 7 and above will include new features such as RFC 4627 (JSON) and ES-CP (ECMA-327).
 
-## Windows Script Host
+### Windows Script Host
 
 JScript, is one language supported by the *Active Scripting* platform (also called *ActiveX Scripting Engine*) embedded into *WSH (Windows Script Host)* (http://en.wikipedia.org/wiki/Windows_Script_Host).  This environment provides access to a plethora of object libraries on Windows through a mechanism called *OLE Automation*.  
 
@@ -14,7 +14,7 @@ The WSH environment added desperately needed scripting tools for the Windows env
 
 The WSH environment has been integrated since Windows 2000.  There's an installer for WSH 5.7 for earlier versions of Windows.  The version 5.8 of WSH is integrated into more recent versions of Windows: Windows 7, Windows 8, Windows 2008, Windows 2012.  Unfortunately, WSH 5.8 is not available as an external installer for earlier Windows systems.
 
-## Active Scripting Environment
+### Active Scripting Environment
 
 Microsoft released modular scripting platform referred to as *Active Scripting* (http://en.wikipedia.org/wiki/Active_Scripting) in 1996, which can host a variety of scripting languages, such as VBScript and JScript from Microsoft, and PerlScript from ActiveState.  This *Active Scripting* platform could then be embedded into other applications, such as IE (Internet Explorer), IIS (Internet Information Services) ASP (Active Server Pages), and WSH (Windows Script Host).  IE with the bundled *Active Scripting* platform was then embedded in a variety of software that desired to render web pages, such as WMP (Windows Media Player), Outlook, Outlook Express, Messenger, MSN Messenger, Windows Help, Windows Explorer, etc.
 
