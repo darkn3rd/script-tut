@@ -18,7 +18,7 @@ The site is really confusing to navigate, and I could not recall how I eventuall
 * uwin-base.2012-08-06.win32.i386.exe
 * uwin-base.2012-08-06.win32.i386-64.exe
 
-After installation, ```ksh.exe``` will be installed into ```C:\Program FilesUWIN\usr\bin\``` alone with other tools. 
+After installation, ```ksh.exe``` will be installed into ```C:\Program FilesUWIN\usr\bin\``` along with other tools. 
 
 ## Testing
 
