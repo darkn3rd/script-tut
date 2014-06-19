@@ -3,9 +3,30 @@
 © Joaquin Menchaca, 2014
 
 
+## Overview
+
+### Bourne Shell
+
+The POSIX shell evolved from the original Bourne Shell, inved by Stephen Bourne, was released in UNIX Version 7 in 1977.  Bourne shell added scripting capabilities, and replaced the limited Thompson shell ```sh``` in earlier versions of Unix.
+
+Newer shell environments extended the capabilities of Bourne shell and were released as drop in replacements for Bourne Shell.  Some of these are Bourne Again Shell (bash), Korn Shell (ksh), and Z Shell (zsh).  Almquist Shell (ash) and later Debian Almquist Shell (dash) maintain strict compabitity toward Bourne shell and are popular in low-memory situations.
+
+### POSIX Shell
+
+The basic Bourne shell scripting language has been updated by the POSIX (Portable Operating System Interfacee) standard, specifically  IEEE P1003.2.  This standard incorporated some features that were available in existing Korn Shell and Bourne Again Shell at the time.  Shells conforming to this specification when ran as ```sh``` are thus said to be POSIX Shell.
+
+Many flavors of Unix released versions of ```sh``` that conformed to the shell, and in the open source community, shell environments that supported Bourne shell were updated to support the standard as well.  
+
+## Getting POSIX Shell on Mac OS X
+
+On Mac OS X 10.8.5, the best source of POSIX Shell is with the included ksh '93u.  You would have to make sure that ```/bin/sh``` is actually ```ksh```, and not the default.
+
+The current default of ```/bin/sh``` is really GNU bash 3.2.48.  When ```sh``` is used, GNU bash does try its best to run in a POSIX mode, but may suffer from what is called *bashisms*, or in other words using bash features accidently when it should be using strict POSIX shell behavior.  For this reason, ksh would yield better results to achieve a real POSIX shell environment.
+
 ## Testing
 
 * Mac OS X 10.8.5, Bash 3.2.48(1)-release (x86_64_appledarwin12) using ```/bin/sh```
+
 
 
 ## Notes 

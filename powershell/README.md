@@ -6,7 +6,7 @@
 
 OVERVIEW
 
-## Getting Node.js
+## Getting PowerShell on Windows
 
 TBU
 

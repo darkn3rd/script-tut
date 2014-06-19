@@ -1,12 +1,16 @@
-# Scripting Tutorial: JavaScript (Node.js)
-
+# Scripting Tutorial: Ksh (Korn Shell)
 © Joaquin Menchaca, 2014
 
 ## Overview
 
 OVERVIEW
 
-## Getting Node.js
+## Gettting Korn Shell on Mac OS X
+
+Mac OS X 10.8.5 comes with Ksh '93 93u (2011-02-08).
+
+## Getting Korn Shell on Windows
+
 
 TBU
 

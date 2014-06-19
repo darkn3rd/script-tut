@@ -6,6 +6,10 @@
 
 Welcome to C Shell tutorial.  This will teach the basics on how to get around in C Shell scripting.
 
+## Getting C Shell on Mac OS X
+
+Mac OS X 10.8.5 comes with TCsh 6.17.00 (Astron) built on 2009-07-10.
+
 ## History
 
 C Shell was created by Bill Joy in the 1970s and was distributed with BSD UNIX and went on to become the default shell for BSD UNIX flavors.  C Shell became popular both for its C language-like syntax, and rich and easy to use customization.  

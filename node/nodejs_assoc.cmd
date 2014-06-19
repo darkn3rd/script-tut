@@ -1,3 +1,3 @@
 @echo off
-assoc .nod=JavaScript
+assoc .njs=JavaScript
 ftype JavaScript="C:\Program Files\nodejs\node.exe" %1 %*

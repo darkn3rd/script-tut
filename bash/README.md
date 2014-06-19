@@ -6,7 +6,11 @@
 
 OVERVIEW
 
-## Getting Node.js
+## Getting Bash on Mac OS X
+
+Mac OS X 10.8.5 comes with GNU Bash 3.2.48.
+
+## Getting Bash on Windows
 
 TBU
 
