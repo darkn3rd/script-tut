@@ -77,12 +77,18 @@ Demonstrate how to select or test on a single number, character, or pattern.  Sh
 
 ### Looping
 
-Show how to use *iterative*, *conditional*, and *collection* looping constructs.  For the *collection* loop, iterate through a directory listing, so that we can avoid introducing the concept of arrays.  
+This section will have the following sections:
 
-There may be some subcategories that include these:
-  * *range* loop - *iterative* style loop made from *collection* of numbers made from a *range*
-  * *index* loop - *iterative* loop that uses an index or counter.
-  * *spin* loop - *conditional* loop that is always true, and thus continuously spins.  The loop will need to terminate or *break* out of the *spin* upon a particular condition.
+1. Collection-Controlled Loop: demonstrates by testing elements extracted from list of files
+2. Count-Controlled Loop: demonstrate counting from 10 to 1
+3. Conditional-Controlled Loop: demonstrates by prompting for a name, and leaving loop on users request
+4. Spin Loop: demonstrates prompting for a name, and breaking out of loop on users request
+5. Continuation - demonstrates skipping to next iteration, when user enters a non-digit input.
+
+**NOTES** There are explicitaly four types of looping constructs: *count*, *collection*, *general*, and *infinite* loops according to reasonable documentation on Wikipedia [http://en.m.wikipedia.org/wiki/Control_flow].  With the exception of *collection* contruction (whic most scripting languages support), these constructs can be manipulated to support the usage of *count*, *conditional*, and *spin* loops.  This will be presented in examples.
+
+
+ contruction of loops can be made to fulfill typical usage of these loops.
 
 ### Arrays
 
