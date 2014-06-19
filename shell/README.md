@@ -1,4 +1,4 @@
-# Scripting Tutorial: Shell (POSIX)
+# Scripting Tutorial: Shell (POSIX Shell)
 
 © Joaquin Menchaca, 2014
 
