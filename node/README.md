@@ -37,7 +37,7 @@ Windows process of getting the interperter is quite simple, as there's an MSI in
 You can associate an extension with Node, so that scripts are automatically executed with Node.js interpreter when rand.  I chose to use the .njs extension, as Windows already has an associate of .js to match the WSH (Windows Script Host) JScript language.
 
 ```batch
-assoc .nod=JavaScript
+assoc .njs=JavaScript
 ftype JavaScript="C:\Program Files\nodejs\node.exe" %1 %*
 ```
 
