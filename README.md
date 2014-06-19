@@ -103,7 +103,7 @@ Some other operations on arrays will be demonstrated:
   * listing the elements (in a easy way one-liner)
   * enumerate elements of an array by:
     * using a pure collection loop
-    * using an iterative loop with an index
+    * using an count loop with an index
     
 Note that arrays may be called other names, such as a list.  Awk, TCL, and JScript (JavaScript) do not have real arrays, and emulate array-like functionality in some way.    
 
@@ -150,13 +150,13 @@ Currently, the methods in showing how to cycle through arguments (in forward ord
  * *conditional* style loop shifting out elements (only if using positional parameters)
  * *collection* loop maintaining a separate counter.
  * *conditional* style loop shifting out values (unless position parameters)
- * *iterative* style loop using *collection* with a range.
- * *iterative* style loop using a counter
+ * *count* style loop using *collection* with a range.
+ * *count* style loop using a counter
 
 And the precedent of loops for reverse order are:
 
- * *iterative* style loop using a counter
- * *iterative* style loop using *collection* loop with a supplied range.
+ * *count* style loop using a counter
+ * *count* style loop using *collection* loop with a supplied range.
      
 ### Parameters
 
