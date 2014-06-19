@@ -13,7 +13,7 @@ Mac OS X 10.8.5 comes with Ksh '93 93u (2011-02-08).
 
 Korn shell is available directly from AT&T Research Labs: http://www2.research.att.com/sw/download/.
 
-The site is really confusing to navigate, and I could not recall how I ventually found binary installers.  I eventually found two, which install ksh 93u+:
+The site is really confusing to navigate, and I could not recall how I eventually found binary installers.  At some point I stumbled upon two installers that will ksh 93u+:
 
 * uwin-base.2012-08-06.win32.i386.exe
 * uwin-base.2012-08-06.win32.i386-64.exe
