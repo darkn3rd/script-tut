@@ -1,11 +1,14 @@
 #!/bin/sh
 # illustrative variables
-arg_count=$#         # get number of arguments
-  
+min_count=0  # set mininum number of arguments
+# utility variables
+count=1      # initialize counter
+ 
 echo "The arugments passed are:"
-#  iterative style loop with range to enumerate list
-for count in $(seq 1 $arg_count); do
-  arg=$1                    # get arg from first positional
-  echo " item $count: $arg" # output count and arg
-  shift                     # shift positionals by one
-done 
+#  conditional loop with shift to enumerate args
+while [ $# -gt $min_count ]; do # fetch updated number of arguments
+  arg=$1                        # fetch arg from first positional parameter
+  echo " item $count: $arg"     # output count and arg
+  count=$(( $count + 1 ))       # increment counter
+  shift                         # shift positions down, so $2 becomes $1
+done
