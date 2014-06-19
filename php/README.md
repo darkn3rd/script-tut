@@ -53,7 +53,7 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 assoc .php=phpfile
 ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
 ```
-* (optional) If you are using Git Bash (which has Mingw UNIX tools bundled with msysgit from http://msysgit.github.io/) and have followed the step above, you can run PHP scripts in Git Bash as well.  You'll need to create symlink to where PHP lives (again assumes PHP is in ```C:\PHP```), but running this in Git Bash: 
+* (optional) If you are using Git Bash (which has Mingw GNU tools bundled with msysgit from http://msysgit.github.io/) and have followed the step above, you can run PHP scripts in Git Bash as well.  You'll need to create symlink to where PHP lives (again assumes PHP is in ```C:\PHP```), but running this in Git Bash: 
 ```bash
 ln -s /c/php/php.exe /usr/bin/php
 ```

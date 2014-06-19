@@ -41,7 +41,7 @@ assoc .nod=JavaScript
 ftype JavaScript="C:\Program Files\nodejs\node.exe" %1 %*
 ```
 
-Lastly, if you are using Mingw Unix tools, such as those that comes with Git Bash (msysgit from http://msysgit.github.io/), you can do these, so that scripts use Node.js interpreter in that environment:
+Lastly, if you are using Mingw GNU tools, such as those that comes with Git Bash (msysgit from http://msysgit.github.io/), you can do these, so that scripts use Node.js interpreter in that environment:
 
 ```bash
 ln -s "/c/Program Files/nodejs/node.exe" /usr/bin/node

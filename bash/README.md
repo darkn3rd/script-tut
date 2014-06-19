@@ -12,7 +12,7 @@ Mac OS X 10.8.5 comes with GNU Bash 3.2.48.
 
 ## Getting Bash on Windows
 
-TBU
+An easy way to get Bash on Windows is to use Git Bash from msysgit from http://msysgit.github.io/.  This installs a set of Mingw GNU tools.  Currently, Mingw has an earlier version of GNU bash 3.1.0.
 
 ## Testing
 
