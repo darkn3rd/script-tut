@@ -2,15 +2,16 @@
 import sys
 
 # illustrative variables 
-arg_count = len(sys.argv) - 1 # get num of real arguments
+last  = len(sys.argv) # index of last argument
 # utility variables
-count     = arg_count         # initialize counter
+count = 1             # initialize counter
 
 print "The arugments passed are:"
+
 # use iterative loop
-while count > 0:
+while count < last:
    arg = sys.argv[count]  # get arg using index
    # print count and argument using count index
    print " item %d: %s" % (count,arg) 
-   count -= 1             # decrement counter
+   count += 1             # increment counter
 
