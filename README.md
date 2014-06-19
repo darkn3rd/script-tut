@@ -79,9 +79,9 @@ Demonstrate how to select or test on a single number, character, or pattern.  Sh
 
 This section will have the following sections:
 
-1. **Collection-Controlled Loop**: demonstrates by testing elements extracted from list of files
-2. **Count-Controlled Loop**: demonstrate counting from 10 to 1
-3. **Conditional-Controlled Loop**: demonstrates by prompting for a name, and leaving loop on users request
+1. **Collection Loop**: demonstrates by testing elements extracted from list of files
+2. **Count Loop**: demonstrate counting from 10 to 1
+3. **Conditional Loop**: demonstrates by prompting for a name, and leaving loop on users request
 4. **Spin Loop**: demonstrates prompting for a name, and breaking out of loop on users request
 5. **Continuation**: demonstrates skipping to next iteration, when user enters a non-digit input.
 
