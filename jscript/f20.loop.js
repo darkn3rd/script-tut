@@ -1,11 +1,11 @@
 // COM objects used in script
 var fso   = new ActiveXObject("Scripting.FileSystemObject")
 var shell = new ActiveXObject("WScript.shell")
-var dirlist = exec("cmd /c dir /b");                // get Array of directory items
+var dirlist = exec("cmd /c dir /b");       // get Array of directory items
 
 // iterate each item returned from subshell 
 for (var index in dirlist) {
-   item = dirlist[index];                           // extract value from hash
+   item = dirlist[index];                  // extract value from hash
    // test item is a directory
    if (fso.folderexists(item)) { 
        WScript.echo(item + " is a directory");
@@ -23,5 +23,5 @@ function exec (cmd) {
   // iterate through lines & save each item into array
   while (!stdout.AtEndofStream) { files.push(stdout.ReadLine()); }
 
-  return files;                            // return Array (which is really JScript hash) 
+  return files;          // return Array (which is really JScript hash) 
 }

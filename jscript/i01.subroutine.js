@@ -1,7 +1,9 @@
 // Add method to Date class
 Date.prototype.getMonthName = function(lang) {
-   lang = lang && (lang in Date.locale) ? lang : 'en'; // default to 'en' if no option
-   return Date.locale[lang].months[this.getMonth()];   // reference months w. specified lang
+   // default to 'en' if no option
+   lang = lang && (lang in Date.locale) ? lang : 'en'; 
+   // reference months w. specified lang
+   return Date.locale[lang].months[this.getMonth()];   
 };
 
 // Add property to Date Class
