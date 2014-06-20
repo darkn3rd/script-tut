@@ -1,5 +1,5 @@
 #!/bin/sh
-echo -n "Input a character: " ; read Keypress
+printf "Input a character: " ; read Keypress
  
 # if construction
 # Note that POSIX Shell does not support POSIX character class expressions

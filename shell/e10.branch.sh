@@ -1,5 +1,5 @@
 #!/bin/sh
-echo -n "Input a character: " ; read Keypress
+printf "Input a character: " ; read Keypress
  
 # case construction
 #  with support for POSIX character class expressions
