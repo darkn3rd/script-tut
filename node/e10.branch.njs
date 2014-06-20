@@ -1,7 +1,7 @@
 #!/usr/bin/node
 // prompt and read 1 character
 process.stdout.write("Input a character: ");
-// attach a listerner to stdin stream async event loop
+// attach a listener to stdin stream async event loop
 process.stdin.on('data', processKeypress);   
 
 // functioned to be called when enter key is entered
