@@ -6,6 +6,8 @@
 
 OVERVIEW
 
+**NOTE** Currently, as of v0.10.29, Node.js is broken for synchronous interactive input on Mac OS X. Thus development of these scripts is sort of on the back burner for now, as they are not all that reliable.  It makes sense, one useing sychronous input goes against the platform, and also on a Mac OS X, which is typically client development, not a web server platform.
+
 ## Getting Node.js
 
 The Node.js inerpreter can be downloaded from http://nodejs.org/download/.  
