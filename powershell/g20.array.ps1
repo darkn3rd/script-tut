@@ -2,6 +2,7 @@
 $nicknames = "bob", "ed", "steve", "ralph", "joe", "deb", "kate"
 # print results
 "The names are: "
-for ($count = 0; $count -lt $nicknames.length; $count++) { # iterate by index
-  " nicknames[$count] = " + $nicknames[$count]             # print index and element
+# enumberate array using count index
+for ($count = 0; $count -lt $nicknames.length; $count++) { 
+  " nicknames[$count] = " + $nicknames[$count] # print index and element
 }
