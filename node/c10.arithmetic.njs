@@ -1,5 +1,7 @@
-PI       = 3.1415927;
-radius   = 3;
-area     = PI * Math.pow(radius, 2);
+#!/usr/bin/node
 
-WScript.Echo("The area of a circle (radius=" + radius + ") is " + area + ".");
+var PI       = 3.1415927;
+var radius   = 3;
+var area     = PI * Math.pow(radius, 2);
+
+console.log("The area of a circle (radius=" + radius + ") is " + area + ".");
