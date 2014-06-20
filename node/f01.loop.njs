@@ -1,6 +1,7 @@
+#!/usr/bin/node
 var count = 10;
 
 while (count > 0) {
-  WScript.echo("Count is " + count);
+  console.log("Count is " + count);
   count--;
 }
