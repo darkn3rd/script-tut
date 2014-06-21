@@ -2,6 +2,21 @@
 
 © Joaquin Menchaca, 2014
 
+## Getting Ruby
+
+### Getting Ruby on Mac
+
+#### Default
+
+
+#### Brew
+
+
+#### MacPorts
+
+#### RVM
+
+
 
 ## Notes 
 
