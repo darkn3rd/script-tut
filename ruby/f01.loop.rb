@@ -1,5 +1,9 @@
 #!/usr/bin/ruby
-# for loop w/ counter
-for count in (10).downto(0) do
-  puts "Count is #{count}"
+# each iterator w/ sub-process
+`ls`.split.each do |item|                 # cycle thorugh directory listing
+   if File.directory? item                # test if path is directory
+       puts "#{item} is a directory."
+   else
+       puts "#{item} is not a directory."
+   end
 end

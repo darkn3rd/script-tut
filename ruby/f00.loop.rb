@@ -1,7 +1,9 @@
 #!/usr/bin/ruby
-# while loop w/ counter
-count = 10
-while count > 0
-    puts "Count is #{count}"
-    count -= 1
+# for/in w/ exec
+for item in `ls`.split.each do            # cycle through directory listing
+   if File.directory? item                # test if path is directory
+       puts "#{item} is a directory."
+   else
+       puts "#{item} is not a directory."
+   end
 end

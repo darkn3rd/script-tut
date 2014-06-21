@@ -4,4 +4,4 @@ do
   if answer <> "quit" then
       wscript.echo "Hello " & answer & "!"
   end if 
-loop until (answer = "quit")
+loop while (answer <> "quit")

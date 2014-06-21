@@ -1,9 +1,11 @@
 #!/usr/bin/ruby
-# for/in w/ exec
-for item in `ls`.split.each do            # cycle through directory listing
-   if File.directory? item                # test if path is directory
-       puts "#{item} is a directory."
-   else
-       puts "#{item} is not a directory."
-   end
-end
+# loop until user quits (begin...while construct)
+begin
+  print "Enter your name (quit to Exit): " # print prompt
+  STDOUT.flush                             # flush buffer to show prompt
+  answer = gets.chomp                      # get string input
+ 
+  if answer != "quit"
+      puts "Hello #{answer}"               # print if not exiting
+  end
+end while answer != "quit"

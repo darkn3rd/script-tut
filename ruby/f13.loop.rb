@@ -1,12 +1,6 @@
 #!/usr/bin/ruby
-answer = ""                               # default
-# loop until user quits (until/do...end construct)
-until answer == "quit" do
-  print "Enter your name (quit to Exit): " # print prompt
-  STDOUT.flush                            # flush buffer to show prompt
-  answer = gets.chomp                     # get string input
- 
-  if answer != "quit"
-      puts "Hello #{answer}"              # print if not exiting
-  end
+# downto iterator w/ counter
+10.downto(0) do
+  | count |
+  puts "Count is #{count}"
 end
