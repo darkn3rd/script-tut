@@ -67,7 +67,11 @@ sudo port select --list ruby
 
 #### RVM
 
-The most popular way to install Ruby and manage Ruby versions is to use RVM (Ruby Version Manager) [https://rvm.io/]: ```$ \curl -sSL https://get.rvm.io | bash -s stable```.
+The most popular way to install Ruby and manage Ruby versions is to use RVM (Ruby Version Manager) [https://rvm.io/]: 
+
+```bash
+$ \curl -sSL https://get.rvm.io | bash -s stable
+```
 
 On Mac OS X, it seems that RVM now (June 2014) requires Homebrew [http://brew.sh/], and will attempt to install Homebrew in any attempt to install Ruby using RVM.  Thus, I backed out of this, installed Homebrew myself and then proceeded to install Ruby 2.1.2: ```rvm install ruby-2.1.2```.  Afterwards, I can test the results:
 
