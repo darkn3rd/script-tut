@@ -1,0 +1,60 @@
+$ brew install ruby
+==> Installing dependencies for ruby: readline, libyaml, openssl
+==> Installing ruby dependency: readline
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/readline-6.3.6.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring readline-6.3.6.mountain_lion.bottle.tar.gz
+==> Caveats
+This formula is keg-only, so it was not symlinked into /usr/local.
+
+OS X provides the BSD libedit library, which shadows libreadline.
+In order to prevent conflicts when programs look for libreadline we are
+defaulting this GNU Readline installation to keg-only.
+
+Generally there are no consequences of this for you. If you build your
+own software and it requires this formula, you'll need to add to your
+build variables:
+
+    LDFLAGS:  -L/usr/local/opt/readline/lib
+    CPPFLAGS: -I/usr/local/opt/readline/include
+
+==> Summary
+í ¼í½º  /usr/local/Cellar/readline/6.3.6: 40 files, 2.1M
+==> Installing ruby dependency: libyaml
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/libyaml-0.1.6.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring libyaml-0.1.6.mountain_lion.bottle.tar.gz
+í ¼í½º  /usr/local/Cellar/libyaml/0.1.6: 7 files, 352K
+==> Installing ruby dependency: openssl
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/openssl-1.0.1h.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring openssl-1.0.1h.mountain_lion.bottle.tar.gz
+==> Caveats
+A CA file has been bootstrapped using certificates from the system
+keychain. To add additional certificates, place .pem files in
+  /usr/local/etc/openssl/certs
+
+and run
+  /usr/local/opt/openssl/bin/c_rehash
+
+This formula is keg-only, so it was not symlinked into /usr/local.
+
+Mac OS X already provides this software and installing another version in
+parallel can cause all kinds of trouble.
+
+The OpenSSL provided by OS X is too old for some software.
+
+Generally there are no consequences of this for you. If you build your
+own software and it requires this formula, you'll need to add to your
+build variables:
+
+    LDFLAGS:  -L/usr/local/opt/openssl/lib
+    CPPFLAGS: -I/usr/local/opt/openssl/include
+
+==> Summary
+í ¼í½º  /usr/local/Cellar/openssl/1.0.1h: 429 files, 15M
+==> Installing ruby
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/ruby-2.1.2_2.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring ruby-2.1.2_2.mountain_lion.bottle.tar.gz
+í ¼í½º  /usr/local/Cellar/ruby/2.1.2_2: 942 files, 20M

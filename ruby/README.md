@@ -15,7 +15,7 @@ Here's how you can get latest tools
 A vanilla Mac OS X 10.8.5 will come with a 6-year old Ruby 1.8.7.  Most likely, you'll want something more modern.
 
 ```bash
-ruby -v
+$ ruby -v
 ruby 1.8.7 (2012-02-08 patchlevel 358) [universal-darwin12.0]
 ```
 
@@ -31,6 +31,16 @@ echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
 . ~/.bash_profile
 brew install ruby
 ```
+
+After much text, including notges about GNU Readline vs. BSD libedit libraries, certs, and such, you can check your installations.
+
+```
+$ which ruby
+/usr/local/bin/ruby
+$ ruby -v
+ruby 2.1.2p95 (2014-05-08 revision 45877) [x86_64-darwin12.0]
+```
+
 
 #### MacPorts
 
@@ -57,10 +67,16 @@ sudo port select --list ruby
 
 #### RVM
 
-The most popular way to install Ruby and manage Ruby versions is to use RVM (Ruby Version Manager) [https://rvm.io/]: ```$ \curl -sSL https://get.rvm.io | bash -s stable```.  Afterwards, you can install something like Ruby 2.1.2 with ```rvm install ruby-2.1.2```.  
+The most popular way to install Ruby and manage Ruby versions is to use RVM (Ruby Version Manager) [https://rvm.io/]: ```$ \curl -sSL https://get.rvm.io | bash -s stable```.
 
-On Mac OS X, it seems that RVM now requires Homebrew [http://brew.sh/], and will install after any Ruby install.
+On Mac OS X, it seems that RVM now (June 2014) requires Homebrew [http://brew.sh/], and will attempt to install Homebrew in any attempt to install Ruby using RVM.  Thus, I backed out of this, installed Homebrew myself and then proceeded to install Ruby 2.1.2: ```rvm install ruby-2.1.2```.  Afterwards, I can test the results:
 
+```bash
+$ which ruby 
+/Users/joaquinmenchaca/.rvm/rubies/ruby-2.1.2/bin/ruby
+$ ruby -v
+ruby 2.1.2p95 (2014-05-08 revision 45877) [x86_64-darwin13.0]
+```
 
 ## Notes 
 
