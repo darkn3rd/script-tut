@@ -1,36 +1,46 @@
 ' populate initial dictionary
-set ages = dictionary(array("bob", 34, "ed", 58, "steve", 32, "ralph", 23))
+Set ages = dictionary(Array("bob", 34, "ed", 58, "steve", 32, "ralph", 23))
+
 ' append more items into dictionary
-set ages = merge(ages, dictionary(array("deb", 46, "kate", 19)))
-' iterate through dictionary, print key/value pairs
-wscript.echo "The ages are: "
-for each name in ages.keys  
-    wscript.echo " ages[" & name & "]=" & ages.item(name)
+Set ages = merge(ages, dictionary(Array("deb", 46, "kate", 19)))
+
+' output results with key/value pairs
+WScript.Echo "The ages are: "
+' collection loop used to fetch each key
+For Each name In ages.Keys
+    WScript.Echo " ages[" & name & "]=" & ages.Item(name)
 next
 
-' dictionary() - creates dictionary given array
-function dictionary (items)
+
+' **************************************
+' dictionary (items) - given array of key/value pairs,
+'  creates a dictionary object
+' **************************************
+Function dictionary (items)
   ' create empty dictionary
   set dictionary = CreateObject("Scripting.Dictionary")
 
   ' iterate through array to create dictionary
-  for i=lbound(items) to ubound(items) step 2
-    dictionary.add items(i), items(i+1)
-  next
-end function
+  For i=LBound(items) To UBound(items) Step 2
+    dictionary.Add items(i), items(i+1)
+  Next
+End Function
 
-' merge() - merges two dictionaries together
-function merge (left, right)
+' **************************************
+' merge (left, right) - given two dictionary objects
+'   creates new dictionary with contents of both
+' **************************************
+Function merge (dictOne, dictTwo)
   ' create empty dictionary
-  set merge = CreateObject("Scripting.Dictionary")
+  Set merge = CreateObject("Scripting.Dictionary")
 
   ' iterate through left dictionary
-  for each key in left.keys  
-    merge.add key, left(key)
-  next
+  For Each key In dictOne.Keys  
+    merge.Add key, dictOne(key)
+  Next
 
   ' iterate through right dictionary
-  for each key in right.keys  
-    merge.add key, right(key)
-  next
-end function
+  For Each key In dictTwo.Keys
+    merge.Add key, dictTwo(key)
+  Next
+End Function

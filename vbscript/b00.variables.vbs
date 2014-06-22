@@ -1,7 +1,8 @@
-dim num  : num  = 5
-dim char : char = "a"
-dim str  : str  = "This is a string"
+Dim num  : num  = 5
+Dim char : char = "a"
+Dim str  : str  = "This is a string"
 
-wscript.echo "Number is " & num
-wscript.echo "Character is '" & char & "'"
-wscript.echo "String is """ & str & """"
+' Concatenation Operator & used to build string
+WScript.Echo "Number is " & num
+WScript.Echo "Character is '" & char & "'"
+WScript.Echo "String is """ & str & """"

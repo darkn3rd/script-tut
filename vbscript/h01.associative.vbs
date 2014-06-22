@@ -1,12 +1,13 @@
-' initialize COM object 
-set ages = CreateObject("Scripting.Dictionary")
-' add one elment at a time
-ages.add "bob", 34
-ages.add "ed", 58
-ages.add "steve", 32
-ages.add "ralph", 23
-ages.add "deb", 46
-ages.add "kate", 19
+' initialize dictionary object 
+Set ages = CreateObject("Scripting.Dictionary")
+' add one elment at a time to dictionary object
+ages.Add "bob", 34
+ages.Add "ed", 58
+ages.Add "steve", 32
+ages.Add "ralph", 23
+ages.Add "deb", 46
+ages.Add "kate", 19
+
 ' enumerate & print values
-wscript.echo "Keys (names): ", join(ages.keys, " ")
-wscript.echo "Values (ages): ", join(ages.items, " ")
+wscript.echo "Keys (names): ", Join(ages.Keys, " ")
+wscript.echo "Values (ages): ", Join(ages.Items, " ")

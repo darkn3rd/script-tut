@@ -1,5 +1,6 @@
-count = 10
-while count > 0 
-  wscript.echo "Count is " & count
-  count = count - 1
-wend
+count = 10                          ' initialize counter
+' count style loop using while
+While count > 0 
+  WScript.Echo "Count is " & count  ' output count
+  count = count - 1                 ' decrement count
+Wend

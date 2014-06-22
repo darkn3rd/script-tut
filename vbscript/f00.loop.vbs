@@ -1,33 +1,36 @@
-' COM objects used in script
-set fso   = createobject("Scripting.FileSystemObject")
-set shell = createobject("wscript.shell")
+' COM object used for testing files
+Set fso   = CreateObject("Scripting.FileSystemObject")
 
-' iterate each item returned from subshell 
-for each item in exec("cmd /c dir /b")
+
+' collection loop fetches each item from exec
+For Each item In exec("cmd /c dir /b")
    ' test item is a directory
-   if fso.folderexists(item) then
-       wscript.echo item & " is a directory"    
-   else
-       wscript.echo item & " is not a directory"
-   end if
-next
+   If fso.FolderExists(item) Then
+       WScript.Echo item & " is a directory"    
+   Else
+       WScript.Echo item & " is not a directory"
+   End If
+Next
 
 ' **************************************
 ' exec (cmd) - given command returns array of lines from output
 '   Helper function to enable iteration through lines of output
 '    from running a command.
 ' **************************************
-function exec (cmd)
-  dim files()                              ' create local array
-  dim size : size = 0                      ' create starting size
-  set stdout      = shell.exec(cmd).stdout ' capture stdout from exec
+Function exec (cmd)
+  ' utility variable
+  Dim files()                              ' create local refernce to empty array
+  Dim size : size = 0                      ' create starting size
+  ' com objects used for subshell interaction
+  Set shell       = CreateObject("WScript.Shell")
+  Set stdout      = shell.Exec(cmd).StdOut ' get stdout ojbect from exec method
   
   ' iterate through lines & save into array
-  while not stdout.atendofstream
-    redim preserve files(size)             ' resize the array
-    files(size) = stdout.readline          ' append to array
+  While Not stdout.AtEndOfStream
+    ReDim Preserve files(size)             ' resize the array
+    files(size) = stdout.ReadLine          ' append to array
     size = size + 1                        ' increase size counter
-  wend
+  Wend
 
   exec = files                             ' return array
-end function
+End Function

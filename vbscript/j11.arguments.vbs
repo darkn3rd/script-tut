@@ -1,9 +1,12 @@
+' illustrative variables
 last  = Wscript.Arguments.Count - 1 ' get index of last element
 first = 0                           ' get index of first element
 
-WScript.Echo "The arguments passed are (reverse order):"
-' iterative loop from # of args to 1
+WScript.Echo "The arguments passed are:"
+' count style loop to generate index
 For count = first To last
+  ' retrieve argument using index
+  arg =  WScript.Arguments.Item(count)
   ' output count and corresponding argument item
-  WScript.Echo " item " & (Count+1) & ": " & WScript.Arguments.Item(Count)
-next
+  WScript.Echo " item " & (count+1) & ": " & arg
+Next

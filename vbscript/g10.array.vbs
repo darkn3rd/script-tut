@@ -1,7 +1,9 @@
 ' create populated list
-nicknames = array("bob","ed","steve","ralph","joe","deb","kate")
-' iterate through array by each item
-wscript.echo "The names are: "
-for each name in nicknames
+nicknames = Array("bob","ed","steve","ralph","joe","deb","kate")
+
+' output results
+WScript.Echo "The names are: "
+' collection loop get each element
+For Each name In nicknames
     wscript.echo " " & name
-next
+Next

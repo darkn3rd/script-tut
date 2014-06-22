@@ -1,3 +1,4 @@
-for count = 10 to 0 step -1
-  wscript.echo "Count is " & count
-next
+' count loop initializes and auto-decrements count
+For count = 10 To 0 Step -1
+  WScript.Echo "Count is " & count ' output count
+Next
