@@ -32,7 +32,7 @@ echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
 brew install ruby
 ```
 
-After much text, including notges about GNU Readline vs. BSD libedit libraries, certs, and such, you can check your installations.
+After much text, including notes about GNU Readline vs. BSD libedit libraries, certs, and such, you can check your installations.
 
 ```
 $ which ruby
