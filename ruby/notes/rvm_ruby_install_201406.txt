@@ -1,0 +1,39 @@
+$ rvm install ruby-2.1.2
+Searching for binary rubies, this might take some time.
+Found remote file https://rvm.io/binaries/osx/10.8/x86_64/ruby-2.1.2.tar.bz2
+Checking requirements for osx.
+Installing requirements for osx.
+Updating system.......
+Installing required packages: autoconf, automake, libtool, pkg-config, libksba...
+Certificates in '/usr/local/etc/openssl/cert.pem' are already up to date.
+Requirements installation successful.
+ruby-2.1.2 - #configure
+ruby-2.1.2 - #download
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 6678k  100 6678k    0     0  1158k      0  0:00:05  0:00:05 --:--:-- 1297k
+No checksum for downloaded archive, recording checksum in user configuration.
+ruby-2.1.2 - #validate archive
+ruby-2.1.2 - #extract
+ruby-2.1.2 - #validate binary
+ruby-2.1.2 - #setup
+ruby-2.1.2 - #making binaries executable..
+Rubygems 2.2.2 already available in installed ruby, skipping installation, use --force to reinstall.
+ruby-2.1.2 - #gemset created /Users/developer/.rvm/gems/ruby-2.1.2@global
+ruby-2.1.2 - #importing gemset /Users/developer/.rvm/gemsets/global.gems.......................................
+ruby-2.1.2 - #generating global wrappers.........
+ruby-2.1.2 - #gemset created /Users/developer/.rvm/gems/ruby-2.1.2
+ruby-2.1.2 - #importing gemsetfile /Users/developer/.rvm/gemsets/default.gems evaluated to empty gem list
+ruby-2.1.2 - #generating default wrappers.........
+Updating certificates in '/etc/openssl/cert.pem'.
+mkdir: /etc/openssl: Permission denied
+developer password required for 'mkdir -p /etc/openssl': 
+devbox01:bin developer$ rvm list rubies
+
+rvm rubies
+
+=* ruby-2.1.2 [ x86_64 ]
+
+# => - current
+# =* - current && default
+#  * - default

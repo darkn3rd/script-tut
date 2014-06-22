@@ -1,4 +1,78 @@
-$ brew install ruby
+$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+==> This script will install:
+/usr/local/bin/brew
+/usr/local/Library/...
+/usr/local/share/man/man1/brew.1
+==> The following directories will be made group writable:
+/usr/local/.
+/usr/local/bin
+/usr/local/share
+/usr/local/share/man
+/usr/local/share/man/man1
+/usr/local/share/man/man3
+==> The following directories will have their group set to admin:
+/usr/local/.
+/usr/local/bin
+/usr/local/share
+/usr/local/share/man
+/usr/local/share/man/man1
+/usr/local/share/man/man3
+
+Press RETURN to continue or any other key to abort
+==> /usr/bin/sudo /bin/chmod g+rwx /usr/local/. /usr/local/bin /usr/local/share /usr/local/share/man /usr/local/share/man/man1 /usr/local/share/man/man3
+Password:
+==> /usr/bin/sudo /usr/bin/chgrp admin /usr/local/. /usr/local/bin /usr/local/share /usr/local/share/man /usr/local/share/man/man1 /usr/local/share/man/man3
+==> /usr/bin/sudo /bin/mkdir /Library/Caches/Homebrew
+==> /usr/bin/sudo /bin/chmod g+rwx /Library/Caches/Homebrew
+==> Downloading and installing Homebrew...
+remote: Counting objects: 180636, done.
+remote: Compressing objects: 100% (49897/49897), done.
+remote: Total 180636 (delta 129632), reused 180550 (delta 129572)
+Receiving objects: 100% (180636/180636), 35.72 MiB | 87 KiB/s, done.
+Resolving deltas: 100% (129632/129632), done.
+From https://github.com/Homebrew/homebrew
+ * [new branch]      master     -> origin/master
+HEAD is now at 77ea0f2 sox: fix audit warning
+==> Installation successful!
+==> Next steps
+Run `brew doctor` before you install anything
+Run `brew help` to get started
+devbox01:~ developer$ brew update
+Already up-to-date.
+devbox01:~ developer$ brew doctor
+Please note that these warnings are just used to help the Homebrew maintainers
+with debugging if you file an issue. If everything you use Homebrew for is
+working fine: please don't worry and just ignore them. Thanks!
+
+Warning: A newer Command Line Tools release is available.
+The standalone package can be obtained from
+  https://developer.apple.com/downloads
+or it can be installed via Xcode's preferences.
+
+Warning: /usr/bin occurs before /usr/local/bin
+This means that system-provided programs will be used instead of those
+provided by Homebrew. The following tools exist at both paths:
+
+    prove
+
+Consider setting your PATH so that /usr/local/bin
+occurs before /usr/bin. Here is a one-liner:
+    echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
+
+Warning: Your Xcode (4.6.2) is outdated
+Please update to Xcode 5.1.1.
+Xcode can be updated from
+  https://developer.apple.com/downloads
+
+devbox01:~ developer$ #=======================================================================================================
+
+devbox01:~ developer$ echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
+
+devbox01:~ developer$ . ~/.bash_profile
+
+devbox01:~ developer$ #=======================================================================================================
+
+devbox01:~ developer$ brew install ruby
 ==> Installing dependencies for ruby: readline, libyaml, openssl
 ==> Installing ruby dependency: readline
 ==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/readline-6.3.6.mountain_lion.bottle.tar.gz
