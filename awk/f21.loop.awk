@@ -1,7 +1,10 @@
 #!/bin/awk -f
 BEGIN {
-  while ("ls -l" | getline) {
-    if (/^d/) print $9 " is a directory"
-    else print $9 " is a not a directory"
-  }
+  # conditional loop with do...while construct
+  while ( answer != "quit" ) {
+    printf "Enter your name (quit to exit): "  # output prompt
+    getline answer                             # get input
+    # output answer if not exiting
+    if (answer != "quit") print "Hello " answer "!"  
+  } 
 }

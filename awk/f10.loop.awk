@@ -1,8 +1,6 @@
 #!/bin/awk -f
 BEGIN {
-  do {
-    printf "Enter your name (quit to exit): "
-    getline answer
-    if (answer != "quit") print "Hello " answer
-  } while ( answer != "quit" )
+  # count loop using general loop construct
+  for ( count = 10; count > 0; count-- )
+    print "count is " count      # output result
 }
