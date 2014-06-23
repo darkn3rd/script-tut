@@ -1,0 +1,56 @@
+$ brew install python3
+==> Installing dependencies for python3: sqlite, gdbm, xz
+==> Installing python3 dependency: sqlite
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/sqlite-3.8.5.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring sqlite-3.8.5.mountain_lion.bottle.tar.gz
+==> Caveats
+This formula is keg-only, so it was not symlinked into /usr/local.
+
+Mac OS X already provides this software and installing another version in
+parallel can cause all kinds of trouble.
+
+OS X provides an older sqlite3.
+
+Generally there are no consequences of this for you. If you build your
+own software and it requires this formula, you'll need to add to your
+build variables:
+
+    LDFLAGS:  -L/usr/local/opt/sqlite/lib
+    CPPFLAGS: -I/usr/local/opt/sqlite/include
+
+==> Summary
+í ¼í½º  /usr/local/Cellar/sqlite/3.8.5: 9 files, 2.1M
+==> Installing python3 dependency: gdbm
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/gdbm-1.11.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring gdbm-1.11.mountain_lion.bottle.tar.gz
+í ¼í½º  /usr/local/Cellar/gdbm/1.11: 16 files, 420K
+==> Installing python3 dependency: xz
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/xz-5.0.5.mountain_lion.bottle.3.tar.gz
+######################################################################## 100.0%
+==> Pouring xz-5.0.5.mountain_lion.bottle.3.tar.gz
+í ¼í½º  /usr/local/Cellar/xz/5.0.5: 58 files, 1.5M
+==> Installing python3
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/python3-3.4.1.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring python3-3.4.1.mountain_lion.bottle.tar.gz
+==> Caveats
+Pip has been installed. To update it
+  pip3 install --upgrade pip
+
+You can install Python packages with
+  pip3 install <package>
+
+They will install into the site-package directory
+  /usr/local/lib/python3.4/site-packages
+
+See: https://github.com/Homebrew/homebrew/wiki/Homebrew-and-Python
+
+.app bundles were installed.
+Run `brew linkapps` to symlink these to /Applications.
+==> /usr/local/Cellar/python3/3.4.1/bin/python3 -m ensurepip --upgrade
+==> Summary
+í ¼í½º  /usr/local/Cellar/python3/3.4.1: 3845 files, 67M
+$ python3 -V
+Python 3.4.1

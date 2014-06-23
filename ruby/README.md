@@ -8,6 +8,10 @@
 
 Before taking full advantage of Ruby or using some of the package managers mentioned in this ReadMe, you will need to get Xcode Developer Tools from Apple and also install the Xcode command line tools.  This process unfortunately differs from OS version to OS version.  There are some decent instructions at: http://guide.macports.org/#installing.xcode.
 
+hdiutil attach xcode_5.1.1.dmg
+/Volumes/Xcode/Xcode.app
+sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
+
 Here's how you can get latest tools
 
 #### Default
@@ -40,7 +44,6 @@ $ which ruby
 $ ruby -v
 ruby 2.1.2p95 (2014-05-08 revision 45877) [x86_64-darwin12.0]
 ```
-
 
 #### MacPorts
 
