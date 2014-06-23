@@ -10,7 +10,7 @@ Before taking full advantage of Ruby or using some of the package managers menti
 
 hdiutil attach xcode_5.1.1.dmg
 /Volumes/Xcode/Xcode.app
-sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
+sudo cp -R -f "/Volumes/Xcode/Xcode.app" /Applications
 
 Here's how you can get latest tools
 
