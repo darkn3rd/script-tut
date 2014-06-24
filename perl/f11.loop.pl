@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# iterative (count) loop construction
+# count loop using general loop construct
 for (my $count = 10; $count > 0; $count--) {
   print "Count is $count\n";
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#until construction
+# conditional loop with do...while construction
 do {
   print "Enter your name (quit to exit): ";
   chomp($answer = <>);

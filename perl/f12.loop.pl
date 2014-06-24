@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# conditional loop with manually maintained count
+# count loop using while loop
 my $count=10;
 while ($count > 0) {
    print "Count is $count\n";

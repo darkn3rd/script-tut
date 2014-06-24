@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# until construction
+# conditional loop until construction
 my $answer="";
 until ($answer eq "quit") {
   print "Enter your name (quit to exit): ";
