@@ -1,9 +1,8 @@
 #!/usr/bin/python
-import os
- 
-# for...in construction
-for item in os.popen("ls").readlines():
-  if os.path.isdir(item.rstrip()):
-    print "%s is a directory." % item.rstrip()
+# while construction to prompt and exit
+while True:
+  answer = raw_input("Enter your name (quit to Exit): ")
+  if answer == "quit":
+    break
   else:
-    print "%s is not a directory." % item.rstrip()
+    print "Hello", answer
