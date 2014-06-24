@@ -7,6 +7,6 @@ BEGIN {
     if (answer == "quit")         # exit?
       break                       # exit loop if exiting
     else
-      print "Hello " answer "!"   # output result is not exiting
+      print "Hello " answer "!"   # output result as not exiting
   } while ( 1 )
 }
