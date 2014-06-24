@@ -1,9 +1,9 @@
 #!/bin/tcsh
-@ count = 10
-
-# emulate iterative loop using conditional loop
-while ($count > 0)
- echo " Count is $count" # print curent count
- @ count --
+foreach file (*)
+    if (-d $file) then
+        echo "$file is a directory"
+    else
+        echo "$file is not a directory"
+    endif
 end
-# ^ newline needed for block
+# ^ mandatory newline to end block

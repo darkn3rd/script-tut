@@ -1,9 +1,13 @@
 #!/bin/tcsh
-foreach file (*)
-    if (-d $file) then
-        echo "$file is a directory"
-    else
-        echo "$file is not a directory"
-    endif
-end
-# ^ mandatory newline to end block
+set answer = ""                             # required to create initial var 
+ 
+# loop conditionally until user quits
+while ("$answer" != "quit")
+  echo -n "Enter you name (quit to Exit): " # print prompt & acquire input
+  set answer=$<                             # acquire input
+ 
+  if ($answer != "quit") then
+      echo " Hello $answer!"                # output result using variable
+  endif
+end  
+# ^ required newline to end block
