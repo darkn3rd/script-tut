@@ -4,7 +4,9 @@
 do {
     echo "Enter your name (quit to Exit): ";
     $answer = rtrim(fgets(STDIN));
-    if ($answer != "quit")
+    if ($answer == "quit")
+         break;
+    else
         echo "Hello $answer!\n";
-} while ($answer != "quit");
+} while (1);
 ?>
