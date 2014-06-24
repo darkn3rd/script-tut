@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import os
  
-# for...in construction
+# collection loop on buffered output from subshell
 for item in os.popen("ls").readlines():
   if os.path.isdir(item.rstrip()):
     print "%s is a directory." % item.rstrip()

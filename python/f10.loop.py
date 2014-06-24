@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# while construction to count down
+# count loop with while
 count = 10
 while count > 0:
     print "Count is",  count
