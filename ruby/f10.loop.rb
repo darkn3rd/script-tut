@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# iterate number of times, calculate opposite range
+# count style loop with times iterator
 10.times do |count|
   puts "Count is #{(count-10)*-1}"
 end

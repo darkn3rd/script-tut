@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# for/in w/ exec
+# collection loop from output of subshell
 for item in `ls`.split.each do            # cycle through directory listing
    if File.directory? item                # test if path is directory
        puts "#{item} is a directory."

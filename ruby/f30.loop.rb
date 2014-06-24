@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
-# loop until user quits (spin loop style)
+# pure spin loop using continous loop construct
+#   break is used to exit loop
 loop do
   print "Enter you name (quit to Exit): " # print prompt
   STDOUT.flush                            # flush buffer to show prompt
@@ -8,6 +9,6 @@ loop do
   if answer.chomp == "quit"               # check for exit
       break                               # exit loop
   else
-      puts "Hello #{answer}"              # print result if not exiting
+      puts "Hello #{answer}!"             # print result as not exiting
   end
 end
