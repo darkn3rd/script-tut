@@ -260,7 +260,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
-* 2014-06-23: Revise loop section: awk, batch csh, perl, php, python, shell, tcl
+* 2014-06-23: Revise loop section: awk, batch csh, perl, php, python, powershell, shell, tcl, vbscript
 * 2014-06-21: Revise loop section: ruby, vbscript
 * 2014-06-17: Update arguments (all), identify new loop constructs, docs.
 * 2014-06-16: Finished TCL section and Perl Section (sans Docs)
