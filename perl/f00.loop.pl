@@ -1,5 +1,8 @@
-#!/usr/bin/perl -w
-# collection loop with range operator
-for my $count (reverse 1..10) {
-  print "Count is $count\n";
+# collection loop on list returned by subshell
+foreach $item (split /\s+/, `ls`) {
+  if (-d $item) {
+    print "$item is a directory\n"
+  } else {
+    print "$item is not a directory\n"
+  }
 }
