@@ -1,8 +1,9 @@
 #!/usr/bin/python
+answer = ""  # required to initialize answer before testing it
+
 # conditonal loop with while
-while True:
+while answer != "quit":
+  # output a prompt and get answer
   answer = raw_input("Enter your name (quit to Exit): ")
-  if answer == "quit":
-    break
-  else:
-    print "Hello", answer
+  if answer != "quit":
+    print "Hello %s!" % answer  # output results if not exiting
