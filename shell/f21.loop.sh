@@ -1,5 +1,5 @@
 #!/bin/sh
-# conditional loop
+# conditional loop with positive test
 while [ "$answer" != "quit" ]; do
    printf "Enter your name (quit to exit): "
    read answer
