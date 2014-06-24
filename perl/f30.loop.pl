@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#spin loop construction
+# spin loop construction
 while (1) {
   print "Enter your name (quit to exit): ";
   chomp($answer = <>);
