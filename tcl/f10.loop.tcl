@@ -1,13 +1,5 @@
 #!/usr/bin/tclsh
-# while loop until user quits
-while {true} {
-  puts -nonewline "Enter you name (quit to Exit): "
-  flush stdout
-  gets stdin answer
- 
-  if {$answer == "quit"} {
-      break
-  } else {
-      puts "Hello $answer"
-  }
+# count loop using general loop construct
+for {set count 10} {$count > 0} {incr count -1} {
+  puts "Count is $count"
 }

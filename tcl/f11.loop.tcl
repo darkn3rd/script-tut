@@ -1,5 +1,5 @@
 #!/usr/bin/tclsh
-# while loop w/ counter
+# count loop using while loop
 set count 10
 while {$count > 0} {
     puts "Count is $count"
