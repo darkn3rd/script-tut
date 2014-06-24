@@ -1,7 +1,7 @@
 #!/bin/tcsh
-@ count = 10
+@ count = 10             # initialize counter
 
-# emulate iterative loop using conditional loop
+# count style loop using while
 while ($count > 0)
  echo " Count is $count" # print curent count
  @ count --

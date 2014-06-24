@@ -1,4 +1,5 @@
 #!/bin/tcsh
+# collection loop on directly glob
 foreach file (*)
     if (-d $file) then
         echo "$file is a directory"
