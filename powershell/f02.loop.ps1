@@ -1,3 +1,5 @@
-for ($count=10; $count -gt 0; $count--) {
-  "Count is $count"
+# iterate through listing using switch
+switch (Get-ChildItem)  {
+  $_.PsIsContainer {   "$_ is directory"  } 
+  default          { "$_ is not directory" }
 }
