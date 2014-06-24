@@ -14,7 +14,11 @@ for (var index in dirlist) {
    } 
 }
 
-// exec() - given command returns array of result
+/***************************************
+ * exec (cmd) - given command returns array of lines from output
+ *   Helper function to enable iteration through lines of output
+ *    from running a command.
+ *************************************** */
 function exec (cmd) {
   var files  = new Array();                // create local array
   var size   = 0;                          // create starting size
