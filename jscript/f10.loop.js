@@ -1,6 +1,3 @@
-do {
-  WScript.stdout.write("Enter your name (quit to Exit): ");
-  answer = WScript.stdin.readline();
-  if (answer != "quit")  
-      WScript.echo("Hello " + answer + "!");
-} while (answer != "quit")
+for(count = 10; count > 0; count--) 
+  WScript.Echo("Count is " + count);
+
