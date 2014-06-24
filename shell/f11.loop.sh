@@ -1,9 +1,7 @@
 #!/bin/sh
-# conditional loop
-while [ "$answer" != "quit" ]; do
-   printf "Enter your name (quit to exit): "
-   read answer
-   if [ $answer != "quit" ] ; then
-     echo Hello $answer!
-   fi
+
+# iterative style loop emulated 
+#   using collection loop with range of numbers
+for count in $(seq 10 1); do
+  echo "Count is $count"
 done
