@@ -1,11 +1,11 @@
 #!/usr/bin/php
 <?php
-// foreach (as) construction
-foreach (preg_split("/\s+/", shell_exec('ls')) as $item) {
-   if (is_dir($item)) {
-       echo "$item is a directory\n";
-   } else {
-       echo "$item is not a directory\n";
-   }
-}
+// conditional loop
+do {
+    echo "Enter your name (quit to Exit): ";
+    $answer = fgets(STDIN);
+    if ($answer != "quit\n") {
+        echo "Hello $answer";
+    }
+} while ($answer != "quit\n");
 ?>

@@ -1,6 +1,11 @@
 #!/usr/bin/php
 <?php
-// iterative loop
-for ( $count = 10; $count > 0; $count-- )
- echo "Count is $count\n";
+// collection loop on results
+foreach (preg_split("/\s+/", shell_exec('ls')) as $item) {
+   if (is_dir($item)) {
+       echo "$item is a directory\n";
+   } else {
+       echo "$item is not a directory\n";
+   }
+}
 ?>
