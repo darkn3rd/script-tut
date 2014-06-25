@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# while loop w/ counter
+# count style loop using while construct
 count = 10
 while count > 0
     puts "Count is #{count}"
