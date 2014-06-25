@@ -5,14 +5,9 @@ while [ 1 ]; do
    printf "Enter your name (quit to exit): "
    read answer         # get input
    
-   if echo "$answer" | grep -q '^[[:blank:]]*$'; then
-     continue          # skip loop if no answer
-   fi
+   if echo "$answer" | grep -q '^[[:blank:]]*$'; then continue; fi
    
-   
-   if [ "$answer" = "quit" ] ; then
-     break             # exit loop if user wants to quit
-   fi
+   if [ "$answer" = "quit" ] ; then break; fi
    
    echo Hello $answer! # output result as exiting
 done
