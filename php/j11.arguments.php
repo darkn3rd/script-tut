@@ -1,16 +1,13 @@
 #!/usr/bin/php
 <?php
 // illustrative variables
-$count       = 1;        // set initial counter
-$script_name = $argv[0]; // get script name
+$arg_count = $argc - 1;  // get num of arguments
+$first     = 1;          // set index of initial element
+$last      = $arg_count; // set index of last element
 
 echo "The arguments passed are:\n";
-// collection loop to enumerate args
-foreach ($argv as $arg) {
-  // skip if we get name of the script 
-  if ("$arg" == "$script_name" ) continue;
-  // output count and argument
-  echo "  item $count: $arg\n";
-  $count++;              // increment counter
-}
+// iterative loop to enumerate args
+for ( $count = $first; $count <= $last ; $count++ )
+  // output count and argument using count index
+  echo "  item $count: $argv[$count]\n";
 ?>
