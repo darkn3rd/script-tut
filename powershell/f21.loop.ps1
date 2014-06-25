@@ -8,4 +8,4 @@ do {
   }
   
 }
-while ($answer -ne "quit")
+until ($answer -eq "quit")
