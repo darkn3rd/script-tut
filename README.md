@@ -54,10 +54,10 @@ Simple output to STDOUT (standard output)
 
 Demonstrate declaring numbers, characters, and strings.  Show how to use these with:
 
-* String Interpolation
-* String Concatenation
+1. **String Interpolation**: variables are in the strings themselves and replaced with the value.
+2. **String Concatenation**: separate strings and variables are combined together
 
-Additionally, show how to escape quote characters.
+Additionally, show how to escape quote characters if needed.
 
 ### Arithmetic
 
@@ -83,13 +83,10 @@ This section will have the following sections:
 1. **Collection Loop**: demonstrates by testing elements extracted from list of files
 2. **Count Loop**: demonstrate counting from 10 to 1
 3. **Conditional Loop**: demonstrates by prompting for a name, and leaving loop on users request
-4. **Spin Loop**: demonstrates prompting for a name, and breaking out of loop on users request
-5. **Continuation**: demonstrates skipping to next iteration, when user enters a non-digit input.
+4. **Spin Loop**: demonstrates prompting for a name, and exiting out of loop on users request
+5. **Skipping a Loop**: demonstrates prompting for a name, and skipping to the next iteration if user did not enter an answer.
 
-**NOTES** There are explicitaly four types of looping constructs: *count*, *collection*, *general*, and *infinite* loops according to reasonable documentation on Wikipedia [http://en.m.wikipedia.org/wiki/Control_flow].  With the exception of *collection* contruction (whic most scripting languages support), these constructs can be manipulated to support the usage of *count*, *conditional*, and *spin* loops.  This will be presented in examples.
-
-
- contruction of loops can be made to fulfill typical usage of these loops.
+**NOTES** There are explicitly four types of looping constructs: *count*, *collection*, *general*, and *infinite* loops according to reasonable documentation on Wikipedia [http://en.m.wikipedia.org/wiki/Control_flow].  With the exception of *collection* construction (which most scripting languages support), these constructs can be manipulated to support the usage of *count*, *conditional*, and *spin* loops.  This will be presented in examples.
 
 ### Arrays
 
@@ -144,20 +141,18 @@ The demonstration subroutine shows how to use the date functionality to print ou
 
 This section introducers how to process command line arguments.  The first demonstration shows how to get the quantity of arguments passed to the script, and then to print an usage statement should the quantity be incorrect.  The other demonstrations show how to print out all of the argument in order then in reverse order.  This exposes some challenges in various languages.
 
-**NOTE**: *This section is in flux as the scripting languages differ quite a bit in this area.  Thus there are numerous considerations at to ways to process this.  This is probably the most complex section in that the scripting languages vary greatly in this area.*  
+**NOTE**: *This section was in flux as to the order, as scripting languages differ greatly in their facility to process command line arguments, various looping constructs available to process such arguments.  Different combinations offer unique scenarios.*
 
-Currently, the methods in showing how to cycle through arguments (in forward order) are the following order or precedent:
+After much consideration, the following areas would be covered given features available to each language:
 
- * *conditional* style loop shifting out elements (only if using positional parameters)
- * *collection* loop maintaining a separate counter.
- * *conditional* style loop shifting out values (unless position parameters)
- * *count* style loop using *collection* with a range.
- * *count* style loop using a counter
-
-And the precedent of loops for reverse order are:
-
- * *count* style loop using a counter
- * *count* style loop using *collection* loop with a supplied range.
+* enumerating arguments in order
+  * collection style loop
+  * count style loop where sequence of numbers is generated
+  * alternative looping constructs (various given the language in question)
+  * count style loop where counter is incremented
+* enumerating arguments in reverse order
+  * count style loop where counter is decremented
+  * count style loop where sequence of numbers in reverse is generated
      
 ### Parameters
 
