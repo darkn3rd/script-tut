@@ -7,8 +7,8 @@ Do While True
   If answer = "quit" Then
       ' exit loop when user wants to quit
       Exit Do                       
-  Else
-      ' output results if not exiting
-      WScript.Echo "Hello " & answer & "!"
-  End If 
+  End If
+  
+  ' output results if not exiting
+  WScript.Echo "Hello " & answer & "!"
 Loop
