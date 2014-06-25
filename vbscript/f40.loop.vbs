@@ -13,11 +13,11 @@ Do While True
   '   Note: VBScript has no mechanism to skip loops
   '    so we insulate processing answer in if block
   if not noInput.test(answer) Then	  
-	  If answer = "quit" Then
-		  Exit Do                   ' exit loop when user wants to quit           
-	  End If
-	  
-	  ' output results if not exiting
-	  WScript.Echo "Hello " & answer & "!"
+    If answer = "quit" Then
+      Exit Do                   ' exit loop when user wants to quit           
+    End If
+  
+    ' output results if not exiting
+    WScript.Echo "Hello " & answer & "!"
   End If
 Loop
