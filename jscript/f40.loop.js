@@ -5,6 +5,9 @@ do {
   WScript.stdout.write("Enter your name (quit to Exit): ");
   answer = WScript.stdin.readline();         // get input
   
+  // skip loop if user enters nothing
+  if (RegExp("^$").test(answer)) continue 
+  
   // exit loop is user quits
   if (answer == "quit") break                                  
 	  
