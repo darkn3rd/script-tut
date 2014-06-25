@@ -5,10 +5,11 @@ while [ 1 ]; do
    printf "Enter your name (quit to exit): "
    read answer         # get input
    
+   $(echo "$answer" | grep "^[[:blank:]]*$")
    
-   if [  $(echo "$answer" | grep '^[[:blank:]]*$') ]; then
+   if [ $? = 0 ]; then
      echo "got blank"
-     #continue          # skip loop if no answer
+     continue          # skip loop if no answer
    fi
    
    
