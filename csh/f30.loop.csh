@@ -8,8 +8,8 @@ while (1)
  
   if ($answer == "quit") then
     break                                   # exit if user wants to quit
-  else
-    echo " Hello $answer!"                  # output result as not exiting
   endif
+    
+  echo " Hello $answer!"                    # output result as not exiting
 end  
 # ^ required newline to end block
