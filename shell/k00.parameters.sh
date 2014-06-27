@@ -1,13 +1,14 @@
 #!/bin/sh
-# create function (subroutine) 
-add() {
-  sum=0                       # initialize starting sum value
-  for num in "$@"; do         # iterate through parameters
-    sum=$(( $sum + $num ))    # add num to sum
-  done
- 
-  echo The summation is: $sum # print report of summation
+# create subroutine
+celsius() {
+  # get argument and save it to friendly name
+  fahrenheit=$1    
+  # convert to new temperature using external bc tool
+  temperature=$(echo "scale=20;($fahrenheit -32) * 5 / 9" | bc)
+  # output results with format in one significant digit
+  printf "The Celsius temperature is %.1f degrees.\n" $temperature
 }
 
-# call the function (subroutine) 
-add 5 2 4 3 6
+# call subroutine
+temperature=73
+celsius $temperature
