@@ -16,4 +16,4 @@ while [ $count -le $arg_count ]; do # loops while count is 1 or higher
 done
 
 # output resulting compiled string
-echo "$output"
+printf "$output"
