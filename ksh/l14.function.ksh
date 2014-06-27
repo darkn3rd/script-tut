@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/ksh
 
 # Testing:
 #  - works on Mac OS X 10.8.5
 
 # create function (subroutine) 
-capitalize() {
+function capitalize {
   print $1 | perl -ne 'print uc($_);' # print fully uppercase string
 }
 
