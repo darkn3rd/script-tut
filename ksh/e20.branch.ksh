@@ -3,7 +3,7 @@ read keypress?"Input a character: " # prompt & get input
 keypress=${keypress:0:1}            # substring for only 1st char
  
 # test if keypress matches pattern
-#  with support for POSIX character class expressions
+#  with ASCII character class expressions
 if [[ $keypress = [a-z] ]]; then
   print "Lowercase letter"
 elif [[ $keypress = [A-Z] ]]; then
