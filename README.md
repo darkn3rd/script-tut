@@ -274,6 +274,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-06-27: Brought KSH up to date. 
 * 2014-06-24: Revise loop section: jscript, powershell, vbscript
 * 2014-06-23: Revise loop section: awk, batch csh, perl, php, python, powershell, shell, tcl, vbscript
 * 2014-06-21: Revise loop section: ruby, vbscript
