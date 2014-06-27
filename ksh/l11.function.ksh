@@ -1,8 +1,8 @@
 #!/bin/ksh
 # create function (subroutine) 
 function capitalize {
-  typeset -u string=$1
-  print $string
+  typeset -u string=$1  # create uppercase only variable
+  print $string         # output result
 }
 
 # call function in subshell, capture result from stdout
