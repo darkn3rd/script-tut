@@ -162,11 +162,26 @@ After much consideration, the following areas would be covered given features av
 
 This section shows how to pass parameters to a subroutine (or function).  This section shows how to pass a single parameter, and also shows how to pass a variable number of parameters.
 
+1. **Subroutine with 1 parameter** - demonstrate passsing one parameter, which will be named to something useful
+2. **Subroutine with variable parameters** - demonstrate processing unknown quantity of variables
+
+This section sprinkle in the following:
+
+* processing floating point math
+* format the precesion of floating point number in output
+
 **Brainstorming**: *Considering expanding this to show how to pass two arrays, and languages vary in this regard.  This may cause the need to introduce the concept of pass-by-value and pass-by-reference, which is implicit in some languages.  This is tabled for version 2.0 of the project*
 
 ### Functions
 
 This section covers creating functions, which essentially is a subroutine the returns something.  Currently this demonstrates returning an integer and a string.
+
+1. **Function returning single integer** - input variable number of integers and return the summation
+2. **Function returning single string** - input a string and return capitalize version of this
+
+Additionally, the following is sprinkled in here:
+
+* Capitalizing a string
 
 **BRAINSTORMING**: *Considering expanding this section to demonstrate returning an array and returning an associative array (hash).  Some scripting languages, such as AWK, are incapable of returning an array, so an array in this case must be passed in by reference (which is done implicitly in AWK). May table this until version 2.0 of this project*
 
