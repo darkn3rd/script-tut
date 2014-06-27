@@ -1,8 +1,8 @@
 #!/bin/ksh
-# required to declare array type
+# declare and initilize empty accociative array
 typeset -A ages
  
-# individually build array
+# add key/value pair one by one
 ages[bob]=34
 ages[ed]=58
 ages[steve]=32

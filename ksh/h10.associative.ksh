@@ -1,15 +1,16 @@
 #!/bin/ksh
-# need to declare array type
+# declare initial empty associative array
 typeset -A ages
  
-# create initial associative array
+# initialize associative array some some elements
 ages=([bob]=34 [ed]=58 [steve]=32 [ralph]=23)
  
-# Add more with ksh93j
+# append another associative array (requires ksh93j or greater)
 ages+= ([deb]=46 [kate]=19)
  
-# Print Key/Value Pairs
+# output results
 print "The ages are: "
+# use collection loop with list of keys
 for name in ${!ages[@]}
 do
   print "  ages[$name]=${ages[$name]}"
