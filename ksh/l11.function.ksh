@@ -1,11 +1,8 @@
 #!/bin/ksh
-
-# Testing:
-#  - works on Mac OS X 10.8.5
-
 # create function (subroutine) 
 function capitalize {
-  print $1 | tr '[:lower:]' '[:upper:]' # print fully uppercase string
+  typeset -u string=$1
+  print $string
 }
 
 # call function in subshell, capture result from stdout
