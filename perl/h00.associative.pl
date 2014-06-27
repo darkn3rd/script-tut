@@ -10,6 +10,6 @@ $ages{ralph}=23;
 $ages{deb}=46;
 $ages{kate}=19;
   
-# print keys and values
+# print all keys and values
 print "Keys (names): ", join (" ", keys %ages), "\n";
 print "Values (ages): ", join (" " , values %ages), "\n";
