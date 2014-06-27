@@ -1,9 +1,8 @@
 #!/bin/bash
-# loop through listing with for/in/do...done
-for item in $(ls); do                  # cycle through directory listing
-   if [[ -d $item ]]; then             # test if path is directory
-      echo "$item is a directory"
-   else
-      echo "$item is not a directory"
+# loop until user exits using until/do...done construction
+until [[ "$answer" = "quit" ]]; do
+   read -p "Enter your name (quit to exit): " answer # prompt and get input
+   if [[ $answer != "quit" ]] ; then                 # echo if not exiting
+    echo Hello $answer
    fi
 done
