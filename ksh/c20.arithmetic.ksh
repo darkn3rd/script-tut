@@ -1,5 +1,5 @@
 #!/bin/ksh
-# set approximation of π
-typeset -Fr PI=3.14159265359
-# print calculaton of cos(π/4)
-print The cosine of pi/4 is: $((cos($PI/4)))
+typeset -Fr PI=3.14159265359          # set approximation of π
+radius=3                              # set radius
+area=$(($PI * pow($radius,2)))        # calculate area
+echo "The area of a circle is $area"  # output result

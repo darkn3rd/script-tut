@@ -1,5 +1,6 @@
 #!/bin/ksh
-typeset -Fr PI=3.14159265359          # set approximation of π
-radius=3                              # set radius
-area=$(($PI * pow($radius,2)))        # calculate area
-echo "The area of a circle is $area"  # output result
+# utility variables
+true=1; false=0
+# boolean logic
+result=$(($true && $false || $true))
+print "The statement (true AND false OR true) is $result"
