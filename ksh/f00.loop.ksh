@@ -1,5 +1,5 @@
 #!/bin/ksh
-# loop through listing with for/in/do...done
+# collection loop is feed each line from subshell 
 for item in $(ls); do                  # cycle through directory listing
    if [[ -d $item ]]; then             # test if path is directory
       print "$item is a directory"
