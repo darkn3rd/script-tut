@@ -1,8 +1,9 @@
 #!/bin/ksh
-let count=10                    # set initial state
-
-# use conditional loop
-while (( $count > 0 )); do # test if 0 reached
-  print "Count is $count"  # print curent count
-  let count="$count - 1"   # decrement
+# loop through listing with for/in/do...done
+for item in $(ls); do                  # cycle through directory listing
+   if [[ -d $item ]]; then             # test if path is directory
+      print "$item is a directory"
+   else
+      print "$item is not a directory"
+   fi
 done

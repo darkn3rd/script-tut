@@ -1,8 +1,8 @@
 #!/bin/ksh
-# loop until user exits using until/do...done construction
-until [[ "$answer" = "quit" ]]; do
-   read answer?"Enter your name (quit to exit): " # prompt and get input
-   if [[ $answer != "quit" ]] ; then              # print if not exiting
-    print Hello $answer
-   fi
+let count=10                    # set initial state
+
+# use conditional loop
+while (( $count > 0 )); do # test if 0 reached
+  print "Count is $count"  # print curent count
+  let count="$count - 1"   # decrement
 done
