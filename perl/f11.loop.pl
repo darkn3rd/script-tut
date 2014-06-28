@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# count loop using general loop construct
-for (my $count = 10; $count > 0; $count--) {
+# collection loop with range operator
+for my $count (reverse 1..10) {
   print "Count is $count\n";
 }
