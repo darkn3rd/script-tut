@@ -1,7 +1,7 @@
 #!/bin/bash
-let count=10                    # set initial state
-# loop 10 to 1 with while/do...done construction
-while (( $count > 0 )); do      # test if 0 reached
+# count style loop using generated sequence 
+#   that is fed into collection loop construct
+for count in {10..1}; do
   echo "Count is $count"        # print curent count
   let count="$count - 1"        # decrement
 done

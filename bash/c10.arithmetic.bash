@@ -1,5 +1,5 @@
 #!/bin/ksh
-# utility variables
+# illustrative variables
 true=1; false=0
 # boolean logic
 result=$(($true && $false || $true))
