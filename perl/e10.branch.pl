@@ -2,7 +2,7 @@
 use v5.10.1;
 print "Input a character: "; $keypress=getc(STDIN);
   
-# given construction
+# # multiway branch using given...when construct
 given ($keypress) {
   when (/[[:lower:]]/) { print "Lowercase letter\n"; }
   when (/[[:upper:]]/) { print "Uppercase letter\n"; }
