@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
  
 # create function (subroutine)
-show_date() {
+function show_date {
   echo Today is $(date +"%B %d, %Y").
 }
  

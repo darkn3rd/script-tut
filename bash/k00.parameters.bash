@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # create subroutine
-celsius() {
+function celsius {
   # get argument and save it to friendly name
   fahrenheit=$1    
   # convert to new temperature using external bc tool

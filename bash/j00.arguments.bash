@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # illustrative variables
 script_name=$0  # get name of script
 arg_count=$#    # get number of arguments
 
 # test if user entered 2 values
-if [ $arg_count -ne 2 ]; then
+if (( $arg_count != 2 )); then
   # print message if less than two numbers
   echo "\nYou need to enter two numbers: \n"
   echo "   Usage: $script_name [num1] [num2]\n"

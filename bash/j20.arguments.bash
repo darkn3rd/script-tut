@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # illustrative variables
 arg_count=$#     # get number of arguments
 # utility variables
@@ -7,7 +7,7 @@ output=""        # initialize empty output string
  
 echo "The arguments passed are (reverse order):"
 #  iterative style loop to enumerate args
-while [ $count -le $arg_count ]; do # loops while count is 1 or higher
+while (( $count <= $arg_count )); do # loops while count is 1 or higher
   arg=$1                            # save argument from positional parameter
   # build ouput string by prepending previous result
   output="  item $count: $arg\n$output" 
