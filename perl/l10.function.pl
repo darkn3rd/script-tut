@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # create function that returns a string scalar
 sub capitalize {
-  return uc($_[0]);             # return capitlized string
+  return uc($_[0]);             # return capitalized string
 }
 
 # call the function
