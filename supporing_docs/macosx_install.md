@@ -15,11 +15,31 @@ Note this is valid as of June 2014.  After this date, the files and versions ref
 
 #### Get Java
 
-Install a version of Java from Apple on the system.  Maybe this might be updated with further updates.
+Install a version of Java from Apple on the system.  Maybe this might be updated with further updates.  This installs Java JDK 6.
+
+1. Download Java from Apple: http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg
+2. Mount the image: ```hdiutil mount $HOME/Downloads/JavaForOSX2014-001.dmg```
+3. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/Java for OS X 2014-001/JavaForOSX.pkg" -target /
+```
+4. Test Results: ```java -version```
+5. Umount the volume: ```hdiutil unmount "/Volumes/Java for OS X 2014-001"```
+
+When testing using ```java --version```, the results should look like this:
+```bash
+java version "1.6.0_65"
+Java(TM) SE Runtime Environment (build 1.6.0_65-b14-466.1-11M4716)
+Java HotSpot(TM) 64-Bit Server VM (build 20.65-b04-466.1, mixed mode)
+```
 
 #### Update to Mac OS X 10.8.5
 
-This installs the full update to bring Mac OS X upto to version 10.8.5
+This will bring Mac OS X 10.8.x up to the latest version as of June 2014.  If you are already on Mac OS X 10.8.5, then this step can be skipped.
+
+1. Get Mac OS X 10.8.5 Combo: http://support.apple.com/downloads/DL1676/en_US/OSXUpdCombo10.8.5.dmg
+2. Mount the downloaded image: ```hdiutil mount $HOME/Downloads/OSXUpdCombo10.8.5.dmg```
+3. Install the package on the volume: ```sudo -S installer -verbose -pkg "/Volumes/OS X 10.8.5 Update Combo/OSXUpdCombo10.8.5.pkg" -target /```
+4. Optionally, umount the volume: ```hdiutil unmount "/Volumes/OS X 10.8.5 Update Combo"```
+5. Restart the computer: ```osascript -e 'tell app "System Events" to restart'```
 
 
 #### Install XCode 5.1.1 and XCode command line tools
@@ -36,7 +56,7 @@ This installs the full update to bring Mac OS X upto to version 10.8.5
 10. Umount command line tools volume: ```hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"```
 11. Test command line tools: ```/usr/bin/gcc --version```
 
-When testing the gcc, we should see output similar to this: 
+When testing the ```gcc --version```, we should see output similar to this: 
 ```bash
 Configured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/usr/include/c++/4.2.1
 Apple LLVM version 5.1 (clang-503.0.40) (based on LLVM 3.4svn)
