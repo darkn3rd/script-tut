@@ -66,5 +66,9 @@ Thread model: posix
 
 #### Post Installation 
 
-From here, we can choose from a variety of sources to install packages.  The two tested here are **Mac Ports** (https://www.macports.org/) and **Homebrew** (http://brew.sh/).  Alternatively, you can install your own directly from source as well.  For anything using **Java*** above JDK 6, you'll need to get this from Oracle.  The **.NET** environment and languages like C#, you can get this from Mono (http://www.go-mono.com/mono-downloads/download.html).
+From here, we can choose from a variety of sources to install packages.  The two tested here are **Mac Ports** (https://www.macports.org/) and **Homebrew** (http://brew.sh/).  Note that Homebrew works for only one user. Alternatively, you can install your own directly from source as well.
+
+For anything using **Java** above JDK 6, you'll need to fetech the latest from Oracle.  
+
+For the **.NET** environment and languages like C#, you can get this from Mono (http://www.go-mono.com/mono-downloads/download.html).
 
