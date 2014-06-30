@@ -17,10 +17,9 @@ Note this is valid as of June 2014.  After this date, the files and versions ref
 
 Install a version of Java from Apple on the system.  Maybe this might be updated with further updates.  This installs Java JDK 6.
 
-1. Download Java from Apple: http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg
+1. Download Java: http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg
 2. Mount the image: ```hdiutil mount $HOME/Downloads/JavaForOSX2014-001.dmg```
-3. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/Java for OS X 2014-001/JavaForOSX.pkg" -target /
-```
+3. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/Java for OS X 2014-001/JavaForOSX.pkg" -target /```
 4. Test Results: ```java -version```
 5. Umount the volume: ```hdiutil unmount "/Volumes/Java for OS X 2014-001"```
 
@@ -35,21 +34,20 @@ Java HotSpot(TM) 64-Bit Server VM (build 20.65-b04-466.1, mixed mode)
 
 This will bring Mac OS X 10.8.x up to the latest version as of June 2014.  If you are already on Mac OS X 10.8.5, then this step can be skipped.
 
-1. Get Mac OS X 10.8.5 Combo: http://support.apple.com/downloads/DL1676/en_US/OSXUpdCombo10.8.5.dmg
-2. Mount the downloaded image: ```hdiutil mount $HOME/Downloads/OSXUpdCombo10.8.5.dmg```
-3. Install the package on the volume: ```sudo -S installer -verbose -pkg "/Volumes/OS X 10.8.5 Update Combo/OSXUpdCombo10.8.5.pkg" -target /```
-4. Optionally, umount the volume: ```hdiutil unmount "/Volumes/OS X 10.8.5 Update Combo"```
-5. Restart the computer: ```osascript -e 'tell app "System Events" to restart'```
+1. Get Mac OS X 10.8.5 Combo Update: http://support.apple.com/downloads/DL1676/en_US/OSXUpdCombo10.8.5.dmg
+2. Mount the image: ```hdiutil mount $HOME/Downloads/OSXUpdCombo10.8.5.dmg```
+3. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/OS X 10.8.5 Update Combo/OSXUpdCombo10.8.5.pkg" -target /```
+4. Restart the computer: ```osascript -e 'tell app "System Events" to restart'```
 
 
 #### Install XCode 5.1.1 and XCode command line tools
 
 1. Get Xcode 5.1.1 from https://developer.apple.com/downloads/
-2. Mount downloaded image: ```hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg```
-3. Install Xcode: ```sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications```
+2. Mount the image: ```hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg```
+3. Install Xcode application: ```sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications```
 4. Agree to License: ```sudo xcodebuild -license```
 5. Test Results: ```/Applications/Xcode.app/Contents/Developer/usr/bin/gcc --version```
-6. Get Most recent Command Line Tools, which should be Aprile 2014 from https://developer.apple.com/downloads/
+6. Get Most recent Command Line Tools, which should be April 2014 from https://developer.apple.com/downloads/
 7. Mount downloaded image: ```hdiutil mount $HOME/Downloads/command_line_tools_for_osx_mountain_lion_april_2014.dmg```
 8. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/Command Line Tools (Mountain Lion)/Command Line Tools (Mountain Lion).mpkg" -target /```
 9. Umount the Xcode volume: ```hdiutil unmount /Volumes/Xcode```
