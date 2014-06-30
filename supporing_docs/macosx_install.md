@@ -39,15 +39,14 @@ This will bring Mac OS X 10.8.x up to the latest version as of June 2014.  If yo
 3. Install the package: ```sudo -S installer -verbose -pkg "/Volumes/OS X 10.8.5 Update Combo/OSXUpdCombo10.8.5.pkg" -target /```
 4. Restart the computer: ```osascript -e 'tell app "System Events" to restart'```
 
-
-#### Install XCode 5.1.1 and XCode command line tools
+#### Install XCode 5.1.1
 
 1. Get Xcode 5.1.1 from https://developer.apple.com/downloads/
 2. Mount the image: ```hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg```
 3. Install Xcode application: ```sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications```
 4. Agree to License: ```sudo xcodebuild -license```
 5. Test Results: ```/Applications/Xcode.app/Contents/Developer/usr/bin/gcc --version```
- 
+
 #### Install XCode Command Line Tools
 
 1. Get Most recent Command Line Tools, which should be April 2014 from https://developer.apple.com/downloads/
@@ -64,3 +63,7 @@ Apple LLVM version 5.1 (clang-503.0.40) (based on LLVM 3.4svn)
 Target: x86_64-apple-darwin12.5.0
 Thread model: posix
 ```
+
+#### Post Installation 
+
+From here, we can choose from a variety of sources to install packages.  The two tested here are Mac Ports (https://www.macports.org/) and Homebrew (http://brew.sh/).  Alternatively, you can install your own directly from source as well.  For anything using Java, you'll need to get this from Oracle.
