@@ -48,7 +48,10 @@ Not all of the content can adequately be covered for every language.  The script
 
 ### Output
 
-Simple output to STDOUT (standard output)
+This section has two sections now:
+
+1. Output a string to STDOUT (Standard Output)
+2. Output a string to STDERR (Standard Error)
 
 ### Variables
 
