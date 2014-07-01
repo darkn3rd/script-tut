@@ -27,7 +27,7 @@ The current languages are supported:
 
 †† Utilities available with either POSIX Utilities [http://pubs.opengroup.org/onlinepubs/009696699/utilities/contents.html] or GNU Core-Utils [http://www.gnu.org/software/coreutils/] may be used.
 
-**BRAINSTORM** *I may add JavaScript using Node.js environment.  If there was enough interest I could add other languages like REXX, LUA, Haskell, Guile, etc.  At the moment, I am interested in developing OOP tutorials, as well as exploring intermediate (file, socket, arrays, text processing) and advanced (SQL DB, LDAP, Web).*
+**BRAINSTORM** *Experimented with Node.js environment, as alternative JavaScript platform, but too complex for standard procedures like reading from a line without getting into attaching messenger functions to events to support asynchronous model of Node.js.  This is way too advance for beginning programmers.  Considering adding Groovy, as this is quite popular for build automation, and also potentially testing Powershell on Linux and Mac OS X with https://github.com/Pash-Project/Pash*
 
 ## Content 
 
@@ -174,6 +174,10 @@ This section sprinkle in the following:
 * format the precesion of floating point number in output
 
 **Brainstorming**: *Considering expanding this to show how to pass two arrays, and languages vary in this regard.  This may cause the need to introduce the concept of pass-by-value and pass-by-reference, which is implicit in some languages.  This is tabled for version 2.0 of the project*
+
+### Exiting
+
+This section covers exiting from a script and returning an exit code.
 
 ### Functions
 
