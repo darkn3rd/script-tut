@@ -274,6 +274,9 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-06-30: Added stderr snippet to all languages: (k|c|ba)?sh, (j|vb)script, p(ython|erl|hp) tcl, ruby, awk
+* 2014-06-29: Mac OS X 10.8.5 base system install notes (xcode 5.1.1, JDK6, os x 10.8.5 combo update)
+* 2014-06-28: Reshuffled categories, allowing room for exit status codes
 * 2014-06-27: Brought KSH up to date. 
 * 2014-06-24: Revise loop section: jscript, powershell, vbscript
 * 2014-06-23: Revise loop section: awk, batch csh, perl, php, python, powershell, shell, tcl, vbscript
