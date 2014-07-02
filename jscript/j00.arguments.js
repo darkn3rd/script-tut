@@ -4,8 +4,8 @@ var script_name = WScript.ScriptName        // get script name
 // check for only two arguments
 if (WScript.Arguments.Count() != 2) {
  // print helpful instructions
- WScript.Echo("\nYou need to enter two numbers:\n");
- WScript.Echo("   Usage: " + script_name + " [num1] [num2]");
+ WScript.StdErr.Write("\nYou need to enter two numbers:\n");
+ WScript.StdErr.Write("   Usage: " + script_name + " [num1] [num2]");
 } else {
  // get sum of both arguments, force cast to integer
  var sum = parseInt(WScript.Arguments.Item(0)) + 
