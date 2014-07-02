@@ -5,8 +5,9 @@ BEGIN {
   script_name = ARGV[0];    # get script name
 
   if (arg_count != 2) {
-    printf "\nYou need to enter two numbers: \n\n"
-    printf "   Usage: %s [num1] [num2]\n\n", script_name
+    # output usage statement to standard error
+    printf "\nYou need to enter two numbers: \n\n" > "/dev/stderr"
+    printf "   Usage: %s [num1] [num2]\n\n", script_name > "/dev/stderr"
   } else {
     sum = ARGV[1] + ARGV[2]; # get sum of both arguments
     # print results of both arguments and summation
