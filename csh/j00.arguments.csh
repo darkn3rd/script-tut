@@ -1,9 +1,9 @@
 #!/bin/tcsh
 # test for 2 arguments
 if ($#argv != 2) then
-  # print friendly message
-  echo "You need to enter two numbers: "  
-  echo "   Usage: $0 num1 num2"
+  # output usage statement to standard error
+  printf "\nYou need to enter two numbers: \n\n"  > /dev/stderr
+  printf "   Usage: $0 [num1] [num2]\n\n" > /dev/stderr
 else
   # print sum of two integer arguments
   @ sum = $argv[1] + $argv[2]
