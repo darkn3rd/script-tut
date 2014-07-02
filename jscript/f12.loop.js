@@ -6,9 +6,11 @@ for (count in sequence) {
 }
 
 /***************************************
- * range (start,finish) - generate a sequence of numbers between start and finish.
- *   Helper function as JScript doesn't have range function or operator to generate
- *   sequence of numbers.  
+ * range (start,finish) - generate a sequence of numbers between start and 
+ *   finish.
+ * 
+ *   Helper function as JScript doesn't have range function or operator to 
+ *   generate sequence of numbers.  
  *************************************** */
 function range (start,finish) {
   var sequence = new Array;      // create new dynamic array on heap
