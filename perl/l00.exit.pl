@@ -6,7 +6,7 @@ $EX_USAGE    = 64;         # status for command line usage error
 $EX_OK       = 0;          # status for successful termination
 
 # check for correct number of arguments
-if ($arg_count < 2) {
+if ($arg_count < 1) {
 	usage_message();         # output usage message
 } else {
 	addNums(@ARGV)           # process arguments
