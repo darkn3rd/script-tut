@@ -7,9 +7,9 @@ script_name = sys.argv[0]       # get name of script
 
 # check for only 2 arguments
 if arg_count != 2:
-   # print helpful instructions 
-   print "\nYou need to enter two numbers: \n"
-   print "   Usage: %s [num1] [num2]\n" % script_name
+   # ouptut usage statement to standard error
+   sys.stderr.write("\nYou need to enter two numbers: \n\n")
+   sys.stderr.write("   Usage: %s [num1] [num2]\n\n" % script_name)
 else:
    # get sum of both arguments, force cast them to integer
    sum = int(sys.argv[1]) + int(sys.argv[2])  
