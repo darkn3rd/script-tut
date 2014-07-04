@@ -1,14 +1,14 @@
 #!/usr/bin/python
 import sys
-
+# illustrative variables
+arg_count   = len(sys.argv) - 1 # get num of real arguments
 # utility variables
-count = 1                 # initialize counter
+count = arg_count               # initialize counter
 
 print "The arugments passed are:"
 # use collection loop to enumerate arguments
-#   Note: Python includes scriptname into collection
-for arg in sys.argv[1:]:
+for arg in reversed(sys.argv[1:]):
    # print count and argument using count index
    print " item %d: %s" % (count,arg)
-   # increment counter
-   count += 1
+   # decrement counter
+   count -= 1

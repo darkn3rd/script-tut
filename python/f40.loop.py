@@ -2,6 +2,7 @@
 import re
 # spin loop as always true condition
 #   break to exit from loop
+#   continue to skip when there is no input
 while True:
   # print a prompt and get answer
   answer = raw_input("Enter your name (quit to Exit): ")

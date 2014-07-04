@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# count style loop using conditional while construct
-count = 10                     # initialize counter
-while count > 0:
-    print "Count is",  count   # output result
-    count-=1                   # decrement counter
+# count style loop using range to generate a sequence
+#    that is fed into collection loop
+for count in range(10,0,-1):    # range is between 10 and 1
+    print "Count is",  count

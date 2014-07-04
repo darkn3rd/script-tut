@@ -1,5 +1,8 @@
 #!/usr/bin/python
-import math
+# floating-point math
+PI     = 3.1415927            # python float datatype
+radius = 3                    # python int datatype
+area   = PI * pow(radius, 2)  # python float datatype as math involves float
  
-PI=3.14115927
-print "The cosine of pi/4 is: ", math.cos(PI/4)
+# output results of floating point math
+print "The area of a circle is:", area

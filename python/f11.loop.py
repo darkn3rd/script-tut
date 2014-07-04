@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # count style loop using range to generate a sequence
 #    that is fed into collection loop
-for count in reversed(xrange(10)):    
-    print "Count is",  (count+1)
+for count in range(10):
+	# using some math to reverse each countfrom 10 to 1
+    print "Count is",  ((count-10)*-1)

@@ -7,8 +7,7 @@ last  = len(sys.argv) # index of last argument
 count = 1             # initialize counter
 
 print "The arugments passed are:"
-
-# use iterative loop
+# use count style loop
 while count < last:
    arg = sys.argv[count]  # get arg using index
    # print count and argument using count index
