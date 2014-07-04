@@ -8,11 +8,15 @@
 
 Before taking full advantage of Ruby or using some of the package managers mentioned in this ReadMe, you will need to get Xcode Developer Tools from Apple and also install the Xcode command line tools.  This process unfortunately differs from OS version to OS version.  There are some decent instructions at: http://guide.macports.org/#installing.xcode.
 
-hdiutil attach xcode_5.1.1.dmg
-/Volumes/Xcode/Xcode.app
-sudo cp -R -f "/Volumes/Xcode/Xcode.app" /Applications
-
-Here's how you can get latest tools
+```bash
+hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg
+sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
+sudo xcodebuild -license
+hdiutil mount $HOME/Downloads/command_line_tools_for_osx_mountain_lion_april_2014.dmg
+sudo -S installer -verbose -pkg "/Volumes/Command Line Tools (Mountain Lion)/Command Line Tools (Mountain Lion).mpkg" -target /
+hdiutil unmount /Volumes/Xcode
+hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
+```
 
 #### Default
 
