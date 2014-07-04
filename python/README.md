@@ -8,7 +8,11 @@
 This covers notes regarding each section.
 
 1. Output
+   * output text to standard out
+   * output text to standard error
 2. Variables
+   * output variables using string concatenation
+   * output variables using string interpolation
 3. Arithmetic
 4. Input
 5. Branch
@@ -18,9 +22,7 @@ This covers notes regarding each section.
    * if on single character
      * *used* ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
 6. Looping
-   * iterative loop 
-      * example: 10 to 1
-        * *while loop used for count down loop* 
+   * count loop 
    * conditional loops
    * collection loop
       * iterate through set of items 
@@ -28,7 +30,6 @@ This covers notes regarding each section.
 7. Arrays
    * Array Initialization
       * initialize array by index
-        * *couldn't set element to string, used array of chars* 
       * array length
       * enumerate all elements
    * Array Enumeration 
@@ -49,12 +50,11 @@ This covers notes regarding each section.
     * demonstrate processing 2 arguments
       * **NOTES:** *Python includes scriptname as first argument in ```sys.argv```
     * demonstrate printing all arguments
-      * **NOTES:** 
-          * *Cannot use shift as not available in Python 2.x, and less optimal in any event as have to contend with script name as one of the elements*
-          * *Use iterative loops to enumerate arguments* 
     * demonstrate printing arguments in reverse order
 11. Parameters
     * demonstrate passing unlimited arguments
+12. Exiting
+    * demonstrate exiting with error code to communicate status
 12. Functions
     * demonstrate function with return int
     * demonstrate function with return string
