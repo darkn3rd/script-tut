@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # list of utilities Mac OS X says are built-in
-posix_builtins="alias bg break cd command continue echo eval exec exit export false fc fg getopts hash jobs kill printf pwd read readonly return set shift test times trap true type ulimit umask unalias unset wait"
+bash_builtins="alias bg break cd command continue echo eval exec exit export false fc fg getopts hash jobs kill printf pwd read readonly return set shift test times trap true type ulimit umask unalias unset wait"
 
 # from Wikipedia
+# http://en.wikipedia.org/wiki/List_of_Unix_utilities
 posix_sccs="delta get prs rmdel sact sccs unget val what"
 posix_batch="qalter qdel qhold qmove qmsg qrerun qrls qselect qsig qstat qsub"
 posix_cprog="c99 cflow ctags cxref lex nm strings strip yacc"
@@ -18,11 +19,14 @@ posix_textprocessing="asa awk comm csplit cut diff ed ex expand fold head iconv 
 posix_misc="alias ar bc cal crontab date env fc gencat getconf grep hash id ipcrm ipcs locale localedef logname m4 mailx man mesg newgrp od pax split stty tabs talk tput tty type ulimit umask unalias uname uncompress write"
 
 # omitted from Wikiepedia
-posix_omitted="break colon continue dot eval exec exit export readonly return set shift times trap true unset"
+posix_omitted="break colon continue . eval exec exit export readonly return set shift times trap true unset"
 
 # list of utilitlies found on X/Open site
 # http://pubs.opengroup.org/onlinepubs/009695399/idx/utilities.html
-posix_utils="admin alias ar asa at awk basename batch bc bg break c99 cal cat cd cflow chgrp chmod chown cksum cmp colon comm command compress continue cp crontab csplit ctags cut cxref date dd delta df diff dirname dot du echo ed env eval ex exec exit expand export expr false fc fg file find fold fort77 fuser gencat get getconf getopts grep hash head iconv id ipcrm ipcs jobs join kill lex link ln locale localedef logger logname lp ls m4 mailx make man mesg mkdir mkfifo more mv newgrp nice nl nm nohup od paste patch pathchk pax pr printf prs ps pwd qalter qdel qhold qmove qmsg qrerun qrls qselect qsig qstat qsub read readonly renice return rm rmdel rmdir sact sccs sed set sh shift sleep sort split strings strip stty tabs tail talk tee test time times touch tput tr trap true tsort tty type ulimit umask unalias uname uncompress unexpand unget uniq unlink unset uucp uudecode uuencode uustat uux val vi wait wc what who write xargs yacc zcat"
+posix_utils="admin alias ar asa at awk basename batch bc bg break c99 cal cat cd cflow chgrp chmod chown cksum cmp colon comm command compress continue cp crontab csplit ctags cut cxref date dd delta df diff dirname . du echo ed env eval ex exec exit expand export expr false fc fg file find fold fort77 fuser gencat get getconf getopts grep hash head iconv id ipcrm ipcs jobs join kill lex link ln locale localedef logger logname lp ls m4 mailx make man mesg mkdir mkfifo more mv newgrp nice nl nm nohup od paste patch pathchk pax pr printf prs ps pwd qalter qdel qhold qmove qmsg qrerun qrls qselect qsig qstat qsub read readonly renice return rm rmdel rmdir sact sccs sed set sh shift sleep sort split strings strip stty tabs tail talk tee test time times touch tput tr trap true tsort tty type ulimit umask unalias uname uncompress unexpand unget uniq unlink unset uucp uudecode uuencode uustat uux val vi wait wc what who write xargs yacc zcat"
+
+# http://pubs.opengroup.org/onlinepubs/009695399/idx/sbi.html
+posix_builtins="break colon continue dot eval exec exit export readonly return set shift times trap unset"
 
 no_util=""
 
