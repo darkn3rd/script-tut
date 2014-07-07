@@ -20,7 +20,7 @@ This is an ad-hoc index on scripting languages.  The language popularity may ref
 
 ## Notes
 
-Recently (June 2014), JavaScript has the job demand amongst the scripting languages. After JavaScript, Python has surpassed both Perl and PHP in job demands.  This differs from popularity indexes, such asTIOBE and Sourceforge. These show PHP to be more popular than JavaScript, Perl, and Python.
+Recently (June 2014), JavaScript has the highest demand amongst the scripting languages. After JavaScript, Python has surpassed both Perl and PHP in job demands.  This differs from popularity indexes, such as TIOBE (http://www.tiobe.com/index.php/content/paperinfo/tpci/index.html) and Sourceforge (http://lang-index.sourceforge.net/). These show PHP to be more popular than JavaScript, Perl, and Python.
 
 http://www.indeed.com/jobtrends?q=PHP%2C+JavaScript%2C+Ruby%2C+Perl%2C+Python&l=
 
