@@ -21,6 +21,7 @@ posix_misc="alias ar bc cal crontab date env fc gencat getconf grep hash id ipcr
 posix_omitted="break colon continue dot eval exec exit export readonly return set shift times trap true unset"
 
 # list of utilitlies found on X/Open site
+# http://pubs.opengroup.org/onlinepubs/009695399/idx/utilities.html
 posix_utils="admin alias ar asa at awk basename batch bc bg break c99 cal cat cd cflow chgrp chmod chown cksum cmp colon comm command compress continue cp crontab csplit ctags cut cxref date dd delta df diff dirname dot du echo ed env eval ex exec exit expand export expr false fc fg file find fold fort77 fuser gencat get getconf getopts grep hash head iconv id ipcrm ipcs jobs join kill lex link ln locale localedef logger logname lp ls m4 mailx make man mesg mkdir mkfifo more mv newgrp nice nl nm nohup od paste patch pathchk pax pr printf prs ps pwd qalter qdel qhold qmove qmsg qrerun qrls qselect qsig qstat qsub read readonly renice return rm rmdel rmdir sact sccs sed set sh shift sleep sort split strings strip stty tabs tail talk tee test time times touch tput tr trap true tsort tty type ulimit umask unalias uname uncompress unexpand unget uniq unlink unset uucp uudecode uuencode uustat uux val vi wait wc what who write xargs yacc zcat"
 
 no_util=""
