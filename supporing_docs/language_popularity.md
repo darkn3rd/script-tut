@@ -37,7 +37,9 @@ Visual Basic has a high demand on TIOBE indexes, more so than VB.NET.  This is i
 
 For WSH hosted languages, JScript has little coverage, and is hard to find any documentation.  VBScript is the most popular WSH language.  Other WSH hosted languages, will be all but invisible.  
 
-As far as popularity goes, it is still split between VBScript and Powershell, with growing demand for PowerShell.  In reality though, a mix of solutions will be used for automation, such as Perl, Ruby, Python, Batch (Command Shell), and Powershell.  It usually depends on what is easiest to implement.
+As far as popularity index goes, VBScript seems to be more popular. I have my doubts. For Job Trends, demand for Powershell outpaced VBScript in 2012. 
+
+From what I seen, on the Windows platform for SaaS products that use Windows Server and IIS with ASP.NET, a variety of languages will be used.  There will be Batch (Command Shell) and PowerShell, with some borrowed VBScript scripts (if they are well developed and in the public domain).  There may even be some use of GNU Core Utilities, such as the date command, as Microsoft's facilities for this are either too weak (e.g. Command Shell) or complex (e.g. exporting variables from Powershell into Command Shell).  Other scripting langauges may be used, such as Perl, Ruby, and Python.  In one case, I saw use of Rake (Ruby) and Psake (Powershell) for building JavaScript assets for a web service.
 
 http://www.indeed.com/jobtrends?q=VBScript%2C+JScript%2C+Powershell&l=
 
@@ -45,7 +47,7 @@ http://www.indeed.com/jobtrends?q=VBScript%2C+JScript%2C+Powershell&l=
 
 JavaScript takes a back seat to Python and PHP as far as popularity goes on TIOBE and Sourceforge, but it has the highest demand from employers.  This might have something to do with Node.js, which is a server platform that uses JavaScript for the scripting language.  Client scripters can transfer their skills to server side scripting now, so we may see Node.js supplant PHP over time.  
 
-For old school web scripters, Flash uses a form of the language, called ActionScript, and even Adobe Acrobat PDF scripts support scripting forms with JavaScript.  There's a small list of where JavaScript is used beside web browsers:
+For old school web scripters, Flash uses a form of the language, called ActionScript, and even Adobe Acrobat PDF scripts support scripting forms with JavaScript.  Here's a small list of where JavaScript is used besides web browsers:
 
   - OSA Hosted Scripting language to Mac OS automation - http://en.wikipedia.org/wiki/JavaScript_OSA
   - WSH Hosted Scripting language for Windows automaton - http://en.wikipedia.org/wiki/JScript
