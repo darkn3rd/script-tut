@@ -91,7 +91,6 @@ There have been ports of scripting languages to popular virtual machines, such a
   * CLR VM
     * Microsoft .NET - http://www.microsoft.com/net
     * Mono - http://www.mono-project.com/Main_Page
-    * DotGNU - http://www.dotgnu.org/
   * Java VM
     * Open JDK - http://openjdk.java.net/
     * Oracle Java - http://www.oracle.com/technetwork/java/index.html
