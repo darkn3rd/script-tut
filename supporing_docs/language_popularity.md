@@ -20,15 +20,26 @@ This is an ad-hoc index on scripting languages.  The language popularity may ref
 
 ## Notes
 
-Recently (June 2014), I am seeing the popularity of Python for job demands, and this has jumped ahead of Perl and PHP.  JavaScript has the highest demand for jobs, but do not have highest popularity in TIOBE and Sourceforge indexes.  Groovy is showing a lot of recent demand, especially for build automation and continious integration. Also with job demands, Powershell has surpased Bourne Again Shell (bash), but are still relatively small compared to JavaScript, Perl, PHP, and Python.  
+Recently (June 2014), JavaScript has the job demand amongst the scripting languages. After JavaScript, Python has surpassed both Perl and PHP in job demands.  This differs from popularity indexes, such asTIOBE and Sourceforge. These show PHP to be more popular than JavaScript, Perl, and Python.
+
+http://www.indeed.com/jobtrends?q=PHP%2C+JavaScript%2C+Ruby%2C+Perl%2C+Python&l=
+
+I am also seeing  a lot of Job demand for Groovy, which is popular for continuos integration and build automation.  It is used with Gradle build system, and is used for automation for Jenkins.
+
+There have been some job demand for Powershell, which has surpassed bash (Bourne AgainShell).
+
+http://www.indeed.com/jobtrends?q=Powershell%2C+Bash%2C+Groovy%2C+VBScript&l=
+
 
 #### Microsoft Platform
 
-Visual Basic has a high demand on TIOBE indexes, more so than VB.NET.  This is interesting, considering these langauges are related to VBScript.  VBScript still remains very popular today, but in job demands, there is more recent interest in PowerShell.  
+Visual Basic has a high demand on TIOBE indexes, more so than VB.NET.  This is interesting, considering these languages are related to VBScript.  VBScript still remains very popular today, but in job demands, there is more recent interest in PowerShell.  
 
-For WSH hosted langauges, JScript has little coverage, and is hard to find any documenation.  VBScript is the most popular WSH language.  Other WSH hosted langauges, will be all but invisible.  
+For WSH hosted languages, JScript has little coverage, and is hard to find any documentation.  VBScript is the most popular WSH language.  Other WSH hosted languages, will be all but invisible.  
 
 As far as popularity goes, it is still split between VBScript and Powershell, with growing demand for PowerShell.  In reality though, a mix of solutions will be used for automation, such as Perl, Ruby, Python, Batch (Command Shell), and Powershell.  It usually depends on what is easiest to implement.
+
+http://www.indeed.com/jobtrends?q=VBScript%2C+JScript%2C+Powershell&l=
 
 #### JavaScript
 
@@ -44,17 +55,26 @@ For old school web scripters, Flash uses a form of the language, called ActionSc
 
 #### Bourne Shell Family
 
-The historical Bourne Shell shares the same basic programming structures as the orgiinal Bourne Shell.  Shells like Z Shell (zsh), Korn Shell (ksh) and Bourne Again Shell (bash), are drop in replacements for the original shell, and are thus while extending the features, are backwards compatible.  Almquist Shell (ash) and Debian Almquist shells (dash) are direct substitutes that were created to avoid licensing or copyright problems. All of these have been updated to support POSIX compliance, and thus can be called POSIX shell, refering to the upgraded syntax and features specified in the standard.
+The historical Bourne Shell shares the same basic programming structures as the original Bourne Shell.  Shells like Z Shell (zsh), Korn Shell (ksh) and Bourne Again Shell (bash), are drop in replacements for the original shell, and are thus while extending the features, are backwards compatible.  Almquist Shell (ash) and Debian Almquist shells (dash) are direct substitutes that were created to avoid licensing or copyright problems. All of these have been updated to support POSIX compliance, and thus can be called POSIX shell, referring to the upgraded syntax and features specified in the standard.
 
-It is dubiously hard to track, which of any are more popular than the other, as they all share the same syntax language, but with different features.  Also, these tools depend significantly on external tools, which a variety of toosl available or documented in POSIX (http://pubs.opengroup.org/onlinepubs/009695399/idx/utilities.html) and GNU Core Utils (http://www.gnu.org/software/coreutils/).
+It is dubiously hard to track, which of any are more popular than the other, as they all share the same syntax language, but with different features.  Also, these tools depend significantly on external tools, which a variety of tools available or documented in POSIX (http://pubs.opengroup.org/onlinepubs/009695399/idx/utilities.html) and GNU Core Utils (http://www.gnu.org/software/coreutils/).
 
 In the industry, shell scripting is the staple core skill required.  On any Linux environment, you can be sure that bash will be required.  On Unix environments that are based on SVR Unix, such as AIX or Solaris, ksh will be desired.
 
-#### C Shell and Awk
+http://www.indeed.com/jobtrends?q=Bash%2C+%22Korn+Shell%22%2C+ksh%2C+awk%2C+csh%2C+tcl&l=
 
-This is an all but forgotten language.  The language is riddled with syntactical bugs, and the community has not taken interest to document the language.  I only dabbled with this because it was popular a long time ago when there was only the original Bourne Shell and Awk, and also because there is hardly any documenation on it anywhere.  I thought it was useful to look at it, as some ideas were borrowed from it and used in other languages.
+#### C Shell, Tcl, and Awk
 
-As for Awk, you'll see this used in niche places.  Probably not full blown scripts, as Perl or another language will takes its place.  Awk is still evolving, with ocassional features added from Gawk (GNU Awk) that comes with GNU Core Utils.
+C Shell is an all but forgotten language.  The shell is riddled with syntactical bugs, and the community has not taken interest to document the language or fix its problems.  Even with this, you'll see some ideas borrowed from CSH and used in more popular languages.
+
+As for Awk, you'll see this used in niche places.  Probably not full blown scripts, as Perl or another language will takes its place.  Awk is still evolving, with occasional features added from Gawk (GNU Awk) that comes with GNU Core Utils.
+
+TCL was popular as a test tool for embedded systems in the 1990s and was also popular for automating interactive text programs with a tool called Expect before SSH became popular.  TCL was extended with graphical widget system called Tk.  This made Tcl/Tk famous, as programming graphical interfaces on Unix and Linux was challenging and limited, at least before the release of KDE and Gnome Desktop.  It also offered away to have one code base for cross-platform applications on Mac OS (Classic), Windows '95 OSes, the X Windows System used on Linux and Unix.  Tcl/Tk became quite a popular multimedia platform, before web applications (HTML or Flash) became ubiquitous.  
+
+These days with rich UX (user experiences) on gadgets, web, or desktop applications, Tcl/Tk is just too limited, and with plethora of robust scripting languages, TCL does command much of an audience.  Still, in some niche areas, such as networking equipment from Cisco and F5, TCL can be used to automate some complex chores on such equipment.
+
+http://www.indeed.com/jobtrends?q=%22Korn+Shell%22%2C+ksh%2C+awk%2C+csh%2C+tcl&l=
+
 
 ## Runtime Environments
 
