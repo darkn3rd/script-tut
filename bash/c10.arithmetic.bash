@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/bash
 # illustrative variables
 true=1; false=0
 

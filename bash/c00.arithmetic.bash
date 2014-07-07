@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/bash
 # integer arithmatic
 width=5; length=6
 
