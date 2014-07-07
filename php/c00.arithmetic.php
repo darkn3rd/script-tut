@@ -1,11 +1,9 @@
 #!/usr/bin/php
 <?php
-// integer arithmatic
+// declare variables
 $width = 5; $length = 6;
+// calculate area
 $area = $width * $length;
+// output results
 echo "The area of a square(width=$width, length=$length) is $area\n";
- 
-// bolean logic
-$result = TRUE && FALSE || TRUE;
-echo "The statement (true AND false OR true) is $result\n";
 ?>

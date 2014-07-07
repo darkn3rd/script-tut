@@ -1,7 +1,12 @@
 #!/bin/awk -f
 BEGIN {
- pi = 3.1415927
- radius = 3
- area = pi * radius^2
- print "The area of a circle with a radius of 3 is: " area
+ # illustrative variables
+ true   = 1
+ false  = 0
+
+ # calculate the result
+ result = true && false || true
+
+ # output results
+ print "The statement (true AND false OR true) is " result
 }

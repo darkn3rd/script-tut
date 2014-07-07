@@ -1,12 +1,4 @@
 @ECHO off
-REM integer arithmatic math example
-SET width=5
-SET length=6
-SET /a area=width * length
- 
-REM output integer arithmatic math results
-ECHO The area of a square(width=%width%,length=%length%) is %area%
-  
 REM boolean logic example
 SET true=1
 SET false=0

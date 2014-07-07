@@ -1,4 +1,7 @@
 #!/bin/sh
-readonly PI=3.1415927     #  La valeur approximative de π
- 
-echo the cosine of pi / 4 is:  $(awk "BEGIN {print cos($PI/4)}")
+readonly PI=3.14159265359     #  La valeur approximative de π
+radius=3
+# calculate area
+area=$(echo "$PI * $radius ^ 2" | bc)
+# output results
+echo The area of a circle is $area.

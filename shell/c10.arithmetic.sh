@@ -1,6 +1,7 @@
 #!/bin/sh
-readonly PI=3.1415927     #  La valeur approximative de π
-radius=3
-area=$(echo "$PI * $radius ^ 2" | bc)
- 
-echo $area
+# illustrative variables
+true=1; false=0
+# calcualte boolean logic
+result=$(($true && $false || $true))
+# output results
+echo "The statement (true AND false OR true) is $result"

@@ -1,2 +1,5 @@
-PI = 3.145926
-WScript.Echo("The cosine of pi/4 is: " + Math.cos(PI/4))
+PI       = 3.14159265359;
+radius   = 3;
+area     = PI * Math.pow(radius, 2);
+
+WScript.Echo("The area of a circle (radius=" + radius + ") is " + area + ".");

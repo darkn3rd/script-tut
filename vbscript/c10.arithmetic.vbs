@@ -1,5 +1,4 @@
-const PI = 3.1415927
-radius   = 3
-area     = PI * radius ^ 2
-
-wscript.echo "The area of a circle (radius=" & radius & ") is " & area & "."
+' calculate boolean logic
+result = true and false or true
+' output results
+wscript.echo "The statement (true AND false OR true) is " & result

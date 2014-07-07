@@ -1,6 +1,10 @@
 #!/usr/bin/ruby
-PI     = 3.1415927          # approximation of π
-radius = 3
-area   = PI * radius ** 2   # calculate  π * r^2
+# integer arithmatic
+width  = 5
+length = 6
+area   = width * length
+puts "The area of a square(width=#{width}, length=#{length}) is #{area}"
  
-puts "The area of a circle is #{area}"
+# bolean logic
+result = true and false or true
+puts "The statement (true AND false OR true) is #{result}"

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # floating-point math
-PI     = 3.1415927            # python float datatype
+PI     = 3.14159265359        # python float datatype
 radius = 3                    # python int datatype
 area   = PI * pow(radius, 2)  # python float datatype as math involves float
  

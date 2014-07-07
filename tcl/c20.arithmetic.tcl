@@ -1,2 +1,6 @@
-set PI 3.14115927
-puts [ format "The cosine of pi/4 is: %f" [expr cos($PI/4)]]
+#!/usr/bin/tclsh
+set PI     3.14159265359
+set radius 3
+set area   [expr $PI * $radius ** 2]
+ 
+puts "The area of a circle is $area"

@@ -1,6 +1,9 @@
 #!/bin/ksh
 # utility variables
 true=1; false=0
-# boolean logic
+
+# calculate result
 result=$(($true && $false || $true))
+
+# output result
 print "The statement (true AND false OR true) is $result"

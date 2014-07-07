@@ -1,8 +1,8 @@
 #!/usr/bin/php
 <?php
-define('PI', '3.1415927');
-$radius = 3;
-$area = PI * pow($radius, 2);
- 
-echo "The area of a circle is $area.\n"
+// calculate bolean logic
+$result = TRUE && FALSE || TRUE;
+
+// output results
+echo "The statement (true AND false OR true) is $result\n";
 ?>
