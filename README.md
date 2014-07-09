@@ -146,21 +146,28 @@ The demonstration subroutine shows how to use the date functionality to print ou
 
 ### Arguments
 
-This section introducers how to process command line arguments.  The first demonstration shows how to get the quantity of arguments passed to the script, and then to print an usage statement should the quantity be incorrect.  The other demonstrations show how to print out all of the argument in order then in reverse order.  This exposes some challenges in various languages.
+The section shows how to process command line arguments.
 
-**NOTE**: *This section was in flux as to the order, as scripting languages differ greatly in their facility to process command line arguments, various looping constructs available to process such arguments.  Different combinations offer unique scenarios.*
+1. Testing Arguments and Usage Message
+2. Processing Arguments in Order
+3. Processing Arguments in Reverse Order
 
-After much consideration, the following areas would be covered given features available to each language:
+Scripting environments vary in how they expose command line arguments, e.g. objects, arrays, position parameters, and so forth, and also vary in the variety or limitation of looping constructs that can process command line arguments.  
+
+Given this, this is the devised strategy for ordering how to illustrate how to process arguments given the variances:
 
 * enumerating arguments in order
-  * collection style loop
+  * collection loop
   * count style loop where sequence of numbers is generated
-  * alternative looping constructs (various given the language in question)
-  * count style loop where counter is incremented
+  * any alternative looping constructs (this varies)
+  * count style loop where a counter is incremented
 * enumerating arguments in reverse order
-  * count style loop where counter is decremented
-  * count style loop where sequence of numbers in reverse is generated
-     
+  * count style loop where a counter is decremented
+  * count style loop where sequence of numbers in reverse order is generated
+  * any alternative looping constructs (this varies)
+  
+Essentially, for the forward order, a collection loop is usually the easiest (unless the script name is included in the collection of arguments), while for reverse, using some index in reverse order seems to be the easiest routes.
+
 ### Parameters
 
 This section shows how to pass parameters to a subroutine (or function).  This section shows how to pass a single parameter, and also shows how to pass a variable number of parameters.
@@ -281,6 +288,9 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-07-08: PowerShell, (J|VB)Script exit-code snippet.
+* 2014-07-03: Python, Perl exit-code snippet
+* 2014-07-02: PHP, Perl, Python, TCL, Ruby, (k|c|ba)?sh, (j|vb)script stderr snippet.
 * 2014-06-30: Added stderr snippet to all languages: (k|c|ba)?sh, (j|vb)script, p(ython|erl|hp) tcl, ruby, awk
 * 2014-06-29: Mac OS X 10.8.5 base system install notes (xcode 5.1.1, JDK6, os x 10.8.5 combo update)
 * 2014-06-28: Reshuffled categories, allowing room for exit status codes
