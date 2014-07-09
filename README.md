@@ -79,9 +79,13 @@ Demonstrate how to interactively get data from STDIN (Standard Input) and also s
 
 Demonstrate how to select or test on a single number, character, or pattern.  Show do multiple tests on a single item (sort of a like a reverse select), which typically involves some switch or case facility in the language.
 
-1. **Branch on Number**
-2. **Multiway Branch on Character Pattern**
-3. **Branch on Character Pattern**
+1. **Branch on a Number** - simple menu (*to be added*)
+2. **Branch on a Letter** - simple menu (*to be added*)
+3. **Branch on a Number Range** - check range
+4. **Multiway Branch on a Number** - simple menu (*to be added*)
+5. **Multiway Branch on a Letter** - simple menu (*to be added*)
+6. **Multiway Branch on a Character Pattern** - determine type of letter
+7. **Branch on Character Pattern**  - determine type of letter
 
 ### Looping
 
