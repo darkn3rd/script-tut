@@ -87,6 +87,8 @@ Demonstrate how to select or test on a single number, character, or pattern.  Sh
 6. **Multiway Branch on a Character Pattern** - determine type of letter
 7. **Branch on Character Pattern**  - determine type of letter
 
+**BRAINSTORM** Want to fit in ternary operator where appropriate, or a Yes|No scenario.
+
 ### Looping
 
 This section will have the following sections:
