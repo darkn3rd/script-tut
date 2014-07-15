@@ -5,36 +5,34 @@ import sys  # system library for standard input and output
 menu = """\
 Select an item from the menu.
 
-  A - Coffee
-  B - Espresso
-  C - Latte
-  D - Machiato
-  E - Capucino
-  F - Mocha
-  G - Tea
+  1 - Coffee
+  2 - Espresso
+  3 - Latte
+  4 - Machiato
+  5 - Capucino
+  6 - Mocha
+  7 - Tea
 
 Make your selection: """
  
 # get user output 
 sys.stdout.write(menu)         # output prompt
 selection = sys.stdin.read(1)  # read one character
-# convert to uppercase if user entered lowercase
-selection = selection.upper()            
 
-# test on a single variable selection
-if selection == "A":
+# test selection to matching number
+if selection == "1":
   print "You selected a Coffee"
-elif selection == "B":
+elif selection == "2":
   print "You selected an Espresso"
-elif selection == "C":
+elif selection == "3":
   print "You selected a Latte"
-elif selection == "D":
+elif selection == "4":
   print "You selected a Machiato"
-elif selection == "E":
+elif selection == "5":
   print "You selected a Capucino"
-elif selection == "F":
+elif selection == "6":
   print "You select a Mocha"
-elif selection == "G":
+elif selection == "7":
   print "You selected a Tea"
 else:
   print "You have not entered a valid selection"
