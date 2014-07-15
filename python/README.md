@@ -74,20 +74,26 @@ This covers notes regarding each section.
 1. Output
    * output text to standard out
    * output text to standard error
+     * demonstrate Python 2.x: ```print >>sys.stderr```
+     * demonstrate: ```sys.stderr.write```
 2. Variables
    * output variables using string concatenation
    * output variables using string interpolation
+     * demonstrate using ```%``` operator
+     * demonstrate using ```format()``` method
 3. Arithmetic
 4. Input
 5. Branch
    * test a string using ```if```
    * test a string using ternary construction
+   * test a number range
    * test a number for menu selection
-   * if on number range
-   * multi-way test on single character
-     * **OMITTED**: *Python 2.x does not have switch/case construction* 
-   * if on single character
-     * *used* ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
+   * multi-way test on a number for menu selection
+     * **OMITTED**: *Python does not have a mechanism for this* 
+   * multi-way test on single character with pattern matching
+     * **OMITTED**: *Python does not have a mechanism for this* 
+   * test on single character with pattern matching
+     * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
 6. Looping
    * count loop 
    * conditional loops
