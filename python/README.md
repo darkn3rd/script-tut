@@ -95,11 +95,15 @@ This covers notes regarding each section.
    * test on single character with pattern matching
      * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
 6. Looping
-   * count loop 
-   * conditional loops
-   * collection loop
-      * iterate through set of items 
-      * example: directory listing
+   * collection loop with ```for...in```
+   * count style loop
+     * demonstrate using ```while```
+     * demonstrate using collection loop and ```range(times)```
+     * demonstrate using collection loop and ```reversed(range(times))```
+     * demonstrate using collection loop and ```range(start,downto,decrement)`
+   * conditional loop
+   * spin loop
+   * spin loop with ability skip invalid input
 7. Arrays
    * Array Initialization
       * initialize array by index
@@ -119,11 +123,19 @@ This covers notes regarding each section.
       * enumerate associative array by key
 9. Subroutines
    * demonstrate declaring and calling subroutine
+   * demonstrate subroutine referencing global variables
+   * demonstrate subroutine explicitly using local variables
 10. Arguments
     * demonstrate processing 2 arguments
-      * **NOTES:** *Python includes scriptname as first argument in ```sys.argv```
+      * **NOTES:** Python includes scriptname as first argument in ```sys.argv```
     * demonstrate printing all arguments
+      * use collection loop with list slice
+      * use collection loop with ```range()```
+      * use count style loop using ```while```
     * demonstrate printing arguments in reverse order
+      * use count style loop using ```while```
+      * use collection loop with ```range()```
+      * use collection loop with list slice
 11. Parameters
     * demonstrate passing a single parameter
     * demonstrate passing unlimited arguments
@@ -132,6 +144,7 @@ This covers notes regarding each section.
 12. Exiting
     * demonstrate exiting with error code to communicate status
 12. Functions
-    * demonstrate function with return int
-    * demonstrate function with return string
+    * demonstrate function that returns an int
+    * demonstrate function that returns a string
+    * demonstrate function that returns an array
 
