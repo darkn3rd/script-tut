@@ -5,9 +5,9 @@ captured = 0
 
 def fish():
     global captured # explicitly declare we'll use global caputured
-    pond = 500      # must declare some number before subtracting
+    pond = 500      # must declare some number before subtracting from it
     pond -= 150     # now subtract from local pond
-    captured += 150 # subtract 150 fish from global pond
+    captured += 150 # add to the fish captured
     
     
 print "We have {} in this pond.".format(pond)    
