@@ -76,13 +76,20 @@ This covers notes regarding each section.
    * output text to standard error
      * demonstrate Python 2.x: ```print >>sys.stderr```
      * demonstrate: ```sys.stderr.write```
+   * output multi-line text using ```"""```
 2. Variables
    * output variables using string concatenation
    * output variables using string interpolation
      * demonstrate using ```%``` operator
      * demonstrate using ```format()``` method
 3. Arithmetic
+   * show basic integer arithmetic
+   * show basic boolean evaluation
+   * show basic floating math with exponetial
+   * show basic math function like cosine
 4. Input
+   * input a string
+   * input a single character
 5. Branch
    * test a string using ```if```
    * test a string using ternary construction
@@ -138,12 +145,12 @@ This covers notes regarding each section.
       * use collection loop with list slice
 11. Parameters
     * demonstrate passing a single parameter
-    * demonstrate passing unlimited arguments
-    * demonstrate swapping two variables
+    * demonstrate passing unlimited parameters
+    * demonstrate swapping two variables passed in as parameters 
       * **NOTE** Python does not have support for pass-by-reference, so we must package them up into a memory referenced datatype, so that the subroutine can swap them.
 12. Exiting
     * demonstrate exiting with error code to communicate status
-12. Functions
+13. Functions
     * demonstrate function that returns an int
     * demonstrate function that returns a string
     * demonstrate function that returns an array
