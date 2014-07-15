@@ -1,9 +1,9 @@
 #!/usr/bin/python
 import sys
 # illustrative variables
-arg_count   = len(sys.argv) - 1 # get num of real arguments
+ARG_COUNT   = len(sys.argv) - 1 # get num of real arguments
 # utility variables
-count = arg_count               # initialize counter
+count = ARG_COUNT               # initialize counter
 
 print "The arugments passed are:"
 # use collection loop to enumerate arguments

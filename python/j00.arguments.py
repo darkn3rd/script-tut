@@ -2,14 +2,14 @@
 import sys
 
 # illustrative variables
-arg_count   = len(sys.argv) - 1 # get num of real arguments
-script_name = sys.argv[0]       # get name of script
+ARG_COUNT   = len(sys.argv) - 1 # get num of real arguments
+SCRIPT_NAME = sys.argv[0]       # get name of script
 
 # check for only 2 arguments
-if arg_count != 2:
+if ARG_COUNT != 2:
    # ouptut usage statement to standard error
    sys.stderr.write("\nYou need to enter two numbers: \n\n")
-   sys.stderr.write("   Usage: %s [num1] [num2]\n\n" % script_name)
+   sys.stderr.write("   Usage: %s [num1] [num2]\n\n" % SCRIPT_NAME)
 else:
    # get sum of both arguments, force cast them to integer
    sum = int(sys.argv[1]) + int(sys.argv[2])  
