@@ -100,7 +100,7 @@ This covers notes regarding each section.
      * demonstrate using ```while```
      * demonstrate using collection loop and ```range(times)```
      * demonstrate using collection loop and ```reversed(range(times))```
-     * demonstrate using collection loop and ```range(start,downto,decrement)`
+     * demonstrate using collection loop and ```range(start,downto,decrement)```
    * conditional loop
    * spin loop
    * spin loop with ability skip invalid input
