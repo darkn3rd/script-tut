@@ -80,8 +80,11 @@ This covers notes regarding each section.
 3. Arithmetic
 4. Input
 5. Branch
-   * if on number
-   * case on single character
+   * test a string using ```if```
+   * test a string using ternary construction
+   * test a number for menu selection
+   * if on number range
+   * multi-way test on single character
      * **OMITTED**: *Python 2.x does not have switch/case construction* 
    * if on single character
      * *used* ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
@@ -116,7 +119,10 @@ This covers notes regarding each section.
     * demonstrate printing all arguments
     * demonstrate printing arguments in reverse order
 11. Parameters
+    * demonstrate passing a single parameter
     * demonstrate passing unlimited arguments
+    * demonstrate swapping two variables
+      * **NOTE** Python does not have support for pass-by-reference, so we must package them up into a memory referenced datatype, so that the subroutine can swap them.
 12. Exiting
     * demonstrate exiting with error code to communicate status
 12. Functions

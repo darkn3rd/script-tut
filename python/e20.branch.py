@@ -1,38 +1,9 @@
 #!/usr/bin/python
-import sys  # system library for standard input and output
-
-# build a menu string to output to user
-menu = """\
-Select an item from the menu.
-
-  1 - Coffee
-  2 - Espresso
-  3 - Latte
-  4 - Machiato
-  5 - Capucino
-  6 - Mocha
-  7 - Tea
-
-Make your selection: """
+number = int(raw_input("Input a number: "))
  
-# get user output 
-sys.stdout.write(menu)         # output prompt
-selection = sys.stdin.read(1)  # read one character
-
-# test selection to matching number
-if selection == "1":
-  print "You selected a Coffee"
-elif selection == "2":
-  print "You selected an Espresso"
-elif selection == "3":
-  print "You selected a Latte"
-elif selection == "4":
-  print "You selected a Machiato"
-elif selection == "5":
-  print "You selected a Capucino"
-elif selection == "6":
-  print "You select a Mocha"
-elif selection == "7":
-  print "You selected a Tea"
+if number > 0:
+  print "Number is greater than 0"
+elif number < 0:
+  print "Number is less than 0"
 else:
-  print "You have not entered a valid selection"
+  print "Number is 0"
