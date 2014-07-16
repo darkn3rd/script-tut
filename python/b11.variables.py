@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # declare the variables
-num    = 5
-char   = 'a'
-string = "This is a string"
+num    = 5                   # python int datatype
+char   = 'a'                 # python string datatype
+string = "This is a string"  # python string datatype
  
 # output variables using interpolation and format() method
 print "Number is {}.".format(num)

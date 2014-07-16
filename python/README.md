@@ -1,5 +1,7 @@
 # Scripting Tutorial: Python
 
+Version 1.4
+
 © Joaquin Menchaca, 2014
 
 
