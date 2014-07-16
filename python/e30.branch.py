@@ -16,7 +16,7 @@ Select an item from the menu.
 Make your selection: """
  
 # get user output 
-sys.stdout.write(menu)         # output prompt
+sys.stdout.write(menu)         # output menu and prompt
 selection = sys.stdin.read(1)  # read one character
 
 # test selection to matching number

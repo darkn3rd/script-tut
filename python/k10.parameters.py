@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# create method (subroutine)
+# create the subroutine
 def addNums (*numbers):
    sum = 0                            # initialize starting sum value
    for num in numbers:                # collection loop to get each number
@@ -8,5 +8,5 @@ def addNums (*numbers):
    print "The summation is: %d" % sum # output results
 
 
-# call the method (subroutine)
+# call the subroutine
 addNums(5, 2, 4, 3, 6)   # pass a series of numbers

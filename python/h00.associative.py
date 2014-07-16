@@ -1,5 +1,6 @@
 #!/usr/bin/python
 ages = {}          # create an empty dictionary
+
 # populate dictionary one item at a time 
 ages['bob']=34
 ages['ed']=58

@@ -1,11 +1,15 @@
 #!/usr/bin/python
 import string
-# create method (function)
+# create the function
 def capitalize (string):
    return string.upper() # return fully uppercase string
 
-# call the method (function)
-result = capitalize("ibm")
+# output string before calling function
+string = "ibm"
+print "The current string is: \"%s\"." % string
 
-# output results
-print "The resulting string is: %s." % result
+# call the function
+result = capitalize(string)
+
+# output results after calling function
+print "The capitalized string is: \"%s\"." % result
