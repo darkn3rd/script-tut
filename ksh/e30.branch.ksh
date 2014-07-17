@@ -14,12 +14,12 @@ Select an item from the menu.
 Make your selection: '
  
 # get user output 
-cat <<< $MENU                          # output menu and prompt
-read selection?"Input a selection: "   # prompt and get input
+cat <<< $MENU                        # output menu and prompt
+read selection?"Input a selection: " # prompt and get input
 
-selection=${selection:0:1}              # substring for only 1st char
+selection=${selection:0:1}           # substring for only 1st char
 
-# test selection to matching number
+# test selection using numeric comparison
 if [[ selection -eq 1 ]]; then
   echo "You selected a Coffee"
 elif [[ selection -eq 2 ]]; then
