@@ -9,6 +9,6 @@ function celsius {
   printf "The Celsius temperature is %.1f degrees.\n" $temperature
 }
 
-# call subroutine
 temperature=73
+# call subroutine
 celsius $temperature

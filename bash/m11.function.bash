@@ -9,7 +9,6 @@ function capitalize {
   fi
 }
 
-
 # call function in subshell, capture result from stdout
 result=$(capitalize ibm)
 # output result

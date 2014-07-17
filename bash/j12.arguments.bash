@@ -1,12 +1,12 @@
 #!/bin/bash
 # illustrative variables
-arg_count=$#         # get number of arguments
+ARG_COUNT=$#         # get number of arguments
 # utility variables
 count=1   # initialize counter
  
 echo "The arguments passed are:"
 #  iterative style loop to enumerate args
-while (( $count <= $arg_count )); do # loops while count less than final arg
+while (( $count <= $ARG_COUNT )); do # loops while count less than final arg
   arg=$1                             # get arg from first positional
   echo " item $count: $arg"          # output count and arg
   count=$(( $count + 1 ))            # increment counter
