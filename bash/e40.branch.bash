@@ -1,3 +1,4 @@
+#!/bin/bash
 # output a menu string to output to user
 cat <<< '
 Select an item from the menu.
@@ -22,7 +23,7 @@ case "$selection" in
   3) echo "You selected a Latte";;
   4) echo "You selected a Machiato";;
   5) echo "You selected a Capucino";;
-  6) echo "You select a Mocha";;
+  6) echo "You selected a Mocha";;
   7) echo "You selected a Tea";;
   *) echo "You have not entered a valid selection";;
 esac
