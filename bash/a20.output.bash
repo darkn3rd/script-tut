@@ -1,6 +1,6 @@
 #!/bin/bash
-# Output Multiline Text using trible-quote 
-cat <<-ENDOFMESSAGE
+# Output Multiline Text bash here string
+cat <<< '
 "The person who moves a mountain begins 
  by carrying away small stones."  
 
@@ -26,5 +26,4 @@ cat <<-ENDOFMESSAGE
  no greater poverty than ignorance" 
 
    - Ali bin Abu-Talib
-ENDOFMESSAGE
-
+'
