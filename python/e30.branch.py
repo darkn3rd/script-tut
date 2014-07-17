@@ -34,7 +34,7 @@ elif selection == 4:
 elif selection == 5:
   print "You selected a Capucino"
 elif selection == 6:
-  print "You select a Mocha"
+  print "You selected a Mocha"
 elif selection == 7:
   print "You selected a Tea"
 else:

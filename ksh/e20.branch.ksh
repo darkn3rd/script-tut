@@ -1,15 +1,12 @@
 #!/bin/ksh
-read keypress?"Input a character: " # prompt & get input
-keypress=${keypress:0:1}            # substring for only 1st char
- 
-# test if keypress matches pattern
-#  with ASCII character class expressions
-if [[ $keypress = [a-z] ]]; then
-  print "Lowercase letter"
-elif [[ $keypress = [A-Z] ]]; then
-  print "Uppercase letter"
-elif [[ $keypress = [0-9] ]]; then
-  print "Digit"
+# prompt user and get input
+read number?"Input a number: "
+
+# test input and output result
+if (( $number > 0 )); then
+  print Number is greater than 0
+elif (( $number < 0 )); then
+  print Number is less than 0
 else
-  print "Punctuation, whitepace, or other"
+  print Number is 0
 fi
