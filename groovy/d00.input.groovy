@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
-# get input from user and store as name variable
-name = raw_input("Enter your name: ")
+// get input from user and store as name variable
+name = System.console().readLine "Enter your name: "
 
-# output variable
-print "Hello %s!" % name
+// output variable
+printf "Hello %s!\n", name
