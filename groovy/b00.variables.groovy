@@ -1,10 +1,10 @@
 #!/usr/bin/env groovy
-# declare the variables
-num    = 5                   # python int datatype
-char   = 'a'                 # python string datatype
-string = "This is a string"  # python string datatype
+// declare the variables
+def num    = 5                   // java.lang.Integer
+def chr    = 'a'                 // java.lang.String
+def string = "This is a string"  // java.lang.String
  
-# output variables using string concatenation
-print "Number is " + str(num) + "."   # need to convert int to str
-print "Character is '" + char + "'." 
-print "String is \"" + string + "\"."
+// output variables using string concatenation
+println "Number is " + num + "."
+println "Character is '" + chr + "'." 
+println "String is \"" + string + "\"."

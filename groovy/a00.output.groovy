@@ -1,2 +1,2 @@
-#!/usr/bin/env groovy
-print "Hello";
+#!/usr/bin/python
+println "Hello"
