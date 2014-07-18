@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
-# calculate bolean logic
-result = True and False or True   # python bool datatype 
+// calculate bolean logic
+result = true && false || true   // defaults to java.lang.Boolean 
 
-# output results
-print "The statement (true AND false OR true) is:", result
+// output results
+println "The statement (true AND false OR true) is: " + result

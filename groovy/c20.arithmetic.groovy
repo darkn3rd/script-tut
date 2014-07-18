@@ -1,8 +1,8 @@
 #!/usr/bin/env groovy
-# floating-point math
-PI     = 3.14159265359        # python float datatype
-radius = 3                    # python int datatype
-area   = PI * pow(radius, 2)  # python float datatype as math involves float
+// floating-point math
+PI     = 3.14159265359             // defaults to java.math.BigDecimal
+radius = 3                         // defaults to java.lang.Integer
+area   = PI * Math.pow(radius, 2)  // defaults to java.lang.Double
  
-# output results of floating point math
-print "The area of a circle is:", area
+// output results of floating point math
+println "The area of a circle is: " + area
