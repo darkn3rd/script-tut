@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
-# Output Multiline Text using trible-quote 
-print """\
+// Output Multiline Text using trible-quote 
+println """\
 "The person who moves a mountain begins 
  by carrying away small stones."  
 

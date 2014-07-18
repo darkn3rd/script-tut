@@ -1,8 +1,8 @@
 #!/usr/bin/env groovy
 // declare the variables
-def num    = 5                   // java.lang.Integer
-def chr    = 'a'                 // java.lang.String
-def string = "This is a string"  // java.lang.String
+num    = 5                   // defaults to java.lang.Integer
+chr    = 'a'                 // defaults to java.lang.String
+string = "This is a string"  // defaults to java.lang.String
  
 // output variables using string concatenation
 println "Number is " + num + "."
