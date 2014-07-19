@@ -18,9 +18,7 @@ Make your selection : """
 print menu                   // output menu and prompt
 selection = System.in.read() // get input of one character
 
-// NOTE: This illustrates string comparison
-
-// test selection to matching number
+// test selection to matching number using string comparison
 if (selection == "1") {
   println "You selected a Coffee"
 } else if (selection == "2") {

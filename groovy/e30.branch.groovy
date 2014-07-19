@@ -16,12 +16,10 @@ Make your selection : """
  
 // get user output 
 print menu                   // output menu and prompt
-selection = System.in.read() // get input of one character
-selection -= 48              // convert ascii position to real integer
+selection = System.in.read() // get input of one character as integer ordinal
+selection -= 48              // convert ascii ordinal position to real integer
 
-// NOTE: This illustrates numerical comparison
-
-// test selection to matching number
+// test selection to matching number using numerical comparison
 if (selection == 1) {
   println "You selected a Coffee"
 } else if (selection == 2) {
