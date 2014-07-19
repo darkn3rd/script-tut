@@ -1,6 +1,4 @@
 #!/usr/bin/env groovy
-# count style loop using conditional while construct
-count = 10                     # initialize counter
-while count > 0:
-    print "Count is",  count   # output result
-    count-=1                   # decrement counter
+// count style loop using general loop construct
+for (count = 10; count > 0; count--)
+    println "Count is $count" // output result
