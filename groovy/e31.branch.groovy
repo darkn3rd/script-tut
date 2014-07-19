@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
-import sys  # system library for standard input and output
 
-# build a menu string to output to user
+// build a menu string to output to user
 menu = """\
 Select an item from the menu.
 
@@ -13,29 +12,29 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection: """
+Make your selection : """
  
-# get user output 
-sys.stdout.write(menu)         # output menu and prompt
-selection = sys.stdin.read(1)  # read one number
+// get user output 
+print menu                   // output menu and prompt
+selection = System.in.read() // get input of one character
 
-# NOTE: This script DOES NOT compare integers, but rather strings
-#  of a number.  This will therefore capture all invalid entries.
+// NOTE: This illustrates string comparison
 
-# test selection to matching number
-if selection == "1":
-  print "You selected a Coffee"
-elif selection == "2":
-  print "You selected an Espresso"
-elif selection == "3":
-  print "You selected a Latte"
-elif selection == "4":
-  print "You selected a Machiato"
-elif selection == "5":
-  print "You selected a Capucino"
-elif selection == "6":
-  print "You select a Mocha"
-elif selection == "7":
-  print "You selected a Tea"
-else:
-  print "You have not entered a valid selection"
+// test selection to matching number
+if (selection == "1") {
+  println "You selected a Coffee"
+} else if (selection == "2") {
+  println "You selected an Espresso"
+} else if (selection == "3") {
+  println "You selected a Latte"
+} else if (selection == "4") {
+  println "You selected a Machiato"
+} else if (selection == "5") {
+  println "You selected a Capucino"
+} else if (selection == "6") {
+  println "You selected a Mocha"
+} else if (selection == "7") {
+  println "You selected a Tea"
+} else {
+  println "You have not entered a valid selection"
+}
