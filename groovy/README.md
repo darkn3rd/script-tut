@@ -47,7 +47,7 @@ This version of Groovy may not be the latest.  Consider alternatively getting GV
 Homebrew and Groovy can be installed with these commands (Tested on Mac OS X 10.8.5):
 
 ```bash
-Python -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
