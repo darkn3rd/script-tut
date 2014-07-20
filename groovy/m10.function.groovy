@@ -1,15 +1,15 @@
 #!/usr/bin/env groovy
-import string
-# create the function
-def capitalize (string):
-   return string.upper() # return fully uppercase string
+// create the function
+def capitalize (string) {
+   string.toUpperCase() // return fully uppercase string
+}
 
-# output string before calling function
+// output string before calling function
 string = "ibm"
-print "The current string is: \"%s\"." % string
+println "The current string is: \"$string\"."
 
-# call the function
+// call the function
 result = capitalize(string)
 
-# output results after calling function
-print "The capitalized string is: \"%s\"." % result
+// output results after calling function
+println "The capitalized string is: \"$result\"."
