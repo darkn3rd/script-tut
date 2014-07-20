@@ -14,13 +14,13 @@ I personally came across Groovy as a scripting language that is popular for buil
 
 A number of popular tools are developed using Groovy, such as:
 
-* Gaiden [https://github.com/kobo/gaiden] - toolkit for creating documentation in MarkDown
-* Gaelyk [http://gaelyk.appspot.com/] - toolkit for Google App Engine.
-* Gradle [http://www.gradle.org/] - task oriented build tool similiar Rake.
-* Grafitti [https://github.com/webdevwilson/graffiti] - a web microframework inspirted by Sinstra.
-* Grails [https://grails.org/] - robust web MVC framework
-* Griffon [http://griffon.codehaus.org/] - MVC framework for desktop applications
-* Groovy enVironment Manager [http://gvmtool.net/] - tools to manage versions of Groovy and popolar Groovy tools and frameworks.
+* **Gaiden** [https://github.com/kobo/gaiden] - toolkit for creating documentation in MarkDown
+* **Gaelyk** [http://gaelyk.appspot.com/] - toolkit for Google App Engine.
+* **Gradle** [http://www.gradle.org/] - task oriented build tool similiar Rake.
+* **Grafitti** [https://github.com/webdevwilson/graffiti] - a web microframework inspirted by Sinstra.
+* **Grails** [https://grails.org/] - robust web MVC framework
+* **Griffon** [http://griffon.codehaus.org/] - MVC framework for desktop applications
+* **Groovy enVironment Manager** [http://gvmtool.net/] - tools to manage versions of Groovy and popolar Groovy tools and frameworks.
 
 ## History
 
