@@ -1,18 +1,18 @@
 #!/usr/bin/env groovy
 import sys
 
-# illustrative variables 
-LAST  = len(sys.argv) # index of last argument
-FIRST = 1             # index of first argument
+// illustrative variables 
+LAST  = args.size() // index of last argument
+FIRST = 1             // index of first argument
 
-# utility variables
-count = FIRST         # initialize counter
+// utility variables
+count = FIRST         // initialize counter
 
-print "The arugments passed are:"
-# use count style loop
-while count < LAST:
-   arg = sys.argv[count]  # get arg using index
-   # print count and argument using count index
-   print " item %d: %s" % (count,arg) 
-   count += 1             # increment counter
-
+println "The arugments passed are:"
+// use count style loop
+while (count < LAST) {
+   arg = args[count]  // get arg using index
+   // println count and argument using count index
+   println " item %d: %s" % (count,arg) 
+   count += 1             // increment counter
+}

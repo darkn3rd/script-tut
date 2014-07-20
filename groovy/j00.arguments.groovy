@@ -1,17 +1,16 @@
 #!/usr/bin/env groovy
-import sys
+// illustrative variables
+ARG_COUNT   = args.size()  // get num of real arguments
+SCRIPT_NAME = getClass().protectionDomain.codeSource.location.path.split('/')[-1]  
 
-# illustrative variables
-ARG_COUNT   = len(sys.argv) - 1 # get num of real arguments
-SCRIPT_NAME = sys.argv[0]       # get name of script
-
-# check for only 2 arguments
-if ARG_COUNT != 2:
-   # ouptut usage statement to standard error
-   sys.stderr.write("\nYou need to enter two numbers: \n\n")
-   sys.stderr.write("   Usage: %s [num1] [num2]\n\n" % SCRIPT_NAME)
-else:
-   # get sum of both arguments, convert strings to integers
-   sum = int(sys.argv[1]) + int(sys.argv[2])  
-   # print results of both arguments (string) and summation (integer)
-   print "The sum of %s and %s is: %d." % (sys.argv[1], sys.argv[2], sum)
+// check for only 2 arguments
+if (ARG_COUNT != 2) {
+   // ouptut usage statement to standard error
+   System.err.println("\nYou need to enter two numbers: \n\n")
+   System.err.println("   Usage: $SCRIPT_NAME [num1] [num2]\n\n")
+} else {
+   // get sum of both arguments, convert strings to integers
+   sum = args[0].toInteger() + args[1].toInteger()
+   // println results of both arguments (string) and summation (integer)
+   println "The sum of ${args[0]} and ${args[1]} is: $sum."
+}
