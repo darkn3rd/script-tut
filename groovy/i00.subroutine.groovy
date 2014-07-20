@@ -1,9 +1,9 @@
 #!/usr/bin/env groovy
-import time
 
-# create subroutine
-def show_date():
-   print "Today is %s." % time.strftime("%B %d, %Y")
+// create subroutine
+def showDate() {
+   println "Today is ${new Date().format('MMMM dd, yyyy')}."
+}
 
-# call the subroutine
-show_date()
+// call the subroutine
+showDate()
