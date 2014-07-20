@@ -57,9 +57,7 @@ brew install groovy
 
 #### Groovy enVironment Manager
 
-GVM [http://gvmtool.net/] is tool that can manager versions of Groovy and related tools and frameworks.  
-
-Some of the popular tools and frameworks supportd by GVM include Gaiden [https://github.com/kobo/gaiden], GRails [https://grails.org/], Griffon [http://griffon.codehaus.org/], Gradle [http://www.gradle.org/]
+GVM [http://gvmtool.net/] is tool that can manager versions of Groovy and related tools and frameworks.
 
 GVM can be installed on Mac OS X using: 
 
