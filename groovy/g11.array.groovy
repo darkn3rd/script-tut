@@ -4,6 +4,7 @@ nicknames = ["bob","ed","steve","ralph","joe","deb","kate"]
 
 // output the list, one item per line
 println "The names are: "
-// utilize collection loop to enumerate list
-for (name in nicknames)
+// utitlize iterator to enumerate list
+nicknames.each { name->
     println "  $name"
+}
