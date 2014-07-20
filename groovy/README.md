@@ -1,37 +1,38 @@
-# Scripting Tutorial: Python
+# Scripting Tutorial: Groovy
 
 Version 1.4
 
 © Joaquin Menchaca, 2014
 
+## Overview
 
-## Getting Python
+Groovy is a scripting language that runs on the JVM (Java Virtual Machine).  As such it has access to the robust library available on the Java Platform.
+
+The langauge adopts a lot of syntax sugar found in popular languages of Ruby, Python, and Perl. With these features and dynamic types, it dramatically decreases the verbosity required in Java language.  
+
+## History
+
+Groovy was developed by James Strachan and officially released in 2007.  Strachan silently left the project a year before its release.  Groovy 2.0 was released in 2012.
+
+## Getting Groovy
+
+Groovy requires Java Development Kit, and so this must be installed for Groovy to run.
+
+Groovy 2.3.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  This will need to be installed to avoid constant warnings that NIO is not available.
 
 ### Getting Python on Mac
 
-#### Prerequisites
+As for prerequisites on the Mac, you'll need to install XCode, XCode command line tools, and the most recent JDK.
 
-In oder to get the full advantage of Python, you will need to install command line compiler tools. This process can vary significantly on Mac OS X.  MacPorts keeps some good instructions at http://guide.macports.org/#installing.xcode.  For Mac OS X 10.8.5 as of June 2014, you can get latest versions Xcode 5.1.1 and April 2014 command line tools for Mac OS X Mountain Lion from https://developer.apple.com/downloads/.  
-
-This requires you to setup an account.  Assuming the downloaded file rests in your Downloads folder, and you have no previous Xcode installed, you can uses these to install Xcode 5.1.1
-
-```bash
-hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg
-sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
-sudo xcodebuild -license
-hdiutil mount $HOME/Downloads/command_line_tools_for_osx_mountain_lion_april_2014.dmg
-sudo -S installer -verbose -pkg "/Volumes/Command Line Tools (Mountain Lion)/Command Line Tools (Mountain Lion).mpkg" -target /
-hdiutil unmount /Volumes/Xcode
-hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
-```
-
-#### Default
-
-Mac OS X 10.8.5 comes bundled with Python 2.7.2.
+Apple provides an updated version of JDK6 (Java 1.6) for Mac OS X 10.8 Mountian Lion.  Optionally, a more recent JDK, such as the one from Java 1.7 or Java 1.8 can be installed from Oracle.
 
 #### Homebrew
 
-Homebrew [http://brew.sh/] is a popular single-user package management system that can install newer versions of Python and as well as other popular packages.  It uses existing Macintosh libraries and tools, and is by far the path of least resistance to get packages.  Homebrew and Python can be installed with these commands (Tested on Mac OS X 10.8.5):
+Homebrew [http://brew.sh/] is a popular single-user package management system that can install a variety of scripting languages and tools, which includes Groovy.
+
+This version of Groovy may not be the latest.  Consider alternatively getting GVM (Groovy enVironment Manager) to get the latest Groovy and manage or test different versions of Groovy.
+
+Homebrew and Groovy can be installed with these commands (Tested on Mac OS X 10.8.5):
 
 ```bash
 Python -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
@@ -39,35 +40,34 @@ brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
 . ~/.bash_profile
-brew install python
+brew install groovy
 ```
 
-#### MacPorts
+#### Groovy enVironment Manager
 
-Mac Ports is a package management solution inspired from BSD ports.  MacPorts has the largest library of packages to date.  MacPorts works for all users, not just for only one developer on the system, and as such, making this more ideal if multiple users use the same system.  MacPorts installs latest tools and libraries as needed for the packages it installs.  This may be a good thing as Apple Mac OS X has extremely old versions of many tools that may have numerous bugs and security problems.
+GVM [http://gvmtool.net/] is tool that can manager versions of Groovy and related tools and frameworks.  
 
-For MacPorts, you can install MacPorts on the desired target Mac OS X.  For example, for Mac OS X 10.8.5, you can do this:
+Some of the popular tools and frameworks supportd by GVM include Gaiden [https://github.com/kobo/gaiden], GRails (https://grails.org/), Griffon (http://griffon.codehaus.org/), Gradle (http://www.gradle.org/)
+
+GVM can be installed on Mac OS X using: 
 
 ```bash
-curl -O https://distfiles.macports.org/MacPorts/MacPorts-2.3.0-10.8-MountainLion.pkg
-sudo -S installer -verbose -pkg MacPorts-2.3.0-10.8-MountainLion.pkg -target /
+curl -s get.gvmtool.net | bash
 ```
+## Testing
 
-After, you can update and install Python using something like this:
+* Mac OS X 10.8.5 Mountain Lion
 
 ```bash
-sudo port -v selfupdate
-sudo port install python27
-sudo port select --set python python27
-sudo port select --list python
-sudo port search pip
-sudo port install py27-pip
-sudo port select --list pip
-sudo port select --set pip pip27
-sudo pip install virtualenv
-
+$ java -version
+java version "1.7.0_60"
+Java(TM) SE Runtime Environment (build 1.7.0_60-b19)
+Java HotSpot(TM) 64-Bit Server VM (build 24.60-b09, mixed mode)
+$ groovy -version
+Groovy Version: 2.3.3 JVM: 1.7.0_60 Vendor: Oracle Corporation OS: Mac OS X
+$ gvm version
+Groovy enVironment Manager 1.3.13
 ```
-
 
 ## Notes 
 
