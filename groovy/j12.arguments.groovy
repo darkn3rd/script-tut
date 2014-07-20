@@ -1,16 +1,13 @@
 #!/usr/bin/env groovy
-// illustrative variables 
-LAST  = args.size() - 1 // index of last argument
-FIRST = 0             // index of first argument
-
-// utility variables
-count = 1         // initialize counter
+// illustrative variables
+ARG_COUNT = args.size()   // get num of real arguments
+LAST      = ARG_COUNT - 1 // index of last argument
+FIRST     = 0             // index of first argument
 
 println "The arugments passed are:"
 // use count style loop
-while (count <= LAST) {
-   arg = args[count-1]  // get arg using index
-   // println count and argument using count index
-   println " item $count: $arg"
-   count += 1             // increment counter
+for (count = FIRST; count <= LAST; count ++) {
+   arg = args[count]      // get arg using index
+   // output count and argument using count index
+   println " item ${count+1}: $arg"
 }
