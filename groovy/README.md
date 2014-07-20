@@ -70,7 +70,7 @@ curl -s get.gvmtool.net | bash
 Afterwards, you can install groovy:
 
 ```bash
-gvm install grails
+gvm install groovy
 ```
 
 ## Testing
