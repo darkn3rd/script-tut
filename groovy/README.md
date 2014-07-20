@@ -8,7 +8,19 @@ Version 1.4
 
 Groovy is a scripting language that runs on the JVM (Java Virtual Machine).  As such it has access to the robust library available on the Java Platform.
 
-The langauge adopts a lot of syntax sugar found in popular languages of Ruby, Python, and Perl. With these features and dynamic types, it dramatically decreases the verbosity required in Java language.  
+The langauge adopts a lot of syntax sugar found in popular languages of Ruby, Python, and Perl. With these features and dynamic types, it dramatically decreases the verbosity required in Java language.  Perhaps for this reason, Groovy has become quite popoular.
+
+I personally came across Groovy as a scripting language that is popular for build automation for use with continious integration environments such as Jenkins.
+
+A number of popular tools are developed using Groovy, such as:
+
+* Gaiden [https://github.com/kobo/gaiden] - toolkit for creating documentation in MarkDown
+* Gaelyk [http://gaelyk.appspot.com/] - toolkit for Google App Engine.
+* Gradle [http://www.gradle.org/] - task oriented build tool similiar Rake.
+* Grafitti [https://github.com/webdevwilson/graffiti] - a web microframework inspirted by Sinstra.
+* Grails [https://grails.org/] - robust web MVC framework
+* Griffon [http://griffon.codehaus.org/] - MVC framework for desktop applications
+* Groovy enVironment Manager [http://gvmtool.net/] - tools to manage versions of Groovy and popolar Groovy tools and frameworks.
 
 ## History
 
@@ -47,7 +59,7 @@ brew install groovy
 
 GVM [http://gvmtool.net/] is tool that can manager versions of Groovy and related tools and frameworks.  
 
-Some of the popular tools and frameworks supportd by GVM include Gaiden [https://github.com/kobo/gaiden], GRails (https://grails.org/), Griffon (http://griffon.codehaus.org/), Gradle (http://www.gradle.org/)
+Some of the popular tools and frameworks supportd by GVM include Gaiden [https://github.com/kobo/gaiden], GRails [https://grails.org/], Griffon [http://griffon.codehaus.org/], Gradle [http://www.gradle.org/]
 
 GVM can be installed on Mac OS X using: 
 
