@@ -67,6 +67,12 @@ GVM can be installed on Mac OS X using:
 curl -s get.gvmtool.net | bash
 ```
 
+Afterwards, you can install groovy:
+
+```bash
+gvm install grails
+```
+
 ## Testing
 
 * Mac OS X 10.8.5 Mountain Lion
