@@ -30,7 +30,7 @@ Groovy was developed by James Strachan and officially released in 2007.  Stracha
 
 Groovy requires Java Development Kit, and so this must be installed for Groovy to run.
 
-Groovy 2.3.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  This will need to be installed to avoid constant warnings that NIO is not available.
+Groovy 2.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  This will need to be installed to avoid constant warnings that NIO is not available when working with Groovy 2.3.
 
 ### Getting Python on Mac
 
@@ -66,6 +66,7 @@ GVM can be installed on Mac OS X using:
 ```bash
 curl -s get.gvmtool.net | bash
 ```
+
 ## Testing
 
 * Mac OS X 10.8.5 Mountain Lion
@@ -88,14 +89,12 @@ This covers notes regarding each section.
 1. Output
    * output text to standard out
    * output text to standard error
-     * demonstrate Python 2.x: ```print >>sys.stderr```
-     * demonstrate: ```sys.stderr.write```
    * output multi-line text using ```"""```
 2. Variables
    * output variables using string concatenation
    * output variables using string interpolation
-     * demonstrate using ```%``` operator
-     * demonstrate using ```format()``` method
+     * demonstrate using ```$``` in GStrings and ```println()```
+     * demonstrate using ```%``` with ```printf()```
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
@@ -106,33 +105,42 @@ This covers notes regarding each section.
    * input a single character
 5. Branch
    * test a string using ```if```
-   * test a string using ternary construction
+   * test a string using ternary construction ```(condition) ? true : false```
    * test a number range
    * test a number for menu selection
+     * demonstrate numerical comparison
+     * demonstrate string comparison
    * multi-way test on a number for menu selection
-     * **OMITTED**: *Python does not have a mechanism for this* 
-   * multi-way test on single character with pattern matching
-     * **OMITTED**: *Python does not have a mechanism for this* 
+   * multi-way test on single character with pattern matching 
    * test on single character with pattern matching
-     * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
 6. Looping
    * collection loop with ```for...in```
+     * demonstrate using native interface to access directory listing
+     * demonstrate executing a command to a subshell and processing output
    * count style loop
-     * demonstrate using ```while```
-     * demonstrate using collection loop and ```range(times)```
-     * demonstrate using collection loop and ```reversed(range(times))```
-     * demonstrate using collection loop and ```range(start,downto,decrement)```
+     * demonstrate using general loop construct with ```for```
+     * demonstrate using iteration with ```times```
+     * demonstrate using iteration with ```each``` and range operator ```..``` 
+     * demonstrate using ```for``` collection construct and range operator ```..```
    * conditional loop
    * spin loop
    * spin loop with ability skip invalid input
 7. Arrays
    * Array Initialization
-      * initialize array by index
-      * array length
+      * initialize array one element at a time
+        * demonstrate using index to initialize each element
+        * demonstrate using append operator ```<<``` to add each element
+      * array length with ```size()``` method
       * enumerate all elements
    * Array Enumeration 
       * declare and initialize array
-      * enumerate array by collection loop
+      * enumerate array one element at a time
+        *  demonstrate using collection loop with ```for```
+        *  demonstrate using iteration with ```each```
+      * enumerate array with an index
+        *  demonstrate using general ```for``` loop with a counter
+        *  demonstrate using collection loop ```for``` and range operator ```..```
+        *  demonstrate using iteraction with ```eachWithIndex```
 8. Associative Arrays
    * Associative Array Initialization
       * initialize associative array by key
@@ -142,26 +150,31 @@ This covers notes regarding each section.
       * declare and initialize associative array
       * merge two associative arrays
       * enumerate associative array by key
+        *  demonstrate using collection loop with ```for```
+        *  demonstrate using iteration with ```each```
 9. Subroutines
    * demonstrate declaring and calling subroutine
+     *  demonstrate showing formatted date
    * demonstrate subroutine referencing global variables
+     *  this shows using binding variables in Groovy 
    * demonstrate subroutine explicitly using local variables
+     *  this shows using local variable declaration in Groovy 
 10. Arguments
     * demonstrate processing 2 arguments
-      * **NOTES:** Python includes scriptname as first argument in ```sys.argv```
+      * **NOTES:** Retrieving the script name can be done using ```getClass().protectionDomain.codeSource.location.path.split('/')[-1]```
     * demonstrate printing all arguments
-      * use collection loop with list slice
-      * use collection loop with ```range()```
-      * use count style loop using ```while```
+      * use collection loop
+      * use collection loop with range operator ```..```
+      * use count style loop using general ```for (;;)```
     * demonstrate printing arguments in reverse order
-      * use count style loop using ```while```
-      * use collection loop with ```range()```
-      * use collection loop with list slice
+      * use count style loop using general ```for (;;)```
+      * use collection loop with range operator ```..```
+      * use collection loop with ```reverse()``` method
 11. Parameters
     * demonstrate passing a single parameter
+      * demonstrate controlling degrees of significance with decimal numbers 
     * demonstrate passing unlimited parameters
-    * demonstrate swapping two variables passed in as parameters 
-      * **NOTE** Python does not have support for pass-by-reference, so we must package them up into a memory referenced datatype, so that the subroutine can swap them.
+datatype, so that the subroutine can swap them.
 12. Exiting
     * demonstrate exiting with error code to communicate status
 13. Functions
