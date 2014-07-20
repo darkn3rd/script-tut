@@ -6,7 +6,7 @@ ages = ["bob": 34, "ed": 58, "steve": 32, "ralph": 23]
 ages += ["deb": 46, "kate": 19]
  
 // output the dictionary with key, one item per line
-print "The ages are: "
+println "The ages are: "
 ages.each { name, age ->
     println " ages[$name]=${age}"
 }
