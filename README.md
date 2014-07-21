@@ -292,8 +292,20 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 * **variable** - *storage location and an associated symbolic name (an identifier) which contains some known or unknown quantity or information, a value* [http://en.wikipedia.org/wiki/Variable_(computer_science)].
 
+## Versions
+
+1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Arrat
+1.1 Adds Subroutines, Arguments, Parameters, Functions
+1.2 Updates Output (interpolation vs. concatenation), Arguments 
+1.3 Updates Loops: Spin loops, Spin loops with skip
+1.4 Updates Ouput (stderr), Add Exit category
+1.5 Updates Branching (ternary, menu), Subroutine (global, local), Parameters (pass by value, pass by reference), Function (return array), Output (here doc), Variable (here doc)
+
 ## Project Changes
 
+* 2014-07-21: Added Groovy to family of scripting languages
+* 2014-07-16: Update Ksh, Bash and Python to version 1.5
+* 2014-07-10: Update to 1.3 features (stderr, exit) on all sans BATCH.
 * 2014-07-08: PowerShell, (J|VB)Script exit-code snippet.
 * 2014-07-03: Python, Perl exit-code snippet
 * 2014-07-02: PHP, Perl, Python, TCL, Ruby, (k|c|ba)?sh, (j|vb)script stderr snippet.
