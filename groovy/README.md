@@ -8,16 +8,16 @@ Version 1.4
 
 Groovy is a scripting language that runs on the JVM (Java Virtual Machine).  As such it has access to the robust library available on the Java Platform.
 
-The langauge adopts a lot of syntax sugar found in popular languages of Ruby, Python, and Perl. With these features and dynamic types, it dramatically decreases the verbosity required in Java language.  Perhaps for this reason, Groovy has become quite popoular.
+The language adopts a lot of syntax sugar found in popular languages of Ruby, Python, and Perl. With these features and dynamic types, Groovy dramatically decreases the verbosity required in contrast to the Java language.  Perhaps for this reason, Groovy has become quite popular.
 
-I personally came across Groovy as a scripting language that is popular for build automation for use with continious integration environments such as Jenkins.
+I personally came across Groovy as a scripting language when investigating build automation for use with continuous integration environments such as Jenkins.
 
-A number of popular tools are developed using Groovy, such as:
+Today (2014) there are a number of popular tools are developed using Groovy, such as:
 
 * **Gaiden** [https://github.com/kobo/gaiden] - toolkit for creating documentation in MarkDown
 * **Gaelyk** [http://gaelyk.appspot.com/] - toolkit for Google App Engine.
-* **Gradle** [http://www.gradle.org/] - task oriented build tool similiar Rake.
-* **Grafitti** [https://github.com/webdevwilson/graffiti] - a web microframework inspirted by Sinatra.
+* **Gradle** [http://www.gradle.org/] - task oriented build tool similar Rake.
+* **Grafitti** [https://github.com/webdevwilson/graffiti] - a web micro-framework inspired by Sinatra.
 * **Grails** [https://grails.org/] - robust web MVC framework
 * **Griffon** [http://griffon.codehaus.org/] - MVC framework for desktop applications
 * **Groovy enVironment Manager** [http://gvmtool.net/] - tools to manage versions of Groovy and popolar Groovy tools and frameworks.
@@ -36,13 +36,13 @@ Groovy 2.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  T
 
 As for prerequisites on the Mac, you'll need to install XCode, XCode command line tools, and the most recent JDK.
 
-Apple provides an updated version of JDK6 (Java 1.6) for Mac OS X 10.8 Mountian Lion.  Optionally, a more recent JDK, such as the one from Java 1.7 or Java 1.8 can be installed from Oracle.
+Apple provides an updated version of JDK6 (Java 1.6) for Mac OS X 10.8 Mountain Lion.  Optionally, a more recent JDK, such as the one from Java 1.7 or Java 1.8 can be installed from Oracle.
 
 #### Homebrew
 
 Homebrew [http://brew.sh/] is a popular single-user package management system that can install a variety of scripting languages and tools, which includes Groovy.
 
-This version of Groovy may not be the latest.  Consider alternatively getting GVM (Groovy enVironment Manager) to get the latest Groovy and manage or test different versions of Groovy.
+This version of Groovy installed by Homebrew may not be the latest stable release.  Consider alternatively installng GVM (Groovy enVironment Manager) to get the latest Groovy and manage or test different versions of Groovy.
 
 Homebrew and Groovy can be installed with these commands (Tested on Mac OS X 10.8.5):
 
@@ -57,15 +57,15 @@ brew install groovy
 
 #### Groovy enVironment Manager
 
-GVM [http://gvmtool.net/] is tool that can manager versions of Groovy and related tools and frameworks.
+GVM [http://gvmtool.net/] is tool that can manages versions of Groovy and related tools and frameworks.
 
-GVM can be installed on Mac OS X using: 
+GVM can be installed on Mac OS X with an active Internet connection and using: 
 
 ```bash
 curl -s get.gvmtool.net | bash
 ```
 
-Afterwards, you can install groovy:
+Afterwards, you can install groovy with the following command.  It will download, compile, and install groovy.
 
 ```bash
 gvm install groovy
@@ -102,7 +102,7 @@ This covers notes regarding each section.
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
-   * show basic floating math with exponetial
+   * show basic floating math with exponential
    * show basic math function like cosine
 4. Input
    * input a string
@@ -144,7 +144,7 @@ This covers notes regarding each section.
       * enumerate array with an index
         *  demonstrate using general ```for``` loop with a counter
         *  demonstrate using collection loop ```for``` and range operator ```..```
-        *  demonstrate using iteraction with ```eachWithIndex```
+        *  demonstrate using interaction with ```eachWithIndex```
 8. Associative Arrays
    * Associative Array Initialization
       * initialize associative array by key
@@ -178,7 +178,6 @@ This covers notes regarding each section.
     * demonstrate passing a single parameter
       * demonstrate controlling degrees of significance with decimal numbers 
     * demonstrate passing unlimited parameters
-datatype, so that the subroutine can swap them.
 12. Exiting
     * demonstrate exiting with error code to communicate status
 13. Functions
