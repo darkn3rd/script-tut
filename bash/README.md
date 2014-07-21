@@ -10,6 +10,21 @@ OVERVIEW
 
 Mac OS X 10.8.5 comes with GNU Bash 3.2.48.
 
+### Homebrew
+
+Homebrew [http://brew.sh/] is a popular single-user package management system that can install a variety of scripting languages and tools, which includes Bash 4.
+
+Homebrew and Bash 4 can be installed with these commands (Tested on Mac OS X 10.8.5):
+
+```bash
+ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+brew update
+brew doctor
+echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
+. ~/.bash_profile
+brew install bash
+```
+
 ## Getting Bash on Windows
 
 An easy way to get Bash on Windows is to use Git Bash from msysgit from http://msysgit.github.io/.  This installs a set of Mingw GNU tools.  Currently, Mingw has an earlier version of GNU bash 3.1.0.
