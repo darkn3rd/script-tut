@@ -1,6 +1,6 @@
-#!/bin/bash
-# output a menu string to output to user
-cat <<< '
+#!/bin/ksh
+# create a menu string to output to user
+MENU='
 Select an item from the menu.
 
   1 - Coffee
@@ -11,12 +11,13 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection: '                  # output menu and prompt
+Make your selection: '
+ 
+# get user output 
+read selection?"$MENU"     # prompt and get input
+selection=${selection:0:1} # substring for only 1st char
 
-read -p "Input a character: " selection # prompt user and get input
-selection=${selection:0:1}              # substring for only 1st char
-
-# test selection to matching number
+# test multiple numerical results on a single selection
 case "$selection" in
   1) echo "You selected a Coffee";;
   2) echo "You selected an Espresso";;
