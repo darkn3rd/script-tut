@@ -9,7 +9,7 @@ BEGIN {
   print "The names are: "
 
   # save length for efficiency
-  max = array(nicknames)          # Note: Only works in Gawk 3.1.5 and above
+  max = length(nicknames)          # Note: Only works in Gawk 3.1.5 and above
 
   # iterative loop to record index
   for (count = 1; count <= max; count++) 
