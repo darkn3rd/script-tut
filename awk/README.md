@@ -16,12 +16,24 @@ GNU Awk is being updated slightly.  Gawk 3.1.5 added the ability to get the size
 
 Today, AWK is apart of the GNU Core-Utilities [http://www.gnu.org/software/coreutils/] found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have awk as apart of that tool set for compliance toward IEEE Std 1003.1, 2013 Edition [http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html].
 
-Thus, with any UNIX or Linux system, you can expect awk to be available.  For Windows, that is another matter.  You can get awk from a number of locations.  Here are a few:
+Thus, with any UNIX or Linux system, you can expect awk to be available.  For Windows, that is another matter.  You can get awk from a number of locations.  
+
+### Getting AWK on Windows
 
 - UWIN: Toolset from AT&T that contains tool chain typically found with SVR4 UNIX.
   - http://www2.research.att.com/sw/download/
 - GitBash (msysgit): Tools built with Mingw, integrate with Windows and can be used along side Windows tools.  However, the version of awk included is a very old version of gawk.
 - Cygwin: Environment on top of Windows that provides GNU tools.
+
+### Getting AWK on Macintosh
+
+```bash
+$ brew install gawk
+==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/gawk-4.1.1.mountain_lion.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring gawk-4.1.1.mountain_lion.bottle.tar.gz
+🍺  /usr/local/Cellar/gawk/4.1.1: 61 files, 2.8M
+```
 
 ## How It Works
 
