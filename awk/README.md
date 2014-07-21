@@ -27,6 +27,8 @@ Thus, with any UNIX or Linux system, you can expect awk to be available.  For Wi
 
 ### Getting AWK on Macintosh
 
+Mac OS X 10.8.5 comes with a version of AWK that is normally distributed with BSD flavors of UNIX.  The newer features found in GAWK will not be available.  Thus you can use a tool like HomeBrew to grab the latest version of GAWK.  Here's a sample run of this on July, 2014:
+
 ```bash
 $ brew install gawk
 ==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/gawk-4.1.1.mountain_lion.bottle.tar.gz
