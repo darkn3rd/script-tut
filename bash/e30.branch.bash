@@ -13,7 +13,7 @@ Select an item from the menu.
 
 Make your selection: '                  # output menu and prompt
 
-read -p "Input a character: " selection # prompt user and get input
+read  selection # prompt user and get input
 selection=${selection:0:1}              # substring for only 1st char
 
 # test using arithmentic expression
