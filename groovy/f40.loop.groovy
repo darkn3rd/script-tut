@@ -5,7 +5,6 @@ while (true) {
   answer = System.console().readLine "Enter your name (quit to Exit): "
   
   // skip loop if user enters an empty string
- // if re.compile("^[\s\t]*$").match(answer):
   if (answer =~ /^[\s\t]*$/)
     continue             // skip to next loop
   
