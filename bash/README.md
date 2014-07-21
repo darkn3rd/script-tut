@@ -34,7 +34,7 @@ brew install bash
 
 ### GitBash (MSYS)
 
-An easy way to get Bash on Windows is to use Git Bash from msysgit from http://msysgit.github.io/.  This installs a set of Mingw GNU tools.  Currently, Mingw has an earlier version of GNU bash 3.1.0.
+An easy way to get Bash on Windows is to use Git Bash from msysgit from http://msysgit.github.io/.  This installs a set of Mingw GNU tools.  Currently (July 2014), Mingw has an earlier version of GNU bash 3.1.0.
 
 When running Git Bash on Windows, you might notice that some paths in the ```$PATH``` still have Windows path names.  This happens when the Windows ```%PATH%``` includes other variables, such as ```%JAVA_HOME%```.  
 
