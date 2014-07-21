@@ -1,6 +1,6 @@
 # Scripting Tutorial: Groovy
 
-Version 1.5
+Version 1.6
 
 © Joaquin Menchaca, 2014
 
@@ -174,6 +174,8 @@ This covers notes regarding each section.
       * use collection loop
       * use iteration with ```eachWithIndex``` closure
       * use collection loop with range operator ```..```
+      * use collection loop for counter and shift out first element
+      * use general loop to check empty list and shift out first element
       * use count style loop using general ```for (;;)```
     * demonstrate printing arguments in reverse order
       * use count style loop using general ```for (;;)```
