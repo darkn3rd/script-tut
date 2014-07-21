@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.3
+
 ## Overview
 
 The AWK tool was introduced in Version 7 Unix and named after the authors: Aho, Weinberger, and Kernighan.  AWK provided computational features to the Unix pipeline, and at the time, AWK was the only other scripting language available besides Bourne Shell.  
