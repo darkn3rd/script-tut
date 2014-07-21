@@ -4,7 +4,11 @@
 
 ## Overview
 
-OVERVIEW
+*Bourne Again Shell* (bash) written by Brian Fox and releated in 1989 as a dropp in replacement for the original shell *Bourne Shell* (sh).  Bash extends the shell with new features, mixing in ideas borrowed from C Shell (csh) and Korn Shell (ksh).
+
+Bash is compatible as a POSIX shell and will run in strict POSIX mode when accessed as ```sh```.  There may have been non-portable features that still work in this mode; such features are called bashisms.
+
+Bash 4 adds a number of features, such as associative arrays and new parameter expansions to do uppercase and lowercase on variables.
 
 ## Getting Bash on Mac OS X
 
@@ -21,11 +25,14 @@ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
+echo export BASH_VERSION=$(/usr/local/bin/bash -version | head -1 | cut -d' ' -f4)
 . ~/.bash_profile
 brew install bash
 ```
 
 ## Getting Bash on Windows
+
+### GitBash (MSYS)
 
 An easy way to get Bash on Windows is to use Git Bash from msysgit from http://msysgit.github.io/.  This installs a set of Mingw GNU tools.  Currently, Mingw has an earlier version of GNU bash 3.1.0.
 
