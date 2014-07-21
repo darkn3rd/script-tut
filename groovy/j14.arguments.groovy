@@ -1,13 +1,14 @@
 #!/usr/bin/env groovy
-// illustrative variables
+// illustrative variables 
 ARG_COUNT = args.size()   // get num of real arguments
-LAST      = ARG_COUNT - 1 // index of last argument
-FIRST     = 0             // index of first argument
+FIRST     = 0             // index of first argument in list
+MIN_COUNT = FIRST
 
 println "The arugments passed are:"
-// use count style loop
-for (count = FIRST; count <= LAST; count ++) {
-   arg = args[count]      // get arg using index
+// loop until there are no more items in list
+for (count = 1; args.size() > MIN_COUNT; count++) {    
+   arg = args[FIRST]   // get first argument of list
    // output count and argument using count index
-   println " item ${count+1}: $arg"
+   println " item ${count}: $arg"
+   args = args.drop(1) // remove first element of list
 }
