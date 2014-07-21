@@ -1,6 +1,6 @@
 #!/bin/bash
-# output a menu string to output to user
-menu='
+# save a menu string to output to user
+MENU='
 Select an item from the menu.
 
   1 - Coffee
@@ -11,10 +11,10 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection: '      # output menu and prompt
+Make your selection: '
 
-read -p "$menu" selection              # prompt user and get input
-selection=${selection:0:1}  # substring for only 1st char
+read -p "$MENU" selection  # prompt user and get input
+selection=${selection:0:1} # substring for only 1st char
 
 # test using arithmentic expression
 if (( selection == 1 )); then
