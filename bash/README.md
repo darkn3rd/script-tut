@@ -8,7 +8,7 @@
 
 Bash is compatible as a POSIX shell and will run in strict POSIX mode when accessed as ```sh```.  There may have been non-portable features that still work in this mode, and such features are called bashisms.
 
-Bash 4 adds a number of features, such as associative arrays and new parameter expansions to do uppercase and lowercase on variables.
+Bash 4 adds a number of features, such as associative arrays and new parameter expansions to do uppercase and lowercase on variables.  Earlier Bash 3 supported arrays, but could not use associative arrays.
 
 ## Getting Bash on Mac OS X
 
