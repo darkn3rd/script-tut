@@ -1,10 +1,10 @@
 #!/usr/bin/env groovy
- 
-// iterate through each item in current directory
-//   Note: Demonstrates using Groovy's API to get data
-new File('.').eachFile() { item -> 
-	if (item.isDirectory())
-		println "${item.getName()} is a directory"
+// use collection loop on directory listing
+//  item represents the file name
+for (item in new File('.').list()) { 
+	if (new File(item).isDirectory())
+		println "$item is a directory"
 	else
-	    println "${item.getName()} is a not a directory"
+	    println "$item is a not a directory"
+
 }
