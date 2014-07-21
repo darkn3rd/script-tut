@@ -40,7 +40,14 @@ Reference: https://github.com/darkn3rd/opscripts/blob/master/windows/git_bash_pa
 
 ## Testing
 
-TBU
+* Mac OS X 10.8.5
+
+```bash
+$ /bin/bash -version | head -1
+GNU bash, version 3.2.48(1)-release (x86_64-apple-darwin12)
+$ /usr/local/bin/bash -version | head -1
+GNU bash, version 4.3.18(1)-release (x86_64-apple-darwin12.5.0)
+```
 
 ## Topics with Details 
 
