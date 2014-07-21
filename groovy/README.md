@@ -120,7 +120,11 @@ This covers notes regarding each section.
 6. Looping
    * collection loop with ```for...in```
      * demonstrate using native interface to access directory listing
-     * demonstrate executing a command to a subshell and processing output
+       *  use collection loop
+       *  use iteration with ```eachFile``` closure
+     * demonstrate executing a command to a subshell and processing text output
+       *  use collection loop
+       *  use iteration with ```eachLine``` closure
    * count style loop
      * demonstrate using general loop construct with ```for```
      * demonstrate using iteration with ```times```
