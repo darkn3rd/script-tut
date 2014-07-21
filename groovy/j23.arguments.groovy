@@ -7,6 +7,6 @@ count     = ARG_COUNT   // initialize counter
 println "The arugments passed are:"
 // iteration with each to output arg and count
 args.reverse().each { arg -> 
-	println " item ${count}: $arg" 
+    println " item ${count}: $arg" 
     count--
 }
