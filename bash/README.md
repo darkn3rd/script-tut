@@ -4,9 +4,9 @@
 
 ## Overview
 
-*Bourne Again Shell* (bash) written by Brian Fox and releated in 1989 as a dropp in replacement for the original shell *Bourne Shell* (sh).  Bash extends the shell with new features, mixing in ideas borrowed from C Shell (csh) and Korn Shell (ksh).
+*Bourne Again Shell* (bash) written by Brian Fox and releated in 1989 as a drop-in replacement for the original shell *Bourne Shell* (sh).  Bash extends the shell with new features, mixing in ideas borrowed from C Shell (csh) and Korn Shell (ksh).
 
-Bash is compatible as a POSIX shell and will run in strict POSIX mode when accessed as ```sh```.  There may have been non-portable features that still work in this mode; such features are called bashisms.
+Bash is compatible as a POSIX shell and will run in strict POSIX mode when accessed as ```sh```.  There may have been non-portable features that still work in this mode, and such features are called bashisms.
 
 Bash 4 adds a number of features, such as associative arrays and new parameter expansions to do uppercase and lowercase on variables.
 
