@@ -294,12 +294,12 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Versions
 
-1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Arrat
-1.1 Adds Subroutines, Arguments, Parameters, Functions
-1.2 Updates Output (interpolation vs. concatenation), Arguments 
-1.3 Updates Loops: Spin loops, Spin loops with skip
-1.4 Updates Ouput (stderr), Add Exit category
-1.5 Updates Branching (ternary, menu), Subroutine (global, local), Parameters (pass by value, pass by reference), Function (return array), Output (here doc), Variable (here doc)
+* 1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Arrat
+* 1.1 Adds Subroutines, Arguments, Parameters, Functions
+* 1.2 Updates Output (interpolation vs. concatenation), Arguments 
+* 1.3 Updates Loops: Spin loops, Spin loops with skip
+* 1.4 Updates Ouput (stderr), Add Exit category
+* 1.5 Updates Branching (ternary, menu), Subroutine (global, local), Parameters (pass by value, pass by reference), Function (return array), Output (here doc), Variable (here doc)
 
 ## Project Changes
 
