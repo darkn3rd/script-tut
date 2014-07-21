@@ -16,7 +16,7 @@ Today (2014) there are a number of popular tools are developed using Groovy, suc
 
 * **Gaiden** [https://github.com/kobo/gaiden] - toolkit for creating documentation in MarkDown
 * **Gaelyk** [http://gaelyk.appspot.com/] - toolkit for Google App Engine.
-* **Gradle** [http://www.gradle.org/] - task oriented build tool similar Rake.
+* **Gradle** [http://www.gradle.org/] - task oriented build tool similar to Rake.
 * **Grafitti** [https://github.com/webdevwilson/graffiti] - a web micro-framework inspired by Sinatra.
 * **Grails** [https://grails.org/] - robust web MVC framework
 * **Griffon** [http://griffon.codehaus.org/] - MVC framework for desktop applications
