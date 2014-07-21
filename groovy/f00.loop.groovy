@@ -6,5 +6,4 @@ for (item in new File('.').list()) {
 		println "$item is a directory"
 	else
 	    println "$item is a not a directory"
-
 }
