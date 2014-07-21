@@ -25,7 +25,7 @@ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
-echo export BASH_VERSION=$(/usr/local/bin/bash -version | head -1 | cut -d' ' -f4)
+echo export BASH_VERSION=$(/usr/local/bin/bash -version | head -1 | cut -d' ' -f4) >> ~/.bash_profile
 . ~/.bash_profile
 brew install bash
 ```
