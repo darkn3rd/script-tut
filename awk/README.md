@@ -8,7 +8,9 @@ The AWK tool was introduced in Version 7 Unix and named after the authors: Aho, 
 
 AWK was extremely popular in the 1970s and 1980s.  The available shell at the time (Bourne shell) was extremely limited, and AWK provided numerous capabilities absent from Bourne Shell.  This included rich text processing capabilities, math functions, and the capability to create arrays and associative arrays (hashes).
 
-AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
+AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  New AWK is available on SVR Unix versions, while GNU AWK is widely available, especially in open source systems like Linux.  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
+
+GNU Awk is being updated slightly.  Gawk 3.1.5 added the ability to get the size of an array with ```length()```, where before this only worked on strings.  Also, Gawk 4.0 adds use of ```switch() { ... }```.
 
 ## Getting AWK
 
