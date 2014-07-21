@@ -168,12 +168,14 @@ This covers notes regarding each section.
       * **NOTES:** Retrieving the script name can be done using ```getClass().protectionDomain.codeSource.location.path.split('/')[-1]```
     * demonstrate printing all arguments
       * use collection loop
+      * use iteration with ```eachWithIndex``` closure
       * use collection loop with range operator ```..```
       * use count style loop using general ```for (;;)```
     * demonstrate printing arguments in reverse order
       * use count style loop using general ```for (;;)```
       * use collection loop with range operator ```..```
       * use collection loop with ```reverse()``` method
+      * use iteration with ```reverse().each``` closure
 11. Parameters
     * demonstrate passing a single parameter
       * demonstrate controlling degrees of significance with decimal numbers 
