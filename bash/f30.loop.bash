@@ -1,8 +1,6 @@
 #!/bin/bash
-# illustrative variables
-true=1
 # spin loop as always true
-while [[ $true ]]; do
+while [[ true ]]; do
    # output prompt and get input
    read -p "Enter your name (quit to exit): " answer
 
