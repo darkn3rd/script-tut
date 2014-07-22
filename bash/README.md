@@ -21,13 +21,17 @@ Homebrew [http://brew.sh/] is a popular single-user package management system th
 Homebrew and Bash 4 can be installed with these commands (Tested on Mac OS X 10.8.5):
 
 ```bash
+# Install HomeBrew
 ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
-echo export BASH_VERSION=$(/usr/local/bin/bash -version | head -1 | cut -d' ' -f4) >> ~/.bash_profile
 . ~/.bash_profile
+# Install Bash 4
 brew install bash
+# BASH_VERSION is not updated, so we updated manually
+echo export BASH_VERSION=$(bash -version | head -1 | cut -d' ' -f4) >> ~/.bash_profile
+. ~/.bash_profile
 ```
 
 ## Getting Bash on Windows

@@ -9,6 +9,26 @@ OVERVIEW
 
 Mac OS X 10.8.5 comes with Ksh '93 93u (2011-02-08).
 
+### Homebrew
+
+Homebrew [http://brew.sh/] is a popular single-user package management system that can install a variety of scripting languages and tools, which includes a newer version of Korn Shell.
+
+Homebrew and Ksh 93u+ can be installed with these commands (Tested on Mac OS X 10.8.5 on July 2014):
+
+```bash
+# Installation of HomeBrew
+ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+brew update
+brew doctor
+echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
+. ~/.bash_profile
+# installation of Korn Shell
+brew install ksh
+# idea borrowed from bash
+echo export KSH_VERSION=$(ksh --version 2>&1 | cut -d' ' -f15-16) >> ~/.bash_profile
+. ~/.bash_profile
+```
+
 ## Getting Korn Shell on Windows
 
 Korn shell is available directly from AT&T Research Labs: http://www2.research.att.com/sw/download/.
@@ -22,7 +42,14 @@ After installation, ```ksh.exe``` will be installed into ```C:\Program Files\UWI
 
 ## Testing
 
-TBU
+* Mac OS X 10.8.5
+
+```bash
+$ /bin/ksh --version
+  version         sh (AT&T Research) 93u 2011-02-08
+$ /usr/local/bin/ksh --version
+  version         sh (AT&T Research) 93u+ 2012-08-01
+```
 
 ## Topics with Details 
 
