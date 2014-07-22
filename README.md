@@ -52,6 +52,7 @@ This section has two sections now:
 
 1. Output a string to STDOUT (Standard Output)
 2. Output a string to STDERR (Standard Error)
+2. Output multi-line string (Standard Output). Use HERE document if available.
 
 ### Variables
 
@@ -59,6 +60,7 @@ Demonstrate declaring numbers, characters, and strings.  Show how to use these w
 
 1. **String Interpolation**: variables are in the strings themselves and replaced with the value.
 2. **String Concatenation**: separate strings and variables are combined together
+3. **Multi-line String Variable**: Save a multi-line string into a variable.  Use HERE document if available.
 
 Additionally, show how to escape quote characters if needed.
 
@@ -79,15 +81,15 @@ Demonstrate how to interactively get data from STDIN (Standard Input) and also s
 
 Demonstrate how to select or test on a single number, character, or pattern.  Show do multiple tests on a single item (sort of a like a reverse select), which typically involves some switch or case facility in the language.
 
-1. **Branch on a Number** - simple menu (*to be added*)
-2. **Branch on a Letter** - simple menu (*to be added*)
+1. **Branch on a String** - compare Yes or No response.
+2. **Branch on a String with Ternary** - compare a Yes or No response
 3. **Branch on a Number Range** - check range
-4. **Multiway Branch on a Number** - simple menu (*to be added*)
-5. **Multiway Branch on a Letter** - simple menu (*to be added*)
+4. **Branch on a Number** - simple menu
+5. **Multiway Branch on a Number** - simple menu
 6. **Multiway Branch on a Character Pattern** - determine type of letter
 7. **Branch on Character Pattern**  - determine type of letter
 
-**BRAINSTORM** Want to fit in ternary operator where appropriate, or a Yes|No scenario.
+**NOTES** Branching has two categories: *single-way* and *multi-way*.  A *single-way* branch routes the code to one direction if the condition is true, while a *multi-way* branch will test one or more conditions against a single value or variable, and will route it appropriate based on whether one or more of those conditions are true.  Also, some scripting languages distinguish between numerical or textual (string) comparison, while others treat these as the sample.
 
 ### Looping
 
@@ -116,7 +118,7 @@ Some other operations on arrays will be demonstrated:
     * using a pure collection loop
     * using an count loop with an index
     
-Note that arrays may be called other names, such as a list.  Awk, TCL, and JScript (JavaScript) do not have real arrays, and emulate array-like functionality in some way.    
+**NOTE** that arrays may be called other names, such as a list.  Awk, TCL, and JScript (JavaScript) do not have real arrays, and emulate array-like functionality in some way using associative arrays.    
 
 ### Associative Arrays
 
@@ -136,11 +138,11 @@ This section will also demonstrate:
 
 *TCL, AWK, and JScript (JavaScript) arrays are really associative arrays, but may have difficulty to enumerate arrays as there is no support for real arrays, so it'll be difficult to return a array containing keys or values.*  
 
-*VBScript does not support associative arrays, but doesn't support real arrays (opposite of JScript), and has access to libraries that a class called Dictionary.  This is can be used, but is extremely limited.*
+*VBScript does not support associative arrays, but does support real arrays (opposite of JScript), and has access to libraries that a class called Dictionary.  This is can be used, but is extremely limited.*
 
-*Many scripting languages do not have associative arrays, or any indirect support (or even arrays for that matter).  This includes Command Shell (BATCH), C Shell, POSIX Shell, and earlier versions of Bourne Again Shell.*
+*Many scripting languages do not have associative arrays, or even arrays for that matter.  This includes Command Shell (BATCH), C Shell, POSIX Shell, and earlier versions of Bourne Again Shell.*
 
-*Korn Shell '93 has support for associative arrays.  Other scripting languages, e.g. Perl, PowerShell, Python, Ruby, have both arrays and associative arrays.*
+*Korn Shell '93 has support for associative arrays.  Other scripting languages, e.g. Groovy, Perl, PowerShell, Python, Ruby, have both arrays and associative arrays. Perl calls them hashes, Python calls them dictionaries, and Groovy calls them maps*
     
 ### Subroutine
 
@@ -148,7 +150,9 @@ This demonstrates how to create and call a subroutine.  A subroutine can be call
 
 The demonstration subroutine shows how to use the date functionality to print out a friendly date.
 
-**BRAINSTORMING**: *Considering demonstrating the concept of scope in showing global and local variables. The scripting languages vary greatly in this area.  This will be version 2.0 of the project.*
+1. Demonstrate creating and calling a subroutine.
+2. Demonstrate a subroutine that uses global variables.
+3. Demonstrate a subroutine that uses local variables.
 
 ### Arguments
 
@@ -198,13 +202,18 @@ This section covers creating functions, which essentially is a subroutine the re
 
 1. **Function returning single integer** - input variable number of integers and return the summation
 2. **Function returning single string** - input a string and return capitalize version of this
+3. **Function returning single array** - input an array and return a sorted array.
 
 Additionally, the following is sprinkled in here:
 
 * Capitalizing a string
+* Sorting an array
 
-**BRAINSTORMING**: *Considering expanding this section to demonstrate returning an array and returning an associative array (hash).  Some scripting languages, such as AWK, are incapable of returning an array, so an array in this case must be passed in by reference (which is done implicitly in AWK). May table this until version 2.0 of this project*
+**NOTES** *At least one scripting language is incable of returning an array, and this would be AWK.*
 
+### Environment Variables
+
+**FUTURE CONTENT SNEAK PREVIEW** *This is a common and important task in system administration is maintaining environments variables and search path.  One snippet will demonstrate parsing a PATH string, while another will getting and setting an environment variable.*
 
 ## Key to Naming Convention
 
@@ -300,6 +309,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 * 1.3 Updates Loops: Spin loops, Spin loops with skip
 * 1.4 Updates Ouput (stderr), Add Exit category
 * 1.5 Updates Branching (ternary, menu), Subroutine (global, local), Parameters (pass by value, pass by reference), Function (return array), Output (here doc), Variable (here doc)
+* 1.6 Adds Environment Variables
 
 ## Project Changes
 

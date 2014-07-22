@@ -29,7 +29,7 @@ echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
 . ~/.bash_profile
 # Install Bash 4
 brew install bash
-# BASH_VERSION is not updated, so we updated manually
+# BASH_VERSION is not updated, so we update manually
 echo export BASH_VERSION=$(bash -version | head -1 | cut -d' ' -f4) >> ~/.bash_profile
 . ~/.bash_profile
 ```
@@ -61,8 +61,6 @@ PATH="$(echo "${NEWPATH}" | sed \
 export PATH
 ```
 Reference: https://github.com/darkn3rd/opscripts/blob/master/windows/git_bash_path_fix.windows.sh
-
-
 
 ## Testing
 
