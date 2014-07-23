@@ -113,7 +113,7 @@ This covers notes regarding each section.
    * Create Associative Array using supplied list of key and value pairs
      * **NOTES**
         * helper function of ```make_array()``` to create associative array from supplied string
-        * helper function of ```merge()``` to merge to associative arrays
+        * helper function of ```merge()``` to merge two associative arrays
 9. **Subroutines** 
    * utilize subroutine that prints the current date in "Month Day, Year" format
 10. **Arguments**
