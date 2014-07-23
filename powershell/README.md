@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.4
+
 ## Overview
 
 Powershell is Microsoft's new platform for scripting and automating Windows system.  It's an environment that runs on top of the .NET platform, and has access to the wealth of .NET libraries.  There's a built-in mechanism to access OLE libraries as well, so in that sense it can easily replace the limited WSH (Windows Script Host) environment that hosted JScript and VBScript amongst other languages for scripting chores.

@@ -301,7 +301,30 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 * **variable** - *storage location and an associated symbolic name (an identifier) which contains some known or unknown quantity or information, a value* [http://en.wikipedia.org/wiki/Variable_(computer_science)].
 
-## Versions
+## Versions Status
+
+Shells
+ bash             1.5
+ csh              1.3
+ ksh              1.5
+ sh (posix)       1.3
+Byte Code VMs
+ groovy (jvm)     1.5
+ powershell (clr) 1.4
+Windows Only
+ batch (cmd)      1.4
+ jscript (wsh)    1.4
+ vbscript (wsh)   1.4
+Scripting, Popular
+ Awk              1.3
+ Perl             1.4
+ PHP              1.3
+ Python           1.5
+ Ruby             1.4
+ TCL              1.4
+
+
+## Version Descriptions
 
 * 1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Array
 * 1.1 Adds Subroutines, Arguments, Parameters, Functions
