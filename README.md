@@ -307,17 +307,18 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
     * bash             1.5
     * csh              1.3
     * ksh              1.5
-* Byte Code VMs
+    * shell (posix)    1.3
+  * Byte Code VMs
     * groovy (jvm)     1.5
     * powershell (clr) 1.4
 * Windows Only
    *  batch (cmd)      1.4
    *  jscript (wsh)    1.4
-   * vbscript (wsh)   1.4
+   * vbscript (wsh)    1.4
 * Scripting, Popular
    * Awk              1.3
    * Perl             1.4
-   *  PHP              1.3
+   * PHP             1.3
    * Python           1.5
    * Ruby             1.4
    * TCL              1.4
