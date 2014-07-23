@@ -308,7 +308,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
     * csh              1.3
     * ksh              1.5
     * shell (posix)    1.3
-  * Byte Code VMs
+* Byte Code VMs
     * groovy (jvm)     1.5
     * powershell (clr) 1.4
 * Windows Only
