@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.3
+
 ## Overview
 
 Welcome to C Shell tutorial.  This will teach the basics on how to get around in C Shell scripting.

@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.5
+
 ## Overview
 
 *Bourne Again Shell* (bash) written by Brian Fox and releated in 1989 as a drop-in replacement for the original shell *Bourne Shell* (sh).  Bash extends the shell with new features, mixing in ideas borrowed from C Shell (csh) and Korn Shell (ksh).

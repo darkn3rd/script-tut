@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.4
+
 ## Overview
 
 This area covers JScript, Microsoft implementation of JavaScript during the *Browser Wars* days around 1996.  Microsoft JScript is a compatible language to ECMAScript standard, or ECMA-262.  Windows systems with WSH 5.6 installed are compatible ECMA-262 3rd Edition.  Later editions of WSH, such as WSH 5.8, which is bundled with Windows 7 and above will include new features such as RFC 4627 (JSON) and ES-CP (ECMA-327).

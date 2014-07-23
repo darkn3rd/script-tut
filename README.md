@@ -303,7 +303,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Versions
 
-* 1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Arrat
+* 1.0 Output, Variables, Arithmetic, Input, Branch, Loop, Array, Associative Array
 * 1.1 Adds Subroutines, Arguments, Parameters, Functions
 * 1.2 Updates Output (interpolation vs. concatenation), Arguments 
 * 1.3 Updates Loops: Spin loops, Spin loops with skip

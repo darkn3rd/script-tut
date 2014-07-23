@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.4
+
 ## Getting Ruby
 
 ### Getting Ruby on Mac

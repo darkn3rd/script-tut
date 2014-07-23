@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014
 
+Version 1.3
+
 ## Overview
 
 OVERVIEW

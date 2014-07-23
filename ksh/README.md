@@ -1,5 +1,8 @@
 # Scripting Tutorial: Ksh (Korn Shell)
+
 © Joaquin Menchaca, 2014
+
+Version 1.5
 
 ## Overview
 
