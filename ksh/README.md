@@ -43,6 +43,13 @@ The site is really confusing to navigate, and I could not recall how I eventuall
 
 After installation, ```ksh.exe``` will be installed into ```C:\Program Files\UWIN\usr\bin\``` along with other tools. 
 
+## Gettng Korn Shell on Cent OS 6.5
+
+```
+sudo yum -y install ksh
+```
+
+
 ## Testing
 
 * Mac OS X 10.8.5
@@ -53,6 +60,11 @@ $ /bin/ksh --version
 $ /usr/local/bin/ksh --version
   version         sh (AT&T Research) 93u+ 2012-08-01
 ```
+* CentOS 6.5
+```bash
+/bin/ksh --version
+  version         sh (AT&T Research) 93u+ 2012-08-01
+```  
 
 ## Topics with Details 
 

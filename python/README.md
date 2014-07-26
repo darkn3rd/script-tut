@@ -68,6 +68,15 @@ sudo pip install virtualenv
 
 ```
 
+### Getting Python on Cent OS 
+
+On CentOS 6.5, the default version of Python is 2.6.6.
+
+```bash
+python --version
+Python 2.6.6
+```
+
 
 ## Notes 
 
