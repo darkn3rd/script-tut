@@ -11,7 +11,7 @@ BEGIN {
   # save length for efficiency
   max = length(nicknames)          # Note: Only works in Gawk 3.1.5 and above
 
-  # iterative loop to record index
+  # count style loop to record index
   for (count = 1; count <= max; count++) 
     print "  nicknames[" count "] = " nicknames[count]
 }

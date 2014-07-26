@@ -14,9 +14,14 @@ AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (G
 
 GNU Awk is being updated slightly.  Gawk 3.1.5 added the ability to get the size of an array with ```length()```, where before this only worked on strings.  Also, Gawk 4.0 adds use of ```switch() { ... }```.
 
+### Articles and Resources on Awk
+
+* GNU Awk: This is not Your Father's Awk: http://www.drdobbs.com/open-source/gnu-awk-this-is-not-your-fathers-awk/240158351
+* GNU Awk Manual: http://www.gnu.org/software/gawk/manual/gawk.pdf
+
 ## Getting AWK
 
-Today, AWK is apart of the GNU Core-Utilities [http://www.gnu.org/software/coreutils/] found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have awk as apart of that tool set for compliance toward IEEE Std 1003.1, 2013 Edition [http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html].
+Today, AWK is found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have awk as apart of that tool set for compliance toward IEEE Std 1003.1, 2013 Edition [http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html].
 
 Thus, with any UNIX or Linux system, you can expect awk to be available.  For Windows, that is another matter.  You can get awk from a number of locations.  
 
@@ -38,6 +43,16 @@ $ brew install gawk
 ==> Pouring gawk-4.1.1.mountain_lion.bottle.tar.gz
 🍺  /usr/local/Cellar/gawk/4.1.1: 61 files, 2.8M
 ```
+
+### Getting AWK on CentOS 6.5 (or RHEL 6.5)
+
+The default awk that comes with Cent OS 6.5 is extremely old:
+
+```
+/bin/awk --version | head -1
+GNU Awk 3.1.7
+```
+
 
 ## How It Works
 

@@ -8,7 +8,7 @@ BEGIN {
   # print out array item by item
   print "The names are: "
   max = array_length(nicknames)     # save length for efficiency
-  # iterative loop to record index
+  # count style loop to record index
   for (count = 1; count <= max; count++) 
     print "  nicknames[" count "] = " nicknames[count]
 }
