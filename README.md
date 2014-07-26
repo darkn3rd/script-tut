@@ -209,11 +209,15 @@ Additionally, the following is sprinkled in here:
 * Capitalizing a string
 * Sorting an array
 
-**NOTES** *At least one scripting language is incable of returning an array, and this would be AWK.*
+**NOTES** *At least one scripting language is incable of returning an array, and this would be AWK.  Scripting environments like Command Shell (Batch) and C Shell do not even support functions*
 
 ### Environment Variables
 
 **FUTURE CONTENT SNEAK PREVIEW** *This is a common and important task in system administration is maintaining environments variables and search path.  One snippet will demonstrate parsing a PATH string, while another will getting and setting an environment variable.*
+
+### Filters
+
+**FUTURE CONTENT SNEAK PREVIEW** *These scripts are programs whether or not the program is non-interactive or interactive.  Scripts can be designed to be used in conjunction with other scripts, and act as a filter.  Most script languages, this can be done easily, and a few languages, such as Awk, Powershell, and Perl can run in filter mode.  This is the last section of the Basic Scripting Tutorial, as advanced scripts will work on files, and potentially be used as filters.*
 
 ## Key to Naming Convention
 

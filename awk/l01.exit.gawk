@@ -1,10 +1,10 @@
 #!/bin/gawk -f
 BEGIN {
-  # acquire num of args and script name
+  # illustrative variables
   ARG_COUNT   = ARGC - 1 # get num of arguments
   SCRIPT_NAME = ARGV[0]  # get script name
-  EX_USAGE        = 64   # status for command line usage error
-  EX_OK           = 0    # status for successful termination
+  EX_USAGE    = 64       # status for command line usage error
+  EX_OK       = 0        # status for successful termination
 
   if (ARG_COUNT != 1) {
     # output usage statement to standard error
