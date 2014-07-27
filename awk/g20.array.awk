@@ -13,15 +13,15 @@ BEGIN {
     print "  nicknames[" count "] = " nicknames[count]
 }
 
-  # **************************************
-  # array_length() - returns length of array
-  #   Note: required as length() only works on strings in POSIX awk 
-  #   Note: not needed with gawk 3.1.5 and 4.x as length works on 
-  #    array as well
-  # **************************************
-  function array_length (array) 
-  {
-     count = 0                   # set initial counter value
-     for (i in array) count++    # increment counter
-     return count                # return count of last item
-  }
+# **************************************
+# array_length() - returns length of array
+#   Note: required as length() only works on strings in POSIX awk 
+#   Note: not needed with gawk 3.1.5 and 4.x as length works on 
+#    array as well
+# **************************************
+function array_length (array) 
+{
+   count = 0                   # set initial counter value
+   for (i in array) count++    # increment counter
+   return count                # return count of last item
+}
