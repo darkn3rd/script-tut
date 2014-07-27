@@ -9,27 +9,15 @@ BEGIN {
   ages["kate"]=19
  
   # print all key indexes
-  print "Keys  (names): " values(ages)
+  print "Keys  (names): " keys(ages)
  
   # print all values
-  print "Values (ages): " keys(ages)
+  print "Values (ages): " values(ages)
 }
 
 # Helper Functions as Awk has no method to 
 #  enumerate all values or keys from an array
 
-# **************************************
-# values (array) - return list of values as string
-#  values may be completely out of order
-# **************************************
-function values(array)
-{
-    keyStr = ""
-     
-    for (key in ages) keyStr = keyStr " " key
- 
-    return keyStr
-}
 
 # **************************************
 # keys (array) - return list of keys as string
@@ -39,7 +27,20 @@ function keys(array)
 {
     keyStr = ""
      
-    for (key in ages) keyStr = keyStr " " ages[key]
+    for (key in ages) keyStr = keyStr " " key
  
     return keyStr
+}
+
+# **************************************
+# values (array) - return list of values as string
+#  values may be completely out of order
+# **************************************
+function values(array)
+{
+    valueStr = ""
+     
+    for (key in ages) valueStr = valueStr " " ages[key]
+ 
+    return valueStr
 }
