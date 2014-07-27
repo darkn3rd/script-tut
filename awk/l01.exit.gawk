@@ -1,7 +1,7 @@
 #!/bin/gawk -f
 
 # function to show usage message
-function show_message()
+function usage_message()
 {
     printf "\nYou need to enter one or more numbers: \n\n" > "/dev/stderr"
     printf "   Usage: %s [num1] [num2] [num3]...\n\n", SCRIPT_NAME > "/dev/stderr"
@@ -30,14 +30,15 @@ BEGIN {
     EX_OK       = 0        # status for successful termination
 
     if (ARG_COUNT < 1) {
-        show_message() # output usage statement to standard error
+        usage_message() # output usage statement to standard error
     } else {
-        shift(ARGV)    # shift out SCRIPT_NAME from top of array
-        add_nums(ARGV) # call subroutine to output summation of arguments
+        shift(ARGV)     # shift out SCRIPT_NAME from top of array
+        add_nums(ARGV)  # call subroutine to output summation of arguments
     }
 }
 
-# ========== HELPER FUNCTIONS ========== #
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as Awk has no method to shift out elements of array
 
 # **************************************
 # shift (array) - shifts out top of array

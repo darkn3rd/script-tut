@@ -20,6 +20,10 @@ BEGIN {
   printf "The nicknames are: " join(nicknames, ", ") "\n"
 }
 
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as POSIX Awk has no facility to get size of array or
+#   join elements into a string
+
 # **************************************
 # array_length() - returns length of array
 #   Note: required as length() only works on strings in POSIX awk 

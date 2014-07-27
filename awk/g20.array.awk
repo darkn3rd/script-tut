@@ -13,6 +13,9 @@ BEGIN {
     print "  nicknames[" count "] = " nicknames[count]
 }
 
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as POSIX Awk has no method to get size of array
+
 # **************************************
 # array_length() - returns length of array
 #   Note: required as length() only works on strings in POSIX awk 

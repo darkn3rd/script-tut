@@ -21,6 +21,9 @@ BEGIN {
   printf "The nicknames are: " join(nicknames, ", ") "\n"
 }
 
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as Awk has no method to join array elements to a string
+
 # **************************************
 # join (array, sep) - returns string given array and separator
 #   Helper function to help enumerate a list easily

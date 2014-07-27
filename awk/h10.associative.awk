@@ -19,9 +19,9 @@ BEGIN {
       printf " ages[\"%s\"] = %s\n", name, ages[name]
 }
 
-# Helper Functions as Awk has no method to 
-#  create associative arrays in one line or 
-#  merge two associative arrays
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as Awk has no method to create associative 
+#   arrays in one line or merge two associative arrays
 
 # **************************************
 # make_array (scalar, array) - populates array given a string scalar

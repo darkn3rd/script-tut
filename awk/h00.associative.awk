@@ -15,9 +15,9 @@ BEGIN {
   print "Values (ages): " values(ages)
 }
 
-# Helper Functions as Awk has no method to 
-#  enumerate all values or keys from an array
-
+# ==================== HELPER FUNCTIONS ==================== #
+# Helper Functions as Awk has no method to enumerate all values or keys 
+#   from an array
 
 # **************************************
 # keys (array) - return list of keys as string
