@@ -82,9 +82,12 @@ sudo ln -s `which awk` /bin/awk
 * Windows 7 (32-bit), Nawk (UWIN 2012-08-06)
   * Issues:
     * ```length()``` only works on string, will not work on array
-* Mac OS X 10.8.5, Awk 20070501
+* Mac OS X 10.8.5, BSD Awk 20070501
   * Issues:
     * awk not in ```/bin/awk```, but found in ```/usr/bin/awk```
+* CentOS 6.5, GNU Awk 3.1.7
+  * Issues
+    * ```switch``` will not work as requires GNU Awk 4.0 and above.
 
 ## Topics with Details 
 
