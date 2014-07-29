@@ -1,7 +1,7 @@
 #!/bin/awk -f
 
 # create subroutine called fish
-#  NOTE: parameters unused, only declared to get locality of 
+#  NOTE: parameters unused, as they are only declared to get locality of 
 #    simiarly named variables   
 function fish(pond) {
     pond = 500         # utilize local variable
