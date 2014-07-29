@@ -99,11 +99,24 @@ This covers notes regarding each section.
    * output variables using string interpolation with ```printf```
 3. **Arithmetic**
 4. **Input**
+
+1. **Branch on a String** - compare Yes or No response.
+2. **Branch on a String with Ternary** - compare a Yes or No response
+3. **Branch on a Number Range** - check range
+4. **Branch on a Number** - simple menu
+5. **Multiway Branch on a Number** - simple menu
+6. **Multiway Branch on a Character Pattern** - determine type of letter
+7. **Branch on Character Pattern**  - determine type of letter
+
+
 5. **Branch**
-   * select on number using ```if```
-   * select on character using ```switch```
-     * **NOTE** *This is not supported by POSIX awk or earlier versions of gawk.  This functionality is available in Gawk 3.1.5 and above*
-   * select on character using ```if```
+   * branch on a string with ```if``` - yes/no
+   * branch on a string with ternary
+   * branch on number range
+   * branch on an exact number using ```if```
+   * multiway branch on an exact number using ```switch``` (*Gawk 3.1.5+ only*)
+   * multiway branch on a pattern using ```switch``` (*Gawk 3.1.5+ only*)
+   * select on pattern using ```if```
 6. **Looping**
    * iterative (count) loop
    * conditional loop
