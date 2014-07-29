@@ -133,7 +133,12 @@ This covers notes regarding each section.
         * helper function of ```make_array()``` to create associative array from supplied string
         * helper function of ```merge()``` to merge two associative arrays
 9. **Subroutines** 
-   * utilize subroutine that prints the current date in "Month Day, Year" format
+   * Demonstrating creating and calling a subroutine
+     *  utilize subroutine that prints the current date in "Month Day, Year" format
+   * Demonstrate global variables
+     * **NOTES** *All variables in in AWK are global variables, unless passed in as parameters*
+   * Demonstrate local variables 
+     * **NOTES** *Local varabialbes can be created by listing them in the parameter list* 
 10. **Arguments**
     * demonstrate testing for two arguments
     * print list of all arguments with count
