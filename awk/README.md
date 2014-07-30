@@ -103,6 +103,7 @@ sudo ln -s `which awk` /bin/awk
 * Windows 7 (64-bit), GNUWin32, GNU Awk 3.1.6    
     * ```switch``` works
     * ```length(array)``` does not work.
+    * last file from ls is not $9, but $8, so use $NF instead
 
 ## Topics with Details 
 
@@ -114,16 +115,6 @@ This covers notes regarding each section.
    * output variables using string interpolation with ```printf```
 3. **Arithmetic**
 4. **Input**
-
-1. **Branch on a String** - compare Yes or No response.
-2. **Branch on a String with Ternary** - compare a Yes or No response
-3. **Branch on a Number Range** - check range
-4. **Branch on a Number** - simple menu
-5. **Multiway Branch on a Number** - simple menu
-6. **Multiway Branch on a Character Pattern** - determine type of letter
-7. **Branch on Character Pattern**  - determine type of letter
-
-
 5. **Branch**
    * branch on a string with ```if``` - yes/no
    * branch on a string with ternary
