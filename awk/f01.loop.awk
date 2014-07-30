@@ -4,7 +4,7 @@ BEGIN {
   #   alternative is to use conditional loop and buffered 
   #   input, pulled until EOF
   while ("ls -l" | getline) {
-    if (/^d/) print $9 " is a directory"
-    else print $9 " is a not a directory"
+    if (/^d/) print $NF " is a directory"
+    else print $NF " is a not a directory"
   }
 }

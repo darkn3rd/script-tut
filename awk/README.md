@@ -2,7 +2,7 @@
 
 © Joaquin Menchaca, 2014
 
-Version 1.3
+Version 1.5
 
 ## Overview
 
@@ -12,7 +12,7 @@ AWK was extremely popular in the 1970s and 1980s.  The available shell at the ti
 
 AWK was updated in the late 1980s with the release of nawk (New AWK) and gawk (GNU AWK).  New AWK is available on SVR Unix versions, while GNU AWK is widely available, especially in open source systems like Linux.  In the 1990s, the popularity of Perl caused AWK to be used less for text-processing chores.
 
-GNU Awk is being updated slightly.  Gawk 3.1.5 added the ability to get the size of an array with ```length()```, where before this only worked on strings.  Also, Gawk 4.0 adds use of ```switch() { ... }```.
+GNU Awk is continues to be updated.  Gawk 3.1.5 added the ability to get the size of an array with ```length()```, where before this only worked on strings.  Also, Gawk 4.0 adds use of ```switch() { ... }```.
 
 ### Articles and Resources on Awk
 
@@ -27,10 +27,22 @@ Thus, with any UNIX or Linux system, you can expect awk to be available.  For Wi
 
 ### Getting AWK on Windows
 
-- UWIN: Toolset from AT&T that contains tool chain typically found with SVR4 UNIX.
-  - http://www2.research.att.com/sw/download/
-- GitBash (msysgit): Tools built with Mingw, integrate with Windows and can be used along side Windows tools.  However, the version of awk included is a very old version of gawk.
-- Cygwin: Environment on top of Windows that provides GNU tools.
+For Windows, you can run GNU in various environments, some mimicking a Unix-like environment on Windows:
+
+ * CygWin [https://www.cygwin.com/] - robust environment uses special library to provide Unix compatibility.  
+ * GitBash [http://msysgit.github.io/] - Git tools that bundles the MSYS environment [http://www.mingw.org/wiki/msys] that provides Bash shell and some GNU tools including GNU Awk.
+ * GNUWin32 [http://gnuwin32.sourceforge.net/] - GNU tools that work directly from Command Shell.
+   * GNUWin32 Gawk - http://gnuwin32.sourceforge.net/packages/gawk.htm
+ * UWIN [http://www2.research.att.com/sw/download/] - toolset comes directly from AT&T and provides tools that are found with SVR4 Unix systems.  Tools seem to only work within their environment, i.e. ```login.exe``` program.
+   * Installer - http://www2.research.att.com/~astopen/download/tgz/uwin-base.2012-08-06.win32.i386-64.exe
+
+```batch
+C:\> "C:\Program Files (x86)"\GnuWin32\bin\gawk --version | head -1
+GNU Awk 3.1.6
+C:\>"C:\Program Files (x86)\Git\bin\gawk.exe" --version | head -1
+GNU Awk 3.0.4
+```
+
 
 ### Getting AWK on Macintosh
 
@@ -88,6 +100,9 @@ sudo ln -s `which awk` /bin/awk
 * CentOS 6.5, GNU Awk 3.1.7
   * Issues
     * ```switch``` will not work as requires GNU Awk 4.0 and above.
+* Windows 7 (64-bit), GNUWin32, GNU Awk 3.1.6    
+    * ```switch``` works
+    * ```length(array)``` does not work.
 
 ## Topics with Details 
 
