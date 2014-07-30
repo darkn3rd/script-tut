@@ -104,6 +104,7 @@ sudo ln -s `which awk` /bin/awk
     * ```switch``` works
     * ```length(array)``` does not work.
     * last file from ls is not $9, but $8, so use $NF instead
+    * UNIX ```date``` needs to be in the path.  Unix date is available with MSYS environment.
 
 ## Topics with Details 
 
