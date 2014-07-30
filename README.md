@@ -320,9 +320,9 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
    *  jscript (wsh)    1.4
    * vbscript (wsh)    1.4
 * Scripting, Popular
-   * Awk              1.3
+   * Awk              1.5
    * Perl             1.4
-   * PHP             1.3
+   * PHP              1.3
    * Python           1.5
    * Ruby             1.4
    * TCL              1.4
@@ -339,6 +339,8 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
+* 2014-07-29: Fix bug where on Windows, GNUWin32 ls shows last field to be $8, not $9.  Changed to $NF.
+* 2014-07-29: Added Awk updates for branching (ver 1.5), subroutine (ver 1.5)
 * 2014-07-21: Added Groovy to family of scripting languages
 * 2014-07-16: Update Ksh, Bash and Python to version 1.5
 * 2014-07-10: Update to 1.3 features (stderr, exit) on all sans BATCH.
