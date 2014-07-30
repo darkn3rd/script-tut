@@ -1,6 +1,6 @@
 #!/bin/awk -f
 BEGIN {
-  # no collection loop to extract data from subshell
+  # no collection loop in AWK that can be used to extract data from subshell
   #   alternative is to use conditional loop and buffered 
   #   input, pulled until EOF
   while ("ls -l" | getline) {
