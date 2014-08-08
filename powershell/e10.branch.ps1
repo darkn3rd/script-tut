@@ -2,12 +2,9 @@
 # get input from user
 $response = Read-Host "Would you like a toast? [Yes/No]"
 
-# set response string using if/else construction
+# set response string using one line (ternary-like statement)
 #   Test response to a string
-if ($response -eq "Yes") {
-  $response_str = "That's great!"
-} else {
-  $response_str = "How about a muffin?"
-}
+$response_str = @( "How about a muffin?", "That's great!")[$response -eq "Yes"] 
+
 # output the response string
 $response_str
