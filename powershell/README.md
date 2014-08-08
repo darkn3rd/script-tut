@@ -106,7 +106,7 @@ This covers notes regarding each section.
    * spin loop
      * demonstrate using ```do...while(1)``` with ```break``` to exit loop
    * spin loop with ability to skip invalid input
-     * demonstrate using ```do...while(1)``` with ```continue``` to skipp to next iteration
+     * demonstrate using ```do...while(1)``` with ```continue``` to skip to next iteration
 7. Arrays
    * Array Initialization
       * initialize array one element at a time
