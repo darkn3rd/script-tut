@@ -27,7 +27,7 @@ Any administrative chores will likely require escalated privileges.  To run Powe
 
 ## Getting PowerShell on Mac OS X, Linux, and Unix
 
-There is an open source equivalent to PowerShell called Pash.  The prerequisite for this is an installation of Mono, as Mono provides the CLR virtual machine and library support to run .NET applications.
+There is an open source equivalent to PowerShell called Pash.  The prerequisite for this is an installation of Mono, as Mono provides the virtual machine (JIT compiler) and library support to run .NET applications.
 
 * Pash: https://github.com/Pash-Project/Pash
 * Mono: http://www.mono-project.com/
