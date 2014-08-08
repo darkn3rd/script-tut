@@ -20,7 +20,7 @@ Officially, Powershell does not support earlier versions of Windows, such Window
 
 Amongst the operating system from Microsoft, various interfaces, such as installing Features and Roles on Windows releases differ, and thus, there is limited consistent interfaces amongst different versions of Windows.  Thus scripts may need to check for the operating system and use the appropriate available APIs if the scripts need to run on different versions of Windows.  
 
-As many may have experienced, this was a similar problem with earlier versions of Windows and popular tools at the time, as the tools differed in availability, licensing, and command line switches.  Such is the problem today with PowerShell as it was before in the past.
+As many may have experienced, this was a similar problem with earlier versions of Windows and popular tools at the time, as the tools differed in availability, licensing, and command line switches.  Such is the problem today with PowerShell as it was before with other tools in the past.
 
 ## Getting PowerShell on Windows 7
 
