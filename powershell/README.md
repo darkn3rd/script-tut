@@ -26,7 +26,7 @@ As many may have experienced, this was a similar problem with earlier versions o
 
 PowerShell 2.0 comes bundled in Windows 7 in both 64-bit and 32-bit versions.  This program will run using the CLR Virtual Machine from the .NET 2.0 framework.  The default framework can be overridden or changed.
 
-By default, PowerShell will not execute scripts unless you change the Execution Policy, which is simply a key stored in the registry.  You have to run ```Set-ExecutionPolicy RemoteSigned``` in PowerShell to modify this setting.  This will need to be done in both 32-bit and 64-bit versions to avoid any weirdness, as PowerShell scripts could get executed in either environment.
+By default, PowerShell will not execute scripts unless you change the Execution Policy, which is simply a key stored in the registry.  You have to run ```Set-ExecutionPolicy RemoteSigned``` in PowerShell to modify this setting.  This will need to be done in both 32-bit and 64-bit versions to avoid any weirdness, as PowerShell scripts could get executed in either 32-bit or 64-bit modes.
 
 Any administrative chores will likely require escalated privileges.  To run PowerShell with these privileges, you will need to do the following:
 
@@ -72,7 +72,7 @@ This covers notes regarding each section.
      * ```Write-Output```
      * naked string (last string is always ends up in standard output)
    * output text to standard error
-     * ```Console]::Error.WriteLine()```
+     * ```[Console]::Error.WriteLine()```
 2. Variables
    * output variables using string interpolation
      * demonstrate using ```Set-Variable```
