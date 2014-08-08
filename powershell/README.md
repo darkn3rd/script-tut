@@ -24,7 +24,7 @@ As many may have experienced, this was a similar problem with earlier versions o
 
 ## Getting PowerShell on Windows 7
 
-PowerShell 2.0 comes bundled in Windows 7 in both 64-bit and 32-bit versions.  This program will run using the CLR Virtual Machine from the  using from the .NET 2.0 framework.  The default framework can be overridden or changed.
+PowerShell 2.0 comes bundled in Windows 7 in both 64-bit and 32-bit versions.  This program will run using the CLR Virtual Machine from the .NET 2.0 framework.  The default framework can be overridden or changed.
 
 By default, PowerShell will not execute scripts unless you change the Execution Policy, which is simply a key stored in the registry.  You have to run ```Set-ExecutionPolicy RemoteSigned``` in PowerShell to modify this setting.  This will need to be done in both 32-bit and 64-bit versions to avoid any weirdness, as PowerShell scripts could get executed in either environment.
 
