@@ -14,9 +14,13 @@ PowerShell 3.0 is supported on Windows NT 6.1 (Windows 7, Windows Server 2008 R2
 
 PowerShell 4.0 is supported on Windows NT 6.2 (Windows 8 and Windows 2012) and Windows NT 6.1 with SP1 for their perspective releases. 
 
-Future versions obviously will follow this pattern, and thus you'll need to get the latest Windows for the latest PowerShell.  Earlier versions of Windows prior to Windows XP do not support PowerShell officially (yes...there have been hacks), and so WSH and the traditional command shell (BATCH) may be the only options from Microsoft, but then those systems are EOL (End-of-Life) by Microsoft, and so most in the community may not even take notice.
+Future versions obviously will follow this pattern, and thus you'll need to get the latest Windows for the latest PowerShell.  
 
-Amongst the operating system from Microsoft, various interfaces, such as installing Features and Roles on Windows releases differ, and thus, there is limited consistent interfaces amongst different versions of Windows.  Thus scripts may need to check for the operating system and use the appropriate available APIs if the scripts needs to run on different versions of Windows.  This was a similar problem with earlier versions of Windows and popular tools, as they differed in availability, licensing, and command line switches.  Such is the problem today as it was before in the past.
+Officially, Powershell does not support earlier versions of Windows, such Windows NT 5.0 (Windows 2000) (yes...there have been hacks), and so WSH and the traditional command shell (BATCH) may be the only options from Microsoft, but then those systems are EOL (End-of-Life) by Microsoft, and so most in the community may not even take notice.
+
+Amongst the operating system from Microsoft, various interfaces, such as installing Features and Roles on Windows releases differ, and thus, there is limited consistent interfaces amongst different versions of Windows.  Thus scripts may need to check for the operating system and use the appropriate available APIs if the scripts need to run on different versions of Windows.  
+
+As many may have experienced, this was a similar problem with earlier versions of Windows and popular tools at the time, as the tools differed in availability, licensing, and command line switches.  Such is the problem today with PowerShell as it was before in the past.
 
 ## Getting PowerShell on Windows 7
 
