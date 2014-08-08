@@ -86,7 +86,15 @@ This covers notes regarding each section.
    * input a string
      * demonstrate using ```Read-Host```
 5. Branch
+   * test a string using ```if```
+   * test a string using ```if``` to determine slice on anonymous list
    * test a number range
+   * test a number for menu selection
+     * demonstrate numerical comparison
+     * demonstrate string comparison
+   * multi-way test on a number for menu selection
+     * demonstrate numerical comparison
+     * demonstrate string comparison   
    * multi-way test on single character with pattern matching 
    * test on single character with pattern matching
 6. Looping
@@ -132,6 +140,10 @@ This covers notes regarding each section.
 9. Subroutines
    * demonstrate declaring and calling subroutine
      *  demonstrate showing formatted date with ```Get-Date -UFormat```
+   * demonstrate subroutine referencing global variables
+     *  this shows using ```$global:variable```
+   * demonstrate subroutine explicitly using local variables
+     *  this shows using ```$global:variable```
 10. Arguments
     * demonstrate processing 2 arguments
       * **NOTES:** Retrieving the script name can be done using ```$MyInvocation.MyCommand.Name```
@@ -150,4 +162,6 @@ This covers notes regarding each section.
     * demonstrate function that returns an int
     * demonstrate function that returns a string
       * string is capitalized using ```ToUpper()``` method
+    * demonstrate function that returns an array
+
 
