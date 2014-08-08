@@ -127,9 +127,9 @@ This covers notes regarding each section.
       * **NOTES:** Retrieving the script name can be done using ```$MyInvocation.MyCommand.Name```
     * demonstrate printing all arguments
       * use collection loop ```foreach```
-      * use count style loop with ```for``` and a range built using ``..```
+      * use count style loop with ```for``` and a range built using ```..```
     * demonstrate printing arguments in reverse order
-      * use count style loop with ```for``` and a range built using ``..```
+      * use count style loop with ```for``` and a range built using ```..```
 11. Parameters
     * demonstrate passing a single parameter
       * demonstrate controlling degrees of significance with decimal numbers 
