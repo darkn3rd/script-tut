@@ -16,7 +16,7 @@ PowerShell 4.0 is supported on Windows NT 6.2 (Windows 8 and Windows 2012) and W
 
 Future versions obviously will follow this pattern, and thus you'll need to get the latest Windows for the latest PowerShell.  
 
-Officially, Powershell does not support earlier versions of Windows, such Windows NT 5.0 (Windows 2000) (yes...there have been hacks), and so WSH and the traditional command shell (BATCH) may be the only options from Microsoft, but then those systems are EOL (End-of-Life) by Microsoft, and so most in the community may not even take notice.
+Officially, Powershell does not support earlier versions of Windows, such Windows NT 5.0 (Windows 2000) (yes...there have been hacks), and so WSH and the traditional command shell (BATCH) may be the only options from Microsoft, but then those systems are EOL (End-of-Life) by Microsoft, and so most in the community may not care.
 
 Amongst the operating system from Microsoft, various interfaces, such as installing Features and Roles on Windows releases differ, and thus, there is limited consistent interfaces amongst different versions of Windows.  Thus scripts may need to check for the operating system and use the appropriate available APIs if the scripts need to run on different versions of Windows.  
 
