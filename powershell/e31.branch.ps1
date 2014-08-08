@@ -17,7 +17,7 @@ Make your selection
 # get user input 
 $selection = Read-Host $menu
 
-# test $selection to matching number using numerical comparison
+# test $selection to matching number using string comparison
 if ($selection -eq "1") {
    "You selected a Coffee"
 } elseif ($selection -eq "2") {

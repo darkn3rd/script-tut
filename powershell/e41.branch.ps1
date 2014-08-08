@@ -17,7 +17,7 @@ Make your selection
 # get user input 
 $selection = Read-Host $menu
 
-# multiway test on selection to matching number using numerical comparison
+# multiway test on selection to matching number using string comparison
 switch ($selection) {
     "1" { "You selected a Coffee"    }    
     "2" { "You selected an Espresso" } 
