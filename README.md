@@ -339,7 +339,7 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 
 ## Project Changes
 
-* 2014-08-08: PowerShell - added 1.5 branching demoes
+* 2014-08-08: PowerShell - added 1.5 branching demoes, function, subroutine
 * 2014-08-07: Powershell doc update
 * 2014-07-29: Fix bug where on Windows, GNUWin32 ls shows last field to be $8, not $9.  Changed to $NF.
 * 2014-07-29: Added Awk updates for branching (ver 1.5), subroutine (ver 1.5)
