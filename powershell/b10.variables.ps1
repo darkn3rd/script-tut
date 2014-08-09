@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # declare variables
 $num    = 5
 $char   = 'a'

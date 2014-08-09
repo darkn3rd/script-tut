@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # declare variables
 Set-Variable -name num    -value 5
 Set-Variable -name char   -value 'a'
