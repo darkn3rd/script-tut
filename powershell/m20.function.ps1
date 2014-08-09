@@ -1,5 +1,4 @@
-#!/usr/bin/env groovy
-
+#!/usr/bin/env pash
 # create the function
 Function Sort-Array ($array) {
     $array | Sort-Object # return list
