@@ -58,9 +58,11 @@ This section has two sections now:
 
 Demonstrate declaring numbers, characters, and strings.  Show how to use these with:
 
-1. **String Interpolation**: variables are in the strings themselves and replaced with the value.
-2. **String Concatenation**: separate strings and variables are combined together
-3. **Multi-line String Variable**: Save a multi-line string into a variable.  Use HERE document if available.
+
+1. **String Concatenation**: separate strings and variables are combined together
+2. **String Interpolation**: variables are in the strings themselves and replaced with the value.
+3. **String Formatting**: variables use interpolation with formatting functionality.
+4. **Multi-line String Variable**: Save a multi-line string into a variable.  Use HERE document if available.
 
 Additionally, show how to escape quote characters if needed.
 
@@ -335,10 +337,13 @@ It is unfortunate that there are a variety of terms, sometimes conflicting, used
 * 1.3 Updates Loops: Spin loops, Spin loops with skip
 * 1.4 Updates Ouput (stderr), Add Exit category
 * 1.5 Updates Branching (ternary, menu), Subroutine (global, local), Parameters (pass by value, pass by reference), Function (return array), Output (here doc), Variable (here doc)
-* 1.6 Adds Environment Variables
+* 1.6 Updatings Variables (formatted interpolation category)
+* 1.x Adds Environment Variables
+
 
 ## Project Changes
 
+* 2014-08-15: Groovy - added 1.6 functionality
 * 2014-08-08: PowerShell - added 1.5 branching demoes, function, subroutine, output, variables
 * 2014-08-07: Powershell doc update
 * 2014-07-29: Fix bug where on Windows, GNUWin32 ls shows last field to be $8, not $9.  Changed to $NF.

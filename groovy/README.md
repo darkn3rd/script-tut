@@ -99,6 +99,7 @@ This covers notes regarding each section.
    * output variables using string interpolation
      * demonstrate using ```$``` in GStrings and ```println()```
      * demonstrate using ```%``` with ```printf()```
+   * output variable of multi-line text
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
