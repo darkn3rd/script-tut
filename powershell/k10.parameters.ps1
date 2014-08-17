@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # create function (subroutine)
 Function Add-Nums ($nums)
 {

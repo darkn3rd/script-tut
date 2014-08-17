@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # spin loop as always true, break to exit
 #   skip if no answer is entered
 do {

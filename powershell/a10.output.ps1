@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # output message to standard error
 #  Note: Test by redirecting stdout to nowhere, e.g.
 #    C:\> powershell.exe -NoLogo -NoProfile ^

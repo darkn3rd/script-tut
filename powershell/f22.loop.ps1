@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # conditional loop with while
 while ($answer -ne "quit") {
   # prompt user

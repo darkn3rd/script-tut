@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # declare varialbes
 $width=5
 $length=6

@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # conditional loop with do...while
 do {
   # prompt user

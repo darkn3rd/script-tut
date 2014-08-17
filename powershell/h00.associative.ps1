@@ -1,3 +1,4 @@
+#!/usr/bin/env pash
 # create empty hash
 $ages = @{}
 # individually build hash
