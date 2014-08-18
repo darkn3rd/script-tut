@@ -26,6 +26,13 @@ As many might realize that those programs mentioned above have been known for sp
 
 This environment can can provide backdoor access into a system.  A client program that connects to servers on the Internet and runs scripts from such a server on the client system, can potentially be dangerous.  Thus a program like a web browser (Internet Explorer) or a mail client (Outlook) that uses such a feature is dangerous.
 
+## Getting VBScript (WSH)
+
+### Windows
+
+The WSH environment has been integrated since Windows 2000.  There's an installer for WSH 5.7 for earlier versions of Windows.  The version 5.8 of WSH is integrated into more recent versions of Windows: Windows 7, Windows 8, Windows 2008, Windows 2012.  Unfortunately, WSH 5.8 is not available as an external installer for earlier Windows systems.
+
+Earlier versions of Windows Script Host 5.6 can be installed on Windows NT 4.x and Windows 4.0 (Windows '95).
 
 ## Testing
 
