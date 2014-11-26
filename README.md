@@ -7,7 +7,7 @@ This is a basic tutorial of scripting modeled after typical tasks one would do w
 
 # The Lessons
 
-These are the overall plan for 14 area and about 47 lessons (varies per language):
+These are the overall plan for 14 topics and about 47 lessons (varies per language):
 
 * :books: Output
   * :green_book: Standard Output [A00]
@@ -65,10 +65,10 @@ These are the overall plan for 14 area and about 47 lessons (varies per language
   * :green_book: Return a String [M10]
   * :green_book: Return an Array [M20]
 * :books: Environment Variables
-  * :green_book: Enumerating Variables [N00] (TBA)
-  * :green_book: Enumerating Paths [N10] (TBA)
-  * :green_book: Augmenting Variables [N20] (TBA)
-  * :green_book: Exporint Variables [N30] (TBA)
+  * :green_book: Enumerating Variables [N00]
+  * :green_book: Enumerating Paths [N10]
+  * :green_book: Augmenting Variables [N20]
+  * :green_book: Exporint Variables [N30]
 
 ## Languages
 
