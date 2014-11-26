@@ -12,11 +12,11 @@ function usage_message()
 # function to add up numbers
 function add_nums(numbers)
 {
-   sum = 0                        # initalize to 0
-   for (num in numbers) { 
-     sum += numbers[num]          # add all nums in array 
+   sum = 0                        # initialize to 0
+   for (num in numbers) {
+     sum += numbers[num]          # add all nums in array
    }
- 
+
    print "The summation is: " sum # output results
 
    exit EX_OK                     # exit program with success status
@@ -46,7 +46,7 @@ BEGIN {
 function shift(array)
 {
     end = length(array) - 1      # end of new array is one less current array
- 
+
     for (i = 0; i < end; i++) {
         array[i] = array[i+1]    # move values up by one
     }
