@@ -131,13 +131,13 @@ GNU bash, version 4.3.18(1)-release (x86_64-apple-darwin12.5.0)
 * :books: Arguments (Command Line)
   * :green_book: Usage Statement (Script Name and Arg Count) [J00]
   * :green_book: Enumerate Arguments in Order
-    * :page_facing_up: Collection Loop with `for..in..do..done` [J10]
-    * :page_facing_up: Count Loop with `for..in..do..done` [J11]
-    * :page_facing_up: Count Loop with `while..do..shift..done` [J12]
-    * :page_facing_up: Conditional Loop with `while..do..shift..done` [J13]
+    * :page_facing_up: Collection Loop [J10]
+    * :page_facing_up: Count Loop with range [J11]
+    * :page_facing_up: Count Loop with shift (count < #arg) [J12]
+    * :page_facing_up: Count Loop with shift (#args > 0) [J13]
   * :green_book: Enumerate Arguments in Reverse Order
-    * :page_facing_up: Count Loop with `while..do..shift..done` [J20]
-    * :page_facing_up: Count Loop with `for..in..do..shift..done` [J21]
+    * :page_facing_up: Count Loop with shift [J20]
+    * :page_facing_up: Count Loop with range [J21]
 * :books: Parameters (Sub-Routines)
   * :green_book: Pass a Single Parameters [K00]
   * :green_book: Pass Variable Number of Parameters [K10]
