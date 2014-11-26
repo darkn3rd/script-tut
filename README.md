@@ -68,7 +68,7 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
   * :green_book: Enumerating Variables [N00]
   * :green_book: Enumerating Paths [N10]
   * :green_book: Augmenting Variables [N20]
-  * :green_book: Exporint Variables [N30]
+  * :green_book: Exporting Variables [N30]
 
 ## Languages
 
