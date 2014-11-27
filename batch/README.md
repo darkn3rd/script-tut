@@ -61,9 +61,9 @@ This is a subset of lessons for Batch (Command Shell):
   * :green_book: Returning an Exit Status Code [L00]
 * :books: Functions
   * :closed_book: Return an Integer
-    * :page_facing_up: Use ErrorCode to capture result [M01]
+    * :page_facing_up: Use Exit Error Code to capture result [M01]
   * :closed_book: Return a String
-    * :page_facing_up: Use Sub-Shell to capture result [M11]
+    * :page_facing_up: Use Delayed Expansion to capture result [M11]
 
 **Key**
 * :books: - topic area
