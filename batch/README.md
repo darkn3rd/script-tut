@@ -34,6 +34,7 @@ This is a subset of lessons for Batch (Command Shell):
   * :green_book: String Concatenation [B00]
 * :books: Arithmetic
   * :green_book: Basic Arithmetic [C00]
+  * :closed_book: Boolean Logic [C11]
 * :books: Input
   * :green_book: Reading a Line [D00]
   * :green_book: Reading a Line [D00]
@@ -52,6 +53,12 @@ This is a subset of lessons for Batch (Command Shell):
   * :closed_book: Creation and Calling [I01]
 * :books: Arguments from the Command Line
   * :green_book: Enumerate Arguments in Order [J10]
+
+**Key**
+  :books: - topic area
+* :green_book: - Lesson supported by language
+* :closed_book: - Not supported by language, but alternative
+* :page_facing_up: - Alternative methods to do the lesson
 
 ## Notes
 
