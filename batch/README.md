@@ -37,7 +37,6 @@ This is a subset of lessons for Batch (Command Shell):
   * :closed_book: Boolean Logic [C11]
 * :books: Input
   * :green_book: Reading a Line [D00]
-  * :green_book: Reading a Line [D00]
 * :books: Branching
   * :green_book: Branch on Number Range [E20]
   * :closed_book: Branch on String Pattern
