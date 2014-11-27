@@ -73,6 +73,11 @@ This is a subset of lessons for Batch (Command Shell):
 
 ## Notes
 
+### Links
+
+* [SS64 Command line reference](http://ss64.com/nt/) - Awesome reference site for Command Shell and Windows commands.
+* [Guide to Windows Batch Scripting](http://steve-jansen.github.io/guides/windows-batch-scripting/)
+
 ### Lessons Omitted
 
 Command Shell (Batch) barely supports string variables, and certainly does not support ***arrays*** or ***associative arrays***.  
