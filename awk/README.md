@@ -88,7 +88,7 @@ sudo ln -s `which awk` /bin/awk
 
 ## Testing
 
-* :dvd: Windows 7 (32-bit),
+* :dvd: Windows 7 (32-bit)
   * :package: Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
     * :beetle: `length()` only works on string, will not work on array
   * :package: Nawk (UWIN 2012-08-06)
@@ -98,7 +98,7 @@ sudo ln -s `which awk` /bin/awk
     * :beetle: last file from `ls` is not $9, but $8, so use $NF instead
     * :beetle: UNIX `date` needs to be in the path.  Unix date is available with MSYS environment.
 * :dvd: OS X 10.8.5
-　 * :package: BSD Awk 20070501 (bundled with OS)
+  * :package: BSD Awk 20070501 (bundled with OS)
      * :beetle: awk not in `/bin/awk`, but found in `/usr/bin/awk`
 * :dvd: CentOS 6.5
   * :package: GNU Awk 3.1.7
