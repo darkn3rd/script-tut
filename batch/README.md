@@ -51,7 +51,10 @@ This is a subset of lessons for Batch (Command Shell):
 * :books: Sub-Routines
   * :closed_book: Creation and Calling [I01]
 * :books: Arguments from the Command Line
+  * :green_book: Usage Statement (Script Name and Arg Count) [J00]
   * :green_book: Enumerate Arguments in Order [J10]
+* :books: Exit
+  * :green_book: Returning an Exit Status Code [L00]
 
 **Key**
   :books: - topic area
