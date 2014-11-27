@@ -30,6 +30,7 @@ This is a subset of lessons for Batch (Command Shell):
 
 * :books: Output
   * :green_book: Standard Output [A00]
+  * :green_book: Standard Error [A00]
 * :books: Variables
   * :green_book: String Concatenation [B00]
 * :books: Arithmetic
@@ -53,11 +54,19 @@ This is a subset of lessons for Batch (Command Shell):
 * :books: Arguments from the Command Line
   * :green_book: Usage Statement (Script Name and Arg Count) [J00]
   * :green_book: Enumerate Arguments in Order [J10]
+* :books: Parameters (Sub-Routines)
+  * :green_book: Pass a Single Parameters [K00]
+  * :green_book: Pass Variable Number of Parameters [K10]
 * :books: Exit
   * :green_book: Returning an Exit Status Code [L00]
+* :books: Functions
+  * :closed_book: Return an Integer
+    * :page_facing_up: Use ErrorCode to capture result [M01]
+  * :closed_book: Return a String
+    * :page_facing_up: Use Sub-Shell to capture result [M11]
 
 **Key**
-  :books: - topic area
+* :books: - topic area
 * :green_book: - Lesson supported by language
 * :closed_book: - Not supported by language, but alternative
 * :page_facing_up: - Alternative methods to do the lesson

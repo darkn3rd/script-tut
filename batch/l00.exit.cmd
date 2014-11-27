@@ -1,11 +1,11 @@
 @ECHO OFF
 :::::: illustrative variables ::::::
 :: get name of script
-SET SCRIPT_NAME=%0 
+SET SCRIPT_NAME=%0
 :: get the total number of arguments
 SET /A ARG_COUNT=0
 FOR %%A IN (%*) DO SET /A ARG_COUNT+=1
-:: Error Codes 
+:: Error Codes
 SET ERROR_INVALID_ARGS=10022
 SET ERROR_SUCESS=0
 
@@ -28,9 +28,9 @@ EXIT /B %ERRORLEVEL%
   ECHO. 1>&2
   ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3] ... 1>&2
   ECHO. 1>&2
-  
-  EXIT /B %ERROR_INVALID_ARGS%
 
+  EXIT /B %ERROR_INVALID_ARGS%
+GOTO :EOF
 :::::: ADD_NUMS Function ::::::
 :ADD_NUMS
 
@@ -41,3 +41,4 @@ EXIT /B %ERRORLEVEL%
   ECHO The summation is: %sum%.
 
   EXIT /B %ERROR_SUCESS%
+GOTO :EOF

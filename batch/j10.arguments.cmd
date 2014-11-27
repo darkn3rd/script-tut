@@ -15,13 +15,13 @@ SET /A count=1
 ECHO The arugments passed are:
 
 :LOOP
-:: exit loop if we processed them all
-IF %count% GTR %ARG_COUNT% GOTO END
-:: output results
-ECHO  item %count%: %1
-:: increment counter
-SET /A count+=1
-:: move next argument into %1
-SHIFT
+  :: exit loop if we processed them all
+  IF %count% GTR %ARG_COUNT% GOTO END
+  :: output results
+  ECHO  item %count%: %1
+  :: increment counter
+  SET /A count+=1
+  :: move next argument into %1
+  SHIFT
 GOTO LOOP
 :END

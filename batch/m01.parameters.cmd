@@ -8,7 +8,7 @@ SET result=%ERRORLEVEL%
 ECHO The result of their summation is: %result%.
 GOTO :EOF
 
-:: create the subroutine
+:: create the function
 :ADD_NUMS
   :: initialize starting sum value
   SET /A sum=0
