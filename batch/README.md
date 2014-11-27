@@ -81,7 +81,7 @@ Command Shell (Batch) barely supports string variables, and certainly does not s
 
 * Special characters can be escaped with the carrot `^` character, and line continuations can be used with the carrot `^` placed at the end of the line.
 
-* The original Batch never had the ability to do subshells can capture output from such commands.  Command Shell added this ability with the `for` loop.
+* The original Batch never had the ability to do a sub shells and then capture output from commands executed in the sub shell.  Command Shell added this ability with the `for` loop.
 
 * The BATCH equivalent of subroutines are accessed through `CALL` and end with `GOTO :EOF` and parameters can be passed into the subroutine.
 
