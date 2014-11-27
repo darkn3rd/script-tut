@@ -88,23 +88,22 @@ sudo ln -s `which awk` /bin/awk
 
 ## Testing
 
-* :dvd: Windows 7 (32-bit), Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
-  * Issues:
-    * `length()` only works on string, will not work on array
-* :dvd: Windows 7 (32-bit), Nawk (UWIN 2012-08-06)
-  * Issues:
-    * `length()` only works on string, will not work on array
-* :dvd: OS X 10.8.5, BSD Awk 20070501
-  * Issues:
-    * awk not in `/bin/awk`, but found in `/usr/bin/awk`
-* :dvd: CentOS 6.5, GNU Awk 3.1.7
-  * Issues
-    * `switch` will not work as requires GNU Awk 4.0 and above.
-* :dvd: Windows 7 (64-bit), GNUWin32, GNU Awk 3.1.6
-    * `switch` works
-    * `length(array)` does not work.
-    * last file from `ls` is not $9, but $8, so use $NF instead
-    * UNIX `date` needs to be in the path.  Unix date is available with MSYS environment.
+* :dvd: Windows 7 (32-bit),
+  * :package: Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+    * :beetle: `length()` only works on string, will not work on array
+  * :package: Nawk (UWIN 2012-08-06)
+    * :beetle: `length()` only works on string, will not work on array
+  * :package: GNUWin32, GNU Awk 3.1.6
+    * :beetle: `length(array)` does not work.
+    * :beetle: last file from `ls` is not $9, but $8, so use $NF instead
+    * :beetle: UNIX `date` needs to be in the path.  Unix date is available with MSYS environment.
+* :dvd: OS X 10.8.5
+　 * :package: BSD Awk 20070501 (bundled with OS)
+     * :beetle: awk not in `/bin/awk`, but found in `/usr/bin/awk`
+* :dvd: CentOS 6.5
+  * :package: GNU Awk 3.1.7
+    * :beetle: `switch` will not work as requires GNU Awk 4.0 and above.
+
 
 ## Topics
 
