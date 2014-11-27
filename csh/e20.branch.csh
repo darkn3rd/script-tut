@@ -1,16 +1,14 @@
 #!/bin/tcsh
 # prompt user and get input
-echo -n "Input a character: " # print prompt & acquire input
-set keypress=$<               # acquire input
+echo -n "Input a number: " # print prompt & acquire input
+set number=$<              # acquire input
 
 # test input and output result
-if ( `expr $keypress : "[a-z]"`) then
-	echo "Lowercase letter"
-else if ( `expr $keypress : "[A-Z]"` ) then
-	echo "Uppdercase letter"
-else if ( `expr $keypress : "[0-9]"` ) then
-	echo "Digit"
+if ( $number > 0 ) then
+  echo Number is greater than 0
+else if ( $number < 0 ) then
+  echo Number is less than 0
 else
-	echo "Punctuation, whitespace, or other"	
+  echo Number is 0
 endif
 # ^ newline required or failure

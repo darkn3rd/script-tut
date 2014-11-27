@@ -33,41 +33,46 @@ Lastly, besides BATCH programming, this language has the least capabilities of a
 
 And anyone documenting C Shell, it seems it is traditional to reference this document:
 
-  * **Top Ten Reasons not to use the C shell** by Bruce Barnett: http://www.grymoire.com/unix/CshTop10.txt
+  * **[Top Ten Reasons Not to Use the C shell](http://www.grymoire.com/unix/CshTop10.txt)** by Bruce Barnett.
 
-## Topics with Details 
+## Topics
 
-This covers notes regarding each section.
+* :books: Output
+  * :green_book: Standard Output [A00]
+  * :closed_book: Standard Error [A11]
+* :books: Variables
+  * :green_book: String Concatenation [B00]
+  * :green_book: Variable Interpolation [B10]
+  * :green_book: Formatting [B20]
+  * :green_book: Here String (Multiline String) [B30]
+* :books: Arithmetic
+  * :green_book: Basic Arithmetic [C00]
+  * :green_book: Boolean Logic [C10]
+* :books: Input
+  * :green_book: Reading a Line [D00]
+* :books: Branching
+  * :green_book: Branch on Number Range [E20]
+  * :green_book: Multiway Branch on String Pattern [E50]
+  * :green_book: Branch on String Pattern [E60]
+* :books: Looping
+  * :green_book: Collection Loop [F00]
+  * :green_book: Count Loop [F10]
+  * :green_book: Conditional Loop [F20]
+  * :green_book: Spin Loop [F30]
+  * :green_book: Skipping [F40]
+* :books: Arrays
+  * :green_book: Assign by Index and Length [G00]
+  * :green_book: Assign by List and Enumeration by Item [G10]
+  * :green_book: Assign by List and Enumeration by Index [G20]
+* :books: Arguments from the Command Line
+  * :closed_book: Usage Statement (Script Name and Arg Count) [J01]
+  * :green_book: Enumerate Arguments in Order [J10]
+  * :green_book: Enumerate Arguments in Reverse Order [J20]
 
-1. Output
-2. Variables
-3. Arithmetic
-   * **OMITTED** Any sections dealing with float as not supported in C Shell
-4. Input
-5. Branch
-   * select on number using ```if```
-   * select on character using ```switch```
-   * select on character using ```if```
-     * used ```expr STRING : PATTERN```  
-6. Looping
-   * iterative (count) loop
-   * conditional loop
-   * collection loop
-7. Arrays
-   * populate array using index
-     * **NOTE** This is not possible in C Shell, but can achieve similar results with concatenation.
-   * popular array using list of items
-     * enumerate array using collection loop
-     * enumerate array using iterative loop
-8. Associative Arrays
-   *  **OMITTED** Not supported in C Shell
-9. Subroutines
-   *  **OMITTED** Not supported in C Shell
-10. Arguments
-    * demonstrate testing for two arguments
-    * print list of all arguments with count
-    * print list of all arguments in reverse with count
-11. Parameters
-    *  **OMITTED** Not supported in C Shell
-12. Functions
-    *  **OMITTED** Not supported in C Shell
+## Notes
+
+These are things I discovered in developing C-Shell material.
+
+* C-Shell simulates *array* functionality using space-delimited strings, which can be processed using a collection loop or through an index.
+* C-Shell definatley does not suport *associative arrays*.
+* C-Shell does not support *subroutines* or *functions*.  There might be some clever hacks with `alias` or `goto :label` to get some of this functionality.
