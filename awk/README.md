@@ -90,9 +90,9 @@ sudo ln -s `which awk` /bin/awk
 
 * :dvd: Windows 7 (32-bit)
   * :package: Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
-    * :beetle: `length()` only works on string, will not work on array
+    * :beetle: `length(array)` does not work.
   * :package: Nawk (UWIN 2012-08-06)
-    * :beetle: `length()` only works on string, will not work on array
+    * :beetle: `length(array)` does not work.
   * :package: GNUWin32, GNU Awk 3.1.6
     * :beetle: `length(array)` does not work.
     * :beetle: last file from `ls` is not $9, but $8, so use $NF instead
