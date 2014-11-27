@@ -5,12 +5,12 @@ ARG_COUNT=$#           # get number of arguments
 output=""
 
 echo "The arugments passed are (reverse order):"
-#  iterative style loop with range to enumerate list
+#  count style loop with range to enumerate list
 for count in $(eval echo {1..$ARG_COUNT}); do
-  arg=$1                    # get arg from first positional
+  arg=$1  # get arg from first positional
   # build ouput string by prepending previous result
-  output="  item $count: $arg\n$output" 
-  shift                     # shift positionals by one
+  output="  item $count: $arg\n$output"
+  shift   # shift positionals by one
 done
 
 # output resulting compiled string
