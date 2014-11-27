@@ -41,7 +41,7 @@ This is a subset of lessons for Batch (Command Shell):
 * :books: Branching
   * :green_book: Branch on Number Range [E20]
   * :closed_book: Branch on String Pattern
-    * :page_facing_up: Character Sets [E61]
+    * :page_facing_up: Character Sets [E61] ***Uses `FindStr`***
 * :books: Looping
   * :green_book: Collection Loop
     * :page_facing_up: Conditional Loop test directory listing [F00]
