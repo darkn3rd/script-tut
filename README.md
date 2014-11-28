@@ -5,9 +5,11 @@
 ## Overview
 This is a basic tutorial of scripting modeled after typical tasks one would do with POSIX Shell Programming for system administration chores.
 
-# The Lessons
+## The Lessons
 
 These are the overall plan for 14 topics and about 47 lessons (varies per language):
+
+### Part I
 
 * :books: Output
   * :green_book: Standard Output [A00]
@@ -47,6 +49,9 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
 * :books: Associative Arrays
   * :green_book: Assign by Key [H00]
   * :green_book: Assign by List and Appending [H10]
+
+### Part II  
+
 * :books: Sub-Routines
   * :green_book: Creation and Calling [I00]
   * :green_book: Global Variable (Scope) [I10]
@@ -64,11 +69,18 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
   * :green_book: Return an Integer [M00]
   * :green_book: Return a String [M10]
   * :green_book: Return an Array [M20]
+
+### Part III  
+
 * :books: Environment Variables
   * :green_book: Enumerating Variables [N00]
   * :green_book: Enumerating Paths [N10]
   * :green_book: Augmenting Variables [N20]
   * :green_book: Exporting Variables [N30]
+* :books: Options [O00]
+  * :green_book: Flags [O00]
+  * :green_book: Options [O10]
+  * :green_book: Long Form [O20]
 
 ## Languages
 
