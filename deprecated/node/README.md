@@ -6,11 +6,11 @@
 
 OVERVIEW
 
-**NOTE** Currently, as of v0.10.29, Node.js is broken for synchronous interactive input on Mac OS X. Thus development of these scripts is sort of on the back burner for now, as they are not all that reliable.  It makes sense, one useing sychronous input goes against the platform, and also on a Mac OS X, which is typically client development, not a web server platform.
+**NOTE** Currently, as of v0.10.29, Node.js is broken for synchronous interactive input on Mac OS X. Thus development of these scripts is sort of on the back burner for now, as they are not all that reliable.  It makes sense, one using synchronous input goes against the platform, and also on a Mac OS X, which is typically client development, not a web server platform.
 
 ## Getting Node.js
 
-The Node.js inerpreter can be downloaded from http://nodejs.org/download/.  
+The Node.js interpreter can be downloaded from http://nodejs.org/download/.  
 
 ### Getting Node.js on Mac OS X
 
@@ -56,7 +56,7 @@ ln -s "/c/Program Files/nodejs/npm.cmd" /usr/bin/npm
 
 TBU
 
-## Topics with Details 
+## Topics with Details
 
 This covers notes regarding each section.
 
@@ -68,7 +68,7 @@ This covers notes regarding each section.
 6. **Looping**
 7. **Arrays**
 8. **Associative Arrays**
-9. **Subroutines** 
+9. **Subroutines**
 10. **Arguments**
 11. **Parameters**
 12. **Functions**

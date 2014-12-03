@@ -3,6 +3,7 @@
 © Joaquin Menchaca, 2014
 
 ## Overview
+
 This is a basic tutorial of scripting modeled after typical tasks one would do with POSIX Shell Programming for system administration chores.
 
 ## The Lessons
@@ -10,6 +11,8 @@ This is a basic tutorial of scripting modeled after typical tasks one would do w
 These are the overall plan for 14 topics and about 47 lessons (varies per language):
 
 ### Part I
+
+This covers the basics of input/output, logic flow, variables, and data structures (arrays, associative arrays).
 
 * :books: Output
   * :green_book: Standard Output [A00]
@@ -52,6 +55,8 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
 
 ### Part II  
 
+This covers sub-routines and functions, passing values (parameters), and retrieving data. This also covers parsing command line arguments.
+
 * :books: Sub-Routines
   * :green_book: Creation and Calling [I00]
   * :green_book: Global Variable (Scope) [I10]
@@ -72,6 +77,8 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
 
 ### Part III  
 
+This section is under development, and may be put into another advance scripting section.  As such, material is being developed for it.  Areas important for basic system administration chores will be configuring environment variables, and having more advance command line argument processing with options and flags.
+
 * :books: Environment Variables
   * :green_book: Enumerating Variables [N00]
   * :green_book: Enumerating Paths [N10]
@@ -83,6 +90,8 @@ These are the overall plan for 14 topics and about 47 lessons (varies per langua
   * :green_book: Long Form [O20]
 
 ## Languages
+
+These are the languages supported.
 
  * :scroll: AWK
  * :shell: Bourne Again Shell (bash) †
