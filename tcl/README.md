@@ -83,5 +83,5 @@ Today, you can see TCL is used in niche solutions, such as Cisco networking equi
 * :books: Exit
    * :green_book: Returning an Exit Status Code [L00]
 * :books: Functions [M00]
-   * :closed_book: Return an Integer [M00]
-* :closed_book: Return a String [M10]
+   * :green_book: Return an Integer [M00]
+   * :green_book: Return a String [M10]
