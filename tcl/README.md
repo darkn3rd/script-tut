@@ -50,8 +50,8 @@ Today, you can see TCL is used in niche solutions, such as Cisco networking equi
 * :books: Looping
   * :green_book: Collection Loop [F00]
   * :green_book: Count Loop
-    * :page_facing_up: Loop with general loop construct `for {...} {...} {...} {...}` [F10]
-    * :page_facing_up: Loop with `while {...} {...}` [F11]
+    * :page_facing_up: Loop with general loop construct `for` [F10]
+    * :page_facing_up: Loop with `while` [F11]
   * :green_book: Conditional Loop [F20]
   * :green_book: Spin Loop using `break` [F30]
   * :green_book: Skipping with `continue` [F40]
