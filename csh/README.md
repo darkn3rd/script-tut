@@ -26,10 +26,13 @@ The language itself has posed some quirks that are not some randomly discovered 
 
 Beyond these quirks, the language is extremely limited.  Here are a few of the limitations I have found:
 
-  * cannot store any type of float, even as a string.  Thus "3.14" can never be saved into any variable, even if used as a string.
-  * NO functions or subroutines (clever hacks with alias and goto is a workaround)
-  * arrays items cannot be inserted by index, they must be concatenated into an existing array.
-  * arrays items can be retrieved by an index.
+  * C-Sehll cannot store any type of float, even as a string.  Thus "3.14" can never be saved into any variable, even if used as a string.
+  * C-Shell does not support *subroutines* or *functions*.  There might be some clever hacks with `alias` or `goto :label` to get some of this functionality.
+  * C-Shell simulates *array* functionality using space-delimited strings, which can be processed using a collection loop or through an index.
+    * arrays items cannot be inserted by index, they must be concatenated into an existing array.
+    * arrays items can be retrieved by an index.
+  * C-Shell definitely does not suport *associative arrays*.
+
 
 Lastly, besides BATCH programming, this language has the ***LEAST*** capabilities of any scripting language.  There are reasons many a system administrator are saying "*don't use it*". Unless job security is needed, such as C Shell that spawns Awk scripts that sub-shell perl one-liners that may call C Shell again, I don't see the utility... :)
 
@@ -46,6 +49,8 @@ I wanted to document this for these reasons that come to mind: (1) nostalgia, (2
 When I started out, I used to use C-Shell on [68K](http://en.wikipedia.org/wiki/Motorola_68000_series) [Macintoshes](http://en.wikipedia.org/wiki/Macintosh) with either   [MachTen](http://www.tenon.com/products/machten/) or [NetBSD](http://www.netbsd.org/), and on [PC clones](http://en.wikipedia.org/wiki/IBM_PC_compatible), I used it on [NeXTSTEP](http://en.wikipedia.org/wiki/NeXTSTEP) 3.3.
 
 ## Topics
+
+### Part I
 
 * :books: Output
   * :green_book: Standard Output [A00]
@@ -74,15 +79,17 @@ When I started out, I used to use C-Shell on [68K](http://en.wikipedia.org/wiki/
   * :green_book: Assign by Index and Length [G00]
   * :green_book: Assign by List and Enumeration by Item [G10]
   * :green_book: Assign by List and Enumeration by Index [G20]
+
+### Part II
+
 * :books: Arguments from the Command Line
   * :closed_book: Usage Statement (Script Name and Arg Count) [J01]
   * :green_book: Enumerate Arguments in Order [J10]
   * :green_book: Enumerate Arguments in Reverse Order [J20]
 
-## Notes
+### Key
 
-These are things I discovered in developing C-Shell material.
-
-* C-Shell simulates *array* functionality using space-delimited strings, which can be processed using a collection loop or through an index.
-* C-Shell definatley does not suport *associative arrays*.
-* C-Shell does not support *subroutines* or *functions*.  There might be some clever hacks with `alias` or `goto :label` to get some of this functionality.
+* :books: - topic area
+  * :green_book: - Lesson supported by language
+  * :closed_book: - Not supported by language, but alternative
+  * :page_facing_up: - Alternative methods to do the lesson
