@@ -99,3 +99,10 @@ This section focuses programs basic interaction with the system (arguments, exit
 * :books: Functions [M00]
    * :green_book: Return an Integer [M00]
    * :green_book: Return a String [M10]
+
+### Key
+
+* :books: - topic area
+* :green_book: - Lesson supported by language
+* :closed_book: - Not supported by language, but alternative
+* :page_facing_up: - Alternative methods to do the lesson

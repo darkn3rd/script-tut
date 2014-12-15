@@ -10,7 +10,8 @@ Welcome to C Shell tutorial.  This will teach the basics on how to get around in
 
 ## Getting C Shell on Mac OS X
 
-Mac OS X 10.8.5 comes with TCsh 6.17.00 (Astron) built on 2009-07-10.
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :cd: TCsh 6.17.00 (Astron) built on 2009-07-10 (bundled with operating system)
 
 ## History
 
