@@ -20,6 +20,15 @@ Gradually, popularity of TCL dwindled, perhaps due to increasing popularity of t
 
 Today, you can see TCL is used in niche solutions, such as [Cisco](http://en.wikipedia.org/wiki/Cisco_Systems) networking equipement and [F5 BigIP](http://en.wikipedia.org/wiki/F5_Networks#BIG-IP) load balancers.
 
+## Discoveries
+
+These are some strange things I noticed when scripting in TCL:
+
+* ***String Concatenation*** - this seems not existent. There are some functions that exist, but these pad spaces  before and after each string part, so it is better to use *string interpolation*.
+* ***Arrays*** - indexed arrays do not exist, instead they seem to be space delimited strings, with some tooling to get some array-like functionality. For this reason, associative arrays are (called *arrays* in TCL) are often used as an alternative.
+* ***Accosciative Arrays*** - these are just called *arrays* in TCL.  TCL can extract the keys from an associative array, but has no mechanism to extract the values.
+* ***Variable Parameters*** - when creating a sub-routine or function (called *procedures* in TCL) that accepts unknown number of arguments, you must explicitly call this `args`.
+
 ## Testing
 
 * :dvd: *__OS X 10.8.5 (Mountain Lion)__*
@@ -27,7 +36,11 @@ Today, you can see TCL is used in niche solutions, such as [Cisco](http://en.wik
 
 ## Topics
 
-### Part I
+Here are the tutorial snippets for TCL, broken into two sections.
+
+### Part I: Basic Structures, Logic, Input and Output
+
+This section includes the basic mechanics of a language: input/output, branching and looping, and basic variables, arrays, and associative arrays.
 
 1. :books: Output
    * :green_book: Standard Output [A00]
@@ -65,8 +78,9 @@ Today, you can see TCL is used in niche solutions, such as [Cisco](http://en.wik
     * :page_facing_up: Collection loop extracting key [H10]
     * :page_facing_up: Collection loop extracting key/value pairs [H11]
 
-### Part II
+### Part II: System Interaction and Reusability
 
+This section focuses programs basic interaction with the system (arguments, exiting), and reusability and organization of a program through subroutines (*procedures*) and functions.
 
 1. :books: Sub-Routines
   * :green_book: Creation and Calling [I00]
