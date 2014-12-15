@@ -8,17 +8,17 @@ Version 1.4
 
 TCL or Tool Command Language, pronounced as *tickle*, was created by John Ousterhout in 1988.  The language was initially used for embedded systems automation, such as testing small independent tools.  
 
-TCL (*tickle*) achieved enormous popularity in the 1990s with the release of the Tk GUI toolkit in 1991.  At the time the common toolsets for creating graphics required were complex and required compiling platform specific code using libraries for libraries [X Window System](http://en.wikipedia.org/wiki/X_Window_System), [Mac OS Toolbox](http://en.wikipedia.org/wiki/Macintosh_Toolbox) ([QuickDraw](http://en.wikipedia.org/wiki/QuickDraw)), and [Windows API](http://en.wikipedia.org/wiki/Windows_API) (Win16 API).  
+TCL (*tickle*) achieved enormous popularity in the 1990s with the release of the Tk GUI toolkit in 1991.  At the time the common toolsets for creating graphics required were complex and were not portable to different systems (as it was compiled to one system).  Around this time, the programs had to use libraries that used [X Window System](http://en.wikipedia.org/wiki/X_Window_System), [Mac OS Toolbox](http://en.wikipedia.org/wiki/Macintosh_Toolbox) ([QuickDraw](http://en.wikipedia.org/wiki/QuickDraw)), and [Windows API](http://en.wikipedia.org/wiki/Windows_API) (Win16 API).  
 
-With the Tk GUI toolkit, a novice programmer could create graphical programs in minutes and share it on numerous systems that supported Tcl/Tk. This included systems like many UNIX systems, Windows, Mac OS classic, Amiga OS, OS/2, and others.
+With the Tk GUI toolkit, a novice programmer could create graphical programs in minutes and share it on numerous systems that supported Tcl/Tk. This included systems like many UNIX systems, [Windows 3.1](http://en.wikipedia.org/wiki/Windows_3.1x), [Mac OS System 7](http://en.wikipedia.org/wiki/System_7), [Amiga OS](http://en.wikipedia.org/wiki/AmigaOS), [OS/2](http://en.wikipedia.org/wiki/OS/2), [OpenVMS](http://en.wikipedia.org/wiki/OpenVMS) and others.
 
 Another popular tool called [Expect](http://en.wikipedia.org/wiki/Expect), created by Don Libes, that used TCL as its embedded language, gained popularity.  This tool allowed automating interactive command-line programs.
 
-Apple even utilized TCL as the language for a test-harness called Curare, which tested modules that tested the network stack and imaging products. Apple also used TCL for scripting automation of microkernel modules in [NuKernel](http://en.wikipedia.org/wiki/Nukernel) before they embarked on buying [BeOS](http://en.wikipedia.org/wiki/BeOS) or [NeXTSTEP](http://en.wikipedia.org/wiki/NeXTSTEP) around 1996.
+Apple even utilized TCL as the language for a test-harness called Curare, which tested modules that tested the network stack and imaging products. Apple also used TCL for scripting automation of microkernel modules in [NuKernel](http://en.wikipedia.org/wiki/Nukernel) before they embarked on path to buy either [BeOS](http://en.wikipedia.org/wiki/BeOS) or [NeXTSTEP](http://en.wikipedia.org/wiki/NeXTSTEP) around 1996.
 
-Gradually, popularity of TCL dwindled, perhaps due to increasing popularity of the Java platform, and rising popularity of web-client applications.  These technologies allowed sharing graphically applications that could run anywhere that Java or a web browser existed.  There were some tools created to integrate with these new technologies, such as [TclBlend](http://en.wikipedia.org/wiki/Tcl/Java), [Jacl](http://en.wikipedia.org/wiki/Tcl/Java) (TCL code that compiles to Java Bytecode), [TCL Plugin](http://www.tcl.tk/software/plugin/) (Netscape plug-in that allows running TCL in web pages).
+Gradually, popularity of TCL dwindled, perhaps due to increasing popularity of the [Java](http://en.wikipedia.org/wiki/Java_%28software_platform%29) platform, and rising popularity of web-client applications.  These technologies allowed sharing graphically applications that could run anywhere that [Java](http://en.wikipedia.org/wiki/Java_%28software_platform%29) or a web browser existed.  There were some tools created to integrate with these new technologies, such as [TclBlend](http://en.wikipedia.org/wiki/Tcl/Java), [Jacl](http://en.wikipedia.org/wiki/Tcl/Java) (TCL code that compiles to Java Bytecode), [TCL Plugin](http://www.tcl.tk/software/plugin/) (Netscape plug-in that allows running TCL in web pages).
 
-Today, you can see TCL is used in niche solutions, such as Cisco networking equipement and F5 BigIP load balancers.
+Today, you can see TCL is used in niche solutions, such as [Cisco](http://en.wikipedia.org/wiki/Cisco_Systems) networking equipement and [F5 BigIP](http://en.wikipedia.org/wiki/F5_Networks#BIG-IP) load balancers.
 
 ## Testing
 
@@ -68,7 +68,7 @@ Today, you can see TCL is used in niche solutions, such as Cisco networking equi
 ### Part II
 
 
-* :books: Sub-Routines
+1. :books: Sub-Routines
   * :green_book: Creation and Calling [I00]
 * :books: Arguments (Command Line)
   * :green_book: Usage Statement (Script Name and Arg Count) [J00]
