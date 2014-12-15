@@ -41,32 +41,21 @@ The site is really confusing to navigate, and I could not recall how I eventuall
 * uwin-base.2012-08-06.win32.i386.exe
 * uwin-base.2012-08-06.win32.i386-64.exe
 
-After installation, ```ksh.exe``` will be installed into ```C:\Program Files\UWIN\usr\bin\``` along with other tools. 
-
-## Gettng Korn Shell on Cent OS 6.5
-
-```
-sudo yum -y install ksh
-```
+After installation, ```ksh.exe``` will be installed into ```C:\Program Files\UWIN\usr\bin\``` along with other tools.
 
 
 ## Testing
 
-* Mac OS X 10.8.5
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :cd: 93u 2011-02-08 (bundled with operating system)
+  * :beer: 93u+ 2012-08-01 (homebrew: `brew install ksh`)
+* :dvd: *__Cent OS 6.5__*
+  * :pacakge: 93u+ 2012-08-01 (yum: `sudo yum -y install ksh`)
+* :dvd: *__Windows 7__* (Windows NT 6.1)
+  * :package: UWIN Base 2012-08-06
 
-```bash
-$ /bin/ksh --version
-  version         sh (AT&T Research) 93u 2011-02-08
-$ /usr/local/bin/ksh --version
-  version         sh (AT&T Research) 93u+ 2012-08-01
-```
-* CentOS 6.5
-```bash
-/bin/ksh --version
-  version         sh (AT&T Research) 93u+ 2012-08-01
-```  
 
-## Topics with Details 
+## Topics with Details
 
 This covers notes regarding each section.
 
@@ -78,7 +67,7 @@ This covers notes regarding each section.
 6. **Looping**
 7. **Arrays**
 8. **Associative Arrays**
-9. **Subroutines** 
+9. **Subroutines**
 10. **Arguments**
 11. **Parameters**
 12. **Functions**

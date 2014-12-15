@@ -27,7 +27,10 @@ hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
 
 #### Default
 
-Mac OS X 10.8.5 comes bundled with Python 2.7.2.
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :cd: Python 2.7.2 (bundled with operating system)
+
+
 
 #### Homebrew
 
@@ -65,20 +68,14 @@ sudo port install py27-pip
 sudo port select --list pip
 sudo port select --set pip pip27
 sudo pip install virtualenv
-
 ```
 
-### Getting Python on Cent OS 
+### Getting Python on Cent OS
 
-On CentOS 6.5, the default version of Python is 2.6.6.
+* :dvd: *__Cent OS 6.5__*
+  * :pacakge: Python 2.6.6 (default bundled with OS: `python --version`)
 
-```bash
-python --version
-Python 2.6.6
-```
-
-
-## Notes 
+## Notes
 
 This covers notes regarding each section.
 
@@ -107,11 +104,11 @@ This covers notes regarding each section.
    * test a number range
    * test a number for menu selection
    * multi-way test on a number for menu selection
-     * **OMITTED**: *Python does not have a mechanism for this* 
+     * **OMITTED**: *Python does not have a mechanism for this*
    * multi-way test on single character with pattern matching
-     * **OMITTED**: *Python does not have a mechanism for this* 
+     * **OMITTED**: *Python does not have a mechanism for this*
    * test on single character with pattern matching
-     * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~``` 
+     * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~```
 6. Looping
    * collection loop with ```for...in```
    * count style loop
@@ -127,7 +124,7 @@ This covers notes regarding each section.
       * initialize array by index
       * array length
       * enumerate all elements
-   * Array Enumeration 
+   * Array Enumeration
       * declare and initialize array
       * enumerate array by collection loop
 8. Associative Arrays
@@ -157,7 +154,7 @@ This covers notes regarding each section.
 11. Parameters
     * demonstrate passing a single parameter
     * demonstrate passing unlimited parameters
-    * demonstrate swapping two variables passed in as parameters 
+    * demonstrate swapping two variables passed in as parameters
       * **NOTE** Python does not have support for pass-by-reference, so we must package them up into a memory referenced datatype, so that the subroutine can swap them.
 12. Exiting
     * demonstrate exiting with error code to communicate status
@@ -165,4 +162,3 @@ This covers notes regarding each section.
     * demonstrate function that returns an int
     * demonstrate function that returns a string
     * demonstrate function that returns an array
-

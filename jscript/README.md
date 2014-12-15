@@ -26,14 +26,15 @@ This environment can can provide backdoor access into a system.  A client progra
 
 ## Testing
 
-* Windows 7, WSH 5.8
- 
+* :dvd: *__Windows 7__* (Windows NT 6.1)
+  * :cd: Windows Scripting Host 5.8 (bunled with operating system)
+
 ## Tools
 
 * run - shell script for git bash used to run WSH scripts using cscript
 * run.cmd - command shell script used to run WSH scripts using cscript
 
-## Topics with Details 
+## Topics with Details
 
 This covers notes regarding each section.
 
@@ -71,7 +72,7 @@ This covers notes regarding each section.
    * Create Associative Array using supplied list
      * Uses ```array = { "key":value, "key":value }``` syntax
      * Added helper function ```merge``` to allow concatenation of arrays
-9. **Subroutines** 
+9. **Subroutines**
    * utilize subroutine that prints the current date in "Month Day, Year" format
    * **Note:** *JScript does not have native method to extract the name of the month, so this must be done manually*
      * example using a months lookup array
@@ -88,6 +89,6 @@ This covers notes regarding each section.
      * utilize subroutine prints sum of all numbers passed into it.
 12. Functions (TBA)
     * demonstrate returning integer
-      * returns summation of all numbers passed into function 
+      * returns summation of all numbers passed into function
     * demonstrate returning string
-      * returns capitalized string from lower case string 
+      * returns capitalized string from lower case string

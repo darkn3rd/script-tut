@@ -38,14 +38,15 @@ Earlier versions of Windows Script Host 5.6 can be installed on Windows NT 4.x a
 
 These scripts have been testing on the following platforms.
 
-* Windows 7, WSH 5.8
- 
+* :dvd: *__Windows 7__* (Windows NT 6.1)
+  * :cd: Windows Scripting Host 5.8 (bunled with operating system)
+
 ## Tools
 
 * run - shell script for git bash used to run WSH scripts using cscript
 * run.cmd - command shell script used to run WSH scripts using cscript
 
-## Topics with Details 
+## Topics with Details
 
 This covers notes regarding each section.
 
@@ -58,7 +59,7 @@ This covers notes regarding each section.
 5. Branch
    * select on number using ```if```
    * select on character using ```case```
-     * added helper function ```match``` to evaluate pattern and string and return true or false 
+     * added helper function ```match``` to evaluate pattern and string and return true or false
    * select on character using ```if```
      * added helper function ```match``` to evaluate pattern and string and return true or false  
 6. Looping
@@ -68,7 +69,7 @@ This covers notes regarding each section.
    * conditional loop
      * ```do ... loop until ( ... )``` construction
      * ```do ... loop while ( ... )``` construction
-     * ```do until ( ... ) ... loop``` construction 
+     * ```do until ( ... ) ... loop``` construction
    * collection loop
      * ```for each ... in ... next``` construction
      * added helper function ```exec``` to run commands and return an array of strings for the output
@@ -95,6 +96,6 @@ This covers notes regarding each section.
      * utilize subroutine prints sum of all numbers passed into it.
 12. Functions
     * demonstrate returning integer
-      * returns summation of all numbers passed into function 
+      * returns summation of all numbers passed into function
     * demonstrate returning string
-      * returns capitalized string from lower case string 
+      * returns capitalized string from lower case string

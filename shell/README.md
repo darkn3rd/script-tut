@@ -26,11 +26,11 @@ The current default of ```/bin/sh``` is really GNU bash 3.2.48.  When ```sh``` i
 
 ## Testing
 
-* Mac OS X 10.8.5, Bash 3.2.48(1)-release (x86_64_appledarwin12) using ```/bin/sh```
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :cd: Bash 3.2.48(1)-release (x86_64_appledarwin12) using `/bin/sh`
 
 
-
-## Notes 
+## Notes
 
 This covers notes regarding each section.
 
@@ -45,7 +45,7 @@ This covers notes regarding each section.
    * if on single character
      * demonstrates using POSIX selector with ```tr``` and sub-shell ```$( command )``` to capture result
 6. Looping
-   * iterative loop 
+   * iterative loop
       * example: 10 to 1
         * ```while``` loop with counter
         * ```for...in``` loop using ```seq``` to generate range
@@ -53,7 +53,7 @@ This covers notes regarding each section.
         * both ```while``` and ```until``` loops demonstrated
         * spin loop demonstrated
    * collection loop
-      * iterate through set of items 
+      * iterate through set of items
       * example: directory listing
 7. Arrays
    * **OMITTED** *POSIX Shell does not support arrays*
@@ -66,14 +66,14 @@ This covers notes regarding each section.
 10. Arguments
     * Exact Arguments (2):
       * Add two numbers
-        * Demonstrates, ```$#```, positional parameters, arithmetic using ```$(( expr ))``` 
+        * Demonstrates, ```$#```, positional parameters, arithmetic using ```$(( expr ))```
     * Unlimited Arguments (n):
       * Print numbered list of arguments (varies methods)
         * conditional loop using ```while``` with ```shift``` to change positional parameters
         * collection loop on ```"$@"```
         * iterative style loop using ```while``` with ```eval```
         * iterative style loop uisng ```for``` with range from ```$(seq 1 $#)```
-    * Unlimited Arguments (n): 
+    * Unlimited Arguments (n):
       * Print all arguments in reverse order
         * iterative style loop using ```while``` with ```eval```
         * iterative style loop using ```until``` with ```eval```

@@ -32,7 +32,7 @@ Groovy requires Java Development Kit, and so this must be installed for Groovy t
 
 Groovy 2.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  This will need to be installed to avoid constant warnings that NIO is not available when working with Groovy 2.3.
 
-### Getting Python on Mac
+### Getting Groovy on Mac
 
 As for prerequisites on the Mac, you'll need to install XCode, XCode command line tools, and the most recent JDK.
 
@@ -59,7 +59,7 @@ brew install groovy
 
 GVM [http://gvmtool.net/] is tool that can manages versions of Groovy and related tools and frameworks.
 
-GVM can be installed on Mac OS X with an active Internet connection and using: 
+GVM can be installed on Mac OS X with an active Internet connection and using:
 
 ```bash
 curl -s get.gvmtool.net | bash
@@ -73,20 +73,13 @@ gvm install groovy
 
 ## Testing
 
-* Mac OS X 10.8.5 Mountain Lion
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :package: Groovy 2.3.3 (GVM: `gvm install groovy`)
+    * :package: Groovy Version Manager 1.3.13 (GVM: `curl -s get.gvmtool.net | bash`)
+    * :package: Oracle Java™ SE Runtime Environment (build 1.7.0_60-b19)
 
-```bash
-$ java -version
-java version "1.7.0_60"
-Java(TM) SE Runtime Environment (build 1.7.0_60-b19)
-Java HotSpot(TM) 64-Bit Server VM (build 24.60-b09, mixed mode)
-$ groovy -version
-Groovy Version: 2.3.3 JVM: 1.7.0_60 Vendor: Oracle Corporation OS: Mac OS X
-$ gvm version
-Groovy enVironment Manager 1.3.13
-```
 
-## Notes 
+## Notes
 
 This covers notes regarding each section.
 
@@ -116,7 +109,7 @@ This covers notes regarding each section.
      * demonstrate numerical comparison
      * demonstrate string comparison
    * multi-way test on a number for menu selection
-   * multi-way test on single character with pattern matching 
+   * multi-way test on single character with pattern matching
    * test on single character with pattern matching
 6. Looping
    * collection loop with ```for...in```
@@ -129,7 +122,7 @@ This covers notes regarding each section.
    * count style loop
      * demonstrate using general loop construct with ```for```
      * demonstrate using iteration with ```times```
-     * demonstrate using iteration with ```each``` and range operator ```..``` 
+     * demonstrate using iteration with ```each``` and range operator ```..```
      * demonstrate using ```for``` collection construct and range operator ```..```
    * conditional loop
    * spin loop
@@ -141,7 +134,7 @@ This covers notes regarding each section.
         * demonstrate using append operator ```<<``` to add each element
       * array length with ```size()``` method
       * enumerate all elements
-   * Array Enumeration 
+   * Array Enumeration
       * declare and initialize array
       * enumerate array one element at a time
         *  demonstrate using collection loop with ```for```
@@ -165,9 +158,9 @@ This covers notes regarding each section.
    * demonstrate declaring and calling subroutine
      *  demonstrate showing formatted date
    * demonstrate subroutine referencing global variables
-     *  this shows using binding variables in Groovy 
+     *  this shows using binding variables in Groovy
    * demonstrate subroutine explicitly using local variables
-     *  this shows using local variable declaration in Groovy 
+     *  this shows using local variable declaration in Groovy
 10. Arguments
     * demonstrate processing 2 arguments
       * **NOTES:** Retrieving the script name can be done using ```getClass().protectionDomain.codeSource.location.path.split('/')[-1]```
@@ -185,7 +178,7 @@ This covers notes regarding each section.
       * use iteration with ```reverse().each``` closure
 11. Parameters
     * demonstrate passing a single parameter
-      * demonstrate controlling degrees of significance with decimal numbers 
+      * demonstrate controlling degrees of significance with decimal numbers
     * demonstrate passing unlimited parameters
 12. Exiting
     * demonstrate exiting with error code to communicate status
@@ -193,4 +186,3 @@ This covers notes regarding each section.
     * demonstrate function that returns an int
     * demonstrate function that returns a string
     * demonstrate function that returns an array
-
