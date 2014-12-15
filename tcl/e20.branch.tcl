@@ -1,15 +1,13 @@
 #!/usr/bin/tclsh
 # prompt and get input
-puts -nonewline "Input a character: "
+puts -nonewline "Input a number: "
 flush stdout
-set keypress [read stdin 1]
-# evaluate match to pattern and output result
-if {[regexp {[a-z]} $keypress]} {
-    puts "Lowercase letter"
-} elseif {[regexp {[A-Z]} $keypress]} {
-    puts "Uppercase letter"
-} elseif {[regexp {[0-9]} $keypress]} {
-    puts "Digit"
+gets stdin number
+# evaluate input & print result
+if {$number > 0} {
+  puts "Number is greater than 0"
+} elseif {$number < 0} {
+  puts "Number is less than 0"
 } else {
-    puts "Punctuation, whitespace, or other"
+  puts "Number is 0"
 }
