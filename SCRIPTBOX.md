@@ -127,7 +127,7 @@ Note that Groovy requires that the Java environment is installed in order to fun
 
 ### MSYS-Git Environment
 
-The Git Bash (MSYS) environment comes with the following tools:
+The Git Bash ([MSYS-Git](https://msysgit.github.io/)) environment comes with the following tools:
 
 * awk 3.0.4 (GNU awk)
 * cut 2.0 (GNU text utilities)
@@ -150,7 +150,7 @@ The MSYS-GIT environment also somes with the following environments:
 For the missing shell tools, you'll need to download them and make sure that they are in the path:
 
 * bc (download from http://gnuwin32.sourceforge.net/packages/bc.htm)
-* seq (download from http://gnuwin32.sourceforge.net/packages/coreutils.htm)
+* seq (download from http://gnuwin32.sourceforge.net/packages/coreutils.htm) `choco install gnuwin`
 
 ### UWIN Environment
 
