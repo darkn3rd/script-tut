@@ -14,6 +14,35 @@ I created a cumulative installation guide to get all the tools needed for this t
 
 * https://github.com/darkn3rd/script-tut/blob/master/SCRIPTBOX.md
 
+## Languages
+
+These are the languages supported.
+
+* **General Languages**:
+* :scroll: AWK
+* :coffee: Groovy ††
+* :camel: Perl
+* :elephant: PHP
+* :snake: Python
+* :gem: Ruby
+* :scroll: TCL (Tool Command Language)
+* **Shell Languages**:
+* :shell: Bourne Again Shell (bash) †
+* :shell: C Shell (csh) †
+* :shell: Korn Shell (ksh) †
+* :shell: Shell, POSIX (sh) †
+* **Windows Languages**:
+* :scroll: Command Shell (BATCH)
+* :scroll: JScript (WSH)
+* :scroll: PowerShell †††
+* :scroll: VBScript (WSH)
+
+† Utilities available with either [POSIX Utilities](http://pubs.opengroup.org/onlinepubs/009696699/utilities/contents.html) or [GNU Core-Utils](http://www.gnu.org/software/coreutils/) may be used.
+
+†† Requires JVM (Java Virtual Machine) environment to run.
+
+††† Requires CLR (Common Language Runtime) environment to run.
+
 ## The Lessons
 
 These are the overall plan for 14 topics and about 47 lessons (varies per language support for functionality):
@@ -96,33 +125,3 @@ This section is under development, and may be put into another advance scripting
   * :green_book: Flags [O00]
   * :green_book: Options [O10]
   * :green_book: Long Form [O20]
-
-## Languages
-
-These are the languages supported.
-
-* **General Languages**:
-  * :scroll: AWK
-  * :coffee: Groovy ††
-  * :camel: Perl
-  * :elephant: PHP
-  * :snake: Python
-  * :gem: Ruby
-  * :scroll: TCL (Tool Command Language)
-* **Shell Languages**:
-  * :shell: Bourne Again Shell (bash) †
-  * :shell: C Shell (csh) †
-  * :shell: Korn Shell (ksh) †
-  * :shell: Shell, POSIX (sh) †
-* **Windows Languages**:
-  * :scroll: Command Shell (BATCH)
-  * :scroll: JScript (WSH)
-  * :scroll: PowerShell †††
-  * :scroll: VBScript (WSH)
-
-
-† Utilities available with either [POSIX Utilities](http://pubs.opengroup.org/onlinepubs/009696699/utilities/contents.html) or [GNU Core-Utils](http://www.gnu.org/software/coreutils/) may be used.
-
-†† Requires JVM (Java Virtual Machine) environment to run.
-
-††† Requires CLR (Common Language Runtime) environment to run.
