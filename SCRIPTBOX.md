@@ -40,7 +40,7 @@ Note that Groovy requires that the Java environment is installed in order to fun
 
 Mac OS X 10.8.5 Snow Leopard comes with the following scripting tools:
 
-* BSD Awk 20070501
+* Awk 20070501 (BSD)
 * Perl 5.12.4
 * PHP 5.3.28
 * Python 2.7.2
@@ -189,15 +189,15 @@ The default CygWin 1.7.33 environment has the following tools:
 
 * awk 4.1.1 (GNU)
 * bc
-* cut 8.23 (GNU Core Utils)
-* date 8.23 (GNU Core Utils)
-* expr 8.23 (GNU Core Utils)
+* cut (GNU Core Utils 8.23)
+* date (GNU Core Utils 8.23)
+* expr (GNU Core Utils 8.23)
 * grep 2.21 (GNU)
-* printf 8.23 (GNU Core Utils) `usr/bin/printf`
+* printf (GNU Core Utils 8.23) `usr/bin/printf`
 * sed 4.2.2 (GNU)
-* seq 8.23 (GNU Core Utils)
-* tr 8.23 (GNU Core Utils)
-* wc 8.23 (GNU Core Utils)
+* seq (GNU Core Utils 8.23)
+* tr (GNU Core Utils 8.23)
+* wc (GNU Core Utils 8.23)
 
 Also, CygWin 1.7.33 has the following scripting environments:
 
