@@ -98,33 +98,32 @@ Windows has at least four environments to get shell and shell utilities:
  * [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) - Korn shell and official AT&T Unix Korn utilities, along with some open source utilities bundled up into this environment.
  * [GNUWin32](http://gnuwin32.sourceforge.net/) - GNU utilities ported directly to Windows and can run under Windows command shell.  These can be added to the path of either UWIN (ksh) or MSYS (bash) to get access to these tools.
 
-For other scripting environments, you can grab installers or zipped binaries from these sources:
+Outside of these shell environments, packages can be downloaded individually, or installed through a package management like [Chocolately](https://chocolatey.org/):
 
  * Groovy
-   * http://groovy.codehaus.org/Download
-   * GVM: http://gvmtool.net/ (CygWin only)
- * Perl
-   * https://www.perl.org/get.html
-   * http://www.activestate.com/activeperl/downloads
-   * http://strawberryperl.com/
+   * [Groovy](http://groovy.codehaus.org/Download) 2.3.6 `choco install groovy`
+   * [GVM](http://gvmtool.net/) (CygWin only)
+ * Perl 5.20.1
+   * [Strawberry Perl](http://strawberryperl.com/) 5.20.1 `choco install strawberryperl`
+   * [ActivePerl](http://www.activestate.com/activeperl/downloads) 5.18.2 `choco install activeperl `
  * PHP
-   * http://windows.php.net/
+   * [PHP on Windows ](http://windows.php.net/) 5.6.3 `choco install php`
  * Python
-   * https://www.python.org/downloads/windows/
-   * http://www.activestate.com/activepython
- * Ruby
-   * http://rubyinstaller.org/
-   * RVM: https://rvm.io/ (CygWin only)
+   * [Python](https://www.python.org/downloads/windows/) 2.7.9 or `choco install python2`
+   * [ActivePython](http://www.activestate.com/activepython)
+ * Ruby 2.1.3 `choco install ruby`
+   * [Ruby Installer](http://rubyinstaller.org/)
+   * [RVM](https://rvm.io/) (CygWin only)
      * [How to install RVM on Windows using cygwin](http://www.tiplite.com/how-to-install-rvm-on-windows-using-cygwin/)
-   * PIK: https://github.com/vertiginous/pik
+   * [PIK](https://github.com/vertiginous/pik) `choco install pik`
  * TCL
-   * http://www.activestate.com/activetcl
+   * [ActiveTCL](http://www.activestate.com/activetcl) `choco install activetcl`
 
 Note that Groovy requires that the Java environment is installed in order to function. Groovy 2.3 works best with Oracle JDK 7 and above, as JDK 6 will output error messages that NIO is not available.
 
 * [Oracle JDK (Java)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-  * [JDK 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
-  * [JDK 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+  * [JDK 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) `choco install jdk7`
+  * [JDK 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) `choco install jdk8`
 
 ### MSYS-Git Environment
 
