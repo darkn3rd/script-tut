@@ -35,8 +35,8 @@ Before getting package managers, you'll want to install [XCode](https://develope
 Note that Groovy requires that the Java environment is installed in order to function. Groovy 2.3 works best with Oracle JDK 7 and above, as JDK 6 will output error messages that NIO is not available.
 
 * Oracle JDK (Java) - http://www.oracle.com/technetwork/java/javase/downloads/index.html
-* JDK 7 - http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-* JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+  * JDK 7 - http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+  * JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
 Mac OS X 10.8.5 Snow Leopard comes with the following scripting tools:
 
