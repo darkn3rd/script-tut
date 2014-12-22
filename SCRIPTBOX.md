@@ -15,10 +15,34 @@ You'll need to be confortable using the shell environment, whether on Windows or
    * configure shell environment: `.profile`, `.bashrc`
  * configuring environment variables
    * user and system environment (Windows)
-   * exporting environment variables
+   * exporting environment variables (Unix/Linux)
    * adjusting `PATH`
  * creating symbolic links
  * using `which` or `command` (Unix/Linux)
+
+## Tested Operating Systems
+
+These scripts should work on any Unix, Linux, or Windows systems provided the required tools, shells, application virtual machines, and scripting environments are available.  Unix is inclusive of SVR4 Unixes (Solaris), BSD Unixes (FreeBSD), and Mac OS X (which bundles BSD flavored tools and partial BSD flavored configuration environemnt).
+
+These scripts have been specifically ad-hoc tested:
+* **Mac OS X 10.8.5 (*Snow Leopard*)**
+* **Cent OS 6.5**
+* **Windows 7 (*Windows NT 6.1*)**.  
+
+Some limited testing has been done on
+* **Fedora 20 (*Heisenbug*)**
+* **Ubuntu 12.04 LTS (*Precise Pangolin*)**.
+
+## Required Packages
+
+On any system, these are the needed tools:
+
+* **Application Virtual Machine**: Java SE Runtime Environment (`java`)
+* **Command Line Tools**: `awk`, `bc`, `command` `cut`, `data`, `env`, `expr`, `grep`, `printf`, `sed`, `seq`, `tr`, `which`, `wc`
+* **Shell Environments**: `dash`, `bash`, `ksh`, `tcsh`
+* **Scripting Languages**: `awk`, `groovy`, `perl`, `php`, `python`, `ruby`, `tclsh`
+
+Most Linux and Unix systems will come bundled with most of these tools, or have package management or ports systems that allow for easy access.  For Mac OS X and Windows, there can be some challenges, so the guidelines below may help get the needed packages.
 
 # Installation Notes
 
