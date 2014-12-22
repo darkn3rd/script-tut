@@ -175,14 +175,14 @@ The UWIN also comes with these environments:
 
 ### CygWin Environment
 
-Download and install the appropriate CygWin environment.  These instructions are for 64-bit version: `setup-x86_64.exe`.  Run through the setup and select the defaults. Assuming that the setup program was installed in your Downloads folder, run CygWin64 Terminal from Start menu and then run these commands:
+Download and install the appropriate CygWin environment.  These instructions are for 64-bit version: `setup-x86_64.exe`.  Run through the setup and select the defaults. Assuming that the setup program was installed in your Downloads folder, run CygWin64 Terminal from Start menu and then run these commands to get `apt-cyg` wrapper:
 
 ```bash
 $ cd $USERPROFILE/Downloads
-./setup-x86_64.exe -q -P wget
-wget http://apt-cyg.googlecode.com/svn/trunk/apt-cyg
-chmod +x apt-cyg
-mv apt-cyg /usr/local/bin/
+$ ./setup-x86_64.exe -q -P wget
+$ wget http://apt-cyg.googlecode.com/svn/trunk/apt-cyg
+$ chmod +x apt-cyg
+$ mv apt-cyg /usr/local/bin/
 ```
 
 The default CygWin 1.7.33 environment has the following tools:
