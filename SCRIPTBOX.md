@@ -204,14 +204,6 @@ Also, CygWin 1.7.33 has the following scripting environments:
   * dash
   * bash 4.1.17
 
-#### PowerShell
-
-PowerShell is bundled with Windows 7, and PowerShell 3.0 comes with Windows 7 SP 1.  From the command-shell `CMD.EXE`, you can run PowerShell scripts using this command:
-
-```Batch
-  C:\> powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File myscript.ps1
-```
-
 #### Shells
 
 * bc 1.06.95: `apt-cyg install bc`
@@ -225,7 +217,15 @@ PowerShell is bundled with Windows 7, and PowerShell 3.0 comes with Windows 7 SP
 * Ruby 2.0.0p598 (2014-11-13) `apt-cyg install ruby`
 * TCL 8.5.11 `apt-cyg install tcl`
 
-#### Windows Scripting Host
+### PowerShell Environment
+
+PowerShell is bundled with Windows 7, and PowerShell 3.0 comes with Windows 7 SP 1.  From the command-shell `CMD.EXE`, you can run PowerShell scripts using this command:
+
+```Batch
+C:\> powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File myscript.ps1
+```
+
+### Windows Scripting Host Environment
 
 WSH 5.8 is bundled with Windows 7 and comes with JScript and VBScirpt.  From the command-shell `CMD.EXE`, you can run such scripts like this:
 
