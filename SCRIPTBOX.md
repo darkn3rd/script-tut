@@ -6,148 +6,127 @@
 
 This is my cumulative installation guide to getting scripting languages for your platform.
 
-
 ### Required Knowledge
 
-You should be familiar with how to configure and interact with the shell environment.  This includes configuring environment variables, like PATH.
+You'll need to be confortable using the shell environment, whether on Windows or Linux/Unix environment.  You should be able to do typical tasks like:
 
+ * interacting with shell environment
+   * sourcing shell scripts (Unix/Linux)
+   * configure shell environment: `.profile`, `.bashrc`
+ * configuring environment variables
+   * user and system environment (Windows)
+   * exporting environment variables
+   * adjusting `PATH`
+ * creating symbolic links
+ * using `which` or `command` (Unix/Linux)
 
-## Installation Guide: Cent OS 6.5 (Red Hat Enterprise Linux)
+# Installation Notes
 
-### AWK
-### Batch (Command Shell)
-### Groovy
-### Perl
-### PHP
-### PowerShell
-### Python
-### Ruby
-### Shells
-#### Bourne Again Shell (bash)
-#### C Shell (csh)
-#### Korn Shell (ksh)
-#### POSIX Shell (sh)
-### TCL (Tool Command Language)
-### WSH (Windows Scripting Host)
-#### JScript
-#### VBScript
+## Mac OS X 10.8.5 (Snow Leopard)
 
-## Installation Guide: Ubuntu
-
-### AWK
-### Batch (Command Shell)
-### Groovy
-### Perl
-### PHP
-### PowerShell
-### Python
-### Ruby
-### Shells
-#### Bourne Again Shell (bash)
-#### C Shell (csh)
-#### Korn Shell (ksh)
-#### POSIX Shell (sh)
-### TCL (Tool Command Language)
-### WSH (Windows Scripting Host)
-#### JScript
-#### VBScript
-
-## Installation Guide: Mac OS X 10.8.5
-
-OS X 10.8.5 SnowLeopard comes with support for popular scripting languages, shell environments, and BSD Unix tools.  These tools are adequate for running most of these scripts, but you might want to update or replace some tools.
-
-There are some open source package managers that can be used to update some of these tools, such as:
+Mac OS X 10.8.5 comes with basics shells (ksh, csh, bash) and Unix tools required for most of these tutorials.  For GNU versions of some of the tools, and for updated versions of shells or scripting environments, you can use package managers, such as:
 
 * [Homebrew](http://brew.sh/)
 * [MacPorts](https://www.macports.org/)
 * [Rudix](http://rudix.org/)
 
-[Homebrew](http://brew.sh/) and [MacPorts](https://www.macports.org/) require XCode and XCode command lines tools to be installed as a prerequisite.
+Before getting package managers, you'll want to install [XCode](https://developer.apple.com/xcode/), XCode command line tools, and [Java for OS X](http://support.apple.com/kb/DL1572)
 
-### AWK
+Note that Groovy requires that the Java environment is installed in order to function. Groovy 2.3 works best with Oracle JDK 7 and above, as JDK 6 will output error messages that NIO is not available.
 
-OS X 10.8.5 comes bundled with BSD Awk version 20070501.  Some awk tutorial scripts will not work well with BSD Awk, and so you will need to get Gawk (GNU AWK).
+* Oracle JDK (Java) - http://www.oracle.com/technetwork/java/javase/downloads/index.html
+* JDK 7 - http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
-You can install Gawk 4.1.1 using Homebrew:
+Mac OS X 10.8.5 Snow Leopard comes with the following scripting tools:
 
-```bash
-brew install gawk
-```
+* BSD Awk 20070501
+* Perl 5.12.4
+* PHP 5.3.28
+* Python 2.7.2
+* Ruby 1.8.7
+* Shells
+  * bash 3.2.48
+  * csh (tcsh) 6.17
+  * ksh 93u 20011-02-08
+* TCL (tclsh) 8.5
 
-### Groovy
-### Perl
-### PHP
-### PowerShell
-### Python
-### Ruby
+Beyond AWK, the following tools required for these shell scripting tutorials are included:
+
+* bc 1.06 (GNU)
+* cut (BSD)
+* date (BSD)
+* expr (BSD)
+* grep 2.5.1 (BSD)
+* printf (BSD)
+* sed (BSD)
+* seq (BSD)
+* tr (BSD)
+* wc (BSD)
+
+### Homebrew
+
+With Homebrew installed, you can install updated versions of some of these tools:
+
+#### Scripting Languages
+
+Note, these are versions as of Dec 21, 2014.
+
+* Awk 4.1.1 (GNU) `brew install gawk`
+* Groovy 2.3.7 `brew install groovy`
+* Perl 5.20.1 `brew install perl`
+* Python 2.7.9 `brew install python`
+* Ruby 2.1.5 `brew install ruby`
+
 ### Shells
-#### Bourne Again Shell (bash)
-#### C Shell (csh)
-#### Korn Shell (ksh)
-#### POSIX Shell (sh)
-### TCL (Tool Command Language)
 
-## Installation Guide: Windows 7 (Windows NT 6.1)
+* Bash 4.3.30 `brew install bash`
+* Dash 0.5.7 `brew install dash`
+* Korn Shell ksh-93u+ (AT&T) `brew install ksh`
+* C Shell 6.18.01 `brew install tcsh`
 
-Numerous scripts will require some sort of Unix shell environment.  To get access to such tools for free, you can install Mingw compilers and MSYS tools.  An easy way to get access to these tools is to use GitBash tools, which can be downloaded from http://git-scm.com/downloads or https://msysgit.github.io/.  Either of these locations will come with an installer, e.g. `Git-1.9.2-preview20140411.exe`.
+### Utilities
 
-### AWK
+* sed 4.2.2 (GNU) `brew install gnu-sed`
 
-You can get a basic version of Gawk with the GitBash which bundles the MSYS environment.  This comes with GNU Awk 3.0.4.
+## Windows 7 (Windows NT 6.1)
 
-### Batch (Command Shell)
+Windows has at least four environments to get shell and shell utilities:
 
-To no surprise, Windows comes bundled with the command shell, which you can run by going to the Start Menu and typing: `cmd`.
+ * [Cygnus Windows (CygWin)](https://www.cygwin.com/) - a simulated Unix environment and can call DOS commands in addition to tools built under CygWin.  Combined with package installer cyg-apt, you can install any missing components.
+ * [MSYS-Git](https://msysgit.github.io/) (GitBash) - Git, Bash, and a minimal set of GNU tools ported to Windows using MinGW.
+ * [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) - Korn shell and official AT&T Unix Korn utilities, along with some open source utilities bundled up into this environment.
+ * [GNUWin32](http://gnuwin32.sourceforge.net/) - GNU utilities ported directly to Windows and can run under Windows command shell.  These can be added to the path of either UWIN (ksh) or MSYS (bash) to get access to these tools.
 
-### Groovy
+For other scripting environments, you can grab installers or zipped binaries from these sources:
 
-Groovy requires Java Virtual Machine.  Apple supplies Java 6, but it it recommended to use a later version, such as Java 7.
+ * Groovy
+   * http://groovy.codehaus.org/Download
+   * GVM: http://gvmtool.net/ (CygWin only)
+ * Perl
+   * https://www.perl.org/get.html
+   * http://www.activestate.com/activeperl/downloads
+   * http://strawberryperl.com/
+ * PHP
+   * http://windows.php.net/
+ * Python
+   * https://www.python.org/downloads/windows/
+   * http://www.activestate.com/activepython
+ * Ruby
+   * http://rubyinstaller.org/
+   * RVM: https://rvm.io/ (CygWin only)
+     * [How to install RVM on Windows using cygwin](http://www.tiplite.com/how-to-install-rvm-on-windows-using-cygwin/)
+   * PIK: https://github.com/vertiginous/pik
+ * TCL
+   * http://www.activestate.com/activetcl
+
+Note that Groovy requires that the Java environment is installed in order to function. Groovy 2.3 works best with Oracle JDK 7 and above, as JDK 6 will output error messages that NIO is not available.
 
 * Oracle JDK (Java) - http://www.oracle.com/technetwork/java/javase/downloads/index.html
   * JDK 7 - http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
   * JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
-
-### Perl
-### PHP
-### PowerShell
-
-PowerShell 3.0 is integrated into Windows 7.  PowerShell scripts can be run using the command shell and typing something like:
-
-```Batch
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File myscript.ps1
-```
-
-### Python
-
-### Ruby
-
-### Shells
-
-The UNIX or Linux environments will bundle all of the required POSIX or GNU utilities needed for running these scripts.  On Windows, you will need to get environments to run these scripts.  Here are four sources (free) to get such environments and supplementary tools:
-
-* [Cygnus Windows (CygWin)](https://www.cygwin.com/) - an environment that emulates a Unix-like environment on Windows.
-
-* AT&T UWIN - provides Korn shell and corresponding POSIX toolset.  This is the best environment to test either pure POSIX shell or Korn shell scripts.
-* GNUWin32 tools - GNU tools that work in Windows Command Shell environment
-* [Minimalist GNU for Windows (MinGW) MSYS environment](http://www.mingw.org/wiki/MSYS) - a Bash shell and some GNU utilities.
-* [MSYS-Git](https://msysgit.github.io/) - bundles Git tools and MSYS tools and is packaged is a simple easy installer.
-
-The Shell Scripting Tutorials will need the following tools:
-
-* awk
-* bc
-* cut
-* date
-* expr
-* grep
-* printf
-* sed
-* seq
-* test
-* tr
-* wc
-* [
+### MSYS-Git Environment
 
 The Git Bash (MSYS) environment comes with the following tools:
 
@@ -156,71 +135,101 @@ The Git Bash (MSYS) environment comes with the following tools:
 * date 2.0 (GNU shell utilities)
 * expr 2.0 (GNU shell utilities)
 * grep 2.4.2 (GNU grep)
-* perl 5.8.8
-* printf  (built into GNU Bash 3.1.0)
+* printf
 * sed 4.2.1 (GNU sed)
-* test (built into GNU Bash 3.1.0)
 * tr 2.0 (GNU text utilities)
 * wc 2.0 (GNU text utilities)
-* [ (built into GNU Bash 3.1.0)
 
-The Git Bash environment is missing GNU bc and GNU seq.  These can be downloaded from:
-* http://gnuwin32.sourceforge.net/packages/bc.htm
-* GNU Core Utilities includes Seq - http://gnuwin32.sourceforge.net/packages/coreutils.htm
+The MSYS-GIT environment also somes with the following environments:
 
+* perl 5.8.8
+* PHP 5.5.13
+* TCL 8.5
+
+#### Shells
+
+For the missing shell tools, you'll need to download them and make sure that they are in the path:
+
+* bc (download from http://gnuwin32.sourceforge.net/packages/bc.htm)
+* seq (download from http://gnuwin32.sourceforge.net/packages/coreutils.htm)
+
+### UWIN Environment
 
 The UWIN environment comes with the tools:
 
 * awk
+* bc 1.0.4 (FSF)
 * cut (AT&T Research) 2010-08-11
 * date (AT&T Research) 2011-01-27
 * expr (AT&T Research) 2010-08-11
 * grep (AT&T Research) 2012-05-07
-* printf
+* printf (AT&T Research) 2009-02-02 `/usr/bin/printf`
 * sed (AT&T Research) 2012-03-28
 * seq (AT&T Labs Research) 2012-04-14
-* test (built into Korn shell)
-* tr
+* tr (AT&T Labs Research) 2012-05-31
 * wc (AT&T Research) 2009-11-28
-* [ (built into Korn shell)
 
+The UWIN also comes with these environments:
 
-#### Bourne Again Shell (bash)
+ * csh
 
-You can get a basic version of Gawk with the GitBash which bundles the MSYS environment.  This comes with GNU bash, version 3.1.0(1)-release (i686-pc-msys).
+### CygWin Environment
 
-The MSYS environment provides Bash 3.10, which is adequate for most of these tests.  The one notable exception is `bc`, which can be downloaded from GNUWin32 utilities.
+Download and install the appropriate CygWin environment.  These instructions are for 64-bit version: `setup-x86_64.exe`.  Run through the setup and select the defaults. Assuming that the setup program was installed in your Downloads folder, run CygWin64 Terminal from Start menu and then run these commands:
 
-* MSYS-Git - https://msysgit.github.io/
-* GNU bc - http://gnuwin32.sourceforge.net/packages/bc.htm
-
-#### C Shell (csh)
-#### Korn Shell (ksh)
-
-You can run Korn shell scripts using the UWIN environment.
-
-
-
-#### POSIX Shell (sh)
-
-The best environment for running POSIX Shell is the UWIN environment.
-
-### TCL (Tool Command Language)
-### WSH (Windows Scripting Host)
-
-Windows Scripting Host 5.8 is integrated into Windows 7.
-
-#### JScript
-
-JScript is bundled with Windows Scripting Host.  JScripts can be run using the command shell and typing something like:
-
-```Batch
-cscript //NoLogo myscript.js
+```bash
+$ cd $USERPROFILE/Downloads
+./setup-x86_64.exe -q -P wget
+wget http://apt-cyg.googlecode.com/svn/trunk/apt-cyg
+chmod +x apt-cyg
+mv apt-cyg /usr/local/bin/
 ```
 
-#### VBScript
+The default CygWin 1.7.33 environment has the following tools:
 
-VBScript is bundled with Windows Scripting Host. VBScripts can be run using the command shell and typing something like:
+* awk 4.1.1 (GNU)
+* bc
+* cut 8.23 (GNU Core Utils)
+* date 8.23 (GNU Core Utils)
+* expr 8.23 (GNU Core Utils)
+* grep 2.21 (GNU)
+* printf 8.23 (GNU Core Utils) `usr/bin/printf`
+* sed 4.2.2 (GNU)
+* seq 8.23 (GNU Core Utils)
+* tr 8.23 (GNU Core Utils)
+* wc 8.23 (GNU Core Utils)
+
+Also, CygWin 1.7.33 has the following scripting environments:
+
+  * dash
+  * bash 4.1.17
+
+#### PowerShell
+
+PowerShell is bundled with Windows 7, and PowerShell 3.0 comes with Windows 7 SP 1.  From the command-shell `CMD.EXE`, you can run PowerShell scripts using this command:
+
 ```Batch
-cscript //NoLogo myscript.vbs
+  C:\> powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File myscript.ps1
+```
+
+#### Shells
+
+* bc 1.06.95: `apt-cyg install bc`
+* C Shell 6.18.01 (Astron) `apt-cyg install tcsh`
+
+#### Scripting Languages
+
+* Perl 5.14.4 `apt-cyg install perl`
+* PHP 5.5.19 `apt-cyg install php`
+* Python 2.7.8 `apt-cyg install python`
+* Ruby 2.0.0p598 (2014-11-13) `apt-cyg install ruby`
+* TCL 8.5.11 `apt-cyg install tcl`
+
+#### Windows Scripting Host
+
+WSH 5.8 is bundled with Windows 7 and comes with JScript and VBScirpt.  From the command-shell `CMD.EXE`, you can run such scripts like this:
+
+```Batch
+C:\> cscript //NoLogo myscript.js
+C:\> cscript //NoLogo myscript.vbs
 ```
