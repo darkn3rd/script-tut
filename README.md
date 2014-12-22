@@ -8,6 +8,11 @@ This is a basic tutorial of scripting modeled after typical tasks one would do w
 
 This tutorial will cover the basics of programming in a variety of languages, so it may be useful as a beginner's guide to scripting and as a reference.  The target languages cover popular (either historical or current) scripting languages found on Linux/Unix and Windows oriented operating systems.
 
+## ScriptingBox Install Guide
+
+I created a cumulative installation guide to get all the tools needed for this tutorial for Windows and Mac OS X:
+
+* https://github.com/darkn3rd/script-tut/blob/master/SCRIPTBOX.md
 
 ## The Lessons
 
