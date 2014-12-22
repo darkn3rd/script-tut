@@ -4,11 +4,14 @@
 
 ## Overview
 
-This is a basic tutorial of scripting modeled after typical tasks one would do with POSIX Shell Programming for system administration chores.
+This is a basic tutorial of scripting modeled after typical tasks one would do with [POSIX Shell Programming](http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html) for system administration chores.  
+
+This tutorial will cover the basics of programming in a variety of languages, so it may be useful as a beginner's guide to scripting and as a reference.  The target languages cover popular (either historical or current) scripting languages found on Linux/Unix and Windows oriented operating systems.
+
 
 ## The Lessons
 
-These are the overall plan for 14 topics and about 47 lessons (varies per language):
+These are the overall plan for 14 topics and about 47 lessons (varies per language support for functionality):
 
 ### Part I
 
