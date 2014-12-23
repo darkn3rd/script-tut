@@ -45,7 +45,9 @@ On any system, these are the needed tools:
 * **Shell Environments**: `dash`, `bash`, `ksh`, `tcsh`
 * **Scripting Languages**: `awk`, `groovy`, `perl`, `php`, `python`, `ruby`, `tclsh`
 
-Most Linux and Unix systems will come bundled with most of these tools, or have package management or ports systems that allow for easy access.  For Mac OS X and Windows, there can be some challenges, so the guidelines below may help get the needed packages.
+Most Linux and Unix systems will come bundled with most of these tools, or have package management or ports systems that allow for ease to download and install these tools and environments.  
+
+For Mac OS X and Windows, there can be some challenges, so the guidelines below may help get the needed packages.
 
 # Installation Notes
 
@@ -59,7 +61,7 @@ Mac OS X 10.8.5 comes with basics shells (ksh, csh, bash) and Unix tools require
 * [MacPorts](https://www.macports.org/)
 * [Rudix](http://rudix.org/)
 
-### XCode Reqiorement
+### XCode Requirement
 
 Before getting package managers, you'll want to install [XCode](https://developer.apple.com/xcode/), XCode command line tools, and [Java for OS X](http://support.apple.com/kb/DL1572)
 
