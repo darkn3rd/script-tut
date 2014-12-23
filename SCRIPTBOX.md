@@ -57,9 +57,9 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 
 Mac OS X 10.8.5 comes with basics shells (ksh, csh, bash) and Unix tools required for most of these tutorials.  For GNU versions of some of the tools, and for updated versions of shells or scripting environments, you can use package managers, such as:
 
-* [Homebrew](http://brew.sh/)
-* [MacPorts](https://www.macports.org/)
-* [Rudix](http://rudix.org/)
+* [Homebrew](http://brew.sh/) - installs packages for a single user only, supports third party repositories, has ability to use packages or build from source.
+* [MacPorts](https://www.macports.org/) - intalls packages for all users, so ideal for servers; builds tools and libraries from scratch (doesn't trust Apple's versions)
+* [Rudix](http://rudix.org/) - uses pre-built packages to install components.
 
 ### XCode Requirement
 
