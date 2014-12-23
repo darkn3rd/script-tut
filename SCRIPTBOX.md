@@ -19,19 +19,22 @@ You'll need to be confortable using the shell environment, whether on Windows or
    * adjusting `PATH`
  * creating symbolic links
  * using `which` or `command` (Unix/Linux)
+ * escalating privileges
+   * `sudo`  (Unix/Linux)
+   * `Run as Administrator` (Windows)
 
 ## Tested Operating Systems
 
 These scripts should work on any Unix, Linux, or Windows systems provided the required tools, shells, application virtual machines, and scripting environments are available.  Unix is inclusive of SVR4 Unixes (Solaris), BSD Unixes (FreeBSD), and Mac OS X (which bundles BSD flavored tools and partial BSD flavored configuration environemnt).
 
 These scripts have been specifically ad-hoc tested:
-* **Mac OS X 10.8.5 (*Snow Leopard*)**
-* **Cent OS 6.5**
-* **Windows 7 (*Windows NT 6.1*)**.  
+* :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)**
+* :dvd: **Cent OS 6.5**
+* :dvd: **Windows 7 (*Windows NT 6.1*)**.  
 
 Some limited testing has been done on
-* **Fedora 20 (*Heisenbug*)**
-* **Ubuntu 12.04 LTS (*Precise Pangolin*)**.
+* :dvd: **Fedora 20 (*Heisenbug*)**
+* :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**.
 
 ## Required Packages
 
@@ -48,45 +51,45 @@ Most Linux and Unix systems will come bundled with most of these tools, or have 
 
 ## Mac OS X 10.8.5 (Snow Leopard)
 
+### Package Managers
+
 Mac OS X 10.8.5 comes with basics shells (ksh, csh, bash) and Unix tools required for most of these tutorials.  For GNU versions of some of the tools, and for updated versions of shells or scripting environments, you can use package managers, such as:
 
 * [Homebrew](http://brew.sh/)
 * [MacPorts](https://www.macports.org/)
 * [Rudix](http://rudix.org/)
 
+### XCode Reqiorement
+
 Before getting package managers, you'll want to install [XCode](https://developer.apple.com/xcode/), XCode command line tools, and [Java for OS X](http://support.apple.com/kb/DL1572)
 
-Note that Groovy requires that the Java environment is installed in order to function. Groovy 2.3 works best with Oracle JDK 7 and above, as JDK 6 will output error messages that NIO is not available.
-
-* [Oracle JDK (Java)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-  * [JDK 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)
-  * [JDK 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+### Defaults (pre-baked)
 
 Mac OS X 10.8.5 Snow Leopard comes with the following scripting tools:
 
-* Awk 20070501 (BSD)
-* Perl 5.12.4
-* PHP 5.3.28
-* Python 2.7.2
-* Ruby 1.8.7
-* Shells
-  * bash 3.2.48
-  * csh (tcsh) 6.17
-  * ksh 93u 20011-02-08
-* TCL (tclsh) 8.5
+* :package: Awk 20070501 (BSD)
+* :package: Perl 5.12.4
+* :package: PHP 5.3.28
+* :package: Python 2.7.2
+* :package: Ruby 1.8.7
+* :package: Shells
+  * :package: bash 3.2.48
+  * :package: csh (tcsh) 6.17
+  * :package: ksh 93u 20011-02-08
+* :package: (tclsh) 8.5
 
 Beyond AWK, the following tools required for these shell scripting tutorials are included:
 
-* bc 1.06 (GNU)
-* cut (BSD)
-* date (BSD)
-* expr (BSD)
-* grep 2.5.1 (BSD)
-* printf (BSD)
-* sed (BSD)
-* seq (BSD)
-* tr (BSD)
-* wc (BSD)
+* :package: bc 1.06 (GNU)
+* :package: cut (BSD)
+* :package: date (BSD)
+* :package: expr (BSD)
+* :package: grep 2.5.1 (BSD)
+* :package: printf (BSD)
+* :package: sed (BSD)
+* :package: seq (BSD)
+* :package: tr (BSD)
+* :package: wc (BSD)
 
 ### Homebrew
 
@@ -96,22 +99,26 @@ With Homebrew installed, you can install updated versions of some of these tools
 
 Note, these are versions as of Dec 21, 2014.
 
-* Awk 4.1.1 (GNU) `brew install gawk`
-* Groovy 2.3.7 `brew install groovy`
-* Perl 5.20.1 `brew install perl`
-* Python 2.7.9 `brew install python`
-* Ruby 2.1.5 `brew install ruby`
+* :package: Awk 4.1.1 (GNU) `brew install gawk`
+* :package: Groovy 2.3.7 `brew install groovy`
+* :package: Perl 5.20.1 `brew install perl`
+* :package: Python 2.7.9 `brew install python`
+* :package: Ruby 2.1.5 `brew install ruby`
+
+Groovy requires that the Java environment:
+
+* Oracle Java SE Homepage: http://www.oracle.com/technetwork/java/javase/overview/index.html
 
 ### Shells
 
-* Bash 4.3.30 `brew install bash`
-* Dash 0.5.7 `brew install dash`
-* Korn Shell ksh-93u+ (AT&T) `brew install ksh`
-* C Shell 6.18.01 `brew install tcsh`
+* :package: Bash 4.3.30 `brew install bash`
+* :package: Dash 0.5.7 `brew install dash`
+* :package: Korn Shell ksh-93u+ (AT&T) `brew install ksh`
+* :package: C Shell 6.18.01 `brew install tcsh`
 
 ### Utilities
 
-* sed 4.2.2 (GNU) `brew install gnu-sed`
+* :package: sed 4.2.2 (GNU) `brew install gnu-sed`
 
 ## Windows 7 (Windows NT 6.1)
 
@@ -238,14 +245,14 @@ C:\> choco install activetcl
 The Git Bash ([MSYS-Git](https://msysgit.github.io/)) environment comes with the following tools:
 
 * :package: awk 3.0.4 (GNU awk)
-* :package: cut 2.0 (GNU text utilities)
-* :package: date 2.0 (GNU shell utilities)
-* :package: expr 2.0 (GNU shell utilities)
+* :package: cut (GNU text utilities 2.0)
+* :package: date (GNU text utilities 2.0)
+* :package: expr (GNU text utilities 2.0)
 * :package: grep 2.4.2 (GNU grep)
 * :package: printf
 * :package: sed 4.2.1 (GNU sed)
-* :package: tr 2.0 (GNU text utilities)
-* :package: wc 2.0 (GNU text utilities)
+* :package: tr 2.0 (GNU text utilities 2.0)
+* :package: wc 2.0 (GNU text utilities 2.0)
 
 The MSYS-GIT environment also somes with the following environments:
 
@@ -257,8 +264,8 @@ The MSYS-GIT environment also somes with the following environments:
 
 For the missing shell tools, you'll need to download them and make sure that they are in the path:
 
-* bc (download from http://gnuwin32.sourceforge.net/packages/bc.htm)
-* seq (download from http://gnuwin32.sourceforge.net/packages/coreutils.htm) `choco install gnuwin`
+* :package: bc (download from http://gnuwin32.sourceforge.net/packages/bc.htm)
+* :package: seq (download from http://gnuwin32.sourceforge.net/packages/coreutils.htm) `choco install gnuwin`
 
 ### UWIN Environment
 
@@ -314,7 +321,7 @@ Also, CygWin 1.7.33 has the following scripting environments:
 #### Shells
 
 * :package: bc 1.06.95: `apt-cyg install bc`
-* :package: C Shell 6.18.01 (Astron) `apt-cyg install tcsh`
+* :package: tcsh 6.18.01 `apt-cyg install tcsh`
 
 #### Scripting Languages
 
