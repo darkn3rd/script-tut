@@ -126,7 +126,7 @@ $ brew install groovy
 $ brew install perl
 $ brew link --force perl
 $ brew install zlib
-$ # brew install homebrew/php/php56
+$ brew install homebrew/php/php56
 $ brew install python
 $ pip install --upgrade --no-use-wheel pip
 $ pip install virtualenv
@@ -151,12 +151,20 @@ $ groovy -v
 Groovy Version: 2.3.7 JVM: 1.8.0_25 Vendor: Oracle Corporation OS: Mac OS X
 $ perl -v | grep 'v[0-9]'
 This is perl 5, version 20, subversion 1 (v5.20.1) built for darwin-thread-multi-2level
+$ php --version
+PHP 5.4.30 (cli) (built: Jul 29 2014 23:43:29)
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.4.0, Copyright (c) 1998-2014 Zend Technologies
 $ python --version
 Python 2.7.9
 $ pip -V
 pip 6.0.3 from /usr/local/lib/python2.7/site-packages (python 2.7)
 $ ruby -v
 ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-darwin13.0]
+$ gem --version
+2.2.2
+$ bundle --version
+Bundler version 1.7.9
 ```
 
 ## Mac OS X 10.8.5 (Snow Leopard)
