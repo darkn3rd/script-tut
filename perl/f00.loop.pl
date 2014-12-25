@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # collection loop on list returned by subshell
 foreach $item (split /\s+/, `ls`) {

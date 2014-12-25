@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # declare and initilize list on one line
 my @nicknames=qw(bob ed steve ralph joe deb kate);
 # output the results of list

@@ -1,7 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 use v5.10.1;
 print "Input a character: "; $keypress=getc(STDIN);
-  
+
 # # multiway branch using given...when construct
 given ($keypress) {
   when (/[[:lower:]]/) { print "Lowercase letter\n"; }

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # spin loop construction with last to exiting
 while (1) {
   print "Enter your name (quit to exit): "; # prompt user

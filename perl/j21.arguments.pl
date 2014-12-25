@@ -1,7 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl -w
 # illustrative variables
 my $last  = $#ARGV; # get index of last element
-my $first = 0;      # set index of first element 
+my $first = 0;      # set index of first element
 
 print "The arguments passed are (reverse order):\n";
 # collection loop with range to enumerate args

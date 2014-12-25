@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # acquire num of args and script name
 $arg_count   = $#ARGV + 1; # get num of arguments
 $script_name = $0;         # get script name
@@ -26,8 +26,8 @@ sub addNums {
    my $sum = 0;            # initalize to 0
 
    # add all the $num in @numbers list
-   foreach $num (@numbers) { $sum += $num }              
-     
+   foreach $num (@numbers) { $sum += $num }
+
    # output results
    print "The summation is: $sum\n";
    exit $EX_OK;            # return a success

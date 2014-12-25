@@ -1,8 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # create subroutine with one parameter
 sub celsius {
   my $fahrenheit = $_[0]; # retreive single parameter
-  
+
   # convert to new temperature
   $temperature = ($fahrenheit - 32) * 5 / 9;
   # output results with one degree of significance

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # declare variables
 my ($width, $length) = (5,6);
 

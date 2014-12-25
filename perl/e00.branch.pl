@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 print "Input a number: "; my $Number=<>; chomp $Number;
 if ( $Number > 0 ) {
     print "Number is greater than 0\n";

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # acquire num of args and script name
 $arg_count   = $#ARGV + 1;    # get num of arguments
 $script_name = $0;            # get script name

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # illustrative variables
 my ($true, $false) = (1,0);
 

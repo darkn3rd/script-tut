@@ -1,6 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 my @nicknames;          # declare list for good form
-  
+
 # insert one by one into list
 $nicknames[0]="bob";
 $nicknames[1]="ed";

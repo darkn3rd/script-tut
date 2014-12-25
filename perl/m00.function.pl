@@ -1,11 +1,11 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # create function that returns an integer
 sub addNums {
    my @numbers = @_;   # retreive variable parameters
    my $sum = 0;        # initalize to 0
 
    # add all the $num in @numbers list
-   foreach $num (@numbers) { $sum += $num }              
+   foreach $num (@numbers) { $sum += $num }
 
    return $sum;        # return sum of numbers
 }

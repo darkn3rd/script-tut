@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # output message to standard error
 #  Note: Test by redirecting stdout to nowhere, e.g.
 #   script > /dev/null

@@ -1,6 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 print "Input a character: "; $keypress=getc(STDIN);
-  
+
 if ($keypress =~ /[[:lower:]]/) {
     print "Lowercase letter\n";
 } elsif ($keypress =~ /[[:upper:]]/) {
