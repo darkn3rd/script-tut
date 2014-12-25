@@ -103,14 +103,14 @@ Instead of documenting every little piece, here's a list of instructions to inst
 
 ### Tools
 
-```bash
+```Bash
 $ brew install gnu-sed --with-default-names
 $ sudo /usr/local/bin/sed -e '/\/usr\/local\/bin/d' -e '1i /usr/local/bin' -i /etc/paths
 ```
 
 ### Shells
 
-```bash
+```Bash
 $ brew install dash
 $ brew install bash
 $ brew install tcsh
@@ -120,7 +120,7 @@ $ ln -sf /usr/local/bin/dash /usr/local/bin/sh
 
 ### Scripting Languages
 
-```bash
+```Bash
 $ brew install gawk
 $ brew install groovy
 $ brew install perl
@@ -138,30 +138,30 @@ $ gem install bundler
 
 ### Verification
 
-```bash
+```Bash
 $ sed --version | head -1
 sed (GNU sed) 4.2.2
 $ bash --version | head -1
 GNU bash, version 4.3.30(1)-release (x86_64-apple-darwin13.4.0)
 $ ksh --version
 version         sh (AT&T Research) 93u+ 2012-08-01
+$ echo Debian Ash, version $(ls -l `which dash` | grep -o '\d\.\d\.\d')
+Debian Ash, version 0.5.7
 $ awk --version | head -1
 GNU Awk 4.1.1, API: 1.1
-$ groovy -v
+$ groovy --version
 Groovy Version: 2.3.7 JVM: 1.8.0_25 Vendor: Oracle Corporation OS: Mac OS X
-$ perl -v | grep 'v[0-9]'
+$ perl --version | grep 'v[0-9]'
 This is perl 5, version 20, subversion 1 (v5.20.1) built for darwin-thread-multi-2level
-$ php --version
+$ php --version | head -1
 PHP 5.4.30 (cli) (built: Jul 29 2014 23:43:29)
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.4.0, Copyright (c) 1998-2014 Zend Technologies
 $ pear version | head -1
 PEAR Version: 1.9.5
 $ python --version
 Python 2.7.9
-$ pip -V
+$ pip --version
 pip 6.0.3 from /usr/local/lib/python2.7/site-packages (python 2.7)
-$ ruby -v
+$ ruby --version
 ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-darwin13.0]
 $ gem --version
 2.2.2
