@@ -28,13 +28,14 @@ You'll need to be confortable using the shell environment, whether on Windows or
 These scripts should work on any Unix, Linux, or Windows systems provided the required tools, shells, application virtual machines, and scripting environments are available.  Unix is inclusive of SVR4 Unixes (Solaris), BSD Unixes (FreeBSD), and Mac OS X (which bundles BSD flavored tools and partial BSD flavored configuration environemnt).
 
 These scripts have been specifically ad-hoc tested:
-* :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)**
+* :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)** with XCode 5.1.1
 * :dvd: **Cent OS 6.5**
 * :dvd: **Windows 7 (*Windows NT 6.1*)**.  
 
 Some limited testing has been done on
 * :dvd: **Fedora 20 (*Heisenbug*)**
-* :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**.
+* :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**
+* :dvd: **Mac OS X 10.9.5 (*Maverick*)** with XCode 6.1
 
 ## Required Packages
 
@@ -50,6 +51,107 @@ Most Linux and Unix systems will come bundled with most of these tools, or have 
 For Mac OS X and Windows, there can be some challenges, so the guidelines below may help get the needed packages.
 
 # Installation Notes
+
+## Mac OS X 10.9.5 (Maverick)
+
+Mac OS X 10.9.5 Maverick has some of the basic packages required.  These instructions install new packages or install alternatives to existing older components.  
+
+* :package: Awk 20070501 (BSD)
+* :package: Perl 5.16.2
+* :package: PHP 5.4.24
+* :package: Python 2.7.5
+* :package: Ruby 2.0.0p247
+* :package: Shells
+  * :package: bash 3.2.51
+  * :package: csh (tcsh) 6.17
+  * :package: ksh 93u 2011-02-08
+* :package: (tclsh) 8.5
+
+### Prerequisites
+
+#### XCode
+
+Download the latest [XCode](https://developer.apple.com/xcode/), XCode command line tools, and optionally [Java for OS X](http://support.apple.com/kb/DL1572)
+
+#### Java JDK
+
+Java JDK variety is required, as JRE only installs a plug-in.  Here's an example of installing JDK 1.8:
+
+```bash
+$ curl -v -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jdk-8u25-macosx-x64.dmg > ~/Downloads/jdk-8u25-macosx-x64.dmg
+$ hdiutil mount ~/Downloads/jdk-8u25-macosx-x64.dmg
+$ sudo -S installer -verbose -pkg "/Volumes/JDK 8 Update 25/JDK 8 Update 25.pkg" -target /
+$ java -version
+java version "1.8.0_25"
+Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
+Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+```
+
+#### HomeBrew
+
+Install [HomeBrew](http://brew.sh/) as the package manage:
+
+```bash
+$ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+$ brew update
+$ brew doctor
+```
+
+### Installation of Packages
+
+Instead of documenting every little piece, here's a list of instructions to install, configure, and verify the needed components:
+
+### Tools
+
+```bash
+$ brew install gnu-sed --with-default-names
+$ sudo /usr/local/bin/sed -e '/\/usr\/local\/bin/d' -e '1i /usr/local/bin' -i /etc/paths
+$ sed --version | head -1
+sed (GNU sed) 4.2.2
+```
+
+### Shells
+
+```bash
+$ brew install dash
+$ brew install bash
+$ brew install tcsh
+$ ln -sf /usr/local/bin/dash /usr/local/bin/sh
+$ bash --version | head -1
+GNU bash, version 4.3.30(1)-release (x86_64-apple-darwin13.4.0)
+$ ksh --version
+version         sh (AT&T Research) 93u+ 2012-08-01
+```
+
+### Scripting Languages
+
+```
+$ brew install gawk
+$ brew install groovy
+$ brew install perl
+$ brew link --force perl
+$ brew install zlib
+$ brew install homebrew/php/php56
+$ brew install python
+$ pip install --upgrade --no-use-wheel pip
+$ pip install virtualenv
+$ brew install ruby
+$ gem update
+$ gem install bundler
+$ # Verify Package Versions
+$ awk --version | head -1
+GNU Awk 4.1.1, API: 1.1
+$ groovy -v
+Groovy Version: 2.3.7 JVM: 1.8.0_25 Vendor: Oracle Corporation OS: Mac OS X
+$ perl -v | grep 'v[0-9]'
+This is perl 5, version 20, subversion 1 (v5.20.1) built for darwin-thread-multi-2level
+$ python --version
+Python 2.7.9
+$ pip -V
+pip 6.0.3 from /usr/local/lib/python2.7/site-packages (python 2.7)
+$ ruby -v
+ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-darwin13.0]
+```
 
 ## Mac OS X 10.8.5 (Snow Leopard)
 
