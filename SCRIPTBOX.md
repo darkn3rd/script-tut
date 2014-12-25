@@ -25,17 +25,17 @@ You'll need to be confortable using the shell environment, whether on Windows or
 
 ## Tested Operating Systems
 
-These scripts should work on any Unix, Linux, or Windows systems provided the required tools, shells, application virtual machines, and scripting environments are available.  Unix is inclusive of SVR4 Unixes (Solaris), BSD Unixes (FreeBSD), and Mac OS X (which bundles BSD flavored tools and partial BSD flavored configuration environemnt).
+These scripts should work on Unix, Linux, and Windows.
 
-These scripts have been specifically ad-hoc tested:
-* :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)** with XCode 5.1.1
-* :dvd: **Cent OS 6.5**
-* :dvd: **Windows 7 (*Windows NT 6.1*)**.  
-
-Some limited testing has been done on
-* :dvd: **Fedora 20 (*Heisenbug*)**
-* :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**
-* :dvd: **Mac OS X 10.9.5 (*Maverick*)** with XCode 6.1
+* Linux
+  * :dvd: **Cent OS 6.5**
+  * :dvd: **Fedora 20 (*Heisenbug*)**
+  * :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**
+* Mac OS X
+  * :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)** with XCode 5.1.1
+  * :dvd: **Mac OS X 10.9.5 (*Maverick*)** with XCode 6.1
+* Windows
+  * :dvd: **Windows 7 (*Windows NT 6.1*)**
 
 ## Required Packages
 
@@ -52,28 +52,43 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 
 # Installation Notes
 
-## Mac OS X 10.9.5 (Maverick)
+## Mac OS X 10.8.5 (Mountain Lion) Notes
 
-Mac OS X 10.9.5 Maverick has some of the basic packages required.  These instructions install new packages or install alternatives to existing older components.  
+*Mountain Lion* includes GNU bc 1.06 and BSD flavors of cut, date, expr, grep 2.5.1, printf, sed, seq, tr, and wc.  *Mountain Lion* includes includes the following scripting languages:
 
 * :package: Awk 20070501 (BSD)
+* :package: Perl 5.12.4
+* :package: PHP 5.3.28
+* :package: Python 2.7.2
+* :package: Ruby 1.8.7
+* :package: Shells
+  * :package: bash 3.2.48
+  * :package: csh (tcsh) 6.17
+  * :package: ksh 93u 2011-02-08
+* :package: (tclsh) 8.5
+
+## Mac OS X 10.9.5 (Maverick) Notes
+
+*Maverick* has some of the basic packages required (similar to *Mountain Lion*) with some newer versions:
+
 * :package: Perl 5.16.2
 * :package: PHP 5.4.24
 * :package: Python 2.7.5
 * :package: Ruby 2.0.0p247
 * :package: Shells
   * :package: bash 3.2.51
-  * :package: csh (tcsh) 6.17
-  * :package: ksh 93u 2011-02-08
-* :package: (tclsh) 8.5
+
+## Homebrew Instructions
+
+Mac OS X has package managers like [Homebrew](http://brew.sh/), [MacPorts](https://www.macports.org/), [Rudix](http://rudix.org/). These instructions cover [Homebrew](http://brew.sh/) and were tested on *Maverick*.
 
 ### Prerequisites
 
-#### XCode
+##### XCode
 
 Download the latest [XCode](https://developer.apple.com/xcode/), XCode command line tools, and optionally [Java for OS X](http://support.apple.com/kb/DL1572)
 
-#### Java JDK
+##### Java JDK
 
 Java JDK variety is required, as JRE only installs a plug-in.  Here's an example of installing JDK 1.8:
 
@@ -87,7 +102,7 @@ Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
 Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
 ```
 
-#### HomeBrew
+##### HomeBrew
 
 Install [HomeBrew](http://brew.sh/) as the package manage:
 
@@ -101,14 +116,14 @@ $ brew doctor
 
 Instead of documenting every little piece, here's a list of instructions to install, configure, and verify the needed components:
 
-### Tools
+##### Tools
 
 ```Bash
 $ brew install gnu-sed --with-default-names
 $ sudo /usr/local/bin/sed -e '/\/usr\/local\/bin/d' -e '1i /usr/local/bin' -i /etc/paths
 ```
 
-### Shells
+##### Shells
 
 ```Bash
 $ brew install dash
@@ -118,7 +133,7 @@ $ ln -sf /usr/local/bin/dash /usr/local/bin/sh
 
 ```
 
-### Scripting Languages
+##### Scripting Languages
 
 ```Bash
 $ brew install gawk
@@ -136,7 +151,7 @@ $ gem update
 $ gem install bundler
 ```
 
-### Verification
+##### Verification
 
 ```Bash
 $ sed --version | head -1
@@ -168,77 +183,6 @@ $ gem --version
 $ bundle --version
 Bundler version 1.7.9
 ```
-
-## Mac OS X 10.8.5 (Snow Leopard)
-
-### Package Managers
-
-Mac OS X 10.8.5 comes with basics shells (ksh, csh, bash) and Unix tools required for most of these tutorials.  For GNU versions of some of the tools, and for updated versions of shells or scripting environments, you can use package managers, such as:
-
-* [Homebrew](http://brew.sh/) - installs packages for a single user only, supports third party repositories, has ability to use packages or build from source.
-* [MacPorts](https://www.macports.org/) - intalls packages for all users, so ideal for servers; builds tools and libraries using ports directory tree.
-* [Rudix](http://rudix.org/) - uses pre-built installable packages using Apple's `.pkg` standard
-
-### XCode Requirement
-
-Before getting package managers, you'll want to install [XCode](https://developer.apple.com/xcode/), XCode command line tools, and [Java for OS X](http://support.apple.com/kb/DL1572)
-
-### Defaults (pre-baked)
-
-Mac OS X 10.8.5 Snow Leopard comes with the following scripting tools:
-
-* :package: Awk 20070501 (BSD)
-* :package: Perl 5.12.4
-* :package: PHP 5.3.28
-* :package: Python 2.7.2
-* :package: Ruby 1.8.7
-* :package: Shells
-  * :package: bash 3.2.48
-  * :package: csh (tcsh) 6.17
-  * :package: ksh 93u 20011-02-08
-* :package: (tclsh) 8.5
-
-Beyond AWK, the following tools required for these shell scripting tutorials are included:
-
-* :package: bc 1.06 (GNU)
-* :package: cut (BSD)
-* :package: date (BSD)
-* :package: expr (BSD)
-* :package: grep 2.5.1 (BSD)
-* :package: printf (BSD)
-* :package: sed (BSD)
-* :package: seq (BSD)
-* :package: tr (BSD)
-* :package: wc (BSD)
-
-### Homebrew
-
-With Homebrew installed, you can install updated versions of some of these tools:
-
-#### Scripting Languages
-
-Note, these are versions as of Dec 21, 2014.
-
-* :package: Awk 4.1.1 (GNU) `brew install gawk`
-* :package: Groovy 2.3.7 `brew install groovy`
-* :package: Perl 5.20.1 `brew install perl`
-* :package: Python 2.7.9 `brew install python`
-* :package: Ruby 2.1.5 `brew install ruby`
-
-Groovy requires that the Java environment:
-
-* Oracle Java SE Homepage: http://www.oracle.com/technetwork/java/javase/overview/index.html
-
-### Shells
-
-* :package: Bash 4.3.30 `brew install bash`
-* :package: Dash 0.5.7 `brew install dash`
-* :package: Korn Shell ksh-93u+ (AT&T) `brew install ksh`
-* :package: C Shell 6.18.01 `brew install tcsh`
-
-### Utilities
-
-* :package: sed 4.2.2 (GNU) `brew install gnu-sed`
 
 ## Windows 7 (Windows NT 6.1)
 
