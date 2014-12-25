@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # declare variables
 declare -i num=10/2        # explicitly set an integer
 char=a                     # set a character

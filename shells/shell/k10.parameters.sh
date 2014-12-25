@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # create function (subroutine) 
 add() {
   sum=0                       # initialize starting sum value

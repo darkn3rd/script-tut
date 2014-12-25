@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # declare the variables
 num    = 5                   # python int datatype
 char   = 'a'                 # python string datatype

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # declare variables
 num=5
 char=a

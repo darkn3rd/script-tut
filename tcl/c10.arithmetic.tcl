@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # calculate bolean logic
 set result [expr True && False || True]
 # output results

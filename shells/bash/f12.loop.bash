@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 let count=10                    # set initial state
 # count style loop using while...done block
 while (( $count > 0 )); do      # test if 0 reached

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 string1="wow" ; string2="wow"
 num1=15 ; num2=15
 file1=/etc/passwd

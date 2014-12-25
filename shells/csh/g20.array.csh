@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 
 # build aray in one line
 set nicknames = (bob ed steve ralph joe deb kate)

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # illustrative variables
 first     = 0  # set index of first element
 min_count = 0  # set minimum number of elements required

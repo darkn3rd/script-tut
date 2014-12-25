@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # integer arithmetic
 set width  = 5
 set length = 6

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 print "Input a number: "   # print prompt
 $stdout.flush              # flush unbuffered stream
 number = gets.chomp.to_i   # acquire number (remove newline, convert to int)

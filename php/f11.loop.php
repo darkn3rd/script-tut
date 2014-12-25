@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // count loop using range to generate sequence
 //   which is then fed into collection loop

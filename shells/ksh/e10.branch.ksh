@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 
 # get input from user
 read response?"Would you like a toast? [Yes/No]: "

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # collection loop with subshell
 for item in $(ls); do
    if [ -d $item ]; then

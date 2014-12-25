@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # insert one element at a time
 set ages(bob)   34
 set ages(ed)    58

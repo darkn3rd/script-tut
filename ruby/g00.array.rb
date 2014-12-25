@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # create empty array
 nicknames = Array.new
 # insert elements by index

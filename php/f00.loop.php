@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // collection loop on results
 foreach (preg_split("/\s+/", shell_exec('ls')) as $item) {

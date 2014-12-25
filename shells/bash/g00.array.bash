@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # assign items to array
 nicknames[0]=bob
 nicknames[1]=ed

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # get input from user
 read -p "Would you like a toast? [Yes/No]: " response

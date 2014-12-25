@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 printf "Input a character: " ; read Keypress
  
 # case construction

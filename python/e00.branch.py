@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # get input from user
 response = raw_input("Would you like a toast? [Yes/No]: ")
 

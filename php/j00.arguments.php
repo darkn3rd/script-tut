@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // acquire num of args and script name
 $arg_count   = $argc - 1;  // get num of arguments

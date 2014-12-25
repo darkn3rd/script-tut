@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # count style loop using range downto iterator
 #  to generate sequence of numbers that is fed
 #  into collection loop

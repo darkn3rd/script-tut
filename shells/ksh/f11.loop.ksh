@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 let count=10                    # set initial state
 
 # use count style loop with while 

@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # illustrative variables
 set arg_count   $argc;  # get num of arguments
 set script_name $argv0; # get script name

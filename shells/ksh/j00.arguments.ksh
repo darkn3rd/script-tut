@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # illustrative variables
 script_name=$0  # get name of script
 arg_count=$#    # get number of arguments

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import string
 # create the function
 def capitalize (string):

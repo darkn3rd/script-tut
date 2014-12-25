@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # integer arithmatic
 width=5; length=6
 

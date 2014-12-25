@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # populate full list
 set nicknames [list bob ed steve ralph joe deb kate]
 # enumerate through list elements by index

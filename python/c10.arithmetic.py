@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # calculate bolean logic
 result = True and False or True   # python bool datatype 
 

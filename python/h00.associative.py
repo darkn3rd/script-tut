@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ages = {}          # create an empty dictionary
 
 # populate dictionary one item at a time 

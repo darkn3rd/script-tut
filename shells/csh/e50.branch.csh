@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # prompt user and get input
 echo -n "Input a character: " # print prompt & acquire input
 set keypress=$<               # acquire input

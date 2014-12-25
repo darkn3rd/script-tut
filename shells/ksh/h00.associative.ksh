@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # declare and initilize empty accociative array
 typeset -A ages
  

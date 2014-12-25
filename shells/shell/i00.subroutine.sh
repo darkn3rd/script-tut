@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
  
 # create function (subroutine)
 show_date() {

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # illustrative variables
 arg_count    = ARGV.length # get num of args
 @script_name = $0          # get script name

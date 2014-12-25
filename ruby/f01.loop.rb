@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # collection style loop with each iterator
 `ls`.split.each do |item|                 # cycle thorugh directory listing
    if File.directory? item                # test if path is directory

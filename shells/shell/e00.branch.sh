@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 printf "Input a number: "; read number
 if [ $number -gt 0 ]; then
   echo number is greater than 0

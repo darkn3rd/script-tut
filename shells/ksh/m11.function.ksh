@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # create function (subroutine) 
 function capitalize {
   typeset -u string=$1  # create uppercase only variable

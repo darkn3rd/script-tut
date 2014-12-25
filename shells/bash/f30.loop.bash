@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # spin loop as always true
 while [[ true ]]; do
    # output prompt and get input

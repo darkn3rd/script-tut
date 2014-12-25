@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create subroutine
 function celsius {
   # get argument and save it to friendly name

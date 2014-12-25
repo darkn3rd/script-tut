@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Tested:
 #   - does not work on Mac OS X 10.8.5

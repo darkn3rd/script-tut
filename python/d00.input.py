@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # get input from user and store as name variable
 name = raw_input("Enter your name: ")
 

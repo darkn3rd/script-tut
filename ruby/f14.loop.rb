@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # count style loop using while construct
 count = 10
 while count > 0

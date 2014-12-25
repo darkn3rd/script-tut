@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # collection loop with output from exec
 foreach item [exec "ls"] {
    if {[file isdirectory $item]} {

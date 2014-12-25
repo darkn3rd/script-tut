@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # conditional loop with begin...while construct
 begin
   print "Enter your name (quit to Exit): " # print prompt

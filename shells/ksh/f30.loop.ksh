@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # spin loop as always true, break exits loop 
 while [[ 1 ]]; do
    read answer?"Enter your name (quit to exit): " # prompt and get input

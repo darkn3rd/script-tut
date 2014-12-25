@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # count style loop using seq command to generate
 #  sequence of numbers that is fed into collection loop 

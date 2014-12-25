@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # prompt user and get input
 read -p "Input a number: " number
 # test input and output result

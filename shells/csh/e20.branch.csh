@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # prompt user and get input
 echo -n "Input a number: " # print prompt & acquire input
 set number=$<              # acquire input

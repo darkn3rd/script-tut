@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 # output message to standard error
 #  Note: Test by redirecting stdout to nowhere, e.g.
@@ -6,4 +6,3 @@
 fwrite(STDERR, "This is a test of the emergency script system." .
 	           "  This is only a test.")
 ?>
-

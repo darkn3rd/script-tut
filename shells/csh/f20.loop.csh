@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 set answer = ""                             # required to create initial var 
  
 # loop conditionally until user quits

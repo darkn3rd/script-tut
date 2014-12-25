@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys
 # illustrative variables 
 ARG_COUNT = len(sys.argv) - 1 # get num of real arguments

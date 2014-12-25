@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 read -p "Input a character: " keypress # prompt & get input
 keypress=${keypress:0:1}               # substring for only 1st char
  

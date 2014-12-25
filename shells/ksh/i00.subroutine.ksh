@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
  
 # create function (subroutine)
 function show_date {

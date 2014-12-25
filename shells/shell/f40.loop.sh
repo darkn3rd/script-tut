@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # spin loop with break used to exit from loop, continue to skip
 while [ 1 ]; do
    # output prompt using external printf command

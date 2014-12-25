@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # conditional loop with while 
 while [[ "$answer" != "quit" ]]; do
    read answer?"Enter your name (quit to exit): " # prompt and get input

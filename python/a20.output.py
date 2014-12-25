@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # Output Multiline Text using trible-quote 
 print """\
 "The person who moves a mountain begins 

@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // initialize array with key/value pairs
 $ages = array("bob"=>34, "ed"=>58, "steve"=>32, "ralph"=>23);

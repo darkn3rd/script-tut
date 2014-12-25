@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # create the function
 def addNums (*numbers):
    sum = 0                            # initialize starting sum value

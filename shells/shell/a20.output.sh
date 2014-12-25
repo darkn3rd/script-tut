@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 # Output Multiline Text bash here string
 cat << END
 "The person who moves a mountain begins 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # illustrative variables
 MIN_COUNT=0  # set mininum number of arguments
 # utility variables

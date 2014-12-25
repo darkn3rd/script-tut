@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 # illustrative variables
 arg_count   = ARGV.length # get num of arguments (fetched once)

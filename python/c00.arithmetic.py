@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # basic integer arithmatic
 width  = 5              # python int datatype
 length = 6              # python int datatype

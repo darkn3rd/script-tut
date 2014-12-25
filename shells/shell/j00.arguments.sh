@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # illustrative variables
 script_name=$0  # get name of script
 arg_count=$#    # get number of arguments

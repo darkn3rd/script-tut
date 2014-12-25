@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create function (subroutine) 
 function add {
   sum=0                       # initialize starting sum value

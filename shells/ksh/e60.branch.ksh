@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 read keypress?"Input a character: " # prompt & get input
 keypress=${keypress:0:1}            # substring for only 1st char
  

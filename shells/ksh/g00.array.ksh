@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # insert one by one into array
 nicknames[0]=bob
 nicknames[1]=ed

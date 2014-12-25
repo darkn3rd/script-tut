@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # illustrative variables
 set true = 1
 set false = 0

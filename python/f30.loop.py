@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # spin loop as always true condition
 while True:
   # print a prompt and get answer

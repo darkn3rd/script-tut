@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 
 # create subroutine supporting variable number of parameters
 # NOTE: TCL requires the parameter to be called args

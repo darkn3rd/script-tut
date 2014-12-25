@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # create empty hash
 ages = Hash.new
 # insert one element at a time

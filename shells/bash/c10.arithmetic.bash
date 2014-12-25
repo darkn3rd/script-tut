@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # illustrative variables
 TRUE=1; FALSE=0
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # illustrative variables
 arg_count=$#     # get number of arguments
 # utility variables

@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # illustrative variables
 arg_count=$#           # get number of arguments
 # utility variables

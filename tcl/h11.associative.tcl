@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # populate initial array
 array set ages {bob 34 ed 58 steve 32 ralph 23}
 # append more items into array

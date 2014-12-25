@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 print "Input a character: " # prompt
 STDOUT.flush                # flush unbuffered stream
 keypress = STDIN.getc       # acquire single character

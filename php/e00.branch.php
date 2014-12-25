@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 echo "Input a number: "; $Number = fgets(STDIN);
  

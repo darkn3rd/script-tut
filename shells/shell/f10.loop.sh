@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 count=10   # initialize counter
 
 # count style loop using while

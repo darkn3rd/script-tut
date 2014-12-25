@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # Save multi-line text as a string
 phrases='
 "The person who moves a mountain begins 

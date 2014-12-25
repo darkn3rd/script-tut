@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # Output Multiline Text bash here string
 cat <<< '
 "The person who moves a mountain begins 

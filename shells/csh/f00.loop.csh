@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # collection loop on directly glob
 foreach file (*)
     if (-d $file) then

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # conditional loop using while...done
 while [[ "$answer" != "quit" ]]; do
    read -p "Enter your name (quit to exit): " answer # prompt and get input

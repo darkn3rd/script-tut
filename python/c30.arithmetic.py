@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import math       # needed for math library methods
 
 # declare variable 

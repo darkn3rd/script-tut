@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # collection loop fed each line of output from subshell
 for item in $(ls); do                  # cycle through directory listing
    if [[ -d $item ]]; then             # test if path is directory

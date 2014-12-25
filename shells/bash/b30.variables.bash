@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Store Multi-line Text bash here string
 read -r -d '' phrases <<'END'
 "The person who moves a mountain begins 

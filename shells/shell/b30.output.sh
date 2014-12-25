@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 # Output Multiline Text here string
 phrases='
 "The person who moves a mountain begins 

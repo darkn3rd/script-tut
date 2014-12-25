@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 $nicknames = array("bob","ed","steve","ralph","joe","deb","kate");
 echo "The names are: \n";

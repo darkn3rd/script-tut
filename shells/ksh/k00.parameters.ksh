@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # create subroutine
 function celsius {
   # coerce temperature to float, e.g. 0.0

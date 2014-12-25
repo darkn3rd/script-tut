@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // illustrative variables
 $count       = 1;        // set initial counter

@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # prompt and get input
 puts -nonewline "Input a character: "
 flush stdout

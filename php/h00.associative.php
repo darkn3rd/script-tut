@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 $ages[bob]=34;
 $ages[ed]=58;

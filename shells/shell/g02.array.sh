@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # created populated list using space-delimited string
 nicknames="bob ed steve ralph joe deb kate"
  

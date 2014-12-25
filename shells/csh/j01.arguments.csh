@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 # test for 2 arguments
 if ($#argv != 2) then
   # output usage statement to standard error

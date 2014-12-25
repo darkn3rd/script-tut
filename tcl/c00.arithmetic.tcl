@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # declare variables
 set width 5; set length 6
 # calculate integer arithmetic

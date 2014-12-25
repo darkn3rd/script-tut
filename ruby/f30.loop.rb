@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # pure spin loop using continous loop construct
 #   break is used to exit loop
 loop do

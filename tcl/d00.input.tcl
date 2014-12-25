@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # primpt and get input
 puts -nonewline "Enter your name: "
 flush stdout

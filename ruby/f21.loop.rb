@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 answer = ""                               # default
 # coditional loop using while/do...end construct
 while answer != "quit" do

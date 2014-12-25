@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/usr/bin/env tcsh
 @ count = 10             # initialize counter
 
 # count style loop using while

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # illustrative variables
 true=1; false=0
 # calcualte boolean logic

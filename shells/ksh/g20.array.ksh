@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
  
 set -A nicknames bob ed steve ralph joe deb kate
 count=0

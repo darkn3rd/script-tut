@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # floating-point math
 PI     = 3.14159265359        # python float datatype
 radius = 3                    # python int datatype

@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // count loop using general loop construct
 for ( $count = 10; $count > 0; $count-- )

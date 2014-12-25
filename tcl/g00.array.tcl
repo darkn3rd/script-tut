@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # create empty list
 set nicknames [list]  
 # insert elements by index

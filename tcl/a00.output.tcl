@@ -1,2 +1,2 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 puts "Hello"

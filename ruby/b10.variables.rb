@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 num    = 5                      # store a number to variable
 char   = 'a'                    # store a single character
 string = "This is a string"     # store a string

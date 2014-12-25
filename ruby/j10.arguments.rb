@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 arg_count = ARGV.length   # get num of arguments
 first     = 0             # set index of first element
 last      = arg_count - 1 # set index of last element

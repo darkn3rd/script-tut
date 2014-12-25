@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 define('PI', '3.14159265359');
 $radius = 3;

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # count style loop using range operator to generate
 #   sequence of numbers that is fed to each iterator
 (1..10).to_a.reverse.each do |count|

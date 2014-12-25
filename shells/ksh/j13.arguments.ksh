@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # illustrative variables
 min_count=0  # set mininum number of arguments
 # utility variables

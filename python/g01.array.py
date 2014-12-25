@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 nicknames = []           # create an empty list
 
 # populate list one item at a time 

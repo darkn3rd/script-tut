@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # integer arithmatic
 width=5; length=6
 area=$(($length * $width))

@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # acquire num of arguments
 set arg_count   $argc        ;# get num of arguments
 set count       1            ;# set initial count

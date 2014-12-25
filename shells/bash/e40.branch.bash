@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # save a menu string to output to user
 MENU='
 Select an item from the menu.

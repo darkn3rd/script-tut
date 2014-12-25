@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # create a menu string to output to user
 MENU='
 Select an item from the menu.

@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh
+#!/usr/bin/env tclsh
 # spin loop with break to exit loop, continue to skip loop
 while {true} {
   # send prompt to buffer

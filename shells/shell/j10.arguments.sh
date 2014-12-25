@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # utility variables
 count=1      # initialize counter
  

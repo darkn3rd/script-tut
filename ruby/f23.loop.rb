@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 answer = ""                               # default
 # conditional loop with until/do...end construct
 until answer == "quit" do

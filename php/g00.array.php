@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 $nicknames[0]=bob;
 $nicknames[1]=ed;

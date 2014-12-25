@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # integer arithmatic
 width  = 5
 length = 6

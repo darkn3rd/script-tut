@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # declare and initilize array on one line
 set -A nicknames bob ed steve ralph joe deb kate
 # output the results of array

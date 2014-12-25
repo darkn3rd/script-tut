@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 // conditional loop with while
 while  ($answer != "quit") {

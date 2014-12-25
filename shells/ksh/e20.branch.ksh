@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # prompt user and get input
 read number?"Input a number: "
 
