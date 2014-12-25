@@ -1,4 +1,4 @@
-#!/bin/gawk -f
+#!/usr/bin/env gawk -f
 
 # **************************************
 #   Main Section
@@ -13,7 +13,7 @@ BEGIN {
   nicknames[4]="joe"
   nicknames[5]="deb"
   nicknames[6]="kate"
- 
+
   # print number of elements
   print  "The number of nicknames is: " length(nicknames)
 
@@ -31,11 +31,11 @@ BEGIN {
 function join(array, sep)
 {
     result = array[0]
-    end    = length(array) 
- 
+    end    = length(array)
+
     for (i = 1; i < end; i++) {
         result = result sep array[i]
     }
- 
+
     return result
 }

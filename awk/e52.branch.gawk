@@ -1,8 +1,8 @@
-#!/bin/gawk -f
+#!/usr/bin/env gawk -f
 BEGIN {
   printf "Input a character: "
   getline keypress
- 
+
   # multiway test on character
   # NOTE: This is supported in Gawk 4.0 and above
   switch (keypress) {

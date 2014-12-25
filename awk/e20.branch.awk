@@ -1,9 +1,9 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 BEGIN {
   # prompt user and get input
   printf "Input a number: "
   getline number
- 
+
   # test number range
   if (number > 0)
     print "Number is greater than 0"

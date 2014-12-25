@@ -1,4 +1,4 @@
-#!/bin/gawk -f
+#!/usr/bin/env gawk -f
 
 # function to show usage message
 function usage_message()

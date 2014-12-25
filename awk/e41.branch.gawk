@@ -1,4 +1,4 @@
-#!/bin/gawk -f
+#!/usr/bin/env gawk -f
 BEGIN {
   # build a menu string to output to user
   menu = "\nSelect an item from the menu."
@@ -11,7 +11,7 @@ BEGIN {
   menu = menu "\n   7 - Tea"
   menu = menu "\n\nMake your selection : "
 
-  # get user output 
+  # get user output
   printf menu        # output menu and prompt
   getline selection  # get input
 
@@ -26,5 +26,5 @@ BEGIN {
     case 7:  print "You selected a Tea";       break
     default: print "You have not entered a valid selection"
   }
- 
+
 }

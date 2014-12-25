@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 BEGIN {
   # spin loop as always true, break to exit loop
   do {
@@ -6,7 +6,7 @@ BEGIN {
     getline answer                            # get input
     # exit loop if exiting
     if (answer == "quit") break
-                          
+
     # output result as not exiting
     print "Hello " answer "!"
   } while ( 1 )

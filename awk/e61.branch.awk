@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 BEGIN {
   printf "Input a character: "   # prompt for input
   getline keypress               # grab input

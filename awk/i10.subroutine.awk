@@ -1,7 +1,7 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 
 # create subroutine called fish
-function fish() {  
+function fish() {
     pond -= 150     # subtract fish from global pond
     captured += 150 # add to the fish captured
 }
@@ -13,7 +13,7 @@ BEGIN {
     # utility variable, contains message for output
     notice   = "Fishing from the main pond... We now have %s in the main pond.\n"
 
-    # output intial amount of fish in shared resource    
+    # output intial amount of fish in shared resource
     printf "We have %s in this pond.\n", pond
 
     fish()              # get some fish

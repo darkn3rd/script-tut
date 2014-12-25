@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 BEGIN {
   # individually build array
   ages["bob"]=34
@@ -7,16 +7,16 @@ BEGIN {
   ages["ralph"]=23
   ages["deb"]=46
   ages["kate"]=19
- 
+
   # print all key indexes
   print "Keys  (names): " keys(ages)
- 
+
   # print all values
   print "Values (ages): " values(ages)
 }
 
 # ==================== HELPER FUNCTIONS ==================== #
-# Helper Functions as Awk has no method to enumerate all values or keys 
+# Helper Functions as Awk has no method to enumerate all values or keys
 #   from an array
 
 # **************************************
@@ -26,9 +26,9 @@ BEGIN {
 function keys(array)
 {
     keyStr = ""
-     
+
     for (key in ages) keyStr = keyStr " " key
- 
+
     return keyStr
 }
 
@@ -39,8 +39,8 @@ function keys(array)
 function values(array)
 {
     valueStr = ""
-     
+
     for (key in ages) valueStr = valueStr " " ages[key]
- 
+
     return valueStr
 }

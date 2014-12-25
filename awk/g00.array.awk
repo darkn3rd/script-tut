@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 
 # **************************************
 #   Main Section
@@ -12,7 +12,7 @@ BEGIN {
   nicknames[4]="joe"
   nicknames[5]="deb"
   nicknames[6]="kate"
- 
+
   # print number of elements
   print  "The number of nicknames is: " array_length(nicknames)
 
@@ -26,11 +26,11 @@ BEGIN {
 
 # **************************************
 # array_length() - returns length of array
-#   Note: required as length() only works on strings in POSIX awk 
-#   Note: not needed with gawk 3.1.5 and 4.x as length works on 
+#   Note: required as length() only works on strings in POSIX awk
+#   Note: not needed with gawk 3.1.5 and 4.x as length works on
 #    array as well
 # **************************************
-function array_length (array) 
+function array_length (array)
 {
   count = 0                   # set initial counter value
   for (i in array) count++    # increment counter
@@ -45,10 +45,10 @@ function join(array, sep)
 {
     result = array[0]
     end    = array_length(array)
- 
+
     for (i = 1; i < end; i++) {
         result = result sep array[i]
     }
- 
+
     return result
 }

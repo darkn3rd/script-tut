@@ -1,8 +1,8 @@
-#!/bin/awk -f
+#!/usr/bin/env awk -f
 
 # create subroutine called fish
 #  NOTE: parameters unused, as they are only declared to get locality of
-#    similarly named variables   
+#    similarly named variables
 function fish(pond) {
     pond = 500         # utilize local variable
     pond -= 150        # subtract fish from local pond
