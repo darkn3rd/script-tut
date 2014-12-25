@@ -106,8 +106,6 @@ Instead of documenting every little piece, here's a list of instructions to inst
 ```bash
 $ brew install gnu-sed --with-default-names
 $ sudo /usr/local/bin/sed -e '/\/usr\/local\/bin/d' -e '1i /usr/local/bin' -i /etc/paths
-$ sed --version | head -1
-sed (GNU sed) 4.2.2
 ```
 
 ### Shells
@@ -117,28 +115,36 @@ $ brew install dash
 $ brew install bash
 $ brew install tcsh
 $ ln -sf /usr/local/bin/dash /usr/local/bin/sh
-$ bash --version | head -1
-GNU bash, version 4.3.30(1)-release (x86_64-apple-darwin13.4.0)
-$ ksh --version
-version         sh (AT&T Research) 93u+ 2012-08-01
+
 ```
 
 ### Scripting Languages
 
-```
+```bash
 $ brew install gawk
 $ brew install groovy
 $ brew install perl
 $ brew link --force perl
 $ brew install zlib
-$ brew install homebrew/php/php56
+$ # brew install homebrew/php/php56
 $ brew install python
 $ pip install --upgrade --no-use-wheel pip
 $ pip install virtualenv
+$ pip install --upgrade --no-use-wheel setuptools
 $ brew install ruby
 $ gem update
 $ gem install bundler
-$ # Verify Package Versions
+```
+
+### Verification
+
+```bash
+$ sed --version | head -1
+sed (GNU sed) 4.2.2
+$ bash --version | head -1
+GNU bash, version 4.3.30(1)-release (x86_64-apple-darwin13.4.0)
+$ ksh --version
+version         sh (AT&T Research) 93u+ 2012-08-01
 $ awk --version | head -1
 GNU Awk 4.1.1, API: 1.1
 $ groovy -v
