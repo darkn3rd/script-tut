@@ -21,26 +21,23 @@ EXIT /B %ERRORLEVEL%
 
 :::::: USAGE_MESSAGE Function ::::::
 :USAGE_MESSAGE
-
-:: print helpful instructions
-ECHO. 1>&2
-ECHO You need to one of more integers: 1>&2
-ECHO. 1>&2
-ECHO. 1>&2
-ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3] ... 1>&2
-ECHO. 1>&2
-
-EXIT /B %ERROR_INVALID_ARGS%
-GOT :EOF
+  :: print helpful instructions
+  ECHO. 1>&2
+  ECHO You need to one of more integers: 1>&2
+  ECHO. 1>&2
+  ECHO. 1>&2
+  ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3] ... 1>&2
+  ECHO. 1>&2
+  
+  EXIT /B %ERROR_INVALID_ARGS%
 
 :::::: ADD_NUMS Function ::::::
 :ADD_NUMS
 
-SET /A sum=0
-:: Iterate and sum up numbers
-FOR %%A IN (%*) DO SET /A sum+=%%A
-:: output results
-ECHO The summation is: %sum%.
+  SET /A sum=0
+  :: Iterate and sum up numbers
+  FOR %%A IN (%*) DO SET /A sum+=%%A
+  :: output results
+  ECHO The summation is: %sum%.
 
-EXIT /B %ERROR_SUCESS%
-GOTO :EOF
+  EXIT /B %ERROR_SUCESS%
