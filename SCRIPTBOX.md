@@ -184,6 +184,37 @@ $ bundle --version
 Bundler version 1.7.9
 ```
 
+### Installing Windows Scripting Languages (Experimental)
+
+##### Windows Scripting Shell
+
+In order to run WSH environment, you need ABI compatibility, which can be installed using [WINE](https://www.winehq.org/).  [WINE](https://www.winehq.org/) will require [XQuartz](http://xquartz.macosforge.org/landing/) application, which can be installed using the [Cask](http://caskroom.io/) package management system (which uses [Homebrew](http://brew.sh/)).
+
+```Bash
+brew install caskroom/cask/brew-cask
+brew cask install xquartz
+brew install wine
+```
+
+Note that [WINE](https://www.winehq.org/) has numerous dependencies: xz, libpng, freetype, jpeg, [libtool](http://www.gnu.org/software/libtool/), [libusb](http://www.libusb.org/), [libusb-compat](http://www.libusb.org/wiki/libusb-compat-0.1), [fontconfig](http://fontconfig.org), [libtiff](http://download.osgeo.org/libtiff/), gd, libgphoto2, little-cms2, jasper, libicns, makedepend, openssl, and sane-backends.
+
+##### PowerShell with Pash Project
+
+There a group developing cross platform version of Powershell called Pash: https://github.com/Pash-Project/Pash.
+
+Before installing, you'll need a CLI (Common Language Infrastructure) environment, such as that supported by either Microsoft.NET or Mono Project.  Mono can be installed with Homebrew.
+
+```Bash
+brew install mono
+git clone https://github.com/Pash-Project/Pash.git
+cd Pash
+xbuild
+echo 'mono ~/Pash/Source/PashConsole/bin/Debug/Pash.exe "$@"' > /usr/local/bin/pash
+chmod +x /usr/local/bin/pash
+```
+
+After you can run your scripts by using something like: `pash yourscript.ps1`.  Note that this project is not completely mature, and only supports a limited set of functionality.  Though what it does support is promising.
+
 ## Windows 7 (Windows NT 6.1)
 
 Some of these command may require running either PowerShell console or Command Shell (cmd.exe) in privileged mode: right click on `cmd.exe` or `powershell.exe` and select `Run as administrator`.
@@ -197,7 +228,7 @@ Windows has at least four environments to get shell and shell utilities:
  * [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) - Korn shell and official AT&T Unix Korn utilities, along with some open source utilities bundled up into this environment.
  * [GNUWin32](http://gnuwin32.sourceforge.net/) - GNU utilities ported directly to Windows and can run under Windows command shell (`cmd.exe`)
 
-Outside of these shell environments, packages can be downloaded individually, or installed through a package management like [Chocolately](https://chocolatey.org/):
+Outside of these shell environments, packages can be downloaded individually, or installed through a package management like [Chocolately](https://chocolatey.org/).
 
 
 ### Scripting Languages (All Environments)
