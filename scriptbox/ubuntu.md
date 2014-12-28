@@ -15,22 +15,22 @@ Ubuntu 12.04 LTS
 ### Installing Shells
 
 ```bash
-sudo apt-get install dash
-sudo apt-get install bash
-sudo apt-get install tcsh
-sudo apt-get install ksh
+$ sudo apt-get install dash
+$ sudo apt-get install bash
+$ sudo apt-get install tcsh
+$ sudo apt-get install ksh
 ```
 
 ### Installing Scripting Languages
 
 ```bash
-sudo apt-get install gawk
-sudo apt-get install tcl8.5
-sudo apt-get install ruby
-sudo apt-get install perl
-sudo apt-get install php5-cli
-sudo apt-get install python
-sudo apt-get install groovy
+$ sudo apt-get install gawk
+$ sudo apt-get install tcl8.5
+$ sudo apt-get install ruby
+$ sudo apt-get install perl
+$ sudo apt-get install php5-cli
+$ sudo apt-get install python
+$ sudo apt-get install groovy
 ```
 
 This will install the following packages as of December 28th, 2014:
@@ -47,3 +47,15 @@ This will install the following packages as of December 28th, 2014:
   * **Korn Shell** (`ksh`): AT&T Research (ksh) 93u
   * **POSIX Shell** (`sh`): Debian Almquist Shell (dash) 0.5.7-2
 * **TCL**: 8.5.11
+
+### Notes
+
+#### Ruby
+
+The Ruby version available is rather old.  You can use Ruby Version Manager to install newer versions:
+
+```Bash
+$ gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+$ curl -sSL https://get.rvm.io | bash -s stable
+$ rvm install 2.1.5
+```
