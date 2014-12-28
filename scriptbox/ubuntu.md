@@ -58,4 +58,23 @@ The Ruby version available is rather old.  You can use Ruby Version Manager to i
 $ gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
 $ curl -sSL https://get.rvm.io | bash -s stable
 $ rvm install 2.1.5
+$ ruby --version
+ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-linux]
+
+```
+
+#### Groovy
+
+The groovy version is rather old and uses JDK 6.  You can install a newer version of JDK and install a later version of GVM.
+
+```
+sudo apt-get install openjdk-7-jre
+sudo apt-get install curl
+curl -s get.gvmtool.net | bash
+```
+
+The Java version can be selected through:
+
+```
+sudo update-alternatives --config java
 ```
