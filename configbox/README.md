@@ -29,9 +29,3 @@ There are numerous tools that can be used to automation configurations.  Here ar
   * [Puppet](https://puppetlabs.com/) - requires Pupet agent
   * [Salt Stack](http://www.saltstack.com/) - requires SSH
   * [Rocket](https://github.com/coreos/rocket) - Linux only (containers)
-
-
-
-
-
-The last option is to do Bubblegum & Scripts using build or task tools like
