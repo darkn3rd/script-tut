@@ -18,7 +18,7 @@ You'll need to be confortable using the shell environment, whether on Windows or
    * exporting environment variables (Unix/Linux)
    * adjusting `PATH`
  * creating symbolic links
- * using `which` or `command` (Unix/Linux)
+ * using `which` or `command` or `env` (Unix/Linux)
  * escalating privileges
    * `sudo`  (Unix/Linux)
    * `Run as Administrator` (Windows)
@@ -33,9 +33,16 @@ These scripts should work on Unix, Linux, and Windows.
   * :dvd: **Ubuntu 12.04 LTS (*Precise Pangolin*)**
 * Mac OS X
   * :dvd: **Mac OS X 10.8.5 (*Snow Leopard*)** with XCode 5.1.1
+    * :package: Homebrew
   * :dvd: **Mac OS X 10.9.5 (*Maverick*)** with XCode 6.1
+    * :package: Homebrew
 * Windows
   * :dvd: **Windows 7 (*Windows NT 6.1*)**
+    * :package: CygWin
+  * :dvd: **Windows 7 (*Windows NT 6.1*)**
+    * :package: MSYS
+    * :package: GNUWin32 tools
+
 
 ## Required Packages
 
