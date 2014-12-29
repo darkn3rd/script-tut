@@ -48,6 +48,18 @@ This will install the following packages as of December 28th, 2014:
   * **POSIX Shell** (`sh`): Debian Almquist Shell (dash) 0.5.7-2
 * **TCL**: 8.5.11
 
+### Ruby Alternative
+
+The Ruby version available is rather old.  You can use Ruby Version Manager to install newer versions:
+
+```Bash
+$ gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+$ curl -sSL https://get.rvm.io | bash -s stable
+$ rvm install 2.1.5
+$ ruby --version
+ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-linux]
+```
+
 ### Notes
 
 #### Ruby
