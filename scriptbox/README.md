@@ -103,6 +103,7 @@ There are a few package managers, but these few have capture my interest to docu
 
 ## Windows Environments
 
+These are environments provide popular shells available on Linux and UNIX (SVR4 or BSD) on Windows.
 
 ### Cygnus Windows (CygWin)
 
