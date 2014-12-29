@@ -1,5 +1,6 @@
 // create the function
-function addNums(numbers) {
+function addNums() {
+  var numbers = [].slice.call(arguments);
   var sum = 0;
 
   for (var num in numbers)
@@ -9,7 +10,7 @@ function addNums(numbers) {
 }
 
 // call the function
-result = addNums([5,2,4,3,6])
+result = addNums(5, 2, 4, 3, 6)
 
-// output rersults
+// output results
 WScript.echo("The result of summation is: " + result + ".");
