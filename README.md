@@ -12,7 +12,7 @@ This tutorial will cover the basics of programming in a variety of languages, so
 
 I created a cumulative installation guide to get all the tools needed for this tutorial for Windows and Mac OS X:
 
-* https://github.com/darkn3rd/script-tut/blob/master/SCRIPTBOX.md
+* https://github.com/darkn3rd/script-tut/blob/master/scriptbox/README.md
 
 ## Languages
 
