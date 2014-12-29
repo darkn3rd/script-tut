@@ -61,7 +61,7 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 * :package: PHP 5.3.28
 * :package: Python 2.7.2
 * :package: Ruby 1.8.7
-* :package: Shells
+* :shell: Shells
   * :package: bash 3.2.48
   * :package: csh (tcsh) 6.17
   * :package: ksh 93u 2011-02-08
@@ -75,7 +75,7 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 * :package: PHP 5.4.24
 * :package: Python 2.7.5
 * :package: Ruby 2.0.0p247
-* :package: Shells
+* :shell: Shells
   * :package: bash 3.2.51
 
 ## Mac OS X Packages
