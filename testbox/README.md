@@ -19,3 +19,14 @@ These are the requirements that I have come up with:
 * Test Runner generates list of scripts to be executed and the matching script function that should run.
 * Test Runner will then execute each script using the script function and its tests.
 * Test Runner will generate a report of its findings.
+
+## Test Runner
+
+For a test runner, I could use a task-build tool.  There are numerous ones to choose from:
+
+  * [Cake](http://coffeescript.org/documentation/docs/cake.html) - CoffeeScript based
+  * [Gradle](http://www.gradle.org/) - Groovy based
+  * [Grunt](http://gruntjs.com/) - Node based
+  * [Psake](https://github.com/psake/psake) - PowerShell based
+  * [Rake](https://github.com/ruby/rake) - Ruby based
+  * [SCons](http://scons.org/) - Python based
