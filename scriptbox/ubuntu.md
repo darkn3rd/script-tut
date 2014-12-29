@@ -7,6 +7,8 @@ These are my collective notes on setting up a system that can run these scripts.
 
 ## Ubuntu 12.04.5 LTS (Precise Pangolin)
 
+Checking for the current version of Ubuntu that is running.
+
 ```bash
 $ lsb_release -a 2> /dev/null | grep Description | cut -d$'\t' -f2
 Ubuntu 12.04 LTS
@@ -62,18 +64,6 @@ ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-linux]
 
 ### Notes
 
-#### Ruby
-
-The Ruby version available is rather old.  You can use Ruby Version Manager to install newer versions:
-
-```Bash
-$ gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
-$ curl -sSL https://get.rvm.io | bash -s stable
-$ rvm install 2.1.5
-$ ruby --version
-ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-linux]
-
-```
 
 #### Groovy
 
