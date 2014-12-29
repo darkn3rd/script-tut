@@ -78,6 +78,116 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 * :package: Shells
   * :package: bash 3.2.51
 
-## Package Managemnt
+## Mac OS X Packages
 
-Mac OS X has package managers like [Homebrew](http://brew.sh/), [MacPorts](https://www.macports.org/), [Rudix](http://rudix.org/). These instructions cover [Homebrew](http://brew.sh/) and were tested on *Maverick*.
+There are a few package managers, but these few have capture my interest to document:
+
+### Homebrew
+
+[Homebrew](http://brew.sh/) - single-user package manager with rich community support.
+
+### MacPorts
+
+[MacPorts](https://www.macports.org/) - system wide package manager with large robust repository of packages.
+
+### Rudix
+
+[Rudix](http://rudix.org/) is a relatively new comer and supports Mac OS X native package format for installing applications.
+
+## Windows Environments
+
+
+### Cygnus Windows (CygWin)
+
+[CygWin](https://www.cygwin.com/) simulates a Unix-like environment with popular UNIX tools that were ported to Windows using the CygWin library. Within the CygWin environment, all the needed tools and scripting languages can be installed easily.
+
+The default CygWin 1.7.33 environment has the following tools:
+
+* :package: bc
+* :package: cut (GNU Core Utils 8.23)
+* :package: date (GNU Core Utils 8.23)
+* :package: expr (GNU Core Utils 8.23)
+* :package: grep 2.21 (GNU)
+* :package: printf (GNU Core Utils 8.23) `usr/bin/printf`
+* :package: sed 4.2.2 (GNU)
+* :package: seq (GNU Core Utils 8.23)
+* :package: tr (GNU Core Utils 8.23)
+* :package: wc (GNU Core Utils 8.23)
+
+Also, CygWin 1.7.33 has the following scripting environments:
+
+* :package: AWK 4.1.1 (GNU)
+* :package: dash
+* :package: bash 4.1.17
+
+### MSYS
+
+MSYS, which is bundled with  [MSYS-Git](https://msysgit.github.io/) (GitBash), provides Bash and some popular GNU tools.
+
+The Git Bash ([MSYS-Git](https://msysgit.github.io/)) environment comes with the following tools:
+
+* :package: awk 3.0.4 (GNU awk)
+* :package: cut (GNU text utilities 2.0)
+* :package: date (GNU text utilities 2.0)
+* :package: expr (GNU text utilities 2.0)
+* :package: grep 2.4.2 (GNU grep)
+* :package: printf
+* :package: sed 4.2.1 (GNU sed)
+* :package: tr 2.0 (GNU text utilities 2.0)
+* :package: wc 2.0 (GNU text utilities 2.0)
+
+The MSYS-GIT environment also somes with the following environments:
+
+* :package: perl 5.8.8
+* :package: PHP 5.5.13
+* :package: TCL 8.5
+
+### UWIN
+
+[UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) provides a Korn shell environment with some popular Unix tools.
+
+The [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) environment comes with the tools:
+
+* :package: awk
+* :package: bc 1.0.4 (FSF)
+* :package: cut (AT&T Research) 2010-08-11
+* :package: date (AT&T Research) 2011-01-27
+* :package: expr (AT&T Research) 2010-08-11
+* :package: grep (AT&T Research) 2012-05-07
+* :package: printf (AT&T Research) 2009-02-02 `/usr/bin/printf`
+* :package: sed (AT&T Research) 2012-03-28
+* :package: seq (AT&T Labs Research) 2012-04-14
+* :package: tr (AT&T Labs Research) 2012-05-31
+* :package: wc (AT&T Research) 2009-11-28
+
+The UWIN also comes with these environments:
+
+* :package: csh
+
+### GNUWin32
+
+[GNUWin32](http://gnuwin32.sourceforge.net/) are popular GNU utilities that are ported directly to Windows.  They can run under the Windows Command Shell (`cmd.exe`).
+
+## Windows Packages
+
+### Apt-Cyg
+
+Apt-Cyg is a simple wrapper script that uses the existing CygWin environment to install packages.  Within CygWin installed, you can acquire apt-cyg using something like this:
+
+```Bash
+$ cd $USERPROFILE/Downloads
+$ ./setup-x86_64.exe -q -P wget
+$ wget http://apt-cyg.googlecode.com/svn/trunk/apt-cyg
+$ chmod +x apt-cyg
+$ mv apt-cyg /usr/local/bin/
+```
+
+Note that the above example uses 64-bit version of the CygWin setup program.
+
+### Chocolately
+
+[Chocolately](https://chocolatey.org/) are scripts that pull down from the Internet and install them locally within the [Chocolately](https://chocolatey.org/) system.  [Chocolately](https://chocolatey.org/) requires [PowerShell](http://technet.microsoft.com/en-us/scriptcenter/powershell.aspx) and [NuGet](https://www.nuget.org/).  The current instructions are (as of December 2014):
+
+```Batch
+@powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
+```
