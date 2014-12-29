@@ -193,3 +193,17 @@ Note that the above example uses 64-bit version of the CygWin setup program.
 ```Batch
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
 ```
+
+# Installation Guides
+
+## Linux
+
+* [Ubuntu](ubuntu.md) - *Precise Pangolin*
+
+## Mac OS X
+
+* [OS X with Homebrew](homebrew.md) - should work for *Mountain Lion* and *Maverick*
+
+## Windows
+
+* [Windows 7](windows7.md)
