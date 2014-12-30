@@ -14,4 +14,4 @@ WScript.stdout.write("Keys (names):  ");
 for (var key in ages) WScript.stdout.write(key + " ");
 WScript.echo(" ");
 WScript.stdout.write("Values (ages): ");
-for (var key in ages) WScript.stdout.write(ages.key + " ");
+for (var key in ages) WScript.stdout.write(ages[key] + " ");
