@@ -1,5 +1,5 @@
 // create empty list
-var nicknames = new Array()
+var nicknames = []
 
 // resize array and insert element by index
 nicknames[0] = "bob"
@@ -21,7 +21,7 @@ function join(array, sep)
 {
     result = array[0]; // fetch 1st item from array
 
-    for (i = 0; i < array.length; i++) 
+    for (i = 1; i < array.length; i++) 
         result += sep + array[i];  // append seperator & array item
  
     return result;     // return result
