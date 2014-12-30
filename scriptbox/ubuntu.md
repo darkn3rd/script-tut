@@ -56,8 +56,10 @@ The Ruby version available is rather old.  You can use Ruby Version Manager to i
 
 ```Bash
 $ gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+$ sudo apt-get install curl
 $ curl -sSL https://get.rvm.io | bash -s stable
 $ rvm install 2.1.5
+$ source ~/.rvm/scripts/rvm
 $ ruby --version
 ruby 2.1.5p273 (2014-11-13 revision 48405) [x86_64-linux]
 ```
