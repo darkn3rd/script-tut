@@ -1,7 +1,7 @@
 // initialize Array object
 var ages = new Array();
 
-// add one elment at a time
+// add one element at a time
 ages.bob   = 34;
 ages.ed    = 58;
 ages.steve = 32;
