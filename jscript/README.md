@@ -24,6 +24,14 @@ As many might realize that those programs mentioned above have been known for sp
 
 This environment can can provide backdoor access into a system.  A client program that connects to servers on the Internet and runs scripts from such a server on the client system, can potentially be dangerous.  Thus a program like a web browser (Internet Explorer) or a mail client (Outlook) that uses such a feature is dangerous.
 
+### JScript (ECMAScript 3) Notes
+
+JScript or rather ECMAScript 3 standard, has four datatypes: ***Number***, ***String***, ***Array***, and an ***Object***.  The ***Object*** is really an associative array, sometimes called hashes, dictionary, or maps in other scripting languages.  The items in an ***Object*** are called ***Properties***.
+
+
+
+ does not have real arrays, but rather an associative array called ***objects***.  Thus
+
 ## Testing
 
 * :dvd: *__Windows 7__* (Windows NT 6.1)
