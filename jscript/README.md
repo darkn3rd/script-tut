@@ -26,11 +26,9 @@ This environment can can provide backdoor access into a system.  A client progra
 
 ### JScript (ECMAScript 3) Notes
 
-JScript or rather ECMAScript 3 standard, has four datatypes: ***Number***, ***String***, ***Array***, and an ***Object***.  The ***Object*** is really an associative array, sometimes called hashes, dictionary, or maps in other scripting languages.  The items in an ***Object*** are called ***Properties***.
+JScript, which is based on ES3 (ECMAScript 3), has four datatypes: ***Number***, ***String***, ***Array***, and an ***Object***.
 
-
-
- does not have real arrays, but rather an associative array called ***objects***.  Thus
+The ***Object*** is really an associative array, sometimes called hashes, dictionary, or maps in other scripting languages.  The items in an ***Object*** are called ***Properties***.
 
 ## Testing
 
