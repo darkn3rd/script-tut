@@ -6,6 +6,14 @@
 
 As I wrap up documenting the exact configuration paths using a variety of environments, I wish to develop some automation scripts that could theoretically, from one command install all the needed components.
 
+## Puppet and Vagrant
+
+I am in the process (Dec 31, 2014) of creating some Puppet Modules called Scriptbox that can install the needed components for these scripting languages.  The idea is to have some scripts that run on Linux, then expand this to Mac OS X (Hoembrew or MacPorts) and then Windows.
+
+I also created some sample Vagrant configuration files `Vagrantfile` that support Puppet and configuration settings.  These will be updated as I find tweaks and optimizations required for various environments.
+
+## References
+
 There are numerous tools that can be used to automation configurations.  Here are but a few:
 
 * Build-Tasks Tools (ala bugglegum & scripts mode)
