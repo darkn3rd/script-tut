@@ -1,0 +1,14 @@
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "/path/to/maverick.box"
+  config.vm.hostname = "scriptbox"
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = true
+  end
+  config.vm.provision "puppet" do |puppet|
+    puppet.manifests_path = "../../manifests/"
+    puppet.manifest_file  = "site.pp"
+    puppet.module_path = ["../../modules/"]
+    puppet.options = "--verbose --debug"
+  end
+end
