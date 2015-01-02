@@ -2,7 +2,7 @@ Vagrant.require_version ">= 1.6.2"
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "http://aka.ms/vagrant-win7-ie11"
-  config.vm.hostname = "scriptbox"
+  config.vm.hostname = "mybox"
   config.vm.communicator = "winrm"
   config.vm.network "forwarded_port", guest: 3389, host: 3389
 

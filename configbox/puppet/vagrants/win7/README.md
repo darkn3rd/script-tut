@@ -11,14 +11,15 @@ This is a basic Vagrant configuration for Windows 7 using Modern.IE's image.
 In the initial configuration of this image, you need to do some preparation of the basic image so that is usable with Vagrant. You can do the following:
 
 1. Enable GUI by uncommenting `vb.gui = true` in the `Vagrantfile`
-2. Create a account called Vagrant
-3. Add Vagrant to the Administrators group.
-4. Change the public network to work network.
-5. Disable the Firewall (optional)
-6. Enable WinRM
-7. Configure WinRM with `AllowUnencrypted` and set `auth` to `Basic`
-8. Configure WinRM service to start on startup.
-9. Install Puppet Agent
+* Create a account called Vagrant
+* Add Vagrant to the Administrators group.
+* Remove IEUser account.
+* Change the public network to work network.
+* Disable the Firewall (optional)
+* Enable WinRM
+* Configure WinRM with `AllowUnencrypted` and set `auth` to `Basic`
+* Configure WinRM service to start on startup.
+* Install Puppet Agent
 
 
 ### WinRM Configuration

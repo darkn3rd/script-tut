@@ -18,8 +18,8 @@ class scriptbox::params {
       $shells = [$shell_posix, $shell_bash, $shell_ksh, $shell_csh]
       $scripting = [$script_awk, $script_groovy, $script_perl, $script_php,
       $script_python, $script_ruby, $script_tcl]
-      $gvm_install = false
-
+      $gvm_install   = false
+      $mode          = "nix"
     }
     centos: {
       $shell_posix   = "dash"
@@ -36,6 +36,13 @@ class scriptbox::params {
       $scripting = [$script_awk, $script_perl, $script_php,
       $script_python, $script_ruby, $script_tcl]
       $gvm_install   = true
+      $mode          = "nix"
+    }
+    windows: {
+      $mode          = "win"
+      $gvm_install   = false
+      $shells        = undef
+      $scripting     = undef
     }
     default: { fail("Unrecognized operating system for scriptbox") }
   }
