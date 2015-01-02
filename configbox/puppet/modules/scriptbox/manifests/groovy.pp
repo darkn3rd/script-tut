@@ -7,14 +7,14 @@ class scriptbox::groovy {
   # Curl Doesn't Work FTM
 
   exec { 'gvm-install':
-  command => '/usr/bin/curl -s get.gvmtool.net | bash',
-  require => Package['curl'],
-  unless  => "/usr/bin/test -e ~/.gvm/etc/config",
-}
+    command => '/usr/bin/curl -s get.gvmtool.net | bash',
+    require => Package['curl'],
+    unless  => "/usr/bin/test -e ~/.gvm/etc/config",
+  }
 
-exec { "groovy-install":
-command => "bash --login -c 'gvm install groovy'",
-require => Exec['gvm-install'],
-}
+  exec { "groovy-install":
+    command => "bash --login -c 'gvm install groovy'",
+    require => Exec['gvm-install'],
+  }
 
 }
