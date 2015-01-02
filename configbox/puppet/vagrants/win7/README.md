@@ -47,6 +47,7 @@ sc config WinRM start= auto
   * :dvd: Mac OS X 10.8.5 *Mountain Lion*
     * :package: VirtualBox 4.3.13
     * :package: Vagrant 1.6.3
+    * :package: Microsoft® Remote Desktop Connection Client for Mac 2.1.1
 
 ### **Guest Environment**
 
