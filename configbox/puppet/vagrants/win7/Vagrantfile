@@ -10,6 +10,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.guest = :windows
 
   config.vm.provider "virtualbox" do |vb|
+    #vb.gui = true  # break in case of emergency
     vb.customize ["modifyvm", :id, "--memory", "2048"]
     vb.customize ["modifyvm", :id, "--cpus", "2"]
   end
