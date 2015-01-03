@@ -6,7 +6,26 @@
 
 The idea for this area is to develop a script that can verify functionality of scripts on a given platform and environment. I can quickly expose any issues, and explore workarounds.
 
-## Plan
+## Status
+
+I developed a basic `Rakefile` that lists all the test areas to cover of any given area.  
+
+The idea is that each tasks encapsulates testing for each group, independently from each other.  Each task will need to do the following:
+
+* Generate a list of files to be executed for its area
+  * No files exist, return that feature is not supported
+  * Multiple files exist, run all tests, report summary.
+  * One file exist, run that test, report findings.
+* Understand how to run the test (so some environment detection)
+  * Unix/Linux shell - just execute script
+  * PowerShell or DOS - make use of provided run script (or use one of its own)
+
+Considering doing some scaffolding in detection of whether the scripting platform in question and execution there-of is supported, also, maybe reporting the test environment (operating system, version, 32bit or 64 bit, distro, language platform)
+
+
+## The Plan
+
+This was the original plan brainstormed on December, 2014.
 
 These are the requirements that I have come up with:
 
