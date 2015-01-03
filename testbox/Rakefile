@@ -1,0 +1,302 @@
+desc 'say hello'
+task :hello do
+  puts 'hello'
+end
+
+task :world => :hello do
+  puts ', world'
+end
+
+
+# =============================================
+# Each of these tasks will have to evaluate the available excutable files
+# available then execute them. and report their results.
+#
+# If multiple files in one category, run them all, report collective result.
+# If no files in one category, report that this feature is not supported.
+# =============================================
+
+desc 'Output to Console (stdout, stderr)'
+task :output
+
+desc 'Standard Ouput'
+task :stdout => :output do
+  puts 'a00.output'
+end
+
+desc 'Standard Error'
+task :stderr => :output do
+  puts 'a10.output'
+end
+
+desc 'Output Here-String (or Multiline String)'
+task :multiline => :output do
+  puts 'a20.output'
+end
+
+# ==============================================
+
+desc 'Variables'
+task :variables
+
+desc 'String Concatenation'
+task :concatenation => :variables do
+  puts 'b00.output'
+end
+
+desc 'String Concatenation'
+task :interpolation => :variables do
+  puts 'b10.output'
+end
+
+desc 'String Formatting'
+task :formmatting => :variables do
+  puts 'b20.output'
+end
+
+desc 'Here-String (Multiline String)'
+task :herestring => :variables do
+  puts 'b30.output'
+end
+
+# ==============================================
+
+
+desc 'Basic Arirthmetic'
+task :arithmetic
+
+desc 'Multiplication'
+task :multiplication => :arithmetic do
+  puts 'c00.output'
+end
+
+desc 'Boolean Logic'
+task :boolean => :arithmetic do
+  puts 'c10.output'
+end
+
+desc 'Exponential'
+task :exponential => :arithmetic do
+  puts 'c20.output'
+end
+
+desc 'Math Function (Triganometry)'
+task :mathfunction => :arithmetic do
+  puts 'c30.output'
+end
+
+# ==============================================
+
+desc 'User Input'
+task :input
+
+desc 'Line Input'
+task :line => :input do
+  puts 'd00.input'
+end
+
+desc 'Character Input'
+task :char => :input do
+  puts 'd10.input'
+end
+
+# ==============================================
+
+
+desc 'Branching'
+task :branch
+
+desc 'String Evaluation (Yes/No)'
+task :stringeval => :branch do
+  puts 'e00.branch'
+end
+
+desc 'Ternary (or single-line)'
+task :ternary => :branch do
+  puts 'e10.branch'
+end
+
+desc 'Number Range'
+task :numrange => :branch do
+  puts 'e20.branch'
+end
+
+desc 'Number Match'
+task :nummatch => :branch do
+  puts 'e30.branch'
+end
+
+desc 'Multiway with Number'
+task :multinum => :branch do
+  puts 'e40.branch'
+end
+
+desc 'Multiway with String Pattern'
+task :multipattern => :branch do
+  puts 'e50.branch'
+end
+
+desc 'String Pattern'
+task :singlepattern => :branch do
+  puts 'e60.branch'
+end
+
+# ==============================================
+
+desc 'Looping'
+task :loop
+
+desc 'Collection Loop'
+task :collection => :loop do
+  puts 'f00.loop'
+end
+
+desc 'Count Loop'
+task :count => :loop do
+  puts 'f10.loop'
+end
+
+desc 'Conditional Loop'
+task :conditional => :loop do
+  puts 'f20.loop'
+end
+
+desc 'Spin Loop'
+task :spin => :loop do
+  puts 'f30.loop'
+end
+
+desc 'Skipping a Loop Iteration'
+task :skipping => :loop do
+  puts 'f40.loop'
+end
+
+# ==============================================
+
+desc 'Arrays (Lists)'
+task :array
+
+desc 'Array Index Assignment and Length'
+task :indexlength => :array do
+  puts 'g00.array'
+end
+
+desc 'Array List Assignment and Enumeration by Item'
+task :enumitem => :array do
+  puts 'g10.array'
+end
+
+desc 'Array List Assignment and Enumeration by Item'
+task :enumindex => :array do
+  puts 'g20.array'
+end
+
+# ==============================================
+
+
+desc 'Associative Arrays (Hash, Map, Dictionary)'
+task :associative
+
+desc 'Association Array Assignment by Key'
+task :keyassign => :associative do
+  puts 'h00.associative'
+end
+
+
+desc 'Association Array Assignment by List and Appending'
+task :listassign => :associative do
+  puts 'h10.associative'
+end
+
+# ==============================================
+
+
+desc 'Subroutines (Procedures)'
+task :subroutine
+
+desc 'Creating and Calling'
+task :createcall => :subroutine do
+  puts 'i00.subroutine'
+end
+
+desc 'Global Variables'
+task :scopeglobal => :subroutine do
+  puts 'i10.subroutine'
+end
+
+desc 'Local Variables'
+task :scopelocal => :subroutine do
+  puts 'i20.subroutine'
+end
+
+# ==============================================
+
+
+desc 'Arguments from Command-Line'
+task :arguments
+
+desc 'Usage Statement, Script Name, Argument Count'
+task :usage => :arguments do
+  puts 'j00.exit'
+end
+
+desc 'Enumerate Arguments in Order'
+task :forward => :arguments do
+  puts 'j10.exit'
+end
+
+desc 'Enumerate Arguments in Reverse Order'
+task :reverse => :arguments do
+  puts 'j20.exit'
+end
+
+# ==============================================
+
+
+desc 'Parameters to Subroutines'
+task :parameters
+
+desc 'Passing a Single Parameter'
+task :single => :parameters do
+  puts 'k00.parameters'
+end
+
+desc 'Passing Variable Number of Parameters'
+task :dynamic => :parameters do
+  puts 'k10.parameters'
+end
+
+# ==============================================
+
+desc 'Exit'
+task :exit
+
+## NOTE THIS SHOULD HAVE A POS AND NEG TEST
+
+desc 'Reporting Status Code'
+task :statuscode => :exit do
+  puts 'm00.exit'
+end
+
+# ==============================================
+
+
+desc 'Functions and Returning Values'
+task :function
+
+desc 'Returning a Number'
+task :rtsnumber => :function do
+  puts 'm00.function'
+end
+
+desc 'Returning a String'
+task :rtsstring => :function do
+  puts 'm10.function'
+end
+
+desc 'Returning an Array'
+task :rtsarray => :function do
+  puts 'm30.function'
+end
+
+# ==============================================
