@@ -62,12 +62,23 @@ task :execute, [:list] do |t, args|
   end
 end
 
+# For Future
+# sh %Q{grep pattern file} do |ok, res|
+#   if ! ok
+#     puts "pattern not found (status = #{res.exitstatus})"
+#   end
+# end
+
+# Return Result if list is empty
+# Return Result of error if failure to run command
+# Return Result of output or stderr
+
 
 desc 'Output to Console (stdout, stderr)'
-task :output do
-  Rake::Task["stderr"].invoke
-  Rake::Task["stdout"].invoke
-  Rake::Task["multiline"].invoke
+task :output do => :stdout, :stderr, :multiline
+  #Rake::Task["stderr"].invoke
+  #Rake::Task["stdout"].invoke
+  #Rake::Task["multiline"].invoke
 end
 
 

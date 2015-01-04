@@ -1,0 +1,24 @@
+{ "a0": [{"out": "Hello"}],
+  "a1": [{"err": "This is a test of the emergency script system.  This is only a test."}],
+  "b0": [{"out": "Number is 5.\nCharacter is 'a'.\nString is \"This is a string\"."}],
+  "b1": [{"out": "Number is 5.\nCharacter is 'a'.\nString is \"This is a string\"."}],
+  "b2": [{"out": "\"The person who moves a mountain begins\n by carrying away small stones.\"\n\n   - Confucious\n\n\"Yesterday I was clever, so I wanted to change the world.\n Today I am wise, so I am I changing myself.\"\n\n   - Rumi\n\n\"Action speaks louder than words,\n   but not nearly as often.\"\n\n   - Mark Twain\n\n\"A designer knows he has achieved perfection\n not when there is nothing left to add, but\n when there is nothing left to take away.\"\n\n   - Antoine de Saint-Exupery\n\n\"There is no greater wealth than wisdom,\n no greater poverty than ignorance\"\n\n   - Ali bin Abu-Talib\n\n"}],
+  "d0": [{ "in": "Name",
+          "out":"Hello Name!"
+        }],
+  "d1": [{ "in": "Y",
+           "out":"You entered: >>|Y|<<."
+        }],
+  "j0": [{ "arg": "",    "err": "\nYou need to enter two numbers:\n\n   Usage: j00.arguments.groovy [num1] [num2]\n\n" },
+         { "arg": "3",   "err": "\nYou need to enter two numbers:\n\n   Usage: j00.arguments.groovy [num1] [num2]\n\n" },
+         { "arg": "3 4", "out": "The sum of 3 and 4 is: 7."}],
+  "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce",
+           "out": "The arugments passed are:\n item 1: un\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce"}],
+  "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce",
+           "out": "The arugments passed are:\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: un"
+        }],
+  "l0": [{"arg": "",      "err": "\nYou need to enter two numbers:\n\n   Usage: l00.exit.groovy [num1] [num2]\n\n"},
+         {"arg": "4",     "out": "The summation is: 4"},
+         {"arg": "4 5 6", "out": "The summation is: 15"}
+        ],
+}

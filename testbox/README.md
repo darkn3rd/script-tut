@@ -54,6 +54,26 @@ These are the requirements that I have come up with:
 * Source
   * [Rake Source](https://github.com/ruby/rake)
 
+## Test Data
+
+I decided to use a JSON using this format:
+
+```JavaScript
+{
+  plan: [test1, test2, test3]
+}
+```
+
+The inputs can be (1) no input, (2) standard input or (3) command line arguments.  The output is in either (1) standard output or (2) standard error.
+
+```JavaScript
+{
+  plan01: [{"out": "Script says blah"}],
+  plan01: [{"arg": "", "err": "Usage: blah"},
+           {"arg": "3 4", "Some output here"],
+  plan03: [{"in": "Name", "out": "Hello Name."}],
+}
+
 
 ## Open Source Task Tools
 
