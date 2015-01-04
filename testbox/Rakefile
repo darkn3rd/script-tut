@@ -1,10 +1,21 @@
 
 task :default do
-  puts RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
-  filetype = Dir.glob('e0?.branch.*')[0].split('.')[-1]
-  #scan(/\.\w+$/).lstrip()
-  puts filetype
-  #puts RUBY_VERSION
+
+  # Comenting Out Interactive Scripts for now
+
+  Rake::Task["output"].invoke
+  Rake::Task["variables"].invoke
+  Rake::Task["arithmetic"].invoke
+  #Rake::Task["input"].invoke
+  #Rake::Task["branch"].invoke
+  #Rake::Task["loop"].invoke
+  Rake::Task["array"].invoke
+  Rake::Task["associative"].invoke
+  Rake::Task["subroutine"].invoke
+  #Rake::Task["arguments"].invoke
+  #Rake::Task["parameters"].invoke
+  #Rake::Task["exit"].invoke
+  #Rake::Task["function"].invoke
 end
 
 # =============================================
@@ -16,23 +27,24 @@ end
 # =============================================
 
 class Script
-  @@command = { :awk    => "gawk",
-                :groovy => "groovy",
-                :pl     => "perl",
-                :php    => "php",
-                :py     => "python",
-                :rb     => "ruby",
-                :tcl    => "tclsh",
-                :bash   => "bash",
-                :csh    => "tcsh",
-                :ksh    => "ksh",
-                :sh     => "sh",
-                :js     => "cscript //Nologo",
-                :vbs    => "cscript //Nologo",
-                :ps1    => "powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File",
-                :cmd    => "cmd /c",
-                :bat    => "cmd /c"
-              }
+  @@command = {
+    :awk    => "gawk",
+    :groovy => "groovy",
+    :pl     => "perl",
+    :php    => "php",
+    :py     => "python",
+    :rb     => "ruby",
+    :tcl    => "tclsh",
+    :bash   => "bash",
+    :csh    => "tcsh",
+    :ksh    => "ksh",
+    :sh     => "sh",
+    :js     => "cscript //Nologo",
+    :vbs    => "cscript //Nologo",
+    :ps1    => "powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File",
+    :cmd    => "cmd /c",
+    :bat    => "cmd /c"
+  }
 
   @@ostype   = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
 
@@ -43,6 +55,7 @@ class Script
   attr_accessor :ostype, :shell, :lang
 end
 
+desc 'Executes A List of Scripts'
 task :execute, [:list] do |t, args|
   args["list"].each do |cmd|
     sh "#{Script.runner} #{cmd}"
@@ -51,22 +64,27 @@ end
 
 
 desc 'Output to Console (stdout, stderr)'
-task :output
+task :output do
+  Rake::Task["stderr"].invoke
+  Rake::Task["stdout"].invoke
+  Rake::Task["multiline"].invoke
+end
+
 
 desc 'Standard Ouput'
-task :stdout => :output do
+task :stdout do
   list = Dir.glob('a0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Standard Error'
-task :stderr => :output do
+task :stderr do
   list = Dir.glob('a1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Output Here-String (or Multiline String)'
-task :multiline => :output do
+task :multiline do
   list = Dir.glob('a2?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -74,28 +92,33 @@ end
 # ==============================================
 
 desc 'Variables'
-task :variables
+task :variables do
+  Rake::Task["concatenation"].invoke
+  Rake::Task["interpolation"].invoke
+  Rake::Task["formatting"].invoke
+  Rake::Task["herestring"].invoke
+end
 
 desc 'String Concatenation'
-task :concatenation => :variables do
+task :concatenation do
   list = Dir.glob('b0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'String Concatenation'
-task :interpolation => :variables do
+task :interpolation do
   list = Dir.glob('b1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'String Formatting'
-task :formmatting => :variables do
+task :formatting do
   list = Dir.glob('b2?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Here-String (Multiline String)'
-task :herestring => :variables do
+task :herestring do
   list = Dir.glob('b3?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -104,28 +127,34 @@ end
 
 
 desc 'Basic Arirthmetic'
-task :arithmetic
+task :arithmetic do
+  Rake::Task["multiplication"].invoke
+  Rake::Task["boolean"].invoke
+  Rake::Task["exponential"].invoke
+  Rake::Task["mathfunction"].invoke
+end
+
 
 desc 'Multiplication'
-task :multiplication => :arithmetic do
+task :multiplication do
   list = Dir.glob('c0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Boolean Logic'
-task :boolean => :arithmetic do
+task :boolean do
   list = Dir.glob('c1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Exponential'
-task :exponential => :arithmetic do
+task :exponential do
   list = Dir.glob('c2?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Math Function (Triganometry)'
-task :mathfunction => :arithmetic do
+task :mathfunction do
   list = Dir.glob('c3?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -133,16 +162,19 @@ end
 # ==============================================
 
 desc 'User Input'
-task :input
+task :input do
+  Rake::Task["line"].invoke
+  Rake::Task["char"].invoke
+end
 
 desc 'Line Input'
-task :line => :input do
+task :line do
   list = Dir.glob('d0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Character Input'
-task :char => :input do
+task :char do
   list = Dir.glob('d1?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -151,46 +183,54 @@ end
 
 
 desc 'Branching'
-task :branch
+task :branch do
+  Rake::Task["stringeval"].invoke
+  Rake::Task["ternary"].invoke
+  Rake::Task["numrange"].invoke
+  Rake::Task["nummatch"].invoke
+  Rake::Task["multinum"].invoke
+  Rake::Task["multipattern"].invoke
+  Rake::Task["singlepattern"].invoke
+end
 
 desc 'String Evaluation (Yes/No)'
-task :stringeval => :branch do
+task :stringeval do
   list = Dir.glob('e0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Ternary (or single-line)'
-task :ternary => :branch do
+task :ternary do
   list = Dir.glob('e1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Number Range'
-task :numrange => :branch do
+task :numrange do
   list = Dir.glob('e2?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Number Match'
-task :nummatch => :branch do
+task :nummatch do
   list = Dir.glob('e3?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Multiway with Number'
-task :multinum => :branch do
+task :multinum do
   list = Dir.glob('e4?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Multiway with String Pattern'
-task :multipattern => :branch do
+task :multipattern do
   list = Dir.glob('e5?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'String Pattern'
-task :singlepattern => :branch do
+task :singlepattern do
   list = Dir.glob('e6?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -198,34 +238,40 @@ end
 # ==============================================
 
 desc 'Looping'
-task :loop
+task :loop do
+  Rake::Task["collection"].invoke
+  Rake::Task["count"].invoke
+  Rake::Task["conditional"].invoke
+  Rake::Task["spin"].invoke
+  Rake::Task["skipping"].invoke
+end
 
 desc 'Collection Loop'
-task :collection => :loop do
+task :collection do
   list = Dir.glob('f0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Count Loop'
-task :count => :loop do
+task :count do
   list = Dir.glob('f1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Conditional Loop'
-task :conditional => :loop do
+task :conditional do
   list = Dir.glob('f2?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Spin Loop'
-task :spin => :loop do
+task :spin do
   list = Dir.glob('f3?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Skipping a Loop Iteration'
-task :skipping => :loop do
+task :skipping do
   list = Dir.glob('f4?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -233,22 +279,26 @@ end
 # ==============================================
 
 desc 'Arrays (Lists)'
-task :array
+task :array do
+  Rake::Task["indexlength"].invoke
+  Rake::Task["enumitem"].invoke
+  Rake::Task["enumindex"].invoke
+end
 
 desc 'Array Index Assignment and Length'
-task :indexlength => :array do
+task :indexlength do
   list = Dir.glob('g0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Array List Assignment and Enumeration by Item'
-task :enumitem => :array do
+task :enumitem do
   list = Dir.glob('g1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Array List Assignment and Enumeration by Item'
-task :enumindex => :array do
+task :enumindex do
   list = Dir.glob('g2?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -257,17 +307,21 @@ end
 
 
 desc 'Associative Arrays (Hash, Map, Dictionary)'
-task :associative
+task :associative do
+  Rake::Task["keyassign"].invoke
+  Rake::Task["listassign"].invoke
+end
+
 
 desc 'Association Array Assignment by Key'
-task :keyassign => :associative do
+task :keyassign do
   list = Dir.glob('h0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 
 desc 'Association Array Assignment by List and Appending'
-task :listassign => :associative do
+task :listassign do
   list = Dir.glob('h1?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -276,22 +330,27 @@ end
 
 
 desc 'Subroutines (Procedures)'
-task :subroutine
+task :subroutine do
+  Rake::Task["createcall"].invoke
+  Rake::Task["scopeglobal"].invoke
+  Rake::Task["scopelocal"].invoke
+end
+
 
 desc 'Creating and Calling'
-task :createcall => :subroutine do
+task :createcall do
   list = Dir.glob('i0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Global Variables'
-task :scopeglobal => :subroutine do
+task :scopeglobal do
   list = Dir.glob('i1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Local Variables'
-task :scopelocal => :subroutine do
+task :scopelocal do
   list = Dir.glob('i2?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -300,22 +359,26 @@ end
 
 
 desc 'Arguments from Command-Line'
-task :arguments
+task :arguments do
+  Rake::Task["usage"].invoke
+  Rake::Task["forward"].invoke
+  Rake::Task["reverse"].invoke
+end
 
 desc 'Usage Statement, Script Name, Argument Count'
-task :usage => :arguments do
+task :usage do
   list = Dir.glob('j0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Enumerate Arguments in Order'
-task :forward => :arguments do
+task :forward do
   list = Dir.glob('j1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Enumerate Arguments in Reverse Order'
-task :reverse => :arguments do
+task :reverse do
   list = Dir.glob('j2?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -324,16 +387,19 @@ end
 
 
 desc 'Parameters to Subroutines'
-task :parameters
+task :parameters do
+  Rake::Task["single"].invoke
+  Rake::Task["dynamic"].invoke
+end
 
 desc 'Passing a Single Parameter'
-task :single => :parameters do
+task :single do
   list = Dir.glob('k0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Passing Variable Number of Parameters'
-task :dynamic => :parameters do
+task :dynamic do
   list = Dir.glob('k1?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -341,12 +407,14 @@ end
 # ==============================================
 
 desc 'Exit'
-task :exit
+task :exit do
+  Rake::Task["statuscode"].invoke
+end
 
 ## NOTE THIS SHOULD HAVE A POS AND NEG TEST
 
 desc 'Reporting Status Code'
-task :statuscode => :exit do
+task :statuscode do
   list = Dir.glob('l0?.*')
   Rake::Task[:execute].invoke(list)
 end
@@ -355,22 +423,26 @@ end
 
 
 desc 'Functions and Returning Values'
-task :function
+task :function do
+  Rake::Task["rtsnumber"].invoke
+  Rake::Task["rtsstring"].invoke
+  Rake::Task["rtsarray"].invoke
+end
 
 desc 'Returning a Number'
-task :rtsnumber => :function do
+task :rtsnumber do
   list = Dir.glob('m0?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Returning a String'
-task :rtsstring => :function do
+task :rtsstring do
   list = Dir.glob('m1?.*')
   Rake::Task[:execute].invoke(list)
 end
 
 desc 'Returning an Array'
-task :rtsarray => :function do
+task :rtsarray do
   list = Dir.glob('m3?.*')
   Rake::Task[:execute].invoke(list)
 end
