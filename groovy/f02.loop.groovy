@@ -1,8 +1,8 @@
 #!/usr/bin/env groovy
- 
+
 // collection loop where each line is fed into collection
 //   line represents a string from the shell execution output
-for (line in "ls -l".execute().text.split("\n")) {    
+for (line in "ls -l dirtest".execute().text.split("\n")) {    
     // extract permissions and filename columns
     (perms,item) = line.split()[0,-1]
 

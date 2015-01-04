@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 // iterate through each item in current directory
 //   line represents a string from the shell execution output
-"ls -l".execute().text.eachLine { line -> 
+"ls -l dirtest".execute().text.eachLine { line -> 
     // extract permissions and filename columns
     (perms,item) = line.split()[0,-1]
 
