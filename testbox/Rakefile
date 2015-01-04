@@ -1,12 +1,11 @@
-desc 'say hello'
-task :hello do
-  puts 'hello'
-end
 
-task :world => :hello do
-  puts ', world'
+task :default do
+  puts RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
+  filetype = Dir.glob('e0?.branch.*')[0].split('.')[-1]
+  #scan(/\.\w+$/).lstrip()
+  puts filetype
+  #puts RUBY_VERSION
 end
-
 
 # =============================================
 # Each of these tasks will have to evaluate the available excutable files
@@ -15,6 +14,36 @@ end
 # If multiple files in one category, run them all, report collective result.
 # If no files in one category, report that this feature is not supported.
 # =============================================
+
+class Env
+  @@command = { :awk    => "awk",
+                :gawk   => "gawk",
+                :groovy => "groovy",
+                :pl     => "perl",
+                :php    => "php",
+                :py     => "python",
+                :rb     => "ruby",
+                :tcl    => "tclsh",
+                :bash   => "bash",
+                :csh    => "tcsh",
+                :ksh    => "ksh",
+                :sh     => "sh",
+                :js     => "cscript //Nologo",
+                :vbs    => "cscript //Nologo",
+                :ps1    => "powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File",
+                :cmd    => "cmd /c",
+                :bat    => "cmd /c"
+              }
+
+  @@ostype   = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
+
+  def self.runner
+    @@command[Dir.glob('a00.*')[0].split('.')[-1].to_sym]
+  end
+
+  attr_accessor :ostype, :shell, :lang
+end
+
 
 desc 'Output to Console (stdout, stderr)'
 task :output
@@ -108,7 +137,11 @@ task :branch
 
 desc 'String Evaluation (Yes/No)'
 task :stringeval => :branch do
-  puts 'e00.branch'
+  listing = Dir.glob('e0?.branch.*')
+
+  listing.each do |cmd|
+    sh "#{Env.runner} #{cmd}"
+  end
 end
 
 desc 'Ternary (or single-line)'

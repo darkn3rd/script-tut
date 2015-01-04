@@ -22,6 +22,8 @@ The idea is that each tasks encapsulates testing for each group, independently f
 
 Considering doing some scaffolding in detection of whether the scripting platform in question and execution there-of is supported, also, maybe reporting the test environment (operating system, version, 32bit or 64 bit, distro, language platform)
 
+Need to find a way to have some format (JSON, YAML, XML) store inputs/outputs for comparison.  At this moment, just doing output.
+
 
 ## The Plan
 
@@ -39,13 +41,27 @@ These are the requirements that I have come up with:
 * Test Runner will then execute each script using the script function and its tests.
 * Test Runner will generate a report of its findings.
 
-## Test Runner
+## Test Runner: Rake
+
+*[Rake](https://github.com/ruby/rake) is a software task management and build automation tool. It allows you to specify tasks and describe dependencies as well as to group tasks in a namespace.* - [Wikipedia](http://en.wikipedia.org/wiki/Rake_%28software%29)  It was originated by [Jim Weirich](http://en.wikipedia.org/wiki/Jim_Weirich).
+
+
+* Articles
+  * [Using the Rake Build Language](http://martinfowler.com/articles/rake.html)
+  * [Rake Tutorial](http://lukaszwrobel.pl/blog/rake-tutorial)
+* Videos
+  * [Basic Rake by Jim Weirich](https://www.youtube.com/watch?v=AFPWDzHWjEY)
+* Source
+  * [Rake Source](https://github.com/ruby/rake)
+
+
+## Open Source Task Tools
 
 For a test runner, I could use a task-build tool.  There are numerous ones to choose from:
 
-  * [Cake](http://coffeescript.org/documentation/docs/cake.html) - CoffeeScript based
-  * [Gradle](http://www.gradle.org/) - Groovy based
-  * [Grunt](http://gruntjs.com/) - Node based
-  * [Psake](https://github.com/psake/psake) - PowerShell based
-  * [Rake](https://github.com/ruby/rake) - Ruby based
-  * [SCons](http://scons.org/) - Python based
+* [Cake](http://coffeescript.org/documentation/docs/cake.html) - CoffeeScript based
+* [Gradle](http://www.gradle.org/) - Groovy based
+* [Grunt](http://gruntjs.com/) - Node based
+* [Psake](https://github.com/psake/psake) - PowerShell based
+* [Rake](https://github.com/ruby/rake) - Ruby based
+* [SCons](http://scons.org/) - Python based
