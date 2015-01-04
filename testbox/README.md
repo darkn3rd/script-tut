@@ -66,12 +66,13 @@ I decided to use a JSON using this format:
 
 The inputs can be (1) no input, (2) standard input or (3) command line arguments.  The output is in either (1) standard output or (2) standard error.
 
-```JavaScript
+```JSON
 {
   plan01: [{"out": "Script says blah"}],
   plan01: [{"arg": "", "err": "Usage: blah"},
            {"arg": "3 4", "Some output here"],
-  plan03: [{"in": "Name", "out": "Hello Name."}],
+  plan03: [{"in": "Name\n", "out": "Hello Name."}],
+  plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
 }
 
 
