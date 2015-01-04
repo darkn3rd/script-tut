@@ -16,8 +16,7 @@ end
 # =============================================
 
 class Script
-  @@command = { :awk    => "awk",
-                :gawk   => "gawk",
+  @@command = { :awk    => "gawk",
                 :groovy => "groovy",
                 :pl     => "perl",
                 :php    => "php",
