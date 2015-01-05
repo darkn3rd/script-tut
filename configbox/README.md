@@ -26,8 +26,9 @@ class Environment
 end
 
 class Component
-    def initialize(source = "package") 
-        # ...
+    def initialize(source = "package")
+       self.source = source  # default: "package"
+       self.method = method  # default: "package"
     end
 
     attr_accessor :source
