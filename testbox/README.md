@@ -6,6 +6,10 @@
 
 The idea for this area is to develop testing that can verify functionality of scripts on a given platform and environment. I can quickly expose any issues, and explore workarounds.
 
+## Status
+
+Implemented basic support for running tests in scripting and shell scripting areas (windows later).  Currently, it just executes a script.  Plan of Attack is to add basic environment detection and reporting, then test verification. (January 5th, 2014).
+
 ## The Product Plan
 
 ### Scope
