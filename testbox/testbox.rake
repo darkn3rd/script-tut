@@ -60,7 +60,7 @@ end
 desc 'Executes A List of Scripts'
 task :execute, [:list] do |t, args|
   args["list"].each do |cmd|
-    sh "#{Script.runner} #{cmd} >> output.txt"
+    sh "#{Script.runner} #{cmd}"
   end
 end
 
@@ -120,24 +120,28 @@ desc 'String Concatenation'
 task :concatenation do
   list = Dir.glob('b0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'String Concatenation'
 task :interpolation do
   list = Dir.glob('b1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'String Formatting'
 task :formatting do
   list = Dir.glob('b2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Here-String (Multiline String)'
 task :herestring do
   list = Dir.glob('b3?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -156,24 +160,28 @@ desc 'Multiplication'
 task :multiplication do
   list = Dir.glob('c0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Boolean Logic'
 task :boolean do
   list = Dir.glob('c1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Exponential'
 task :exponential do
   list = Dir.glob('c2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Math Function (Triganometry)'
 task :mathfunction do
   list = Dir.glob('c3?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -188,12 +196,14 @@ desc 'Line Input'
 task :line do
   list = Dir.glob('d0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Character Input'
 task :char do
   list = Dir.glob('d1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -214,42 +224,49 @@ desc 'String Evaluation (Yes/No)'
 task :stringeval do
   list = Dir.glob('e0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Ternary (or single-line)'
 task :ternary do
   list = Dir.glob('e1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Number Range'
 task :numrange do
   list = Dir.glob('e2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Number Match'
 task :nummatch do
   list = Dir.glob('e3?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Multiway with Number'
 task :multinum do
   list = Dir.glob('e4?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Multiway with String Pattern'
 task :multipattern do
   list = Dir.glob('e5?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'String Pattern'
 task :singlepattern do
   list = Dir.glob('e6?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -267,30 +284,35 @@ desc 'Collection Loop'
 task :collection do
   list = Dir.glob('f0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Count Loop'
 task :count do
   list = Dir.glob('f1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Conditional Loop'
 task :conditional do
   list = Dir.glob('f2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Spin Loop'
 task :spin do
   list = Dir.glob('f3?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Skipping a Loop Iteration'
 task :skipping do
   list = Dir.glob('f4?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -306,18 +328,21 @@ desc 'Array Index Assignment and Length'
 task :indexlength do
   list = Dir.glob('g0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Array List Assignment and Enumeration by Item'
 task :enumitem do
   list = Dir.glob('g1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Array List Assignment and Enumeration by Item'
 task :enumindex do
   list = Dir.glob('g2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -334,6 +359,7 @@ desc 'Association Array Assignment by Key'
 task :keyassign do
   list = Dir.glob('h0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 
@@ -341,6 +367,7 @@ desc 'Association Array Assignment by List and Appending'
 task :listassign do
   list = Dir.glob('h1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -358,18 +385,21 @@ desc 'Creating and Calling'
 task :createcall do
   list = Dir.glob('i0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Global Variables'
 task :scopeglobal do
   list = Dir.glob('i1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Local Variables'
 task :scopelocal do
   list = Dir.glob('i2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -386,18 +416,21 @@ desc 'Usage Statement, Script Name, Argument Count'
 task :usage do
   list = Dir.glob('j0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Enumerate Arguments in Order'
 task :forward do
   list = Dir.glob('j1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Enumerate Arguments in Reverse Order'
 task :reverse do
   list = Dir.glob('j2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -413,12 +446,14 @@ desc 'Passing a Single Parameter'
 task :single do
   list = Dir.glob('k0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Passing Variable Number of Parameters'
 task :dynamic do
   list = Dir.glob('k1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -434,6 +469,7 @@ desc 'Reporting Status Code'
 task :statuscode do
   list = Dir.glob('l0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
@@ -450,18 +486,21 @@ desc 'Returning a Number'
 task :rtsnumber do
   list = Dir.glob('m0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Returning a String'
 task :rtsstring do
   list = Dir.glob('m1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Returning an Array'
 task :rtsarray do
   list = Dir.glob('m3?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
