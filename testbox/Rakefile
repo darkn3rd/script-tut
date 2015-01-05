@@ -16,6 +16,8 @@ task :default do
   #Rake::Task["parameters"].invoke
   #Rake::Task["exit"].invoke
   #Rake::Task["function"].invoke
+
+
 end
 
 # =============================================
@@ -58,7 +60,7 @@ end
 desc 'Executes A List of Scripts'
 task :execute, [:list] do |t, args|
   args["list"].each do |cmd|
-    sh "#{Script.runner} #{cmd}"
+    sh "#{Script.runner} #{cmd} >> output.txt"
   end
 end
 
@@ -75,10 +77,10 @@ end
 
 
 desc 'Output to Console (stdout, stderr)'
-task :output do => :stdout, :stderr, :multiline
-  #Rake::Task["stderr"].invoke
-  #Rake::Task["stdout"].invoke
-  #Rake::Task["multiline"].invoke
+task :output do
+  Rake::Task["stderr"].invoke
+  Rake::Task["stdout"].invoke
+  Rake::Task["multiline"].invoke
 end
 
 
@@ -86,18 +88,22 @@ desc 'Standard Ouput'
 task :stdout do
   list = Dir.glob('a0?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
+
 end
 
 desc 'Standard Error'
 task :stderr do
   list = Dir.glob('a1?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 desc 'Output Here-String (or Multiline String)'
 task :multiline do
   list = Dir.glob('a2?.*')
   Rake::Task[:execute].invoke(list)
+  Rake::Task[:execute].reenable
 end
 
 # ==============================================
