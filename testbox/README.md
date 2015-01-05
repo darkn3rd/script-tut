@@ -4,79 +4,89 @@
 
 ## Overview
 
-The idea for this area is to develop a script that can verify functionality of scripts on a given platform and environment. I can quickly expose any issues, and explore workarounds.
+The idea for this area is to develop testing that can verify functionality of scripts on a given platform and environment. I can quickly expose any issues, and explore workarounds.
 
-## Status
+## The Product Plan
 
-I developed a basic `Rakefile` that lists all the test areas to cover of any given area.  
+### Scope
 
-The idea is that each tasks encapsulates testing for each group, independently from each other.  Each task will need to do the following:
+Develop a system that will verify the functionality of each script, and report the findings.
 
-* Generate a list of files to be executed for its area
-  * No files exist, return that feature is not supported
-  * Multiple files exist, run all tests, report summary.
-  * One file exist, run that test, report findings.
-* Understand how to run the test (so some environment detection)
-  * Unix/Linux shell - just execute script
-  * PowerShell or DOS - make use of provided run script (or use one of its own)
+### Organization of Script Tutorial
 
-Considering doing some scaffolding in detection of whether the scripting platform in question and execution there-of is supported, also, maybe reporting the test environment (operating system, version, 32bit or 64 bit, distro, language platform)
+Each set of scripts are organized in a main topic category of **A** to **M**, which is further organized in sub-category, of **0** to **9**.
 
-Need to find a way to have some format (JSON, YAML, XML) store inputs/outputs for comparison.  At this moment, just doing output.
+This category will be followed **0** to **9** methods to do the particular category.  If the first script, **0** is missing, then the following scripts are alternative methods (workarounds) for implementing the absent feature.
 
+*Example*:
 
-## The Plan
+* A00 - A0 category, 1st script
+* A10 - A1 category, 1st script
+* B00 - B0 category, 1st script
+* B01 - B0 category, 2nd script (alternative method)
+* B02 - B0 category, 3rd script (alternative method)
+* C01 - C0 category, 1st alt method for absent feature
+* C02 - C0 category, 2nd alt method for absent feature
 
-This was the original plan brainstormed on December, 2014.
+### Requirements
 
-These are the requirements that I have come up with:
+The testing system will have a test harness or test runner that will run test cases.
 
-1. Create script functions for each scripting area: A00 to M20
-* Each script function will run 1 or more tests, some negative, some positive.
-* Each script function will know the following:
-  * name of the script(s) to run
-  * designated input for each test
-  * expected standard output and standard error.
-* Test Runner generates list of scripts to be executed and the matching script function that should run.
-* Test Runner will then execute each script using the script function and its tests.
-* Test Runner will generate a report of its findings.
+* **Test Runner**
+  * dynamically general list of scripts
+  * execute variable number of scripts per category
+  * generate resulting report of pass/fail
+* **Test Cases**
+  * test cases will organized by main category **A** to **M**.
+  * test cases will run 1+ tests (negative, positive)
+  * dynamically load input and output
+    * input - arguments or standard input
+    * output - standard error or standard output
+      * exit code (optinal)
 
-## Test Runner: Rake
+### Implementation
+
+After some research, the easiest path for such a system was to use a task oriented build tool, with rake being the first choice.
+
+The rake file, currently called `testbox.rake` will use the rake tool as the test runner with embedded tasks in the rakefile that will contain the test cases.
+
+This system will perform the following features:
+
+ * Environment detection for reporting and executing scripts
+ * Dynamic generation of scripts to be tested
+ * Dynamic configuration of expected inputs and results (`expecteed.json`)
+
+#### Test Data
+
+The test data contains the following format:
+
+```JavaScript
+{
+  plan01: [{"out": "Script says blah"}],
+  plan01: [{"arg": "", "err": "Usage: blah"},
+  {"arg": "3 4", "Some output here"],
+  plan03: [{"in": "Name\n", "out": "Hello Name."}],
+  plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
+}
+```
+
+## Research
+
+### Ruby Rake Tool
 
 *[Rake](https://github.com/ruby/rake) is a software task management and build automation tool. It allows you to specify tasks and describe dependencies as well as to group tasks in a namespace.* - [Wikipedia](http://en.wikipedia.org/wiki/Rake_%28software%29)  It was originated by [Jim Weirich](http://en.wikipedia.org/wiki/Jim_Weirich).
 
 
 * Articles
-  * [Using the Rake Build Language](http://martinfowler.com/articles/rake.html)
-  * [Rake Tutorial](http://lukaszwrobel.pl/blog/rake-tutorial)
+* [Using the Rake Build Language](http://martinfowler.com/articles/rake.html)
+* [Rake Tutorial](http://lukaszwrobel.pl/blog/rake-tutorial)
 * Videos
-  * [Basic Rake by Jim Weirich](https://www.youtube.com/watch?v=AFPWDzHWjEY)
+* [Basic Rake by Jim Weirich](https://www.youtube.com/watch?v=AFPWDzHWjEY)
 * Source
-  * [Rake Source](https://github.com/ruby/rake)
-
-## Test Data
-
-I decided to use a JSON using this format:
-
-```JavaScript
-{
-  plan: [test1, test2, test3]
-}
-```
-
-The inputs can be (1) no input, (2) standard input or (3) command line arguments.  The output is in either (1) standard output or (2) standard error.
-
-```JSON
-{
-  plan01: [{"out": "Script says blah"}],
-  plan01: [{"arg": "", "err": "Usage: blah"},
-           {"arg": "3 4", "Some output here"],
-  plan03: [{"in": "Name\n", "out": "Hello Name."}],
-  plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
-}
+* [Rake Source](https://github.com/ruby/rake)
 
 
-## Open Source Task Tools
+### Test Build Tools
 
 For a test runner, I could use a task-build tool.  There are numerous ones to choose from:
 
