@@ -1,6 +1,8 @@
 
 task :default do
-
+  puts "Environment:     #{Script.ostype}"
+  puts "Target Language: #{Script.version}"
+  puts "==============================================================="
   # Comenting Out Interactive Scripts for now
 
   Rake::Task["output"].invoke
@@ -15,7 +17,7 @@ task :default do
   #Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
   #Rake::Task["exit"].invoke
-  #Rake::Task["function"].invoke
+  Rake::Task["function"].invoke
 
 
 end
@@ -30,7 +32,7 @@ end
 
 class Script
   @@command = {
-    :awk    => "gawk",
+    :awk    => "gawk -f",
     :groovy => "groovy",
     :pl     => "perl",
     :php    => "php",
@@ -48,10 +50,34 @@ class Script
     :bat    => "cmd /c"
   }
 
+  @@versions = {
+    :awk    => "gawk --version | head -1",
+    :groovy => "groovy --version",
+    :pl     => "perl --version | grep -oE 'perl.*\)'",
+    :php    => "php --version | head -1",
+    :py     => "python --version",
+    :rb     => "ruby --version",
+    :bash   => "bash --version | head -1",
+    :csh    => "csh --version",
+    :ksh    => "ksh --version",
+    :js     => "cscript | findstr Windows",
+    :vbs    => "cscript | findstr Windows",
+    :ps1    => "powershell -command '[string]$PSVersionTable.PSVersion.Major + \".\" + [string]$PSVersionTable.PSVersion.Minor'",
+    :cmd    => "echo exit | cmd | findstr Windows",
+  }
+
   @@ostype   = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
 
   def self.runner
     @@command[Dir.glob('a00.*')[0].split('.')[-1].to_sym]
+  end
+
+  def self.version
+    `#{@@versions[Dir.glob('a00.*')[0].split('.')[-1].to_sym]}`
+  end
+
+  def self.ostype
+    @@ostype[0].capitalize
   end
 
   attr_accessor :ostype, :shell, :lang
