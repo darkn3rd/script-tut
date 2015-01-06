@@ -1,0 +1,3 @@
+class component::csh {
+
+}
