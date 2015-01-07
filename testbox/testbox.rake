@@ -42,6 +42,7 @@ class Script
     :tcl    => "tclsh",
     :bash   => "bash",
     :csh    => "tcsh",
+    :sh     => "sh",
     :ksh    => "ksh",
     :sh     => "sh",
     :js     => "cscript //Nologo",
