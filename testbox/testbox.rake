@@ -1,7 +1,7 @@
 
 task :default do
   puts "Environment:      #{Script.ostype}"
-  puts "Language Target:  #{`command -v #{Script.language}`}"
+  puts "Language Target:  #{`command -v #{Script.path}`}"
   puts "Language Version: #{Script.version}"
   puts "==============================================================="
   # Comenting Out Interactive Scripts for now
@@ -54,11 +54,13 @@ class Script
   @@versions = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => "perl --version | grep -oE 'perl.*\)'",
+    :pl     => 'echo Perl $(perl --version | grep -oE \'v\d\.\d{1,2}\.\d\')',
     :php    => "php --version | head -1",
     :py     => "python --version",
     :rb     => "ruby --version",
+    :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
+    :sh     => 'echo Shell (sh) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
     :ksh    => "ksh --version",
     :js     => "cscript | findstr Windows",
@@ -79,8 +81,8 @@ class Script
     `#{@@versions[@@language.to_sym]}`
   end
 
-  def self.language
-    @@language
+  def self.path
+    `command -v #{self.runner}`
   end
 
   def self.ostype
