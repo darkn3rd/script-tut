@@ -1,23 +1,24 @@
 
 task :default do
-  puts "Environment:     #{Script.ostype}"
-  puts "Target Language: #{Script.version}"
+  puts "Environment:      #{Script.ostype}"
+  puts "Language Target:  #{`command -v #{Script.language}`}"
+  puts "Language Version: #{Script.version}"
   puts "==============================================================="
   # Comenting Out Interactive Scripts for now
 
-  Rake::Task["output"].invoke
-  Rake::Task["variables"].invoke
-  Rake::Task["arithmetic"].invoke
+  #Rake::Task["output"].invoke
+  #Rake::Task["variables"].invoke
+  #Rake::Task["arithmetic"].invoke
   #Rake::Task["input"].invoke
   #Rake::Task["branch"].invoke
   #Rake::Task["loop"].invoke
-  Rake::Task["array"].invoke
-  Rake::Task["associative"].invoke
-  Rake::Task["subroutine"].invoke
+  #Rake::Task["array"].invoke
+  #Rake::Task["associative"].invoke
+  #Rake::Task["subroutine"].invoke
   #Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
   #Rake::Task["exit"].invoke
-  Rake::Task["function"].invoke
+  #Rake::Task["function"].invoke
 
 
 end
@@ -67,13 +68,19 @@ class Script
   }
 
   @@ostype   = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
+  @@language = Dir.glob('a00.*')[0].split('.')[-1]
+
 
   def self.runner
-    @@command[Dir.glob('a00.*')[0].split('.')[-1].to_sym]
+    @@command[@@language.to_sym]
   end
 
   def self.version
-    `#{@@versions[Dir.glob('a00.*')[0].split('.')[-1].to_sym]}`
+    `#{@@versions[@@language.to_sym]}`
+  end
+
+  def self.language
+    @@language
   end
 
   def self.ostype
