@@ -22,7 +22,7 @@ end
 # **************************************
 def usage_message ()
   # output usage statement to standard error
-  $stderr.puts "\nYou need to enter one or more numbers: \n\n"
+  $stderr.puts "\nYou need to enter one or more numbers:\n\n"
   $stderr.puts "   Usage: #{@script_name} [num1] [num2] [num3]...\n\n"
 
   # exit program with appropriate error code
@@ -30,7 +30,7 @@ def usage_message ()
 end
 
 # **************************************
-#             main section 
+#             main section
 # **************************************
 if arg_count < 1 then
    usage_message
