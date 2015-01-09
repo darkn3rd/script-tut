@@ -13,11 +13,11 @@
   "f0": [{ "out": "1 is a not a directory\n2 is a not a directory\n3 is a not a directory\n4 is a directory\n5 is a not a directory\n6 is a not a directory\n7 is a directory"}],
   "f1": [{ "out": "Count is 10\nCount is 9\nCount is 8\nCount is 7\nCount is 6\nCount is 5\nCount is 4\nCount is 3\nCount is 2\nCount is 1"}],
   "f2": [{ "in" : "", "out": "Enter your name (quit to Exit): \nHello Name!\nEnter your name (quit to Exit):"}],
-  "j0": [{ "arg": "Name\nquit\n", "err": "\nYou need to enter two numbers:\n\n   Usage: j00.arguments.groovy [num1] [num2]\n\n" },
-         { "arg": "3",   "err": "\nYou need to enter two numbers:\n\n   Usage: j00.arguments.groovy [num1] [num2]\n\n" },
-         { "arg": "3 4", "out": "The sum of 3 and 4 is: 7."}],
-  "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arugments passed are:\n item 1: un\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce"}],
-  "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arugments passed are:\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: un"
+  "j0": [{ "arg": "", "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
+         { "arg": "3",   "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
+         { "arg": "3 4", "out": "The sum of 3 and 4 is: 7.\n"}],
+  "j1": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are:\n item 1: uno\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce\n"}],
+  "j2": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are (reverse order):\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: uno\n"
         }],
   "l0": [{"arg": "",      "err": "\nYou need to enter one or more numbers:\n\n   Usage: $cmd$ [num1] [num2] [num3]...\n\n"},
          {"arg": "4",     "out": "The summation is: 4\n"},

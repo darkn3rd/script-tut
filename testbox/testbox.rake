@@ -15,9 +15,9 @@ task :default do
   #Rake::Task["array"].invoke
   #Rake::Task["associative"].invoke
   #Rake::Task["subroutine"].invoke
-  #Rake::Task["arguments"].invoke
+  Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
-  Rake::Task["exit"].invoke
+  #Rake::Task["exit"].invoke
   #Rake::Task["function"].invoke
 
 end
@@ -150,7 +150,7 @@ class Script
         list.each do |cmd|
           # Execute Every Test per Implementation (1+ test per feature)
           taskdata.each do |test|
-            test_result, redirect, expected, args = false, "", "", ""
+            test_result, redirect, expected, args, redirect = false, "", "", "", ""
             if test.has_key?("err")
               redirect = "2>&1"
               expected = test['err']
@@ -183,7 +183,7 @@ class Script
             final_result &= test_result
 
 
-            #puts "DEBUG: #{results}"
+            puts "DEBUG: #{results}"
 
           end # taskdata
         end # list.each
@@ -685,34 +685,24 @@ end
 desc 'Usage Statement, Script Name, Argument Count'
 task :j0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  puts "DEBUG #{t.to_s} #{list}"
+
+  result = Script.execute(t.to_s, list)
+  puts result
 end
 
 desc 'Enumerate Arguments in Order'
 task :j1 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  puts result
 end
 
 desc 'Enumerate Arguments in Reverse Order'
 task :j2 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  puts result
 end
 
 # ==============================================
