@@ -19,8 +19,8 @@
   "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arugments passed are:\n item 1: un\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce"}],
   "j1": [{ "arg": "un dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arugments passed are:\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: un"
         }],
-  "l0": [{"arg": "",      "err": "\nYou need to enter two numbers:\n\n   Usage: l00.exit.groovy [num1] [num2]\n\n"},
-         {"arg": "4",     "out": "The summation is: 4"},
-         {"arg": "4 5 6", "out": "The summation is: 15"}
+  "l0": [{"arg": "",      "err": "\nYou need to enter one or more numbers:\n\n   Usage: $cmd$ [num1] [num2] [num3]...\n\n"},
+         {"arg": "4",     "out": "The summation is: 4\n"},
+         {"arg": "4 5 6", "out": "The summation is: 15\n"}
         ]
 }

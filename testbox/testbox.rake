@@ -161,18 +161,27 @@ class Script
             if test.has_key?("arg")
               args = test['arg']
             end
-            puts "EXPECT: |#{expected}|"
+
+            expected.gsub! /(\$cmd\$)/, "#{cmd}"
+
             command = "#{Script.runner} #{cmd} #{args} #{redirect}"
             puts "RUNNING #{command}"
-            output = `#{command}`.chomp
+            output = `#{command}`
             #output = `#{Script.runner} #{cmd} #{redirect}`
+            puts "EXPECT: |#{expected}|"
+            puts "OUTPUT: |#{output}|"
+
             test_result = expected == output
 
             (results[cmd.split(".")[0]] ||=[]) << {
               "command"  => command,
               "output"   => output,
-              "expected" => expected
+              "expected" => expected,
+              "passfail" => test_result  ? 'PASS' : 'FAIL'
             }
+
+            final_result &= test_result
+
 
             #puts "DEBUG: #{results}"
 
