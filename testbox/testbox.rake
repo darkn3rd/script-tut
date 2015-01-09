@@ -6,7 +6,7 @@ task :default do
   puts "==============================================================="
   # Comenting Out Interactive Scripts for now
 
-  Rake::Task["output"].invoke
+  #Rake::Task["output"].invoke
   #Rake::Task["variables"].invoke
   #Rake::Task["arithmetic"].invoke
   #Rake::Task["input"].invoke
@@ -17,7 +17,7 @@ task :default do
   #Rake::Task["subroutine"].invoke
   #Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
-  #Rake::Task["exit"].invoke
+  Rake::Task["exit"].invoke
   #Rake::Task["function"].invoke
 
 end
@@ -137,32 +137,45 @@ class Script
     @@ostype[0].capitalize
   end
 
+  def self.report
+    # Article for colorizaton
+    # http://kpumuk.info/ruby-on-rails/colorizing-console-ruby-script-output/
+  end
+
   def self.execute(task, list)
-    final_result, message, outputs, expecteds = true, "", {}, {}
+    final_result, message, results = true, "", {}
     if list.any?
       if taskdata = @@dataset[task]
         # Execute Every Implementation per Feature (0+ implementations)
         list.each do |cmd|
           # Execute Every Test per Implementation (1+ test per feature)
           taskdata.each do |test|
-            test_result, redirect, expected = false, "", ""
+            test_result, redirect, expected, args = false, "", "", ""
             if test.has_key?("err")
               redirect = "2>&1"
               expected = test['err']
             else
               expected = test['out']
             end
-            #puts "EXPECT: |#{expected}|"
-            #puts "RUNNING #{Script.runner} #{cmd} #{redirect}"
-            output = `#{Script.runner} #{cmd} #{redirect}`.chomp
+
+            if test.has_key?("arg")
+              args = test['arg']
+            end
+            puts "EXPECT: |#{expected}|"
+            command = "#{Script.runner} #{cmd} #{args} #{redirect}"
+            puts "RUNNING #{command}"
+            output = `#{command}`.chomp
             #output = `#{Script.runner} #{cmd} #{redirect}`
             test_result = expected == output
 
-            outputs[cmd.split(".")[0]] = output     # record actual result
-            expecteds[cmd.split(".")[0]] = expected # record expected result
-            #puts "OUTPUT: |#{output}|"
-            #puts "RESULT: #{test_result}"
-            #final_result &= test_result
+            (results[cmd.split(".")[0]] ||=[]) << {
+              "command" => command,
+              "output" => output,
+              "expected" => expected
+            }
+
+            #puts "DEBUG: #{results}"
+
           end # taskdata
         end # list.each
       else
@@ -181,8 +194,7 @@ class Script
       "language" => Script.language_name,
       "passfail" => final_result  ? 'PASS' : 'FAIL',
       "notes"    => notes,
-      "output"   => outputs,
-      "expected" => expecteds
+      "results" => results
     }
   end
 
@@ -737,12 +749,8 @@ end
 desc 'Reporting Status Code'
 task :l0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  puts result
 end
 
 # ==============================================
@@ -769,12 +777,8 @@ end
 desc 'Returning a String'
 task :m1 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  puts result
 end
 
 desc 'Returning an Array'
