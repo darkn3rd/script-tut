@@ -169,8 +169,8 @@ class Script
             test_result = expected == output
 
             (results[cmd.split(".")[0]] ||=[]) << {
-              "command" => command,
-              "output" => output,
+              "command"  => command,
+              "output"   => output,
               "expected" => expected
             }
 
