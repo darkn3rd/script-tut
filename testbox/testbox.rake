@@ -32,10 +32,10 @@ end
 # Each Test will have
 #  - Input
 #    - argument
-#    - 1+ lintes of input
+#    - 1+ lines of input
 #  - Output
 #    - standard output
-#    - standard input
+#    - standard error
 # =============================================
 
 # =============================================
@@ -138,7 +138,7 @@ class Script
   end
 
   def self.execute(task, list)
-    final_result, message = true, ""
+    final_result, message, outputs, expecteds = true, "", {}, {}
     if list.any?
       if taskdata = @@dataset[task]
         # Execute Every Implementation per Feature (0+ implementations)
@@ -156,8 +156,10 @@ class Script
             #puts "RUNNING #{Script.runner} #{cmd} #{redirect}"
             output = `#{Script.runner} #{cmd} #{redirect}`.chomp
             #output = `#{Script.runner} #{cmd} #{redirect}`
-
             test_result = expected == output
+
+            outputs[cmd.split(".")[0]] = output     # record actual result
+            expecteds[cmd.split(".")[0]] = expected # record expected result
             #puts "OUTPUT: |#{output}|"
             #puts "RESULT: #{test_result}"
             #final_result &= test_result
@@ -169,11 +171,19 @@ class Script
       end #taskdata = @@dataset[task]
     else
       final_result = false
-      message = "This feature #{task.to_s} is not supported by #{Script.language_name}."
+      notes = "Feature not implemented or not supported."
     end # list.any?
+    #puts "Array output: #{outputs}"
+
     #puts "FINAL RESULT: #{final_result}\n"
-    message = final_result  ? 'PASS' : 'FAIL'
-    final_result
+
+    { "category" => task.to_s,
+      "language" => Script.language_name,
+      "passfail" => final_result  ? 'PASS' : 'FAIL',
+      "notes"    => notes,
+      "output"   => outputs,
+      "expected" => expecteds
+    }
   end
 
 end
@@ -202,34 +212,27 @@ end
 desc 'Standard Ouput'
 task :a0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FAIL'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  #puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FAIL'}"
+  puts result
+
 end
 
 desc 'Standard Error'
 task :a1 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  #puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
+  puts result
+
 end
 
 desc 'Output Here-String (or Multiline String)'
 task :a2 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+
+  puts result
 end
 
 # ==============================================
