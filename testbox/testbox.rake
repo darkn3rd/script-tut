@@ -1,6 +1,6 @@
 
 task :default do
-  puts "Environment:      #{Script.ostype}"
+  puts "Environment:      #{Script.ostype} (#{Script.cputype})"
   puts "Language Target:  #{`command -v #{Script.path}`}"
   puts "Language Version: #{Script.version}"
   puts "==============================================================="
@@ -45,6 +45,21 @@ end
 # If multiple files in one category, run them all, report collective result.
 # If no files in one category, report that this feature is not supported.
 # =============================================
+
+# =============================================
+# Notes on RUBY_PLATFORM
+#  i386-mingw32
+#  x86_64-darwin12.3.0
+#  i386-cygwin
+#  x86_64-linux
+# Notes on Windows
+#  Cygwin: C:\cygwin\bin = /usr/bin
+#  MSYS-Git: C:\Program Files\Git\bin = /usr/bin
+#  UWIN: C:\Program Files\UWIN\usr\bin = /usr/bin (doesn't map)
+# Notes on Mac
+#  OS X Version - sw_vers | grep "ProductVersion" | cut -d$'\t' -f2
+# =============================================
+
 
 class Script
   @@command = {
@@ -101,9 +116,10 @@ class Script
     :cmd    => "Batch"
   }
 
-  @@ostype   = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
-  @@language = Dir.glob('a00.*')[0].split('.')[-1]
-  @@jsonfile = "../../testbox/expected.json"
+  @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
+  @@cputype   = RUBY_PLATFORM.split('-')[0]
+  @@language  = Dir.glob('a00.*')[0].split('.')[-1]
+  @@jsonfile  = "../../testbox/expected.json"
 
   require 'json'
   if File.exists?(@@jsonfile)
