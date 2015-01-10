@@ -1,13 +1,13 @@
 
 task :default do
   puts "Environment:      #{Script.ostype} (#{Script.cputype})"
-  puts "Language Target:  #{`command -v #{Script.path}`}"
+  puts "Language Target:  #{Script.language_name} (#{`command -v #{Script.path}`.chomp})"
   puts "Language Version: #{Script.version}"
   puts "==============================================================="
   # Comenting Out Interactive Scripts for now
 
-  #Rake::Task["output"].invoke
-  #Rake::Task["variables"].invoke
+  Rake::Task["output"].invoke
+  Rake::Task["variables"].invoke
   #Rake::Task["arithmetic"].invoke
   #Rake::Task["input"].invoke
   #Rake::Task["branch"].invoke
@@ -15,9 +15,9 @@ task :default do
   #Rake::Task["array"].invoke
   #Rake::Task["associative"].invoke
   #Rake::Task["subroutine"].invoke
-  Rake::Task["arguments"].invoke
+  #Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
-  #Rake::Task["exit"].invoke
+  Rake::Task["exit"].invoke
   #Rake::Task["function"].invoke
 
 end
@@ -86,7 +86,7 @@ class Script
     :pl     => 'echo Perl $(perl --version | grep -oE \'v\d\.\d{1,2}\.\d\')',
     :php    => 'php --version | head -1',
     :py     => "python --version",
-    :rb     => "ruby --version",
+    :rb     => 'ruby --version | awk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell (sh) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
@@ -153,9 +153,34 @@ class Script
     @@ostype[0].capitalize
   end
 
-  def self.report
-    # Article for colorizaton
-    # http://kpumuk.info/ruby-on-rails/colorizing-console-ruby-script-output/
+  def self.cputype
+    @@cputype
+  end
+
+  def self.report(results)
+    colorize = ->(text, color_code) { "#{color_code}#{text}\033[0m" }
+    red      = ->(text) { colorize[text, "\033[31m"] }
+    green    = ->(text) { colorize[text, "\033[32m"] }
+    passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
+
+    puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
+
+    #puts "DEBUG: #{results["results"]}"
+
+    if ! results["final_result"]
+      if results["results"].empty?
+        puts "  - There are no implementations for this category."
+      else
+        results["results"].each do |category|
+          category_result = category[1][0]
+          puts "  - #{category[0].capitalize}: [#{passfail[category_result["test_result"]]}]"
+          if ! category_result["test_result"]
+            puts "      Expected Output: #{green[category_result["expected"].gsub(/\n/, "\\n")]}"
+            puts "      Actual Output:   #{red[category_result["output"].gsub(/\n/, "\\n")]}"
+          end # category pass condition
+        end # enumerate HoA structure
+      end # empty hash test
+    end # overall pass condition
   end
 
   def self.execute(task, list)
@@ -181,11 +206,11 @@ class Script
             expected.gsub! /(\$cmd\$)/, "#{cmd}"
 
             command = "#{Script.runner} #{cmd} #{args} #{redirect}"
-            puts "RUNNING #{command}"
+            #puts "RUNNING #{command}"
             output = `#{command}`
             #output = `#{Script.runner} #{cmd} #{redirect}`
-            puts "EXPECT: |#{expected}|"
-            puts "OUTPUT: |#{output}|"
+            #puts "EXPECT: |#{expected}|"
+            #puts "OUTPUT: |#{output}|"
 
             test_result = expected == output
 
@@ -193,13 +218,13 @@ class Script
               "command"  => command,
               "output"   => output,
               "expected" => expected,
-              "passfail" => test_result  ? 'PASS' : 'FAIL'
+              "test_result" => test_result
             }
 
             final_result &= test_result
 
 
-            puts "DEBUG: #{results}"
+            #puts "DEBUG: #{results}"
 
           end # taskdata
         end # list.each
@@ -217,7 +242,7 @@ class Script
 
     { "category" => task.to_s,
       "language" => Script.language_name,
-      "passfail" => final_result  ? 'PASS' : 'FAIL',
+      "final_result" => final_result,
       "notes"    => notes,
       "results" => results
     }
@@ -250,26 +275,21 @@ desc 'Standard Ouput'
 task :a0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
   result = Script.execute(t.to_s, list)
-  #puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FAIL'}"
-  puts result
-
+  Script.report(result)
 end
 
 desc 'Standard Error'
 task :a1 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
   result = Script.execute(t.to_s, list)
-  #puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  puts result
-
+  Script.report(result)
 end
 
 desc 'Output Here-String (or Multiline String)'
 task :a2 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
   result = Script.execute(t.to_s, list)
-
-  puts result
+  Script.report(result)
 end
 
 # ==============================================
@@ -285,45 +305,29 @@ end
 desc 'String Concatenation'
 task :b0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
 end
 
 desc 'String Concatenation'
 task :b1 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
 end
 
 desc 'String Formatting'
 task :b2 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
 end
 
 desc 'Here-String (Multiline String)'
 task :b3 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
-  if list.any?
-    result = Script.execute(t.to_s, list)
-    puts "Feature #{t.to_s} result = #{result  ? 'PASS' : 'FALSE'}"
-  else
-    puts "NOTE: This feature #{t.to_s} is not supported by #{Script.language_name}."
-  end
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
 end
 
 # ==============================================
@@ -765,7 +769,7 @@ desc 'Reporting Status Code'
 task :l0 do |t|
   list   = Dir.glob("#{t.to_s}?.*")
   result = Script.execute(t.to_s, list)
-  puts result
+  Script.report(result)
 end
 
 # ==============================================
