@@ -6,4 +6,4 @@ TRUE=1; FALSE=0
 result=$(( $TRUE && $FALSE || $TRUE ))
 
 # output result
-echo "The statement (true AND false OR true) is $result"
+echo "The statement (true AND false OR true) is: $result"
