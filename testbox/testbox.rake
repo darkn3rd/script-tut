@@ -7,7 +7,7 @@ task :default do
   # Comenting Out Interactive Scripts for now
 
   Rake::Task["output"].invoke
-  Rake::Task["variables"].invoke
+  #Rake::Task["variables"].invoke
   #Rake::Task["arithmetic"].invoke
   #Rake::Task["input"].invoke
   #Rake::Task["branch"].invoke
@@ -83,7 +83,7 @@ class Script
   @@versions = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => 'echo Perl $(perl --version | grep -oE \'v\d\.\d{1,2}\.\d\')',
+    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
     :py     => "python --version",
     :rb     => 'ruby --version | awk \'{ print $2 }\'',
@@ -163,21 +163,38 @@ class Script
     green    = ->(text) { colorize[text, "\033[32m"] }
     passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
 
+    # print test result for category group
     puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
     if ! results["final_result"]
       if results["results"].empty?
-        puts "  - There are no implementations for this category."
+        puts "    - There are no implementations for this category."
       else
+        # process each category
         results["results"].each do |category|
-          category_result = category[1][0]
-          puts "  - #{category[0].capitalize}: [#{passfail[category_result["test_result"]]}]"
-          if ! category_result["test_result"]
-            puts "      Expected Output: #{green[category_result["expected"].gsub(/\n/, "\\n")]}"
-            puts "      Actual Output:   #{red[category_result["output"].gsub(/\n/, "\\n")]}"
-          end # category pass condition
+          # process category with one test
+          if category.length[1] == 1
+            testcase = category[1][0]
+            puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
+            # if FAIL, print expected/actual output
+            if ! testcase["test_result"]
+              puts "      Expected Output: #{green[testcase["expected"].gsub(/\n/, "\\n")]}"
+              puts "      Actual Output:   #{red[testcase["output"].gsub(/\n/, "\\n")]}"
+            end
+          else
+            puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
+            # process category with multiple tests
+            category[1].each_with_index do |testcase, count|
+              puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
+              # if FAIL, print expected/actual output
+              if ! testcase["test_result"]
+                puts "      Expected Output: #{green[testcase["expected"].gsub(/\n/, "\\n")]}"
+                puts "      Actual Output:   #{red[testcase["output"].gsub(/\n/, "\\n")]}"
+              end
+            end
+          end
         end # enumerate HoA structure
       end # empty hash test
     end # overall pass condition
