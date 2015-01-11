@@ -3,7 +3,7 @@
 # function to show usage message
 function usage_message()
 {
-    printf "\nYou need to enter one or more numbers: \n\n" > "/dev/stderr"
+    printf "\nYou need to enter one or more numbers:\n\n" > "/dev/stderr"
     printf "   Usage: %s [num1] [num2] [num3]...\n\n", SCRIPT_NAME > "/dev/stderr"
 
     exit EX_USAGE                 # exit script indicating usage problem
