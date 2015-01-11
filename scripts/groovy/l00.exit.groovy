@@ -7,8 +7,8 @@ EX_OK       = 0;          // status for successful termination
 
 // method (subroutine) to output usage message to stderr
 def usageMessage() {
-   System.err.println("\nYou need to enter two numbers:\n")
-   System.err.println("   Usage: $SCRIPT_NAME [num1] [num2]\n")
+   System.err.println("\nYou need to enter one or more numbers:\n")
+   System.err.println("   Usage: $SCRIPT_NAME [num1] [num2] [num3]...\n")
    System.exit(EX_USAGE)
 }
 
