@@ -5,5 +5,5 @@ for (item in new File('dirtest').list()) {
     if (new File("dirtest/${item}").isDirectory())
         println "$item is a directory"
     else
-        println "$item is a not a directory"
+        println "$item is not a directory"
 }

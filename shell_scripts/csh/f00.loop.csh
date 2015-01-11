@@ -1,7 +1,7 @@
 #!/usr/bin/env tcsh
 # collection loop on directly glob
-foreach file (*)
-    if (-d $file) then
+foreach file (`ls dirtest`)
+    if (-d "dirtest/$file") then
         echo "$file is a directory"
     else
         echo "$file is not a directory"
