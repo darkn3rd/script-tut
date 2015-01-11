@@ -1,15 +1,8 @@
 #!/usr/bin/env ruby
-# create empty hash
-ages = Hash.new
-# insert one element at a time
-ages["bob"]   = 34
-ages["ed"]    = 58
-ages["steve"] = 32
-ages["ralph"] = 23
-ages["deb"]   = 46
-ages["kate"]  = 19
- 
-# enumerate and print keys
-puts "Keys (names):  #{ages.keys.join(" ")}"
-# enumerate and print values
-puts "Values (ages): #{ages.values.join(" ")}"
+# initialize array with key/value pairs
+ages = {"bob"=> 34, "ed"=> 58, "steve"=> 32, "ralph"=> 23}
+# append another set of key/value pairs into array
+ages = ages.merge("deb"=> 46, "kate"=> 19)
+# iterate through hash by keys, print key/value pairs
+puts "The ages are: "
+ages.keys.each { |name| puts " ages[#{name}]=#{ages[name]}"}

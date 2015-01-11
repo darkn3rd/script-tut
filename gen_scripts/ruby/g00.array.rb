@@ -9,8 +9,8 @@ nicknames[3] = "ralph"
 nicknames[4] = "joe"
 nicknames[5] = "deb"
 nicknames[6] = "kate"
- 
+
 # print length
 puts "The total nicknames are: #{nicknames.length}"
 # enumerate full list
-puts "The nicknames are: #{nicknames.join(" ")}"
+puts "The nicknames are: #{nicknames.join(", ")}"
