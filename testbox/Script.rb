@@ -198,7 +198,7 @@ class Script
             end
 
             if test.has_key?("in")
-              input = "printf \"#{test['in']}\n\" |"
+              input = "printf \"%s\\n\" \"#{test['in']}\" |"
             end
 
             expected.gsub! /(\$cmd\$)/, "#{cmd}"

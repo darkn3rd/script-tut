@@ -8,5 +8,5 @@ print "The arguments passed are:\n";
 #    - $count     is count that is displayed to user
 foreach my $arg (@ARGV) {
   # output count, arg, and increment count
-  printf "  item %d: %s\n", $count++, $arg;
+  printf " item %d: %s\n", $count++, $arg;
 }

@@ -39,24 +39,33 @@
          { "in": "1", "out":"Input a character: Digit\n" },
          { "in": "!", "out":"Input a character: Punctuation, whitespace, or other\n" }
         ],
-  "g0": [{ "out": "The number of nicknames is 7\nThe nicknames are: bob ed steve ralph joe deb kate\n"}],
-  "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n"}],
-  "g2": [{ "out": "The names are: \n nicknames[0]=bob\n nicknames[1]=ed\n nicknames[2]=steve\n nicknames[3]=ralph\n nicknames[4]=joe\n nicknames[5]=deb\n nicknames[6]=kate\n"}],
-  "h0": [{ "out": "Keys  (names): bob deb ed kate ralph steve\nValues (ages): 34 46 58 19 23 32\n"}],
-  "h1": [{ "out": "The ages are: \n  ages[bob]=34\n  ages[deb]=46\n  ages[ed]=58\n  ages[kate]=19\n  ages[ralph]=23\n  ages[steve]=32\n"}],
   "f0": [{ "out": "1 is not a directory\n2 is not a directory\n3 is not a directory\n4 is a directory\n5 is not a directory\n6 is not a directory\n7 is a directory\n"}],
   "f1": [{ "out": "Count is 10\nCount is 9\nCount is 8\nCount is 7\nCount is 6\nCount is 5\nCount is 4\nCount is 3\nCount is 2\nCount is 1\n"}],
   "f2": [{ "in" : "Name\nquit", "out": "Enter your name (quit to Exit): Hello Name!\nEnter your name (quit to Exit): "}],
   "f3": [{ "in" : "Name\nquit", "out": "Enter your name (quit to Exit): Hello Name!\nEnter your name (quit to Exit): "}],
   "f4": [{ "in" : "Name\nquit", "out": "Enter your name (quit to Exit): Hello Name!\nEnter your name (quit to Exit): "}],
+  "g0": [{ "out": "The number of nicknames is 7\nThe nicknames are: bob ed steve ralph joe deb kate\n"}],
+  "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n"}],
+  "g2": [{ "out": "The names are: \n nicknames[0]=bob\n nicknames[1]=ed\n nicknames[2]=steve\n nicknames[3]=ralph\n nicknames[4]=joe\n nicknames[5]=deb\n nicknames[6]=kate\n"}],
+  "h0": [{ "out": "Keys  (names): bob deb ed kate ralph steve\nValues (ages): 34 46 58 19 23 32\n"}],
+  "h1": [{ "out": "The ages are: \n  ages[bob]=34\n  ages[deb]=46\n  ages[ed]=58\n  ages[kate]=19\n  ages[ralph]=23\n  ages[steve]=32\n"}],
+
+  "i0": [{ "out": "Today is $date$."}],
+  "i1": [{ "out": "We have 500 in this pond.\nFishing from the main pond... We now have 350 in the main pond.\nFishing from the main pond... We now have 200 in the main pond.\nFishing from the main pond... We now have 50 in the main pond.\nWe now have a total of 450 fish captured\n"}],
+  "i2": [{ "out": "We have 500 in this pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nWe now have a total of 450 fish captured\n"}],
   "j0": [{ "arg": "", "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
          { "arg": "3",   "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
          { "arg": "3 4", "out": "The sum of 3 and 4 is: 7.\n"}],
   "j1": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are:\n item 1: uno\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce\n"}],
   "j2": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are (reverse order):\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: uno\n"
         }],
+  "k0": [{ "out": "The Celsius temperature is 22.8 degrees.\n"}],
+  "k1": [{ "out": "Sending: 5, 2, 4, 3, 6\nThe summation is: 20\n"}],
   "l0": [{"arg": "",      "err": "\nYou need to enter one or more numbers:\n\n   Usage: $cmd$ [num1] [num2] [num3]...\n\n"},
          {"arg": "4",     "out": "The summation is: 4\n"},
          {"arg": "4 5 6", "out": "The summation is: 15\n"}
-        ]
+       ],
+  "m0": [{ "out": "The numbers to be added are 5, 2, 4, 3, 6.\nThe result of their summation is: 20.\n"}],
+  "m1": [{ "out": "The current string is: \"ibm\".\nThe capitalized string is: \"IBM\".\n"}],
+  "m2": [{ "out": "Current names are: [bob, ed, steve, ralph, joe, deb, kate]\nSorted names are:  [bob, deb, ed, joe, kate, ralph, steve]\n"}]
 }

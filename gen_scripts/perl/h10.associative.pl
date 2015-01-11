@@ -9,5 +9,5 @@ my %ages=(bob=>34, ed=>58, steve=>32, ralph=>23);
 # use collection loop with list of keys
 print "The ages are: \n";
 foreach my $name (keys %ages) {
-    print " ages[$name]=$ages{$name}\n";
+    print "  ages[$name]=$ages{$name}\n";
 }

@@ -5,7 +5,7 @@ $script_name = $0;            # get script name
 
 if ($arg_count != 2) {
   # output usage statement to standard error
-  print STDERR "\nYou need to enter two numbers: \n\n";
+  print STDERR "\nYou need to enter two numbers:\n\n";
   print STDERR "   Usage: $script_name [num1] [num2]\n\n";
 } else {
   $sum = $ARGV[0] + $ARGV[1]; # get sum of both arguments

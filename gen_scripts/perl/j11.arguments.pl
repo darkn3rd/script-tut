@@ -11,5 +11,5 @@ print "The arguments passed are:\n";
 foreach $count ($first..$last) {
   my $arg = $ARGV[$count];  # get arg using index
   # output count and argument using count index
-  printf "  item %d: %s\n", $count+1, $arg;
+  printf " item %d: %s\n", $count+1, $arg;
 }
