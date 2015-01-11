@@ -68,7 +68,7 @@ The test data contains the following format:
 {
   plan01: [{"out": "Script says blah"}],
   plan01: [{"arg": "", "err": "Usage: blah"},
-  {"arg": "3 4", "Some output here"],
+           {"arg": "3 4", "Some output here"],
   plan03: [{"in": "Name\n", "out": "Hello Name."}],
   plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
 }
@@ -82,21 +82,20 @@ The test data contains the following format:
 
 
 * Articles
-* [Using the Rake Build Language](http://martinfowler.com/articles/rake.html)
-* [Rake Tutorial](http://lukaszwrobel.pl/blog/rake-tutorial)
-* Videos
-* [Basic Rake by Jim Weirich](https://www.youtube.com/watch?v=AFPWDzHWjEY)
+   * [Using the Rake Build Language](http://martinfowler.com/articles/rake.html)
+   * [Rake Tutorial](http://lukaszwrobel.pl/blog/rake-tutorial)
+   * Videos
+   * [Basic Rake by Jim Weirich](https://www.youtube.com/watch?v=AFPWDzHWjEY)
 * Source
-* [Rake Source](https://github.com/ruby/rake)
-
+   * [Rake Source](https://github.com/ruby/rake)
 
 ### Test Build Tools
 
-For a test runner, I could use a task-build tool.  There are numerous ones to choose from:
+For a test runner, I could use any task-build tool as there are numerous:
 
 * [Cake](http://coffeescript.org/documentation/docs/cake.html) - CoffeeScript based
 * [Gradle](http://www.gradle.org/) - Groovy based
 * [Grunt](http://gruntjs.com/) - Node based
 * [Psake](https://github.com/psake/psake) - PowerShell based
-* [Rake](https://github.com/ruby/rake) - Ruby based
+* [Rake](https://github.com/ruby/rake) - Ruby based (most ubiquitous)
 * [SCons](http://scons.org/) - Python based
