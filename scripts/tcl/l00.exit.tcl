@@ -6,7 +6,7 @@ set EX_USAGE    64;     # status for command line usage error
 set EX_OK       0;      # status for successful termination
 
 # **************************************
-# usageMessage 
+# usageMessage
 #
 #   Output instructions to utilize script to standard error
 #   and then exit program with appropriate POSIX error code.
@@ -17,8 +17,8 @@ proc usageMessage {} {
     global EX_USAGE     ;# access global exit status
 
     # print usage statement to standard error
-    puts stderr "\nYou need to one or more numbers: \n"
-    puts stderr "   Usage: $script_name \[num1\] \[num2\] \[num2\]...\n"
+    puts stderr "\nYou need to enter one or more numbers:\n"
+    puts stderr "   Usage: $script_name \[num1\] \[num2\] \[num3\]...\n"
 
     # exit program with appropriate error code
     exit $EX_USAGE
@@ -27,7 +27,7 @@ proc usageMessage {} {
 # **************************************
 # addNums
 #
-#   Output summation of all numbers passed by caller. 
+#   Output summation of all numbers passed by caller.
 #
 # Arguments:
 #    args    (required) array of numbers to be processed
@@ -42,11 +42,11 @@ proc addNums {args} {
     foreach num $nums { set sum [expr $sum + $num] }
 
     # output results of summation
-    puts "The sumation is: $sum" 
+    puts "The summation is: $sum"
 }
 
 # **************************************
-#             main section 
+#             main section
 # **************************************
 if { $arg_count < 1 } {
     usageMessage      ;# output usage if invalid # of arguments
