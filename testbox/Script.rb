@@ -157,8 +157,8 @@ class Script
             puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
             # if FAIL, print expected/actual output
             if ! testcase["test_result"]
-              puts "       Expected Output: #{green[testcase["expected"].gsub(/\n/, "\\n")]}"
-              puts "       Actual Output:   #{red[testcase["output"].gsub(/\n/, "\\n")]}"
+              puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+              puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
             end
           else
             puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
@@ -167,8 +167,8 @@ class Script
               puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
               # if FAIL, print expected/actual output
               if ! testcase["test_result"]
-                puts "       Expected Output: #{green[testcase["expected"].gsub(/\n/, "\\n")]}"
-                puts "       Actual Output:   #{red[testcase["output"].gsub(/\n/, "\\n")]}"
+                puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+                puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
               end
             end
           end
@@ -198,7 +198,7 @@ class Script
             end
 
             if test.has_key?("in")
-              input = "echo #{test['in']} |"
+              input = "printf \"#{test['in']}\n\" |"
             end
 
             expected.gsub! /(\$cmd\$)/, "#{cmd}"

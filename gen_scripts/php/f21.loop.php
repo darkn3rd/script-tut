@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+$answer = "";
 // conditional loop with while
 while  ($answer != "quit") {
     echo "Enter your name (quit to Exit): ";  # output prompt

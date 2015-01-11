@@ -13,15 +13,13 @@ task :default do
   #Rake::Task["arithmetic"].invoke
   #Rake::Task["input"].invoke
   #Rake::Task["branch"].invoke
-
-  #FAILS
   Rake::Task["loop"].invoke
   #Rake::Task["array"].invoke
   #Rake::Task["associative"].invoke
   #Rake::Task["subroutine"].invoke
   #Rake::Task["arguments"].invoke
   #Rake::Task["parameters"].invoke
-  Rake::Task["exit"].invoke
+  #Rake::Task["exit"].invoke
   #Rake::Task["function"].invoke
 end
 
@@ -234,8 +232,8 @@ end
 desc 'Looping'
 task :loop do
   Rake::Task["f0"].invoke
-  #Rake::Task["f1"].invoke
-  #Rake::Task["f2"].invoke
+  Rake::Task["f1"].invoke
+  Rake::Task["f2"].invoke
   #Rake::Task["f3"].invoke
   #Rake::Task["f4"].invoke
 end

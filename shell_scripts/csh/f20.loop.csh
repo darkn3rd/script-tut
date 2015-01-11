@@ -1,13 +1,13 @@
 #!/usr/bin/env tcsh
-set answer = ""                             # required to create initial var 
- 
+set answer = ""                             # required to create initial var
+
 # loop conditionally until user quits
 while ("$answer" != "quit")
-  echo -n "Enter you name (quit to Exit): " # print prompt & acquire input
+  echo -n "Enter your name (quit to Exit): " # print prompt & acquire input
   set answer=$<                             # acquire input
- 
+
   if ($answer != "quit") then
-      echo " Hello $answer!"                # output result using variable
+      echo "Hello $answer!"                # output result using variable
   endif
-end  
+end
 # ^ required newline to end block

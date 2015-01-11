@@ -40,8 +40,8 @@
          { "in": "!", "out":"Input a character: Punctuation, whitespace, or other\n" }
         ],
   "f0": [{ "out": "1 is not a directory\n2 is not a directory\n3 is not a directory\n4 is a directory\n5 is not a directory\n6 is not a directory\n7 is a directory\n"}],
-  "f1": [{ "out": "Count is 10\nCount is 9\nCount is 8\nCount is 7\nCount is 6\nCount is 5\nCount is 4\nCount is 3\nCount is 2\nCount is 1"}],
-  "f2": [{ "in" : "", "out": "Enter your name (quit to Exit): \nHello Name!\nEnter your name (quit to Exit):"}],
+  "f1": [{ "out": "Count is 10\nCount is 9\nCount is 8\nCount is 7\nCount is 6\nCount is 5\nCount is 4\nCount is 3\nCount is 2\nCount is 1\n"}],
+  "f2": [{ "in" : "Name\nquit", "out": "Enter your name (quit to Exit): Hello Name!\nEnter your name (quit to Exit): "}],
   "j0": [{ "arg": "", "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
          { "arg": "3",   "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
          { "arg": "3 4", "out": "The sum of 3 and 4 is: 7.\n"}],
