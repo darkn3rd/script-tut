@@ -15,7 +15,7 @@ if ($arg_count < 1) {
 # output a usage message
 sub usage_message {
   # output usage statement to standard error
-  print STDERR "\nYou need to enter two or more numbers: \n\n";
+  print STDERR "\nYou need to enter one or more numbers:\n\n";
   print STDERR "   Usage: $script_name [num1] [num2] [num3]...\n\n";
   exit $EX_USAGE;          # return error code
 }
