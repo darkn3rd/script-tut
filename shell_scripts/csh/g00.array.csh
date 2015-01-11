@@ -13,5 +13,5 @@ set nicknames = ( $nicknames "deb")
 set nicknames = ( $nicknames "kate")
 
 # output results
-echo The number of nicknames is: $#nicknames  # size of array
+echo The number of nicknames is $#nicknames  # size of array
 echo The nicknames are: $nicknames            # enumerate array list

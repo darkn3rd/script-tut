@@ -11,5 +11,5 @@ $nicknames[5]="deb";
 $nicknames[6]="kate";
 
 # output number of elements and enumerated list
-print "The total names are: ", scalar(@nicknames),"\n";
-print "The names are: @nicknames \n";
+print "The total nicknames are: ", scalar(@nicknames),"\n";
+print "The nicknames are: @nicknames \n";

@@ -7,6 +7,6 @@ nicknames[3]=ralph
 nicknames[4]=joe
 nicknames[5]=deb
 nicknames[6]=kate
- 
-echo "The number of nicknames are: ${#nicknames[*]}"  # print length of array
-echo "The nicknames are: ${nicknames[*]}"             # enumerate array
+
+echo "The total nicknames are: ${#nicknames[*]}"  # print length of array
+echo "The nicknames are: ${nicknames[*]}"         # enumerate array

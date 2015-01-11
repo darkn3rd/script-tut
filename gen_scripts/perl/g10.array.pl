@@ -5,5 +5,5 @@ my @nicknames=qw(bob ed steve ralph joe deb kate);
 print "The names are: \n";
 # use collection loop to get items in list
 foreach my $name (@nicknames) {
- print " $name\n";
+ print "  $name\n";
 }

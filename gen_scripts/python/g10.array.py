@@ -6,4 +6,4 @@ nicknames = ["bob","ed","steve","ralph","joe","deb","kate"]
 print "The names are: "
 # utitlize collection loop to enumerate list
 for name in nicknames:
-    print " " + name
+    print "  " + name
