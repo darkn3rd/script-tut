@@ -5,4 +5,4 @@ length = 6
 # calculate integer arithmetic
 area   = width * length
 # output results
-puts "The area of a square(width=#{width}, length=#{length}) is #{area}"
+puts "The area of a square (width=#{width}, length=#{length}) is #{area}"
