@@ -12,9 +12,33 @@
   "d0": [{ "in": "Name",
           "out":"Enter your name: Hello Name!\n"
         }],
-  "d1": [{ "in": "Y",
-           "out":"Input a character: You entered: >>|Y|<<.\n"
-        }],
+  "d1": [{ "in": "Y", "out":"Input a character: You entered: >>|Y|<<.\n" }],
+  "e0": [{ "in": "Yes", "out":"Would you like a toast? [Yes/No]: That's great!\n" },
+         { "in": "No",  "out":"Would you like a toast? [Yes/No]: How about a muffin?\n" }
+        ],
+  "e1": [{ "in": "Yes", "out":"Would you like a toast? [Yes/No]: That's great!\n" },
+         { "in": "No",  "out":"Would you like a toast? [Yes/No]: How about a muffin?\n" }
+        ],
+  "e2": [{ "in": "5",  "out":"Input a number: Number is greater than 0\n" },
+         { "in": "0",  "out":"Input a number: Number is 0\n" },
+         { "in": "-5", "out":"Input a number: Number is less than 0\n" }
+        ],
+  "e3": [{ "in": "0", "out":"Select an item from the menu.\n\n  1 - Coffee\n  2 - Espresso\n  3 - Latte\n  4 - Machiato\n  5 - Capucino\n  6 - Mocha\n  7 - Tea\n\nMake your selection: You have not entered a valid selection\n" },
+         { "in": "5", "out":"Select an item from the menu.\n\n  1 - Coffee\n  2 - Espresso\n  3 - Latte\n  4 - Machiato\n  5 - Capucino\n  6 - Mocha\n  7 - Tea\n\nMake your selection: You selected a Capucino\n" }
+        ],
+  "e4": [{ "in": "0", "out":"Select an item from the menu.\n\n  1 - Coffee\n  2 - Espresso\n  3 - Latte\n  4 - Machiato\n  5 - Capucino\n  6 - Mocha\n  7 - Tea\n\nMake your selection: You have not entered a valid selection\n" },
+         { "in": "5", "out":"Select an item from the menu.\n\n  1 - Coffee\n  2 - Espresso\n  3 - Latte\n  4 - Machiato\n  5 - Capucino\n  6 - Mocha\n  7 - Tea\n\nMake your selection: You selected a Capucino\n" }
+        ],
+  "e5": [{ "in": "G", "out":"Input a character: Uppercase letter\n" },
+         { "in": "t", "out":"Input a character: Lowercase letter\n" },
+         { "in": "1", "out":"Input a character: Digit\n" },
+         { "in": "!", "out":"Input a character: Punctuation, whitespace, or other\n" }
+        ],
+  "e6": [{ "in": "G", "out":"Input a character: Uppercase letter\n" },
+         { "in": "t", "out":"Input a character: Lowercase letter\n" },
+         { "in": "1", "out":"Input a character: Digit\n" },
+         { "in": "!", "out":"Input a character: Punctuation, whitespace, or other\n" }
+        ],
   "f0": [{ "out": "1 is a not a directory\n2 is a not a directory\n3 is a not a directory\n4 is a directory\n5 is a not a directory\n6 is a not a directory\n7 is a directory"}],
   "f1": [{ "out": "Count is 10\nCount is 9\nCount is 8\nCount is 7\nCount is 6\nCount is 5\nCount is 4\nCount is 3\nCount is 2\nCount is 1"}],
   "f2": [{ "in" : "", "out": "Enter your name (quit to Exit): \nHello Name!\nEnter your name (quit to Exit):"}],
