@@ -26,7 +26,8 @@ The language itself has posed some quirks that are not some randomly discovered 
 
 Beyond these quirks, the language is extremely limited.  Here are a few of the limitations I have found:
 
-  * C-Sehll cannot store any type of float, even as a string.  Thus "3.14" can never be saved into any variable, even if used as a string.
+  * C-Shell cannot escape quotes, `\'` or `\"` inside a quoted string.  So no `'\''` or `"\""`.
+  * C-Shell cannot store any type of float, even as a string.  Thus "3.14" can never be saved into any variable, even if used as a string.
   * C-Shell does not support *subroutines* or *functions*.  There might be some clever hacks with `alias` or `goto :label` to get some of this functionality.
   * C-Shell simulates *array* functionality using space-delimited strings, which can be processed using a collection loop or through an index.
     * arrays items cannot be inserted by index, they must be concatenated into an existing array.
@@ -93,3 +94,7 @@ When I started out, I used to use C-Shell on [68K](http://en.wikipedia.org/wiki/
   * :green_book: - Lesson supported by language
   * :closed_book: - Not supported by language, but alternative
   * :page_facing_up: - Alternative methods to do the lesson
+
+## Links
+
+* [Practical Shell Scripting](http://csg.sph.umich.edu/docs/ShellScript/) - This is a Practical C-Shell Scripting Guide

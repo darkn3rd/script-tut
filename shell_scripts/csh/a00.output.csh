@@ -1,2 +1,2 @@
 #!/usr/bin/env tcsh
-echo Hello!
+echo Hello

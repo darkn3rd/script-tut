@@ -7,5 +7,5 @@ set string = "This is a string"
 
 # output values using string interpolation
 echo "Number is $num."
-echo "Character is \'$char\'."
-echo "String is \"$string\"."
+echo "Character is '$char'."
+echo 'String is "'$string'".'  # cannot escape double quotes in quotes
