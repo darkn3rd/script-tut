@@ -4,7 +4,7 @@ BEGIN {
 
   # count style loop using while construct
   while (count > 0) {
-    print "count is " count  # output count
+    print "Count is " count  # output count
     count--                  # decrement counter
   }
 
