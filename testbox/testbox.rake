@@ -8,10 +8,10 @@ task :default do
   puts "==============================================================="
   # Comenting Out Interactive Scripts for now
 
-  #Rake::Task["output"].invoke
-  #Rake::Task["variables"].invoke
+  Rake::Task["output"].invoke
+  Rake::Task["variables"].invoke
   Rake::Task["arithmetic"].invoke
-  #Rake::Task["input"].invoke
+  Rake::Task["input"].invoke
   #Rake::Task["branch"].invoke
 
   #FAILS
