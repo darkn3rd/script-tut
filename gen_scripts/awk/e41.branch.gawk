@@ -1,15 +1,15 @@
 #!/usr/bin/env gawk -f
 BEGIN {
   # build a menu string to output to user
-  menu = "\nSelect an item from the menu."
-  menu = menu "\n   1 - Coffee"
-  menu = menu "\n   2 - Espresso"
-  menu = menu "\n   3 - Latte"
-  menu = menu "\n   4 - Machiato"
-  menu = menu "\n   5 - Capucino"
-  menu = menu "\n   6 - Mocha"
-  menu = menu "\n   7 - Tea"
-  menu = menu "\n\nMake your selection : "
+  menu = "Select an item from the menu.\n"
+  menu = menu "\n  1 - Coffee"
+  menu = menu "\n  2 - Espresso"
+  menu = menu "\n  3 - Latte"
+  menu = menu "\n  4 - Machiato"
+  menu = menu "\n  5 - Capucino"
+  menu = menu "\n  6 - Mocha"
+  menu = menu "\n  7 - Tea"
+  menu = menu "\n\nMake your selection: "
 
   # get user output
   printf menu        # output menu and prompt

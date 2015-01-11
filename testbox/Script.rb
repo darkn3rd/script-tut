@@ -204,7 +204,7 @@ class Script
             expected.gsub! /(\$cmd\$)/, "#{cmd}"
 
             command = "#{input} #{Script.runner} #{cmd} #{args} #{redirect}"
-            #puts "RUNNING #{command}"
+            #puts "RUNNING(#{`which perl`}) #{command}"
             output = `#{command}`
             #output = `#{Script.runner} #{cmd} #{redirect}`
             #puts "EXPECT: |#{expected}|"

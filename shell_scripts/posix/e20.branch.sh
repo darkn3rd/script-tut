@@ -1,15 +1,9 @@
 #!/usr/bin/env sh
-printf "Input a character: " ; read Keypress
- 
-# if construction
-# Note that POSIX Shell does not support POSIX character class expressions
-#  As POSIX tr supports POSIX character class expression, this is workaround
-if [ -z $(echo $Keypress | tr -d "[:lower:]") ]; then
-  echo "Lowercase letter"
-elif [ -z $(echo $Keypress | tr -d "[:upper:]") ]; then
-  echo "Uppercase letter"
-elif [ -z $(echo $Keypress | tr -d  "[:digit:]") ]; then
-  echo "Digit"
+printf "Input a number: "; read number
+if [ $number -gt 0 ]; then
+  echo Number is greater than 0
+elif [ $number -lt 0 ]; then
+  echo Number is less than 0
 else
-  echo "Punctuation, whitepace, or other"
+  echo Number is 0
 fi

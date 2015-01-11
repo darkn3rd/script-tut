@@ -7,10 +7,10 @@ set keypress=$<               # acquire input
 if ( `expr $keypress : "[a-z]"`) then
 	echo "Lowercase letter"
 else if ( `expr $keypress : "[A-Z]"` ) then
-	echo "Uppdercase letter"
+	echo "Uppercase letter"
 else if ( `expr $keypress : "[0-9]"` ) then
 	echo "Digit"
 else
-	echo "Punctuation, whitespace, or other"	
+	echo "Punctuation, whitespace, or other"
 endif
 # ^ newline required or failure

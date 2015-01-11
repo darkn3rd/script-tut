@@ -1,14 +1,12 @@
 #!/usr/bin/env php
 <?php
-echo "Input a character: "; $Keypress = fgetc(STDIN);
- 
-if (preg_match("/[a-z]/", $Keypress)) {
-    echo "Lowercase letter\n";
-} elseif (preg_match("/[A-Z]/", $Keypress)) {
-    echo "Uppercase letter\n";
-} elseif (preg_match("/[0-9]/", $Keypress)) {
-    echo "Digit\n";
+echo "Input a number: "; $Number = fgets(STDIN);
+
+if ($Number > 0) {
+  echo "Number is greater than 0\n";
+} elseif ($Number < 0) {
+  echo "Number is less than 0\n";
 } else {
-    echo "Punctuation, whitespace, or other\n";
+  echo "Number is 0\n";
 }
 ?>
