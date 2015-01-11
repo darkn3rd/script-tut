@@ -9,7 +9,7 @@ EX_OK       = 0;                # status for successful termination
 
 # method (subroutine) to output usage message to stderr
 def usage_message ():
-   sys.stderr.write("\nYou need to enter two or more numbers: \n\n")
+   sys.stderr.write("\nYou need to enter one or more numbers:\n\n")
    sys.stderr.write("   Usage: %s [num1] [num2] [num3]...\n\n" % SCRIPT_NAME)
    sys.exit(EX_USAGE)
 
