@@ -58,12 +58,26 @@ class Script
     :cmd    => "cmd /c",
   }
 
-  @@versions = {
+  @@nix_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
     :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version",
+    :py     => "python --version 2>&1",
+    :rb     => 'ruby --version | gawk \'{ print $2 }\'',
+    :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
+    :bash   => "bash --version | head -1",
+    :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
+    :csh    => "csh --version",
+    :ksh    => "ksh --version",
+  }
+
+  @@win_version = {
+    :awk    => "gawk --version | head -1",
+    :groovy => "groovy --version",
+    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :php    => 'php --version | head -1',
+    :py     => "python --version 2>&1",
     :rb     => 'ruby --version | gawk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
@@ -120,7 +134,11 @@ class Script
   end
 
   def self.version
-    `#{@@versions[@@language.to_sym]}`
+    if @@ostype[0] == "mingw"
+      `#{@@win_version[@@language.to_sym]}`.chomp
+    else
+      `#{@@nix_version[@@language.to_sym]}`.chomp
+    end
   end
 
   def self.path
@@ -143,7 +161,7 @@ class Script
         "#{scriptpath}\\#{scriptexec}"
       end
     else
-      `"command -v #{self.runner}"`
+      `command -v "#{self.runner}"`.chomp
     end
   end
 
