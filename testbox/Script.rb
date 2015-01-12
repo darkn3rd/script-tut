@@ -1,5 +1,14 @@
 #!/usr/bin/ruby
+
 # =============================================
+# Script class
+#   Utility class for
+#    - executing tests,
+#    - reporting environment, and
+#    - reporting test results
+# =============================================
+# Test Structure
+#
 # Tests labeled with a three-letter prefix:
 #  1. [A-Z] Group
 #  2. [0-9] Category
@@ -13,14 +22,6 @@
 #  - Output
 #    - standard output
 #    - standard error
-# =============================================
-
-# =============================================
-# Each of these tasks will have to evaluate the available excutable files
-# available then execute them. and report their results.
-#
-# If multiple files in one category, run them all, report collective result.
-# If no files in one category, report that this feature is not supported.
 # =============================================
 
 # =============================================
@@ -97,6 +98,8 @@ class Script
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@jsonfile  = "../../testbox/expected.json"
+
+  
 
   require 'json'
   if File.exists?(@@jsonfile)
