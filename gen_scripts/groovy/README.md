@@ -186,3 +186,10 @@ This covers notes regarding each section.
     * demonstrate function that returns an int
     * demonstrate function that returns a string
     * demonstrate function that returns an array
+
+## Links
+
+Some articles I came across along the way of searching for Groovy related material:
+
+* [Processing Files In Place With Groovy](http://blog.davidehringer.com/groovy/processing-files-place-groovy/)
+* [Groovy Goodness: Using the replaceAll Methods from String](http://mrhaki.blogspot.com/2009/10/groovy-goodness-using-replaceall.html)
