@@ -41,7 +41,7 @@ This category will be followed **0** to **9** methods to do the particular categ
 * C01 - C0 category, 1st alt method for absent feature
 * C02 - C0 category, 2nd alt method for absent feature
 
-### Requirements
+### Product Requirements
 
 The testing system will have a test harness or test runner that will run test cases.
 
@@ -57,7 +57,9 @@ The testing system will have a test harness or test runner that will run test ca
     * output - standard error or standard output
       * exit code (optinal)
 
-### Implementation
+## The Product Implementation
+
+### Overview
 
 After some research, the easiest path for such a system was to use a task oriented build tool, with rake being the first choice.
 
