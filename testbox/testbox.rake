@@ -479,7 +479,7 @@ task :m1 do |t|
   Rake::Task["header"].invoke
   list   = Dir.glob("#{t.to_s}?.*")
   result = Script.execute(t.to_s, list)
-  puts result
+  Script.report(result)
 end
 
 desc 'Returning an Array'

@@ -10,8 +10,9 @@ sub addNums {
    return $sum;        # return sum of numbers
 }
 
-print "The numbers to be added are 5, 2, 4, 3, 6.\n";
+my @parameters = (5, 2, 4, 3, 6);
+print "The numbers to be added are " . join(", ", @parameters) . ".\n";
 # call the function
-my $result = addNums 5, 2, 4, 3, 6; # pass variable number of numbers
+my $result = addNums @parameters; # pass variable number of numbers
 # output results with resulting integer
 print "The result of their summation is: $result.\n";

@@ -66,7 +66,7 @@ class Script
     :rb     => 'ruby --version | awk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
-    :sh     => 'echo Shell (sh) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
+    :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
     :ksh    => "ksh --version",
     :js     => "cscript | findstr Windows",
@@ -190,6 +190,7 @@ class Script
               redirect = "2>&1"
               expected = test['err']
             else
+              redirect = "2> /dev/null"
               expected = test['out']
             end
 
@@ -201,7 +202,9 @@ class Script
               input = "printf \"%s\\n\" \"#{test['in']}\" |"
             end
 
+            # Replacements - replace dynamically generated data
             expected.gsub! /(\$cmd\$)/, "#{cmd}"
+            expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
 
             command = "#{input} #{Script.runner} #{cmd} #{args} #{redirect}"
             #puts "RUNNING(#{`which perl`}) #{command}"

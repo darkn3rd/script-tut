@@ -11,5 +11,5 @@ $ages{deb}=46;
 $ages{kate}=19;
 
 # print all keys and values
-print "Keys (names): ", join (" ", keys %ages), "\n";
+print "Keys (names):  ", join (" ", keys %ages), "\n";
 print "Values (ages): ", join (" " , values %ages), "\n";

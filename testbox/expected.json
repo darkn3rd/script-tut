@@ -47,10 +47,10 @@
   "g0": [{ "out": "The number of nicknames is 7\nThe nicknames are: bob ed steve ralph joe deb kate\n"}],
   "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n"}],
   "g2": [{ "out": "The names are: \n nicknames[0]=bob\n nicknames[1]=ed\n nicknames[2]=steve\n nicknames[3]=ralph\n nicknames[4]=joe\n nicknames[5]=deb\n nicknames[6]=kate\n"}],
-  "h0": [{ "out": "Keys  (names): bob deb ed kate ralph steve\nValues (ages): 34 46 58 19 23 32\n"}],
-  "h1": [{ "out": "The ages are: \n  ages[bob]=34\n  ages[deb]=46\n  ages[ed]=58\n  ages[kate]=19\n  ages[ralph]=23\n  ages[steve]=32\n"}],
+  "h0": [{ "out": "Keys (names):  kate ed deb steve bob ralph\nValues (ages): 19 58 46 32 34 23\n"}],
+  "h1": [{ "out": "The ages are: \n  ages[steve]=32\n  ages[bob]=34\n  ages[kate]=19\n  ages[ralph]=23\n  ages[ed]=58\n  ages[deb]=46\n"}],
 
-  "i0": [{ "out": "Today is $date$."}],
+  "i0": [{ "out": "Today is $date$.\n"}],
   "i1": [{ "out": "We have 500 in this pond.\nFishing from the main pond... We now have 350 in the main pond.\nFishing from the main pond... We now have 200 in the main pond.\nFishing from the main pond... We now have 50 in the main pond.\nWe now have a total of 450 fish captured\n"}],
   "i2": [{ "out": "We have 500 in this pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nWe now have a total of 450 fish captured\n"}],
   "j0": [{ "arg": "", "err": "\nYou need to enter two numbers:\n\n   Usage: $cmd$ [num1] [num2]\n\n" },
@@ -67,5 +67,5 @@
        ],
   "m0": [{ "out": "The numbers to be added are 5, 2, 4, 3, 6.\nThe result of their summation is: 20.\n"}],
   "m1": [{ "out": "The current string is: \"ibm\".\nThe capitalized string is: \"IBM\".\n"}],
-  "m2": [{ "out": "Current names are: [bob, ed, steve, ralph, joe, deb, kate]\nSorted names are:  [bob, deb, ed, joe, kate, ralph, steve]\n"}]
+  "m2": [{ "out": "Current names are: bob, ed, steve, ralph, joe, deb, kate\nSorted names are: bob, deb, ed, joe, kate, ralph, steve\n"}]
 }

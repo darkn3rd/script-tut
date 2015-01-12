@@ -4,7 +4,10 @@ sub capitalize {
   return uc($_[0]);             # return capitalized string
 }
 
+# output string before calling function
+my $string = "ibm";
+print "The current string is: \"$string\".\n";
 # call the function
-my $result = capitalize("ibm"); # pass string
+my $result = capitalize($string); # pass string
 # output results with resulting string
-print "The result of capitalization is: $result.\n";
+print "The capitalized string is: \"$result\".\n";
