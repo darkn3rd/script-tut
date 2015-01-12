@@ -8,7 +8,16 @@ The idea for this area is to develop testing that can verify functionality of sc
 
 ## Status
 
-Implemented basic support for running tests in scripting and shell scripting areas (windows later).  Currently, it just executes a script.  Plan of Attack is to add basic environment detection and reporting, then test verification. (January 5th, 2014).
+* 2014-01-05:
+   * Basic framework organization.
+   * Test runner (Rake) executes scripts
+* 2014-01-11
+   * JSON container and expected data set
+   * Script class to facilitate running tests, collecting/reporting results, reporting environment.
+   * TestSuite (organization, structure, reporting) completed using Rakefile
+   * Adjustments to scripts, dataset, and bug fixes
+   * Initial support for dynamic data in dataset
+   * Discovered potential bugs in Groovy and Perl, other areas involved quirky behavior
 
 ## The Product Plan
 
@@ -73,6 +82,20 @@ The test data contains the following format:
   plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
 }
 ```
+
+## Notes
+
+Here are issues with current test suite:
+
+* Booleans (C10):
+   * scripting languages will represent true as `1` or `true`
+   * need language dependent substitute to compare properly, leaving as is for now
+* Floating Point (C20):
+   * precision varies on support of scripting languages engine.
+   * leave as is to compare, otherwise can round value down for comparison
+* Associative Arrays (H10):
+   * hash order is not guaranteed, depends on internal hash algorithm
+   * some scripting languages, groovy, recall order at which items are inserted
 
 ## Research
 

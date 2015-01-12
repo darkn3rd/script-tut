@@ -47,9 +47,8 @@
   "g0": [{ "out": "The number of nicknames is 7\nThe nicknames are: bob ed steve ralph joe deb kate\n"}],
   "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n"}],
   "g2": [{ "out": "The names are: \n nicknames[0]=bob\n nicknames[1]=ed\n nicknames[2]=steve\n nicknames[3]=ralph\n nicknames[4]=joe\n nicknames[5]=deb\n nicknames[6]=kate\n"}],
-  "h0": [{ "out": "Keys (names):  kate ed deb steve bob ralph\nValues (ages): 19 58 46 32 34 23\n"}],
-  "h1": [{ "out": "The ages are: \n  ages[steve]=32\n  ages[bob]=34\n  ages[kate]=19\n  ages[ralph]=23\n  ages[ed]=58\n  ages[deb]=46\n"}],
-
+  "h0": [{ "out": "Keys (names):  bob ed steve ralph deb kate\nValues (ages): 34 58 32 23 46 19\n"}],
+  "h1": [{ "out": "The ages are: \n  ages[bob]=34\n  ages[ed]=58\n  ages[steve]=32\n  ages[ralph]=23\n  ages[deb]=46\n  ages[kate]=19\n"}],
   "i0": [{ "out": "Today is $date$.\n"}],
   "i1": [{ "out": "We have 500 in this pond.\nFishing from the main pond... We now have 350 in the main pond.\nFishing from the main pond... We now have 200 in the main pond.\nFishing from the main pond... We now have 50 in the main pond.\nWe now have a total of 450 fish captured\n"}],
   "i2": [{ "out": "We have 500 in this pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nFishing from a local pond... We now have 500 in the main pond.\nWe now have a total of 450 fish captured\n"}],
