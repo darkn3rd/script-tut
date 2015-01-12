@@ -22,7 +22,7 @@ task :header do
   puts "Environment:      #{Script.ostype} (#{Script.cputype})"
   #puts "Language Target:  #{Script.language_name} (#{`command -v #{Script.path}`.chomp})"
   "Language Target:  #{Script.language_name}"
-  puts "Language Version: #{Script.version}"
+  #puts "Language Version: #{Script.version}"
   puts "==============================================================="
 end
 
