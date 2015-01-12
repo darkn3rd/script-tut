@@ -99,7 +99,7 @@ class Script
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@jsonfile  = "../../testbox/expected.json"
 
-  
+
 
   require 'json'
   if File.exists?(@@jsonfile)
@@ -110,6 +110,7 @@ class Script
   end
 
   def self.language_name
+    puts "WINDOWS DEBUG: #{@@language} #{@@language.to_sym}"
     @@language_name[@@language.to_sym]
   end
 
