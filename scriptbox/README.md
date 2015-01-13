@@ -133,7 +133,7 @@ The default CygWin 1.7.33 environment has the following tools:
 
 ### MSYS
 
-MSYS, which is bundled with  [MSYS-Git](https://msysgit.github.io/) (GitBash), provides Bash and some popular GNU tools.
+MSYS, which is bundled with [MSYS-Git](https://msysgit.github.io/) (GitBash), provides Bash and some popular GNU tools, which use Unix path names, e.g. `/c/Ruby21/bin/ruby`.  The bash environment will map it's installed location, e.g. `/c/Program Files/usr/bin` to local directories `/usr/bin`.
 
 The Git Bash ([MSYS-Git](https://msysgit.github.io/)) comes bundled with the following:
 
@@ -173,7 +173,7 @@ The Git Bash ([MSYS-Git](https://msysgit.github.io/)) comes bundled with the fol
 
 ### GNUWin32
 
-[GNUWin32](http://gnuwin32.sourceforge.net/) are popular GNU utilities that are ported directly to Windows.  They can run under the Windows Command Shell (`cmd.exe`).
+[GNUWin32](http://gnuwin32.sourceforge.net/) are popular GNU utilities that are ported directly to Windows using Microsoft C Runtime library.  They can run under the Windows Command Shell (`cmd.exe`), and thus work with Windows path names, e.g. `C:\Ruby21\bin\ruby.exe`
 
 * Tools:
   * :package: `bc` 1.06
@@ -190,7 +190,6 @@ The Git Bash ([MSYS-Git](https://msysgit.github.io/)) comes bundled with the fol
   * :package: `which` (GNU which) 2.20
 * Scripting Languages:
   * :package: `awk` (GNU Awk) 3.1.6
-
 
 ## Windows Packages
 
