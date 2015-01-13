@@ -61,29 +61,33 @@ For Mac OS X and Windows, there can be some challenges, so the guidelines below 
 
 ## Mac OS X 10.8.5 (Mountain Lion) Notes
 
-*Mountain Lion* includes GNU bc 1.06 and BSD flavors of cut, date, expr, grep 2.5.1, printf, sed, seq, tr, and wc.  *Mountain Lion* includes includes the following scripting languages:
+*Mountain Lion* includes GNU `bc` 1.06 and BSD flavors of `cut`, `date`, `expr`, `grep` 2.5.1, `printf`, `sed`, `seq`, `tr`, and `wc`.  
 
-* :package: Awk 20070501 (BSD)
-* :package: Perl 5.12.4
-* :package: PHP 5.3.28
-* :package: Python 2.7.2
-* :package: Ruby 1.8.7
+*Mountain Lion* includes includes the following scripting languages:
+
+* :scroll: Scripting
+  * :package: `awk` 20070501 (BSD)
+  * :package: `perl` 5.12.4
+  * :package: PHP (`php`) 5.3.28
+  * :package: `python` 2.7.2
+  * :package: `ruby` 1.8.7
+  * :package: TCL (`tclsh`) 8.5
 * :shell: Shells
-  * :package: bash 3.2.48
-  * :package: csh (tcsh) 6.17
-  * :package: ksh 93u 2011-02-08
-* :package: (tclsh) 8.5
+  * :package: `bash` 3.2.48
+  * :package: `csh` (`tcsh`) 6.17
+  * :package: `ksh` 93u 2011-02-08
 
 ## Mac OS X 10.9.5 (Maverick) Notes
 
 *Maverick* has some of the basic packages required (similar to *Mountain Lion*) with some newer versions:
 
-* :package: Perl 5.16.2
-* :package: PHP 5.4.24
-* :package: Python 2.7.5
-* :package: Ruby 2.0.0p247
+* :scroll: Scripting
+  * :package: `perl` 5.16.2
+  * :package: `php` 5.4.24
+  * :package: `python` 2.7.5
+  * :package: `ruby` 2.0.0p247
 * :shell: Shells
-  * :package: bash 3.2.51
+  * :package: `bash` 3.2.51
 
 ## Mac OS X Packages
 
@@ -112,20 +116,20 @@ These are environments provide popular shells available on Linux and UNIX (SVR4 
 The default CygWin 1.7.33 environment has the following tools:
 
 * Tools:
-  * :package: bc
-  * :package: cut (GNU Core Utils 8.23)
-  * :package: date (GNU Core Utils 8.23)
-  * :package: expr (GNU Core Utils 8.23)
-  * :package: grep 2.21 (GNU)
-  * :package: printf (GNU Core Utils 8.23) `usr/bin/printf`
-  * :package: sed 4.2.2 (GNU)
-  * :package: seq (GNU Core Utils 8.23)
-  * :package: tr (GNU Core Utils 8.23)
-  * :package: wc (GNU Core Utils 8.23)
+  * :package: `bc`
+  * :package: `cut` (GNU Core Utils) 8.23
+  * :package: `date` (GNU Core Utils) 8.23
+  * :package: `expr` (GNU Core Utils) 8.23
+  * :package: `grep` 2.21 (GNU)
+  * :package: `printf` (GNU Core Utils) `usr/bin/printf`
+  * :package: `sed` (GNU sed) 4.2.2
+  * :package: `seq` (GNU Core Utils) 8.23
+  * :package: `tr` (GNU Core Utils) 8.23
+  * :package: `wc` (GNU Core Utils) 8.23
 * Scripting Languages:
-  * :package: AWK 4.1.1 (GNU)
-  * :package: dash
-  * :package: bash 4.1.17
+  * :package: `awk` (GNU Awk) 4.1.1
+  * :package: `dash`
+  * :package: `bash` 4.1.17
 
 ### MSYS
 
@@ -134,58 +138,59 @@ MSYS, which is bundled with  [MSYS-Git](https://msysgit.github.io/) (GitBash), p
 The Git Bash ([MSYS-Git](https://msysgit.github.io/)) comes bundled with the following:
 
 * Tools:
-  * :package: cut (GNU text utilities 2.0)
-  * :package: date (GNU text utilities 2.0)
-  * :package: expr (GNU text utilities 2.0)
-  * :package: grep 2.4.2 (GNU grep)
-  * :package: printf
-  * :package: sed 4.2.1 (GNU sed)
-  * :package: tr 2.0 (GNU text utilities 2.0)
-  * :package: wc 2.0 (GNU text utilities 2.0)
+  * :package: `cut` (GNU text utilities 2.0)
+  * :package: `date` (GNU text utilities 2.0)
+  * :package: `expr` (GNU text utilities 2.0)
+  * :package: `grep` 2.4.2 (GNU grep)
+  * :package: `printf`
+  * :package: `sed` 4.2.1 (GNU sed)
+  * :package: `tr` 2.0 (GNU text utilities 2.0)
+  * :package: `wc` 2.0 (GNU text utilities 2.0)
 * Scripting Languages:
-  * :package: awk 3.0.4 (GNU awk)
-  * :package: perl 5.8.8
-  * :package: PHP 5.5.13
-  * :package: TCL 8.5
+  * :package: `awk` 3.0.4 (GNU awk)
+  * :package: `perl` 5.8.8
+  * :package: `php` (PHP) 5.5.13
+  * :package: `tclsh` (TCL) 8.5
 
 ### UWIN
 
 [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) provides a Korn shell environment with some popular Unix tools.The [UWIN](http://www2.research.att.com/~astopen/download/uwin/uwin.html) environment comes with the tools:
 
 * Tools:
-  * :package: bc 1.0.4 (FSF)
-  * :package: cut (AT&T Research) 2010-08-11
-  * :package: date (AT&T Research) 2011-01-27
-  * :package: expr (AT&T Research) 2010-08-11
-  * :package: grep (AT&T Research) 2012-05-07
-  * :package: printf (AT&T Research) 2009-02-02 `/usr/bin/printf`
-  * :package: sed (AT&T Research) 2012-03-28
-  * :package: seq (AT&T Labs Research) 2012-04-14
-  * :package: tr (AT&T Labs Research) 2012-05-31
-  * :package: wc (AT&T Research) 2009-11-28
+  * :package: `bc` 1.0.4 (FSF)
+  * :package: `cut` (AT&T Research) 2010-08-11
+  * :package: `date` (AT&T Research) 2011-01-27
+  * :package: `expr` (AT&T Research) 2010-08-11
+  * :package: `grep` (AT&T Research) 2012-05-07
+  * :package: `printf` (AT&T Research) 2009-02-02 `/usr/bin/printf`
+  * :package: `sed` (AT&T Research) 2012-03-28
+  * :package: `seq` (AT&T Labs Research) 2012-04-14
+  * :package: `tr` (AT&T Labs Research) 2012-05-31
+  * :package: `wc` (AT&T Research) 2009-11-28
 * Scripting Languages:
-  * :package: awk
-  * :package: csh
+  * :package: `awk`
+  * :package: `csh`
 
 ### GNUWin32
 
 [GNUWin32](http://gnuwin32.sourceforge.net/) are popular GNU utilities that are ported directly to Windows.  They can run under the Windows Command Shell (`cmd.exe`).
 
 * Tools:
-  * :package: GNU Awk 3.1.6
-  * :package: bc 1.06
-  * :package: cut (GNU coreutils) 5.3.0
-  * :package: date (GNU coreutils) 5.3.0
-  * :package: env (GNU coreutils) 5.3.0
-  * :package: expr (GNU coreutils) 5.3.0
-  * :package: GNU grep 2.5.4
-  * :package: printf (GNU coreutils) 5.3.0
-  * :package: GNU sed version 4.2.1
-  * :package: seq (GNU coreutils) 5.3.0
-  * :package: tr (GNU coreutils) 5.3.0  
-  * :package: wc (GNU coreutils) 5.3.0
+  * :package: `bc` 1.06
+  * :package: `cut` (GNU coreutils) 5.3.0
+  * :package: `date` (GNU coreutils) 5.3.0
+  * :package: `env` (GNU coreutils) 5.3.0
+  * :package: `expr` (GNU coreutils) 5.3.0
+  * :package: `grep` (GNU grep) 2.5.4
+  * :package: `printf` (GNU coreutils) 5.3.0
+  * :package: `sed` (GNU sed) 4.2.1
+  * :package: `seq` (GNU coreutils) 5.3.0
+  * :package: `tr` (GNU coreutils) 5.3.0  
+  * :package: `wc` (GNU coreutils) 5.3.0
+  * :package: `which` (GNU which) 2.20
 * Scripting Languages:
-  * :package: GNU which v2.20
+  * :package: `awk` (GNU Awk) 3.1.6
+
 
 ## Windows Packages
 
