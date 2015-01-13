@@ -2,6 +2,10 @@
 * http://gnuwin64.sourceforge.net/
 * http://mingw-w64.sourceforge.net/
 
+http://lrn.no-ip.info/other/mingw/mingw32/curl/
+https://fatchoco.wordpress.com/2009/03/01/using-curl-in-mingw/
+`mingw32-make mingw32`
+`gcc -DCURL_STATICLIB -I ../../include -L ../../lib simple.c -o simple -lcurl -lws2_32 -lwinmm`
 ```
 
 
