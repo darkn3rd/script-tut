@@ -227,4 +227,13 @@ bash-3.1$ echo $PATH | tr ':' '\n'
 /c/Ruby21/bin
 ```
 
-Note that in Git-Bash, `/usr` is the same as `/c/Git`.  In the Git-Bash, you may want to put `/usr/bin` up front, as the GNUWin32 tools will report incompatible Windows paths.
+Note that in Git-Bash, `/usr` is the same as `/c/Git`.  
+
+In the Git-Bash, you may want to put `/usr/bin` up front, as the both Windows and GNUWin32 tools will report incompatible Windows paths. For example:
+
+```bash
+bash-3.1$ /c/gnuwin32/bin/which ruby
+c:\Ruby21\bin\ruby.EXE
+bash-3.1$ /usr/bin/which ruby
+/c/Ruby21/bin/ruby
+```
