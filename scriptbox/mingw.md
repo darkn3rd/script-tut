@@ -227,4 +227,4 @@ bash-3.1$ echo $PATH | tr ':' '\n'
 /c/Ruby21/bin
 ```
 
-Note that in Git-Bash, `/usr` is the same as `/c/Git`.
+Note that in Git-Bash, `/usr` is the same as `/c/Git`.  In the Git-Bash, you may want to put `/usr/bin` up front, as the GNUWin32 tools will report incompatible Windows paths.
