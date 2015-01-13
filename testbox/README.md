@@ -11,13 +11,15 @@ The idea for this area is to develop testing that can verify functionality of sc
 * 2014-01-05:
    * Basic framework organization.
    * Test runner (Rake) executes scripts
-* 2014-01-11
+* 2015-01-11
    * JSON container and expected data set
    * Script class to facilitate running tests, collecting/reporting results, reporting environment.
    * TestSuite (organization, structure, reporting) completed using Rakefile
    * Adjustments to scripts, dataset, and bug fixes
    * Initial support for dynamic data in dataset
    * Discovered potential bugs in Groovy and Perl, other areas involved quirky behavior
+* 2015-01-12
+   * Added Initial Support for Windows (GNUWin32 + Ruby + PHP + Python)
 
 ## The Product Plan
 
@@ -41,7 +43,7 @@ This category will be followed **0** to **9** methods to do the particular categ
 * C01 - C0 category, 1st alt method for absent feature
 * C02 - C0 category, 2nd alt method for absent feature
 
-### Requirements
+### Product Requirements
 
 The testing system will have a test harness or test runner that will run test cases.
 
@@ -57,18 +59,6 @@ The testing system will have a test harness or test runner that will run test ca
     * output - standard error or standard output
       * exit code (optinal)
 
-### Implementation
-
-After some research, the easiest path for such a system was to use a task oriented build tool, with rake being the first choice.
-
-The rake file, currently called `testbox.rake` will use the rake tool as the test runner with embedded tasks in the rakefile that will contain the test cases.
-
-This system will perform the following features:
-
- * Environment detection for reporting and executing scripts
- * Dynamic generation of scripts to be tested
- * Dynamic configuration of expected inputs and results (`expecteed.json`)
-
 #### Test Data
 
 The test data contains the following format:
@@ -77,11 +67,38 @@ The test data contains the following format:
 {
   plan01: [{"out": "Script says blah"}],
   plan01: [{"arg": "", "err": "Usage: blah"},
-           {"arg": "3 4", "Some output here"],
+  {"arg": "3 4", "Some output here"],
   plan03: [{"in": "Name\n", "out": "Hello Name."}],
   plan04: [{"in": "Name\nquit\n", "out": "Hello Name!\nEnter your name (quit to Exit): "}]
 }
 ```
+
+## The Product Implementation
+
+### Overview
+
+The Rake task-build tool will be the *test runner* with `testbox.rake` listing the test cases organized into groups.  Any test run will print a header.
+
+This system will perform the following features:
+
+ * Environment detection for reporting and executing scripts
+ * Dynamic generation of scripts to be tested
+ * Dynamic configuration of expected inputs and results (`expecteed.json`)
+
+### Technical Requirements
+
+On Windows, the following are needed:
+
+ * [Ruby](http://rubyinstaller.org/) 1.9 or greater
+ * [GNU Awk](http://www.gnu.org/software/gawk/)
+ * [GNUWin32 Tools](http://gnuwin32.sourceforge.net/)
+
+### Testing
+
+* :dvd: Darwin (Mac OS X 10.8.5)
+* :dvd: Mingw32 (Windows 7)
+  * :package: Ruby 2.1.5p273 (rubyinstaller-2.1.5-x64.exe)
+  * :package: gawk-3.1.6-1-setup.exe
 
 ## Notes
 

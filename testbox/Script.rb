@@ -54,17 +54,31 @@ class Script
     :ksh    => "ksh",
     :js     => "cscript //Nologo",
     :vbs    => "cscript //Nologo",
-    :ps1    => "powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File",
+    :ps1    => 'powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File',
     :cmd    => "cmd /c",
   }
 
-  @@versions = {
+  @@nix_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
     :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version",
-    :rb     => 'ruby --version | awk \'{ print $2 }\'',
+    :py     => "python --version 2>&1",
+    :rb     => 'ruby --version | gawk \'{ print $2 }\'',
+    :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
+    :bash   => "bash --version | head -1",
+    :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
+    :csh    => "csh --version",
+    :ksh    => "ksh --version",
+  }
+
+  @@win_version = {
+    :awk    => "gawk --version | head -1",
+    :groovy => "groovy --version",
+    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :php    => 'php --version | head -1',
+    :py     => "python --version 2>&1",
+    :rb     => 'ruby --version | gawk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
@@ -72,7 +86,7 @@ class Script
     :ksh    => "ksh --version",
     :js     => "cscript | findstr Windows",
     :vbs    => "cscript | findstr Windows",
-    :ps1    => "powershell -command '[string]$PSVersionTable.PSVersion.Major + \".\" + [string]$PSVersionTable.PSVersion.Minor'",
+    :ps1    => 'powershell -command \'[string]$PSVersionTable.PSVersion.Major + \".\" + [string]$PSVersionTable.PSVersion.Minor\'',
     :cmd    => "echo exit | cmd | findstr Windows",
   }
 
@@ -99,8 +113,6 @@ class Script
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@jsonfile  = "../../testbox/expected.json"
 
-  
-
   require 'json'
   if File.exists?(@@jsonfile)
     @@dataset = JSON.parse(File.read(@@jsonfile))
@@ -122,11 +134,35 @@ class Script
   end
 
   def self.version
-    `#{@@versions[@@language.to_sym]}`
+    if @@ostype[0] == "mingw"
+      `#{@@win_version[@@language.to_sym]}`.chomp
+    else
+      `#{@@nix_version[@@language.to_sym]}`.chomp
+    end
   end
 
   def self.path
-    `command -v #{self.runner}`
+    # Test for Windows Scenarios
+    if @@ostype[0] == "mingw"
+      scriptexec = self.runner
+      if scriptexec =~ /gawk/i
+        scriptexec = "GnuWin32"
+      end
+
+      # Method to Search Windows PATH
+      scriptpath = `echo %PATH%`.split(';').select { |line|
+        line =~ /#{scriptexec}/i
+      }[0]
+
+      # Append Script Executable to
+      if scriptpath =~ /\\$/
+        "#{scriptpath}#{scriptexec}"
+      else
+        "#{scriptpath}\\#{scriptexec}"
+      end
+    else
+      `command -v "#{self.runner}"`.chomp
+    end
   end
 
   def self.ostype
