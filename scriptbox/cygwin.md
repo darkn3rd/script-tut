@@ -1,3 +1,17 @@
+# CygWin Installation Path
+
+@2014 Joaquin Menchaca
+
+## Overview
+
+The [Cygnus Windows (CygWin)](https://www.cygwin.com/) is a simulated Unix-like environment that implements missing libraries and interfaces that are not supported in Windows.  
+
+CygWin has it's own terminal environment and it tends to run tools that are made for CygWin environment.  Windows CLI commands may function properly or well within the CygWin environment.
+
+The CygWin comes with graphical installer tool for this command-line environment
+
+and can call DOS commands in addition to tools built under CygWin.  Combined with package installer cyg-apt, you can install any missing components.
+
 ### CygWin Environment
 
 Download and install the appropriate CygWin environment.  These instructions are for 64-bit version: `setup-x86_64.exe`.  Run through the setup and select the defaults. Assuming that the setup program was installed in your Downloads folder, run CygWin64 Terminal from Start menu and then run these commands to get `apt-cyg` wrapper:

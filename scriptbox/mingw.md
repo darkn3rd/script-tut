@@ -185,6 +185,8 @@ The UWIN also comes with these environments:
 
 ## Post Installations
 
+When configuration the `PATH` environment variable you may want to have GNUWin32 before or after Windows paths, depending on whether you want Windows versions of `date`, `sort`, `find` to take precedence. You could create Batch files for `wdate`, `wsort`, `wfind`, `gdate`, `gsort`, `gfind` to access the full absolute path and distinguish between two when needed.
+
 ```batch
 C:\Users\Vagrant> echo %PATH% | tr ';' '\n'
 C:\Python27\
@@ -203,3 +205,26 @@ C:\Git\cmd
 C:\Git\bin
 C:\Ruby21\bin
 ```
+
+In Git-Bash, the same environment will look like this:
+
+```bash
+bash-3.1$ echo $PATH | tr ':' '\n'
+/c/Python27/
+/c/Python27/Scripts
+/c/PHP/
+/c/Windows/system32
+/c/Windows
+/c/Windows/System32/Wbem
+/c/Windows/System32/WindowsPowerShell/v1.0/
+/c/Program Files/Puppet Labs/Puppet/bin
+/c/gnuwin32/bin
+/c/Strawberry/c/bin
+/c/Strawberry/perl/site/bin
+/c/Strawberry/perl/bin
+/usr/cmd
+/usr/bin
+/c/Ruby21/bin
+```
+
+Note that in Git-Bash, `/usr` is the same as `/c/Git`.
