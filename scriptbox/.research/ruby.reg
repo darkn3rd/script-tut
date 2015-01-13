@@ -1,0 +1,31 @@
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.rb]
+@="RubyFile"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.rbw]
+@="RubyWFile"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyFile]
+@="Ruby File"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyFile\DefaultIcon]
+@="C:\\Ruby21\\bin\\ruby.exe,0"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyFile\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyFile\shell\open]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyFile\shell\open\command]
+@="\"C:\\Ruby21\\bin\\ruby.exe\" \"%1\" %*"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyWFile]
+@="RubyW File"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyWFile\DefaultIcon]
+@="C:\\Ruby21\\bin\\rubyw.exe,0"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyWFile\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyWFile\shell\open]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\RubyWFile\shell\open\command]
+@="\"C:\\Ruby21\\bin\\rubyw.exe\" \"%1\" %*"

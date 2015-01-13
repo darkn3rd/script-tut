@@ -1,0 +1,14 @@
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Perl_program_file]
+@="Perl program file"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Perl_program_file\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Perl_program_file\shell\Execute Perl Program]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Perl_program_file\shell\Execute Perl Program\command]
+@="C:\\Strawberry\\perl\\bin\\perl.exe \"%1\" %*"
+
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.pl]
+"PerceivedType"="text"
+@="Perl_program_file"

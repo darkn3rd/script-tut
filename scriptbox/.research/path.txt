@@ -1,0 +1,14 @@
+C:\Python27\
+C:\Python27\Scripts
+C:\PHP\
+C:\Ruby21\bin
+%SystemRoot%\system32
+%SystemRoot%
+%SystemRoot%\System32\Wbem
+%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\
+C:\opscode\chef\bin
+C:\opscode\chef\embedded\bin
+C:\Program Files\Puppet Labs\Puppet\bin
+C:\Strawberry\c\bin
+C:\Strawberry\perl\site\bin
+C:\Strawberry\perl\bin

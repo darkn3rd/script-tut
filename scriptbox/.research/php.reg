@@ -1,0 +1,6 @@
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.php]
+@="PHPFile"
+"Content Type"="application/php"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.php3]
+"PerceivedType"="text"

@@ -1,0 +1,259 @@
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile]
+@="Compiled Python File"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\DefaultIcon]
+@="C:\\Python27\\DLLs\\pyc.ico"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\shell\open]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\shell\open\command]
+@="\"C:\\Python27\\python.exe\" \"%1\" %*"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\shellex]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile\shellex\DropHandler]
+@="{60254CA5-953B-11CF-8C96-00AA00B8708C}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File]
+@="Python File"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\DefaultIcon]
+@="C:\\Python27\\DLLs\\py.ico"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shell\Edit with IDLE]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shell\Edit with IDLE\command]
+@="\"C:\\Python27\\pythonw.exe\" \"C:\\Python27\\Lib\\idlelib\\idle.pyw\" -e \"%1\""
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shell\open]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shell\open\command]
+@="\"C:\\Python27\\python.exe\" \"%1\" %*"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shellex]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shellex\DropHandler]
+@="{60254CA5-953B-11CF-8C96-00AA00B8708C}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile]
+@="Python File (no console)"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\DefaultIcon]
+@="C:\\Python27\\DLLs\\py.ico"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\Edit with IDLE]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\Edit with IDLE\command]
+@="\"C:\\Python27\\pythonw.exe\" \"C:\\Python27\\Lib\\idlelib\\idle.pyw\" -e \"%1\""
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\open]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\open\command]
+@="\"C:\\Python27\\pythonw.exe\" \"%1\" %*"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shellex]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shellex\DropHandler]
+@="{60254CA5-953B-11CF-8C96-00AA00B8708C}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Python.exe]
+@="C:\\Python27\\Python.exe"
+
+[HKEY_USERS\S-1-5-21-37870939-2949504085-1600402019-1000\Software\Microsoft\Windows\CurrentVersion\Explorer\StartPage\NewShortcuts]
+"C:\\Users\\vagrant\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\IDLE (Python GUI).lnk"=dword:00000001
+"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\IDLE (Python GUI).lnk"=dword:00000001
+"C:\\Users\\vagrant\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\Module Docs.lnk"=dword:00000001
+"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\Module Docs.lnk"=dword:00000001
+"C:\\Users\\vagrant\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\Python (command line).lnk"=dword:00000001
+"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\Python (command line).lnk"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\Help]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\Help\Main Python Documentation]
+@="C:\\Python27\\Doc\\python279.chm"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\InstallPath]
+@="C:\\Python27\\"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\InstallPath\InstallGroup]
+@="Python 2.7"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\Modules]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.7\PythonPath]
+@="C:\\Python27\\Lib;C:\\Python27\\DLLs;C:\\Python27\\Lib\\lib-tk"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs]
+"C:\\Windows\\system32\\python27.dll"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{79F081BF-7454-43DB-BD8F-9EE596813232}]
+"DisplayIcon"="C:\\Python27\\python.exe"
+"AuthorizedCDFPrefix"=""
+"Comments"=""
+"Contact"=""
+"DisplayVersion"="2.7.9150"
+"HelpLink"=""
+"HelpTelephone"=""
+"InstallDate"="20150113"
+"InstallLocation"=""
+"InstallSource"="C:\\Users\\vagrant\\Downloads\\installers\\"
+"ModifyPath"=hex(2):4d,00,73,00,69,00,45,00,78,00,65,00,63,00,2e,00,65,00,78,\
+  00,65,00,20,00,2f,00,49,00,7b,00,37,00,39,00,46,00,30,00,38,00,31,00,42,00,\
+  46,00,2d,00,37,00,34,00,35,00,34,00,2d,00,34,00,33,00,44,00,42,00,2d,00,42,\
+  00,44,00,38,00,46,00,2d,00,39,00,45,00,45,00,35,00,39,00,36,00,38,00,31,00,\
+  33,00,32,00,33,00,32,00,7d,00,00,00
+"Publisher"="Python Software Foundation"
+"Readme"=""
+"Size"=""
+"EstimatedSize"=dword:0000dd7f
+"UninstallString"=hex(2):4d,00,73,00,69,00,45,00,78,00,65,00,63,00,2e,00,65,00,\
+  78,00,65,00,20,00,2f,00,49,00,7b,00,37,00,39,00,46,00,30,00,38,00,31,00,42,\
+  00,46,00,2d,00,37,00,34,00,35,00,34,00,2d,00,34,00,33,00,44,00,42,00,2d,00,\
+  42,00,44,00,38,00,46,00,2d,00,39,00,45,00,45,00,35,00,39,00,36,00,38,00,31,\
+  00,33,00,32,00,33,00,32,00,7d,00,00,00
+"URLInfoAbout"=""
+"URLUpdateInfo"=""
+"VersionMajor"=dword:00000002
+"VersionMinor"=dword:00000007
+"WindowsInstaller"=dword:00000001
+"Version"=dword:020723be
+"Language"=dword:00000409
+"DisplayName"="Python 2.7.9"
+
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\Folders]
+"C:\\Python27\\"=""
+"C:\\Python27\\Lib\\"=""
+"C:\\Python27\\Lib\\xml\\"=""
+"C:\\Python27\\Lib\\xml\\sax\\"=""
+"C:\\Python27\\Lib\\xml\\parsers\\"=""
+"C:\\Python27\\Lib\\xml\\etree\\"=""
+"C:\\Python27\\Lib\\xml\\dom\\"=""
+"C:\\Python27\\Lib\\wsgiref\\"=""
+"C:\\Python27\\Lib\\unittest\\"=""
+"C:\\Python27\\Lib\\unittest\\test\\"=""
+"C:\\Python27\\Lib\\test\\"=""
+"C:\\Python27\\Lib\\test\\xmltestdata\\"=""
+"C:\\Python27\\Lib\\test\\tracedmodules\\"=""
+"C:\\Python27\\Lib\\test\\subprocessdata\\"=""
+"C:\\Python27\\Lib\\test\\leakers\\"=""
+"C:\\Python27\\Lib\\test\\imghdrdata\\"=""
+"C:\\Python27\\Lib\\test\\decimaltestdata\\"=""
+"C:\\Python27\\Lib\\test\\crashers\\"=""
+"C:\\Python27\\Lib\\test\\cjkencodings\\"=""
+"C:\\Python27\\Lib\\test\\capath\\"=""
+"C:\\Python27\\Lib\\test\\audiodata\\"=""
+"C:\\Python27\\Lib\\sqlite3\\"=""
+"C:\\Python27\\Lib\\sqlite3\\test\\"=""
+"C:\\Python27\\Lib\\site-packages\\"=""
+"C:\\Python27\\Lib\\pydoc_data\\"=""
+"C:\\Python27\\Lib\\multiprocessing\\"=""
+"C:\\Python27\\Lib\\multiprocessing\\dummy\\"=""
+"C:\\Python27\\Lib\\msilib\\"=""
+"C:\\Python27\\Lib\\logging\\"=""
+"C:\\Python27\\Lib\\lib2to3\\"=""
+"C:\\Python27\\Lib\\lib2to3\\tests\\"=""
+"C:\\Python27\\Lib\\lib2to3\\tests\\data\\"=""
+"C:\\Python27\\Lib\\lib2to3\\tests\\data\\fixers\\"=""
+"C:\\Python27\\Lib\\lib2to3\\tests\\data\\fixers\\myfixes\\"=""
+"C:\\Python27\\Lib\\lib2to3\\pgen2\\"=""
+"C:\\Python27\\Lib\\lib2to3\\fixes\\"=""
+"C:\\Python27\\Lib\\lib-tk\\"=""
+"C:\\Python27\\Lib\\lib-tk\\test\\"=""
+"C:\\Python27\\Lib\\lib-tk\\test\\test_ttk\\"=""
+"C:\\Python27\\Lib\\lib-tk\\test\\test_tkinter\\"=""
+"C:\\Python27\\Lib\\json\\"=""
+"C:\\Python27\\Lib\\json\\tests\\"=""
+"C:\\Python27\\Lib\\importlib\\"=""
+"C:\\Python27\\Lib\\idlelib\\"=""
+"C:\\Python27\\Lib\\idlelib\\idle_test\\"=""
+"C:\\Python27\\Lib\\idlelib\\Icons\\"=""
+"C:\\Python27\\Lib\\hotshot\\"=""
+"C:\\Python27\\Lib\\ensurepip\\"=""
+"C:\\Python27\\Lib\\ensurepip\\_bundled\\"=""
+"C:\\Python27\\Lib\\encodings\\"=""
+"C:\\Python27\\Lib\\email\\"=""
+"C:\\Python27\\Lib\\email\\test\\"=""
+"C:\\Python27\\Lib\\email\\test\\data\\"=""
+"C:\\Python27\\Lib\\email\\mime\\"=""
+"C:\\Python27\\Lib\\distutils\\"=""
+"C:\\Python27\\Lib\\distutils\\tests\\"=""
+"C:\\Python27\\Lib\\distutils\\command\\"=""
+"C:\\Python27\\Lib\\curses\\"=""
+"C:\\Python27\\Lib\\ctypes\\"=""
+"C:\\Python27\\Lib\\ctypes\\test\\"=""
+"C:\\Python27\\Lib\\ctypes\\macholib\\"=""
+"C:\\Python27\\Lib\\compiler\\"=""
+"C:\\Python27\\Lib\\bsddb\\"=""
+"C:\\Python27\\Lib\\bsddb\\test\\"=""
+"C:\\Python27\\DLLs\\"=""
+"C:\\Python27\\include\\"=""
+"C:\\Python27\\libs\\"=""
+"C:\\Python27\\tcl\\"=""
+"C:\\Python27\\tcl\\tk8.5\\"=""
+"C:\\Python27\\tcl\\tk8.5\\ttk\\"=""
+"C:\\Python27\\tcl\\tk8.5\\msgs\\"=""
+"C:\\Python27\\tcl\\tk8.5\\images\\"=""
+"C:\\Python27\\tcl\\tk8.5\\demos\\"=""
+"C:\\Python27\\tcl\\tk8.5\\demos\\images\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\pref\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\demos\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\demos\\samples\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\demos\\bitmaps\\"=""
+"C:\\Python27\\tcl\\tix8.4.3\\bitmaps\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\US\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\SystemV\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Pacific\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Mexico\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Indian\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Europe\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Etc\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Chile\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Canada\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Brazil\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Australia\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Atlantic\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Asia\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Arctic\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Antarctica\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\America\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\America\\North_Dakota\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\America\\Kentucky\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\America\\Indiana\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\America\\Argentina\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\tzdata\\Africa\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\opt0.4\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\msgs\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\http1.0\\"=""
+"C:\\Python27\\tcl\\tcl8.5\\encoding\\"=""
+"C:\\Python27\\tcl\\tcl8\\8.5\\"=""
+"C:\\Python27\\tcl\\tcl8\\"=""
+"C:\\Python27\\tcl\\tcl8\\8.4\\"=""
+"C:\\Python27\\tcl\\tcl8\\8.4\\platform\\"=""
+"C:\\Python27\\tcl\\reg1.2\\"=""
+"C:\\Python27\\tcl\\dde1.3\\"=""
+"C:\\Python27\\Tools\\i18n\\"=""
+"C:\\Python27\\Tools\\"=""
+"C:\\Python27\\Tools\\pynche\\"=""
+"C:\\Python27\\Tools\\pynche\\X\\"=""
+"C:\\Python27\\Tools\\Scripts\\"=""
+"C:\\Python27\\Tools\\versioncheck\\"=""
+"C:\\Python27\\Tools\\webchecker\\"=""
+"C:\\Python27\\Doc\\"=""
+"C:\\Windows\\Installer\\{79F081BF-7454-43DB-BD8F-9EE596813232}\\"=""
+"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Python 2.7\\"=""
