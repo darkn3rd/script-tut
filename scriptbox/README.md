@@ -171,6 +171,22 @@ The Git Bash ([MSYS-Git](https://msysgit.github.io/)) comes bundled with the fol
 
 [GNUWin32](http://gnuwin32.sourceforge.net/) are popular GNU utilities that are ported directly to Windows.  They can run under the Windows Command Shell (`cmd.exe`).
 
+* Tools:
+  * :package: GNU Awk 3.1.6
+  * :package: bc 1.06
+  * :package: cut (GNU coreutils) 5.3.0
+  * :package: date (GNU coreutils) 5.3.0
+  * :package: env (GNU coreutils) 5.3.0
+  * :package: expr (GNU coreutils) 5.3.0
+  * :package: GNU grep 2.5.4
+  * :package: printf (GNU coreutils) 5.3.0
+  * :package: GNU sed version 4.2.1
+  * :package: seq (GNU coreutils) 5.3.0
+  * :package: tr (GNU coreutils) 5.3.0  
+  * :package: wc (GNU coreutils) 5.3.0
+* Scripting Languages:
+  * :package: GNU which v2.20
+
 ## Windows Packages
 
 ### Apt-Cyg
