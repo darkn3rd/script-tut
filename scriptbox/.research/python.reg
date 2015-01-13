@@ -1,3 +1,18 @@
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.py]
+@="Python.File"
+"Content Type"="text/plain"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.pyc]
+@="Python.CompiledFile"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.pyo]
+@="Python.CompiledFile"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.pyw]
+@="Python.NoConFile"
+"Content Type"="text/plain"
+
+
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.CompiledFile]
 @="Compiled Python File"
 
@@ -39,28 +54,13 @@
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.File\shellex\DropHandler]
 @="{60254CA5-953B-11CF-8C96-00AA00B8708C}"
 
+
+
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile]
 @="Python File (no console)"
 
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\DefaultIcon]
-@="C:\\Python27\\DLLs\\py.ico"
 
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell]
 
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\Edit with IDLE]
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\Edit with IDLE\command]
-@="\"C:\\Python27\\pythonw.exe\" \"C:\\Python27\\Lib\\idlelib\\idle.pyw\" -e \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\open]
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shell\open\command]
-@="\"C:\\Python27\\pythonw.exe\" \"%1\" %*"
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shellex]
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Python.NoConFile\shellex\DropHandler]
-@="{60254CA5-953B-11CF-8C96-00AA00B8708C}"
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Python.exe]
 @="C:\\Python27\\Python.exe"

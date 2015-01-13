@@ -4,3 +4,25 @@
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.php3]
 "PerceivedType"="text"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\PHPFile]
+@="PHP Script"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\PHPFile\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\PHPFile\shell\open]
+@="Run"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\PHPFile\shell\open\command]
+@="C:\\PHP\\php-win.exe \"%*\""
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\PHP]
+"InstallDir"="C:\\PHP\\"
+"WebServerType"="noconfig"
+"Version"="5.3.29"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\Folders]
+"C:\\PHP\\"=""
+"C:\\PHP\\ext\\"=""
+"C:\\PHP\\dev\\"=""
+"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\PHP 5\\"=""
