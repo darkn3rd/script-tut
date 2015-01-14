@@ -1,4 +1,4 @@
-# Scripting Box: MinGW Installation Guide
+# Scripting Box: MinGW Installation Guide (32-bit)
 
 © Joaquin Menchaca, 2014
 
@@ -47,6 +47,7 @@ C:\Users\Vagrant\Downloads\GetGnuWin32> install
 C:\Users\Vagrant\Downloads\GetGnuWin32> cd C:\gnuwin32
 C:\gnuwin32> update-links.bat
 C:\gnuwin32> PATH=%PATH%;C:\gnuwin32
+SETX PATH "%PATH%"
 ```
 
 ## 5. Install Scripting Langauges
@@ -77,7 +78,11 @@ Python 2.7.9
 
 ### Ruby
 
-
+```
+C:\Users\Vagrant> which ruby                                                                                                    C:\Ruby21\bin\ruby.EXE
+C:\Users\Vagrant> ruby --version
+ruby 2.1.5p273 (2014-11-13 revision 48405) [i386-mingw32]
+```
 
 ### Strawberry Perl
 
@@ -91,16 +96,6 @@ C:\Users\Vagrant> perl --version | grep -o "perl 5.*$"
 perl 5, version 20, subversion 1 (v5.20.1) built for MSWin32-x86-multi-thread-64int
 ```
 
-
-
-```batch
-C:\Users\Vagrant> echo %PATH% | tr ';' '\n'
-
-
-
-```
-
-
 ## 6. Install Bash (Bourne Again Shell) with MSYS-Git
 
 The MSYS environment comes with GNU Bourne Again Shell `bash`.
@@ -113,24 +108,33 @@ The UWIN environment comes with a Korn Shell `ksh`, and also comes with POSIX sh
 
 ### Windows Command Shell Paths
 
-### Final Configurations
+The `%PATH%` environment variable is completely unique to your environment.  Thus this will need some customization for your particular environment.  
 
-The `%PATH%` environment variable is completely unique to your environment.  Thus this will need some customization for your particular environment.  Important it to have GNUWin32 path up front.
+It is **important*** to have GNUWin32 `%PATH_GNU%` before Bash `%PATH_BASH%` and Ksh `%PATH_KSH%`
 
 ```Batch
-SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
+:: Example Paths of Popular Tools
+SET PATH_CHOCO=%ALLUSERSPROFILE%\chocolatey\bin
+SET PATH_PUPPET=C:\Program Files\Puppet Labs\Puppet\bin
+SET PATH_TOOLS=%PATH_CHOCO%;%PATH_PUPPET%
+
+:: Common Windows Directories (32-bit)
 SET PATH_WINDOWS=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\
 
+:: Scriptng Languages
 SET PATH_PYTHON=C:\Python27\;C:\Python27\Scripts
 SET PATH_PHP=C:\PHP\
-SET PATH_STRAWBERRY=C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin
+SET PATH_PERL=C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin
 SET PATH_RUBY=C:\Ruby21\bin
+SET PATH_SCRIPTING=%PATH_RUBY%;%PATH_PYTHON%;%PATH_PHP%;%PATH_PERL%
 
-SET PATH_SCRIPTING=%PATH_RUBY%;%PATH_PYTHON%;%PATH_PHP%;%PATH_STRAWBERRY%
-
-SET PATH_GNU=C:\gnuwin32\bin
+:: Bash Shell
 SET PATH_BASH=C:\Git\cmd;C:\Git\bin
 
+:: GNUWin32 Tools (Must Go Before Bash and Ksh)
+SET PATH_GNU=C:\gnuwin32\bin
 
-SET PATH=%PATH_GNU%;%PATH_SCRIPTING%;%PATH_WINDOWS%;%PATH_BATH%
+:: Configure Current Path
+SET PATH=%PATH_GNU%;%PATH_TOOLS%;%PATH_SCRIPTING%;%PATH_WINDOWS%;%PATH_BASH%
+SETX PATH "%PATH%"
 ```
