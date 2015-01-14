@@ -1,10 +1,10 @@
 # Scripting Box: MinGW Installation Guide (32-bit)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2015
 
 ## Overview
 
-This installation guide covers installing components to create a ScriptBox for Windows Command Shell environment, using tools that were compiled using MinGW or Microsoft C Runtime.  These scripts should be able to run correctly within a Windows Command Shell `cmd.exe`.
+This installation guide covers installing components to create a ScriptBox for *Windows Command Shell* environment, using tools that were compiled using MinGW or Microsoft C Runtime.  These scripts should be able to run correctly within a *Windows Command Shell* `cmd.exe`.
 
 ## Testing
 
@@ -110,7 +110,7 @@ The UWIN environment comes with a Korn Shell `ksh`, and also comes with POSIX sh
 
 The `%PATH%` environment variable is completely unique to your environment.  Thus this will need some customization for your particular environment.  
 
-It is **important*** to have GNUWin32 `%PATH_GNU%` before Bash `%PATH_BASH%` and Ksh `%PATH_KSH%`
+It is **important** to have GNUWin32 `%PATH_GNU%` before Bash `%PATH_BASH%` and Ksh `%PATH_KSH%`
 
 ```Batch
 :: Example Paths of Popular Tools
