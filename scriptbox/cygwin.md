@@ -1,6 +1,6 @@
 # CygWin Installation Path
 
-@2014 Joaquin Menchaca
+©2014 Joaquin Menchaca
 
 ## Overview
 

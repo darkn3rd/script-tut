@@ -1,5 +1,5 @@
 ## Windows 7 (Windows NT 6.1)
-@2014 Joaquin Menchaca
+©2014 Joaquin Menchaca
 
 Some of these command may require running either PowerShell console or Command Shell (cmd.exe) in privileged mode: right click on `cmd.exe` or `powershell.exe` and select `Run as administrator`.
 
