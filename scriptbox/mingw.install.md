@@ -4,7 +4,7 @@
 
 ## Overview
 
-This installation guide covers installing components to create a ScriptBox for *Windows Command Shell* environment, using tools that were compiled using MinGW or Microsoft C Runtime.  These scripts should be able to run correctly within a *Windows Command Shell* `cmd.exe`.
+This installation guide covers installing components to create a ScriptBox for ***Windows Command Shell*** environment, using tools that were compiled using MinGW or Microsoft C Runtime.  These scripts should be able to run correctly within a ***Windows Command Shell*** `cmd.exe`.
 
 ## Testing
 
