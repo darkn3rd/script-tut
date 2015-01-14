@@ -2,7 +2,7 @@
 
 1. VBScript to Download Softwares
 2. VBScript to Unzip Softwares
-3. PATH Munging Script for Commaand Shell (VBScript?)
+3. PATH Munging Script for Command Shell (VBScript?)
 4. PATH Munging Script for BASH/KSH
 5. Parameter Processing (M series)
    a. shells (copy from advanced)
@@ -11,3 +11,7 @@
    d. json update for tests - coffee, cream, sugar
 6. Silent Installs
 7. Investigate Choco Route
+
+
+UNIX->DOS conversion
+  gsed -i 's/$/\r/' *.vbs
