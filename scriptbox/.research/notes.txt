@@ -1,0 +1,220 @@
+http://www.codeproject.com/Tips/506439/Downloading-files-with-VBScript
+http://stackoverflow.com/questions/2973136/download-a-file-with-vbs
+https://suite.io/mark-alexander-bain/1bfs2aa
+http://www.robvanderwoude.com/vbstech_files_zip.php
+
+http://technet.microsoft.com/en-us/library/ee156618.aspx
+https://leereid.wordpress.com/2008/01/10/sweet-vbscript-command-line-parameters/
+
+C:\> BvSshServer-Inst.exe /?
+This program will install Bitvise SSH Server 6.07
+on the machine it is being run on.
+
+Bitvise SSH Server is an SSH2 server for Windows 2000 or newer, including
+the latest Windows 8.1 and 2012 R2. Please see www.bitvise.com/ssh-server
+for more information.
+
+This program must be run by a user with administrator privileges. If run
+without command line options, installation will be performed in interactive
+mode. If run with command line options without the '-interactive' option,
+installation will be performed in unattended mode.
+
+Usage:
+ BvSshServer-Inst -installDir=directory OR -defaultSite OR -site=site-name
+                  [-force OR -abortOnWarning[=warning-list-or-mask]
+                  [-acceptEULA] [-interactive] [-noRollback]
+                  [-activationCode=activation-code-hex]
+                  [-keypairs=keypairs-file]
+                  [-settings=settings-file]
+                  [-siteTypeSettings=fileName]
+                  [-startService]
+                  [-startBssCtrl]
+
+ site-name: Arbitrary name describing installation site (without a prefix).
+  The prefix "Bitvise SSH Server - " will be prepended automatically.
+ -abortOnWarning[=warning-list-or-mask]: The list or mask of warnings that
+  will abort the installation. For example, to abort on warnings 4 and 16
+  either use -abortOnWarning=4,16 or -abortOnWarning=20. If neither list
+  nor mask is specified, all warnings will be assumed.
+
+To learn more about return codes, execute:
+ BvSshServer-Inst -help-codes
+
+IMPORTANT: Applications like the Windows Event Viewer can lock Bitvise SSH
+Server files that need to be replaced during an upgrade. If the installer
+cannot replace files because they are locked, it will return with exit code
+300. This exit code indicates that the installer must be run again using the
+same parameters after the computer has been restarted, or after ALL programs
+that had locked Bitvise SSH Server files, in any logon session, have been
+closed.
+
+C:\Users\Vagrant\Desktop>uwin-base.2012-08-06.win32.i386.exe /?
+./phase1.sh: /?: unknown option
+Usage: ./phase1.sh [authorize=phrase] [debug] [defaults] [file=file]
+                 [home|Home=directory] [remote] [root|Root=directory]
+                 [trace=level] [ name[=value] ... ] package release version
+
+
+/usr/bin:/sys:/win:.:.
+
+
+C:\ProgramData>@powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
+
+Mode                LastWriteTime     Length Name
+----                -------------     ------ ----
+d----         1/14/2015   2:03 PM            chocInstall
+Downloading https://chocolatey.org/api/v2/package/chocolatey/ to C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall\chocolatey.zip
+Download 7Zip commandline tool
+Downloading https://chocolatey.org/7za.exe to C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall\7za.exe
+Extracting C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall\chocolatey.zip to C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall...
+
+7-Zip (A) 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
+
+Processing archive: C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall\chocolatey.zip
+
+Extracting  _rels\.rels
+Extracting  chocolatey.nuspec
+Extracting  tools\chocolateyInstall.ps1
+Extracting  tools\chocolateysetup.psm1
+Extracting  tools\init.ps1
+Extracting  tools\chocolateyInstall\chocolatey.cmd
+Extracting  tools\chocolateyInstall\chocolatey.config
+Extracting  tools\chocolateyInstall\chocolatey.ps1
+Extracting  tools\chocolateyInstall\LICENSE.txt
+Extracting  tools\chocolateyInstall\NuGet.exe
+Extracting  tools\chocolateyInstall\NuGet.exe.ignore
+Extracting  tools\chocolateyInstall\functions\Append-Log.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Cygwin.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Help.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Install.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-InstallAll.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-InstallExtension.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-InstallIfMissing.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-List.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-NuGet.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Pack.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-PackagesConfig.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Push.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Python.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-RubyGem.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Sources.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Uninstall.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Update.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-Version.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-WebPI.ps1
+Extracting  tools\chocolateyInstall\functions\Chocolatey-WindowsFeatures.ps1
+Extracting  tools\chocolateyInstall\functions\Create-InstallLogIfNotExists.ps1
+Extracting  tools\chocolateyInstall\functions\Delete-ExistingErrorLog.ps1
+Extracting  tools\chocolateyInstall\functions\Generate-BinFile.ps1
+Extracting  tools\chocolateyInstall\functions\Get-ChocolateyBins.ps1
+Extracting  tools\chocolateyInstall\functions\Get-ConfigValue.ps1
+Extracting  tools\chocolateyInstall\functions\Get-GlobalConfigValue.ps1
+Extracting  tools\chocolateyInstall\functions\Get-LatestPackageVersion.ps1
+Extracting  tools\chocolateyInstall\functions\Get-LongPackageVersion.ps1
+Extracting  tools\chocolateyInstall\functions\Get-PackageFoldersForPackage.ps1
+Extracting  tools\chocolateyInstall\functions\Get-PackageFolderVersions.ps1
+Extracting  tools\chocolateyInstall\functions\Get-SourceArguments.ps1
+Extracting  tools\chocolateyInstall\functions\Get-Sources.ps1
+Extracting  tools\chocolateyInstall\functions\Get-UserConfigValue.ps1
+Extracting  tools\chocolateyInstall\functions\Get-VersionsForComparison.ps1
+Extracting  tools\chocolateyInstall\functions\Move-BadInstall.ps1
+Extracting  tools\chocolateyInstall\functions\Remove-BinFile.ps1
+Extracting  tools\chocolateyInstall\functions\Remove-LastInstallLog.ps1
+Extracting  tools\chocolateyInstall\functions\Run-ChocolateyProcess.ps1
+Extracting  tools\chocolateyInstall\functions\Run-ChocolateyPS1.ps1
+Extracting  tools\chocolateyInstall\functions\Run-NuGet.ps1
+Extracting  tools\chocolateyInstall\functions\Write-UserConfig.ps1
+Extracting  tools\chocolateyInstall\helpers\chocolateyInstaller.psm1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-BinRoot.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-CheckSumValid.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-ChocolateyUnzip.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-ChocolateyWebFile.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-EnvironmentVariable.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-EnvironmentVariableNames.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-FtpFile.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-ProcessorBits.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-UACEnabled.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-VirusCheckValid.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-WebFile.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Get-WebHeaders.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyDesktopLink.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyEnvironmentVariable.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyExplorerMenuItem.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyFileAssociation.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyInstallPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyPath.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyPinnedTaskBarItem.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyPowershellCommand.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyVsixPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Install-ChocolateyZipPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Set-EnvironmentVariable.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Start-ChocolateyProcessAsAdmin.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Test-ProcessAdminRights.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Uninstall-ChocolateyPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\UnInstall-ChocolateyZipPackage.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Update-SessionEnvironment.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-ChocolateyFailure.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-ChocolateySuccess.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-Debug.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-Error.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-FileUpdateLog.ps1
+Extracting  tools\chocolateyInstall\helpers\functions\Write-Host.ps1
+Extracting  tools\chocolateyInstall\redirects\choco.exe
+Extracting  tools\chocolateyInstall\redirects\choco.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\chocolatey.exe
+Extracting  tools\chocolateyInstall\redirects\chocolatey.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cinst.exe
+Extracting  tools\chocolateyInstall\redirects\cinst.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\clist.exe
+Extracting  tools\chocolateyInstall\redirects\clist.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cpack.exe
+Extracting  tools\chocolateyInstall\redirects\cpack.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cpush.exe
+Extracting  tools\chocolateyInstall\redirects\cpush.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cuninst.exe
+Extracting  tools\chocolateyInstall\redirects\cuninst.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cup.exe
+Extracting  tools\chocolateyInstall\redirects\cup.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\cver.exe
+Extracting  tools\chocolateyInstall\redirects\cver.exe.ignore
+Extracting  tools\chocolateyInstall\redirects\RefreshEnv.cmd
+Extracting  tools\chocolateyInstall\tools\7za.exe
+Extracting  tools\chocolateyInstall\tools\7za.exe.ignore
+Extracting  tools\chocolateyInstall\tools\7za.exe.manifest
+Extracting  tools\chocolateyInstall\tools\7zip.license.txt
+Extracting  tools\chocolateyInstall\tools\checksum.exe
+Extracting  tools\chocolateyInstall\tools\checksum.exe.ignore
+Extracting  tools\chocolateyInstall\tools\checksum.license.txt
+Extracting  tools\chocolateyInstall\tools\shimgen.exe
+Extracting  tools\chocolateyInstall\tools\shimgen.exe.ignore
+Extracting  tools\chocolateyInstall\tools\shimgen.license.txt
+Extracting  package\services\metadata\core-properties\ef5de462813d47c3a6fce804c73e3efa.psmdcp
+Extracting  [Content_Types].xml
+
+Everything is Ok
+
+Files: 119
+Size:       2740748
+Compressed: 1017059
+Installing chocolatey on this machine
+Creating ChocolateyInstall as an Environment variable (targeting 'User') and setting it to 'C:\ProgramData\chocolatey'
+We are setting up the Chocolatey repository for NuGet packages that should be at the machine level. Think executables/application packages, not library packages.
+
+That is what Chocolatey NuGet goodness is for. The repository is set up at 'C:\ProgramData\chocolatey'.
+The packages themselves go to 'C:\ProgramData\chocolatey\lib' (i.e. C:\ProgramData\chocolatey\lib\yourPackageName).
+A shim file for the command line goes to 'C:\ProgramData\chocolatey\bin' and points to an executable in 'C:\ProgramData\chocolatey\lib\yourPackageName'.
+
+Creating Chocolatey NuGet folders if they do not already exist.
+
+Copying the contents of 'C:\Users\Vagrant\AppData\Local\Temp\chocolatey\chocInstall\tools\chocolateyInstall' to 'C:\ProgramData\chocolatey'.
+PATH environment variable does not have C:\ProgramData\chocolatey\bin in it. Adding...
+Chocolatey is now ready.
+You can call chocolatey from anywhere, command line or powershell by typing choco.
+Run choco /? for a list of functions.
+You may need to shut down and restart powershell and/or consoles first prior to using chocolatey.
+Ensuring chocolatey commands are on the path
+
+
+
+C:\ProgramData>

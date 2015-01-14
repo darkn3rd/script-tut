@@ -6,6 +6,10 @@
 
 This installation guide covers installing components to create a ScriptBox for ***Windows Command Shell*** environment, using tools that were compiled using MinGW or Microsoft C Runtime.  These scripts should be able to run correctly within a ***Windows Command Shell*** `cmd.exe`.
 
+## Notes
+
+*To Choco or Not to Choco? That is the question.*  This install guide should be divided into a non-Choco guide, and a pure Choco-only guide.  The problem with the pure Choco, is that the Choco package may not exist, so we'll default to manual download until I contribute a choco package.
+
 ## Testing
 
 Valid as of Jan 13, 2015.  After that, the Internet may change.
@@ -119,7 +123,8 @@ SET PATH_PUPPET=C:\Program Files\Puppet Labs\Puppet\bin
 SET PATH_TOOLS=%PATH_CHOCO%;%PATH_PUPPET%
 
 :: Common Windows Directories (32-bit)
-SET PATH_WINDOWS=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\
+SET SYSDIR=%WINDIR%\system32
+SET PATH_WINDOWS=%SYSDIR%;%WINDIR%;%SYSDIR%\Wbem;%SYSDIR%\WindowsPowerShell\v1.0\
 
 :: Scriptng Languages
 SET PATH_PYTHON=C:\Python27\;C:\Python27\Scripts
@@ -129,13 +134,21 @@ SET PATH_RUBY=C:\Ruby21\bin
 SET PATH_SCRIPTING=%PATH_RUBY%;%PATH_PYTHON%;%PATH_PHP%;%PATH_PERL%
 
 :: Bash Shell
-SET PATH_BASH=C:\Git\cmd;C:\Git\bin
+SET MSYS_HOME=C:\Git
+SET PATH_BASH=%MSYS_HOME%\cmd;C:\Git\bin
+
+:: Ksh Shell
+SET UWIN_HOME=C:\UWIN
+SET PATH_KSH=%UWIN_HOME%\usr\bin
 
 :: GNUWin32 Tools (Must Go Before Bash and Ksh)
-SET PATH_GNU=C:\gnuwin32\bin
+SET GNUWIN_HOME=C:\gnuwin32
+SET PATH_GNU=%GNUWIN_HOME%\bin
+
+
 
 :: Configure Current Path
-SET PATH=%PATH_GNU%;%PATH_TOOLS%;%PATH_SCRIPTING%;%PATH_WINDOWS%;%PATH_BASH%
+SET PATH=%PATH_GNU%;%PATH_TOOLS%;%PATH_SCRIPTING%;%PATH_WINDOWS%;%PATH_BASH%;%PATH_KSH%
 SETX PATH "%PATH%"
 ```
 
@@ -146,9 +159,13 @@ In the MSYS environment, which is the GNU Bash shell, you want tools from the MS
 ```Bash
 # Example Paths of Popular Tools
 PATH_PUPPET=/c/Program Files/Puppet Labs/Puppet/bin
+PATH_CHOCO=$(echo $ALLUSERSPROFILE | sed -r 's#([A-Z]):\\#/\L\1/#i')/chocolatey/bin
+PATH_TOOLS=${PATH_CHOCO}:${PATH_PUPPET}
 
 # Common Windows Directories (32-bit)
-PATH_WINDOWS=/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/
+WIN=/c/Windows/
+SYS=${WIN}/system32
+PATH_WINDOWS=${SYS}:${WIN}:${SYS}/Wbem:${SYS}/WindowsPowerShell/v1.0/
 
 # Scripting Languages
 PATH_PYTHON=/c/Python27/:/c/Python27/Scripts
@@ -160,12 +177,50 @@ PATH_SCRIPTING=${PATH_RUBY}:${PATH_PYTHON}:${PATH_PHP}:${PATH_PERL}
 # GNUWin32 Tools (should go after Bash and Ksh)
 PATH_GNU=/c/gnuwin32/bin
 
-# Bash Shell (Should go before GNUWin32)
-PATH_BASH=/usr/cmd:/usr/bin
+# Ksh Shell
+PATH_KSH=/c/UWIN/usr/bin
+
+# Local Binary Reference (MUST GO FIRST)
+USERBIN=/usr/bin:/usr/bin
 
 # Configure Current Path
 INHERITED_PATH=${PATH}
-SET PATH=${PATH_BASH}:${PATH_TOOLS}:${PATH_SCRIPTING}:${PATH_WINDOWS}:${PATH_GNU}
+SET PATH=${USERBIN}:${PATH_BASH}:${PATH_KSH}:${PATH_TOOLS}:${PATH_SCRIPTING}:${PATH_WINDOWS}:${PATH_GNU}
+export ${INHERITED_PATH}  # preserve for reference
+export ${PATH}            # use the new path
+```
+
+## UWIN Shell Paths
+
+```Bash
+# Example Paths of Popular Tools
+PATH_PUPPET="/C/Program Files/Puppet Labs/Puppet/bin"
+PATH_CHOCO=$(echo $ALLUSERSPROFILE | sed -r 's#([a-zA-Z]):\\#/\U\1/#')/chocolatey/bin
+PATH_TOOLS=${PATH_CHOCO}:${PATH_PUPPET}
+
+# Common Windows Directories (32-bit)
+PATH_WINDOWS=/sys:/win:/sys/Wbem:/sys/WindowsPowerShell/v1.0/
+
+# Scripting Languages
+PATH_PYTHON=/C/Python27/:/C/Python27/Scripts
+PATH_PHP=/C/PHP/
+PATH_PERL=/C/Strawberry/C/bin:/C/Strawberry/perl/site/bin:/C/Strawberry/perl/bin
+PATH_RUBY=/C/Ruby21/bin
+PATH_SCRIPTING=${PATH_RUBY}:${PATH_PYTHON}:${PATH_PHP}:${PATH_PERL}
+
+# GNUWin32 Tools (should go after Bash and Ksh)
+PATH_GNU=/C/gnuwin32/bin
+
+# Bash Shell (Should go before GNUWin32)
+MSYS_HOME=/C/Git
+PATH_BASH=${MSYS_HOME}/cmd:${MSYS_HOME}/bin
+
+# Local Binary Reference
+USERBIN=/usr/bin
+
+# Configure Current Path
+INHERITED_PATH=${PATH}
+SET PATH=${USERBIN}:${PATH_BASH}:${PATH_TOOLS}:${PATH_SCRIPTING}:${PATH_WINDOWS}:${PATH_GNU}
 export ${INHERITED_PATH}  # preserve for reference
 export ${PATH}            # use the new path
 ```
