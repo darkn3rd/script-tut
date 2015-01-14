@@ -124,7 +124,7 @@ SET PATH_WINDOWS=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Wind
 :: Scriptng Languages
 SET PATH_PYTHON=C:\Python27\;C:\Python27\Scripts
 SET PATH_PHP=C:\PHP\
-SET PATH_PERL=C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin
+SET PATH_PERL=C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;C:\Strawberry\c\binC:\Strawberry\c\bin
 SET PATH_RUBY=C:\Ruby21\bin
 SET PATH_SCRIPTING=%PATH_RUBY%;%PATH_PYTHON%;%PATH_PHP%;%PATH_PERL%
 
@@ -137,4 +137,35 @@ SET PATH_GNU=C:\gnuwin32\bin
 :: Configure Current Path
 SET PATH=%PATH_GNU%;%PATH_TOOLS%;%PATH_SCRIPTING%;%PATH_WINDOWS%;%PATH_BASH%
 SETX PATH "%PATH%"
+```
+
+## MSYS Shell Paths
+
+In the MSYS environment, which is the GNU Bash shell, you want tools from the MSYS environment to be referenced first, as these tools support Unix-like paths that Bash needs.  You may want throw away the inherited PATH environment and manually manage the path.
+
+```Bash
+# Example Paths of Popular Tools
+PATH_PUPPET=/c/Program Files/Puppet Labs/Puppet/bin
+
+# Common Windows Directories (32-bit)
+PATH_WINDOWS=/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/
+
+# Scripting Languages
+PATH_PYTHON=/c/Python27/:/c/Python27/Scripts
+PATH_PHP=/c/PHP/
+PATH_PERL=/c/Strawberry/c/bin:/c/Strawberry/perl/site/bin:/c/Strawberry/perl/bin
+PATH_RUBY=/c/Ruby21/bin
+PATH_SCRIPTING=${PATH_RUBY}:${PATH_PYTHON}:${PATH_PHP}:${PATH_PERL}
+
+# GNUWin32 Tools (should go after Bash and Ksh)
+PATH_GNU=/c/gnuwin32/bin
+
+# Bash Shell (Should go before GNUWin32)
+PATH_BASH=/usr/cmd:/usr/bin
+
+# Configure Current Path
+INHERITED_PATH=${PATH}
+SET PATH=${PATH_BASH}:${PATH_TOOLS}:${PATH_SCRIPTING}:${PATH_WINDOWS}:${PATH_GNU}
+export ${INHERITED_PATH}  # preserve for reference
+export ${PATH}            # use the new path
 ```
