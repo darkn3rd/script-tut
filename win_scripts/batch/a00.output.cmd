@@ -1,1 +1,1 @@
-@ECHO "Hello"
+@ECHO Hello

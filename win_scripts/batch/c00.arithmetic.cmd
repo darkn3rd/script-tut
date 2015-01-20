@@ -5,6 +5,6 @@ SET length=6
 
 REM calculate area
 SET /a area=width * length
- 
-REM output integer arithmatic math results
-ECHO The area of a square(width=%width%,length=%length%) is %area%
+
+REM output integer arithmetic math results
+ECHO The area of a square (width=%width%, length=%length%) is %area%
