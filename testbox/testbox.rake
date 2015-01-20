@@ -107,7 +107,7 @@ task :b3 do |t|
 end
 
 # ==============================================
-desc 'Basic Arirthmetic'
+desc 'Basic Arithmetic'
 task :arithmetic do
   Rake::Task["header"].invoke
   Rake::Task["c0"].invoke

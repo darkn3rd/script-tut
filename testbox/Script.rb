@@ -40,8 +40,9 @@
 
 
 class Script
+  # command name
   @@command = {
-    :awk    => "gawk -f",
+    :awk    => "gawk",
     :groovy => "groovy",
     :pl     => "perl",
     :php    => "php",
@@ -52,12 +53,32 @@ class Script
     :csh    => "tcsh",
     :sh     => "sh",
     :ksh    => "ksh",
-    :js     => "cscript //Nologo",
-    :vbs    => "cscript //Nologo",
-    :ps1    => 'powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File',
-    :cmd    => "cmd /c",
+    :js     => "cscript",
+    :vbs    => "cscript",
+    :ps1    => "powershell",
+    :cmd    => "cmd"
   }
 
+  # options required for command
+  @@option = {
+    :awk    => "-f",
+    :groovy => "",
+    :pl     => "",
+    :php    => "",
+    :py     => "",
+    :rb     => "",
+    :tcl    => "",
+    :bash   => "",
+    :csh    => "",
+    :sh     => "",
+    :ksh    => "",
+    :js     => "//Nologo",
+    :vbs    => "//Nologo",
+    :ps1    => '-NoLogo -NoProfile -ExecutionPolicy Bypass -File',
+    :cmd    => "/c",
+  }
+
+  # commands required to retrieve version
   @@nix_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
@@ -72,6 +93,7 @@ class Script
     :ksh    => "ksh --version",
   }
 
+  # commands required to retrieve version (battle tested on Windows cmd.exe)
   @@win_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
@@ -84,12 +106,15 @@ class Script
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
     :ksh    => "ksh --version",
-    :js     => "cscript | findstr Windows",
-    :vbs    => "cscript | findstr Windows",
-    :ps1    => 'powershell -command \'[string]$PSVersionTable.PSVersion.Major + \".\" + [string]$PSVersionTable.PSVersion.Minor\'',
-    :cmd    => "echo exit | cmd | findstr Windows",
+    :js     => "cscript | grep -o \"Windows Script Host Version ...\"",
+    :vbs     => "cscript | grep -o \"Windows Script Host Version ...\"",
+    # bad mojo
+    #:vbs    => "cscript | grep -o \"Windows Script Host Version ...\" | sed -E \"s/(.*)Version\s(.*)/\1\2/\"",
+    :ps1    => 'powershell -command [string]$PSVersionTable.PSVersion.Major + \".\" + [string]$PSVersionTable.PSVersion.Minor',
+    :cmd    => "echo exit | cmd | findstr Windows | tr -s \"[[:space:]]\" : | cut -d: -f4"
   }
 
+  # Descriptive Name of Command
   @@language_name = {
     :awk    => "AWK",
     :groovy => "Groovy",
@@ -113,6 +138,7 @@ class Script
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@jsonfile  = "../../testbox/expected.json"
 
+  # Process JSON files and configure @@dataset
   require 'json'
   if File.exists?(@@jsonfile)
     @@dataset = JSON.parse(File.read(@@jsonfile))
@@ -129,8 +155,9 @@ class Script
     @@dataset[reference]
   end
 
+
   def self.runner
-    @@command[@@language.to_sym]
+    "#{@@command[@@language.to_sym]} #{@@option[@@language.to_sym]}"
   end
 
   def self.version
@@ -141,28 +168,10 @@ class Script
     end
   end
 
+  # path() - returns path of executable
+  #  REQUIREMENTS: which
   def self.path
-    # Test for Windows Scenarios
-    if @@ostype[0] == "mingw"
-      scriptexec = self.runner
-      if scriptexec =~ /gawk/i
-        scriptexec = "GnuWin32"
-      end
-
-      # Method to Search Windows PATH
-      scriptpath = `echo %PATH%`.split(';').select { |line|
-        line =~ /#{scriptexec}/i
-      }[0]
-
-      # Append Script Executable to
-      if scriptpath =~ /\\$/
-        "#{scriptpath}#{scriptexec}"
-      else
-        "#{scriptpath}\\#{scriptexec}"
-      end
-    else
-      `command -v "#{self.runner}"`.chomp
-    end
+      `which "#{@@command[@@language.to_sym]}"`.chomp
   end
 
   def self.ostype
@@ -229,7 +238,11 @@ class Script
               redirect = "2>&1"
               expected = test['err']
             else
-              redirect = "2> /dev/null"
+              if @@ostype[0] == "mingw"
+                redirect = "2> NUL"
+              else
+                redirect = "2> /dev/null"
+              end
               expected = test['out']
             end
 
@@ -246,9 +259,8 @@ class Script
             expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
 
             command = "#{input} #{Script.runner} #{cmd} #{args} #{redirect}"
-            #puts "RUNNING(#{`which perl`}) #{command}"
+            #puts "DEBUG: RUNNING #{command}"
             output = `#{command}`
-            #output = `#{Script.runner} #{cmd} #{redirect}`
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
