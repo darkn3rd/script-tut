@@ -24,6 +24,7 @@ The idea for this area is to develop testing that can verify functionality of sc
    * Updated TestSuite to support Windows
      * Requires GetGNUWin32 0.6.3 commands: `cut`, `grep`, `tr`, `which`
        * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
+       * single quotes are not supported with GNUWin32
    * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell*.
 
 ## Requirements
@@ -66,12 +67,30 @@ script-tut
     └── wsh.vbscript
 ```
 
-Navigate to the desired directory of the script directory, and run the `rake` command.  For example:
+Navigate to the desired directory of the script directory, and run the `rake` command.  
+
+On Mac OS X, you could do this:
 
 ```bash
-cd script-tut/gen_scripts/ruby
-rake
+$ cd script-tut/gen_scripts/ruby
+$ rake header
+Environment:      Darwin (x86_64)
+Language Target:  Ruby (/usr/local/bin/ruby)
+Language Version: 2.1.5p273
+
 ```
+
+On Windows 7, you can similarly do this:
+
+```batch
+C:\>cd script-tut\gen_scripts\ruby
+C:\>rake header
+Environment:      Mingw (x64)
+Language Target:  Ruby (C:\Ruby21-x64\bin\ruby.EXE)
+Language Version: 2.1.5p273
+```
+
+
 
 ## The Product Plan
 
