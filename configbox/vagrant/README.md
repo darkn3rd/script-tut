@@ -6,6 +6,8 @@
 
 This area covers configuration of virtualized ScriptBox system using Vagrant.  These are steps for creating generic systems, can contains no provision system.
 
+These instructions are ***under construction***.
+
 ## Configuring Windows Systems
 
 These steps are tested on Windows 7
@@ -21,13 +23,18 @@ Note that Vagrant 1.6.5 is known to work well, while Vagrant 1.7.x has some know
 
 These steps were ran using Mac OS X 10.8.5 using Virtual Box and Vagrant.  As Windows systems are huge, the compressed image may be around 3 GB to 4 GB.
 
-1. Download Windows virtual system for VirtualBox from [Modern IE](https://www.modern.ie/en-us/virtualization-tools#downloads). Example: `IE10.Win7.For.Mac.VirtualBox.zip`
-
-* Extract OVA file, e.g. `IE11 - Win10.ova`
-* Import OVA file by double clicking on it, which creates new virtual system, e.g. `IE11 - Win10`
-* Use Vagrant to package up a new system: `vagrant package --base "IE11 - Win10"`
-* This will output a `package.box`, rename this to something like appropriate, such as `ie11-win10.box`
-
+1. Download Windows virtual system for VirtualBox from [Modern IE](https://www.modern.ie/en-us/virtualization-tools#downloads).
+  * Selecting IE10 Windows 7 on Mac OS X will start downloading `IE10.Win7.For.Mac.VirtualBox.zip`
+*  Extract zip file
+   * Example: `IE10.Win7.For.Mac.VirtualBox.zip`
+*  Import the extracted OVA file
+   * Open "IE10Win7\IE10 - Win7.ova"
+   * This opens VirtualBox. Click on "Import" button in the dialog.
+   * An entry for the OVA file will be created, such as `IE10 - Win7`
+* Use Vagrant to package up a new system using `vagrant package --base ${VIRTUALBOX_NAME}`
+   * Example: `vagrant package --base "IE10 - Win7"`
+* Rename `package.box` to meaningful name.
+   * Example: `ie10-win7.box`
 
 ### 3. Configure Working Vagrant Directory
 
