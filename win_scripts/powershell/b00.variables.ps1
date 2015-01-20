@@ -7,4 +7,4 @@ Set-Variable -name string -value "This is a string"
 # output variables using string concatenation
 "Number is " + $num + "."
 "Character is '" + $char + "'."
-"String is `"" + $string + "`""
+"String is `"" + $string + "`"."

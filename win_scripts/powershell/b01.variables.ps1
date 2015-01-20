@@ -7,4 +7,4 @@ $string = "This is a string"
 # print the variables
 "Number is " + $num + "."
 "Character is '" + $char + "'."
-"String is `"" + $string + "`""
+"String is `"" + $string + "`"."

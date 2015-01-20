@@ -4,4 +4,4 @@
 #    C:\> powershell.exe -NoLogo -NoProfile ^
 #         -ExecutionPolicy Bypass  -File script.ps1 > NULL
 [Console]::Error.WriteLine("This is a test of the emergency script system." + `
-                           " This is only a test.")
+                           "  This is only a test.")
