@@ -23,8 +23,8 @@ The idea for this area is to develop testing that can verify functionality of sc
 * 2015-01-20
    * Updated TestSuite to support Windows
      * Requires GetGNUWin32 0.6.3 commands: `cut`, `grep`, `tr`, `which`
-       * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
-       * single quotes are not supported with GNUWin32
+        * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
+        * single quotes are not supported with GNUWin32
    * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell*.
 
 ## Requirements
