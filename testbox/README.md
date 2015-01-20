@@ -20,6 +20,58 @@ The idea for this area is to develop testing that can verify functionality of sc
    * Discovered potential bugs in Groovy and Perl, other areas involved quirky behavior
 * 2015-01-12
    * Added Initial Support for Windows (GNUWin32 + Ruby + PHP + Python)
+* 2015-01-20
+   * Updated TestSuite to support Windows
+     * Requires GetGNUWin32 0.6.3 commands: `cut`, `grep`, `tr`, `which`
+       * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
+   * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell*.
+
+## Requirements
+
+* **Requirements**:
+  * All Systems:
+    * Ruby 1.9 or higher
+  * Windows Systems
+    * [GNUWin32](http://sourceforge.net/projects/getgnuwin32/files/) toolset must be installed.
+    * GNUWin32 binary path (example: `C:\gnuwin32\bin`) must be in the path after Windows system paths, but before MSYS or UWIN paths.
+
+Once these components are installed, just type `rake` in the desired script directory to run the tests. Type `rake header` to print out the environment.
+
+Naturally, the desired scripting language must be installed for the test suite to work on that language.
+
+## Instructions
+
+The directory structure of this repository will include these directories:
+
+```
+script-tut
+├── gen_scripts
+│   ├── awk
+│   ├── groovy
+│   ├── perl
+│   ├── php
+│   ├── python
+│   ├── ruby
+│   └── tcl
+├── shell_scripts
+│   ├── bash
+│   ├── csh
+│   ├── ksh
+│   └── posix
+├── testbox
+└── win_scripts
+    ├── batch
+    ├── powershell
+    ├── wsh.jscript
+    └── wsh.vbscript
+```
+
+Navigate to the desired directory of the script directory, and run the `rake` command.  For example:
+
+```bash
+cd script-tut/gen_scripts/ruby
+rake
+```
 
 ## The Product Plan
 
@@ -97,8 +149,9 @@ On Windows, the following are needed:
 
 * :dvd: Darwin (Mac OS X 10.8.5)
 * :dvd: Mingw32 (Windows 7)
-  * :package: Ruby 2.1.5p273 (rubyinstaller-2.1.5-x64.exe)
-  * :package: gawk-3.1.6-1-setup.exe
+  * :package: Ruby 2.1.5p273 (`rubyinstaller-2.1.5-x64.exe`)
+  * :package: `gawk-3.1.6-1-setup.exe`
+  * :package: `GetGnuWin32-0.6.3.exe`
 
 ## Notes
 
