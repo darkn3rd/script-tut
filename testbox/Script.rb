@@ -100,7 +100,7 @@ class Script
     :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
     :py     => "python --version 2>&1",
-    :rb     => 'ruby --version | gawk \'{ print $2 }\'',
+    :rb     => 'ruby --version | gawk "{ print $2 }"',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
@@ -162,6 +162,7 @@ class Script
 
   def self.version
     if @@ostype[0] == "mingw"
+      #puts "DEBUG #{@@win_version[@@language.to_sym]}"
       `#{@@win_version[@@language.to_sym]}`.chomp
     else
       `#{@@nix_version[@@language.to_sym]}`.chomp
