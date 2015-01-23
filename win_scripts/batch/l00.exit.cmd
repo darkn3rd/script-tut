@@ -23,10 +23,10 @@ EXIT /B %ERRORLEVEL%
 :USAGE_MESSAGE
   :: print helpful instructions
   ECHO. 1>&2
-  ECHO You need to one of more integers: 1>&2
+  ECHO You need to enter one of more numbers: 1>&2
+  ::ECHO. 1>&2
   ECHO. 1>&2
-  ECHO. 1>&2
-  ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3] ... 1>&2
+  ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3]... 1>&2
   ECHO. 1>&2
 
   EXIT /B %ERROR_INVALID_ARGS%

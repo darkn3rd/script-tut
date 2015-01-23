@@ -1,6 +1,6 @@
 @ECHO OFF
 
-ECHO The numbers to be added are 5, 2, 4, 3, and 6.
+ECHO The numbers to be added are 5, 2, 4, 3, 6.
 :: call the subroutine
 CALL :ADD_NUMS 5 2 4 3 6
 SET result=%ERRORLEVEL%

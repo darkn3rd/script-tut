@@ -23,5 +23,5 @@ GOTO :EOF
   if %mon%==11 set mon=November
   if %mon%==12 set mon=December
 
-  ECHO Today is %mon% %day%, %year%
+  ECHO Today is %mon% %day%, %year%.
 GOTO :EOF
