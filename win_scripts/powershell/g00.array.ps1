@@ -10,5 +10,5 @@ $nicknames += "joe"
 $nicknames += "deb"
 $nicknames += "kate"
 # output results
-"The number of nicknames is: " + $nicknames.length  # print size of array
+"The number of nicknames is " + $nicknames.length  # print size of array
 "The nicknames are: $nicknames"                     # print enumerated list

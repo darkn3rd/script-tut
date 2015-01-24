@@ -7,4 +7,5 @@ Function Add-Nums ($nums)
 }
 
 # call the function (subroutine)
+"Sending: 5, 2, 4, 3, 6"
 Add-Nums 5, 2, 4, 3, 6

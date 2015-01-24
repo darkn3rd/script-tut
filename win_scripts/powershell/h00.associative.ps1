@@ -9,5 +9,5 @@ $ages["ralph"]=23
 $ages["deb"]=46
 $ages["kate"]=19
 # print out results
-"Keys  (names): " + $ages.keys    # print enumerated list of keys
+"Keys (names):  " + $ages.keys     # print enumerated list of keys
 "Values (ages): " + $ages.values  # print enumerated list of values

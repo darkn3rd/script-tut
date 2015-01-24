@@ -1,9 +1,9 @@
 #!/usr/bin/env pash
 # iterate through listing by each item through foreach-object
-Get-ChildItem | ForEach-Object { # pipe in listing, iterate through items
+Get-ChildItem .\dirtest | Sort-Object | ForEach-Object {
   if ($_.PsIsContainer) {        # test if default object is directory
-    "$_ is directory"
+    "$_ is a directory"
   } else {
-    "$_ is not directory"
+    "$_ is not a directory"
   }
 }

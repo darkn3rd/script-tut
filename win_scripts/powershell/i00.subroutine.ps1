@@ -3,7 +3,7 @@
 Function Show-Date
 {
    $date = Get-Date -UFormat "%B %d, %Y"
-   Write-Host "$date"
+   Write-Host "Today is $date."
 }
 
 # call function (subroutine)

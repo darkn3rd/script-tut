@@ -14,7 +14,7 @@ Function Fish
    $global:captured += 150 # add to the fish captured
 }
 
-# output result of fish captured from local resource      
+# output result of fish captured from local resource
 "We have {0} in this pond." -f $pond
 
 Fish             # get some fish
@@ -27,5 +27,4 @@ Fish             # get some fish
 $notice -f $pond # output result
 
 # output result of fish captured from shared resource
-"We now have a total of {0} fish captured`n" -f $captured
-
+"We now have a total of {0} fish captured" -f $captured

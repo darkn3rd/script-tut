@@ -8,10 +8,10 @@ Function Sort-Array ($array) {
 $array = "bob", "ed", "steve", "ralph", "joe", "deb", "kate"
 
 # output current list before calling function
-"Current names are: $array" 
+"Current names are: $($array -join ", ")"
 
 # call the function
 $result = Sort-Array $array
 
 # output the result
-"Sorted names are:  $result"
+"Sorted names are: $($result -join ", ")"

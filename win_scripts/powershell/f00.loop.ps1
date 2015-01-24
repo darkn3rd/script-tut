@@ -1,9 +1,9 @@
 #!/usr/bin/env pash
 # loop through complete listing with foreach
-foreach($item in Get-ChildItem) {    # cycle through directory listing
+foreach($item in Get-ChildItem .\dirtest | Sort-Object) {
   if ($item.PsIsContainer) {          # test if object is directory
-    "$item is directory"
+    "$item is a directory"
   } else {
-    "$item is not directory"
+    "$item is not a directory"
   }
 }
