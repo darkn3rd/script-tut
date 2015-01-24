@@ -1,5 +1,5 @@
 // create subroutine
-function addNums() 
+function addNums()
 {
   var numbers = [].slice.call(arguments);
   var sum = 0;
@@ -7,8 +7,9 @@ function addNums()
   for (var num in numbers)
     sum += numbers[num];
 
-  WScript.echo("The summation is " + sum + ".");  // output result
+  WScript.echo("The summation is: " + sum + ".");  // output result
 }
 
-// call the subroutine 
+WScript.echo("Sending: 5, 2, 4, 3, 6");
+// call the subroutine
 addNums(5, 2, 4, 3, 6)
