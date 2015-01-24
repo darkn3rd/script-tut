@@ -59,10 +59,10 @@
   "j2": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are (reverse order):\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: uno\n"
         }],
   "k0": [{ "out": "The Celsius temperature is 22.8 degrees.\n"}],
-  "k1": [{ "out": "Sending: 5, 2, 4, 3, 6\nThe summation is: 20\n"}],
+  "k1": [{ "out": "Sending: 5, 2, 4, 3, 6\nThe summation is: 20.\n"}],
   "l0": [{"arg": "",      "err": "\nYou need to enter one or more numbers:\n\n   Usage: $cmd$ [num1] [num2] [num3]...\n\n"},
-         {"arg": "4",     "out": "The summation is: 4\n"},
-         {"arg": "4 5 6", "out": "The summation is: 15\n"}
+         {"arg": "4",     "out": "The summation is: 4.\n"},
+         {"arg": "4 5 6", "out": "The summation is: 15.\n"}
        ],
   "m0": [{ "out": "The numbers to be added are 5, 2, 4, 3, 6.\nThe result of their summation is: 20.\n"}],
   "m1": [{ "out": "The current string is: \"ibm\".\nThe capitalized string is: \"IBM\".\n"}],
