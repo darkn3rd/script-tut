@@ -26,6 +26,8 @@ The idea for this area is to develop testing that can verify functionality of sc
         * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
         * single quotes are not supported with GNUWin32
    * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell*.
+* 2015-01-23
+   * Observed bug with input on Windows.  Need to debug
 
 ## Requirements
 
