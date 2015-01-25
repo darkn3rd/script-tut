@@ -11,25 +11,25 @@ if (WScript.Arguments.Count() < 1) {
 }
 
 // function to print usage message
-function usage_message() 
+function usage_message()
 {
     // print helpful instructions
-    WScript.StdErr.Write("\nYou one or more numbers:\n\n" +
+    WScript.StdErr.Write("\nYou need to enter one or more numbers:\n\n" +
                          "   Usage: " + script_name + " [num1] [num2] [num3]" +
-                         "...\n"
+                         "...\n\n"
                          );
     WScript.Quit(EX_USAGE);    // return exit code of EX_USAGE
 }
 
 // function to add up numbers
-function addNums(numbers) 
-{ 
+function addNums(numbers)
+{
   // general purpose loose to enumerate numbers
   // Note: numbers is not an Array, but rather a Collection object
   for (num = 0, sum = 0; num < numbers.length; num++) {
       sum += parseInt(numbers(num));
   }
 
-  WScript.echo("The summation is " + sum + "."); // output result
+  WScript.echo("The summation is: " + sum + "."); // output result
   WScript.Quit(EX_OK);                           // unnecessary as defaults to 0
 }

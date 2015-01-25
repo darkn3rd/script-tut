@@ -1,12 +1,13 @@
 ' COM object used for testing files
 Set fso   = CreateObject("Scripting.FileSystemObject")
 
+Dim path : path = "dirtest\"
 
 ' collection loop fetches each item from exec
-For Each item In exec("cmd /c dir /b")
+For Each item In exec("cmd /c dir " & path & " /b")
    ' test item is a directory
-   If fso.FolderExists(item) Then
-       WScript.Echo item & " is a directory"    
+   If fso.FolderExists(path & item) Then
+       WScript.Echo item & " is a directory"
    Else
        WScript.Echo item & " is not a directory"
    End If
@@ -24,7 +25,7 @@ Function exec (cmd)
   ' com objects used for subshell interaction
   Set shell       = CreateObject("WScript.Shell")
   Set stdout      = shell.Exec(cmd).StdOut ' get stdout ojbect from exec method
-  
+
   ' iterate through lines & save into array
   While Not stdout.AtEndOfStream
     ReDim Preserve files(size)             ' resize the array
