@@ -1,0 +1,14 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "puppetlabs/centos-6.6-64-puppet"
+  config.vm.hostname = "centos6box"
+  config.vm.provision "puppet" do |puppet|
+    puppet.manifests_path = "../../manifests/"
+    puppet.manifest_file  = "site.pp"
+    puppet.module_path = ["../../modules/"]
+    puppet.options = "--verbose --debug"
+  end
+end
