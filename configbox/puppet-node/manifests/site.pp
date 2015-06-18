@@ -11,10 +11,6 @@ node mybox { include scriptbox }
 #  dynamically configure itself regardless of system.
 # ===================================
 
-node wheezybox {
-
-}
-
-node centos6box {
-
-}
+node wheezybox  { include scriptbox }
+node centos6box { include scriptbox }
+node precisebox { include scriptbox }
