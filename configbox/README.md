@@ -8,12 +8,14 @@ This area will have details about how to configure a system with all the scripti
 
 ## Vagrant
 
-Currently developing some Vagrant scripts that may be useful in running Windows, CentOS (RHEL), Ubuntu, CygWin, and Mac OS X environments.
+Currently developing some Vagrant scripts for CentOS 6, Ubuntu Precise, and Debian Wheezy.
+
+I have had some success with Mac OS X and Windows systems, but holding off on these as they are more complicated and require special care for packages on those systems.
 
 ## Puppet Apply
 
-I am developing some Puppet modules to install these scripting environments.  Also sprinkling in some Vagrant scripts that auto-bootstrap the provisioning.
+Puppet Scripts have been tested with Wheezy (Debian 7), Precise (Ubuntu 12), and CentOS 6.
 
-## Chef Solo
+## Chef
 
-I will be developing similar Chef recipes to install these scripting environments. Also sprinkling in some Vagrant scripts that auto-bootstrap the provisioning.
+Currently experimenting with Chef (Chef-Solo and Chef-Zero).  Currently have scripts that are working, but do not know how to yet configure on a node by node basis.
