@@ -1,8 +1,8 @@
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "chef/centos-6.6"
+  config.vm.box = "chef/debian-7.8"
 
-  config.vm.hostname = "centos6box"
+  config.vm.hostname = "wheezybox"
 
   config.vm.provision :chef_zero do |chef|
     chef.cookbooks_path  = ["../../cookbooks", "../../site-cookbooks"]
@@ -12,5 +12,4 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     chef.verbose_logging = true
     chef.add_recipe "scriptbox"
   end
-
 end

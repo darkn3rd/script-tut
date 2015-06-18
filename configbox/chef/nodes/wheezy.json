@@ -17,6 +17,6 @@
 
   },
   "run_list": [
-    "recipe[wheezybox]"
+    "recipe[scriptbox]"
   ]
 }
