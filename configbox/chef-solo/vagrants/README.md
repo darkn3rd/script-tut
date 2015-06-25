@@ -1,8 +1,20 @@
-# Vagrant Provisioning
+# Vagrant Chef-Solo Vagrants
 
-Vagrant has built in support for *Chef-Solo*, and once configured can be provisioned by typing `vagrant provsion`.  When you do this, Vagrant will run this command from within the virtual guest: `chef-solo -c /tmp/vagrant-chef/solo.rb -j /tmp/vagrant-chef/dna.json`
+These are Vagrant Virtualbox systems that can be used with Vagrant's built-in Chef-Solo provisioner. This configuration with create a node based configuration, where information stored in `nodes/hostname.json` will be used to configure the system.
 
-In using this method, the `Vagrantfile` must configured appropriately to work:
+## Installation
+
+To use these systems, just navigate to the desired directory and type `vagrant up`.  This may take a while, but will configure and install the system.
+
+## Vagrant's Chef-Solo provisioner
+
+The built-in support for *Chef-Solo* is activated by either doing an initial `vagrant up` or after the system is running, doing a `vagrant provision`.  The `Vagrantfile` provided has all the needed magic to make this just work.
+
+Below are some details about the configuration used.
+
+### Simple Configuration
+
+Vagrant Chef-Solo provisioner will create custom `solo.rb` for the configuration and `dna.json` for variables and run-list of recipes to execute.  These are built with setting specified in the `Vagrantfile`:
 
 ```ruby
 VAGRANTFILE_API_VERSION = "2"
@@ -26,9 +38,11 @@ By adding the paths, Vagrant will automatically share and mount these paths, and
 
 Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
 
-### Limitations
+### Overcoming Limitations
 
-As some might realize that this may seem quite limited.  You cannot configure code dynamically by the node for different hostnames, or can you?
+The existing options for Vagrant's Chef-Solo provisioner are quite limited, can cannot configure a virtual guest based on its hostname.  These are one off configurations that are manually tedious to update and support.  
+
+Below is a way to dynamically create the `dna.json` based on the hostname.  This depends on the names of systems in the `nodes/hostname.json` that match the hostname specified in `config.vm.hostname` variable in the `Vagrantfile`
 
 ```ruby
 VAGRANTFILE_API_VERSION = "2"
@@ -50,5 +64,3 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 end  
 ```
-
-This is not the most attractive method, but it can dynamically build a custom `dna.json` based on the on your `node/hostname.json` file.
