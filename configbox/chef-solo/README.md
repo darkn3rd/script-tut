@@ -31,7 +31,7 @@ Each tool dynically creates these two files.
 
 Vagrant has built in support for *Chef-Solo*, and will dynamically build required files (`solo.rb` and `dna.json`) based on settings in the `Vagrantfile`.
 
-See: See: [Chef-Solo Vagrants ReadMe](vagrants/README.md)
+***See***: [Chef-Solo Vagrants ReadMe](vagrants/README.md)
 
 Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
 
@@ -39,6 +39,6 @@ Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
 
 Knife Solo remotely logs into the system, dynamically builds required files based (`solo.rb` and `dna.json`) on node configuration, i.e. `nodes/hostname.json`.
 
-See: [Knife Vagrant's ReadMe](knife-vagrants/README.md)
+***See***: [Knife Vagrant's ReadMe](knife-vagrants/README.md)
 
 Reference: http://matschaffer.github.io/knife-solo/
