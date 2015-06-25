@@ -1,0 +1,6 @@
+{
+  "name": "centos6box",
+  "run_list": [
+    "recipe[scriptbox]"
+  ]
+}
