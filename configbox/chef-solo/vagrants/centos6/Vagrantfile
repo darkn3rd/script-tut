@@ -3,14 +3,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "chef/centos-6.6"
 
   config.vm.hostname = "centos6box"
+  VAGRANT_JSON = JSON.parse(Pathname(__FILE__).dirname.join('../../nodes', "#{config.vm.hostname}.json").read)
 
-  config.vm.provision :chef_zero do |chef|
+  config.vm.provision :chef_solo do |chef|
     chef.cookbooks_path  = ["../../cookbooks", "../../site-cookbooks"]
     chef.roles_path      = "../../roles"
-    chef.nodes_path      = "../../nodes"
     chef.data_bags_path  = "../../data_bags"
     chef.verbose_logging = true
-    chef.add_recipe "scriptbox"
+
+    # Remove, Extract, Add Runlist
+    chef.run_list = VAGRANT_JSON.delete('run_list') if VAGRANT_JSON['run_list']
+    # Add JSON Attributes
+    chef.json = VAGRANT_JSON
+
+    #chef.add_recipe "scriptbox"
   end
 
 end
