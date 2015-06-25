@@ -84,12 +84,39 @@ The Vagrants Chef-Solo provisioner may seem quite, well, cumbersome.  As an alte
 
 To install this tool, type `bundle` within this directory, and it will use the `Gemfile` to install `knife-solo`.  Note that an existing Ruby environment should be in place along with the bundler tool (`gem install bundler`).
 
-After installing knife-solo, install chef-solo on the guest system:
+### Preparation
 
-`knife solo prepare vagrant@127.0.0.1 -p 2222 -i .vagrant/machines/default/virtualbox/private_key`
+Before we begin the journy, we need to do some upfront prepartion work.  First we determine which vagrant we would like to use, such as *wheezy*.
 
-Then to provision the system run this command:
+Then we configure the following steps.
 
-`knife solo cook vagrant@127.0.0.1 -p 2222 -i .vagrant/machines/default/virtualbox/private_key`
+1. Create localhost copy of the target system.  This avoids configuring `/etc/hosts` or DNS server records.
+
+```bash
+$ cd /path/to/script-tut
+$ TARGET_VAGRANT=wheezy
+$ cp nodes/${TARGET_VAGRANT}box.json 127.0.0.1.json
+```
+
+2. Extract Information for the target vagrant's ssh port and ssh key
+
+```$ cd /path/to/script-tut/configbox/chef-solo/vagrants/${TARGET_VAGRANT}
+$ VAGRANT_PORT=$(vagrant ssh-config | grep Port | grep -oE '\d+')
+$ VAGRANT_KEY=$(vagrant ssh-config | grep IdentityFile | awk '{ print $2 }')
+```
+
+3. Navigate back to chef-solo directory
+
+```bash
+$ cd ../..
+```
+
+### Install Chef-Solo of virtual guest
+
+`knife solo prepare vagrant@127.0.0.1 -p ${VAGRANT_PORT} -i ${VAGRANT_KEY}`
+
+### Do a Run
+
+`knife solo cook vagrant@127.0.0.1 -p ${VAGRANT_PORT} -i ${VAGRANT_KEY}`
 
 Reference: http://matschaffer.github.io/knife-solo/
