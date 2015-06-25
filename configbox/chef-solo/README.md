@@ -80,6 +80,8 @@ This is not the most attractive method, but it can dynamically build a custom `d
 
 The Vagrants Chef-Solo provisioner may seem quite, well, cumbersome.  As an alternative, you can skip Vagrant's provisioning and use `knife solo` to provision the system.  This tool will remotely log into the virtual guest through ssh, and then run chef-solo.
 
+**IMPORTANT** You must comment out the `config.vm.provision...end` block as Vagrant will automatically provision at startup with `vagrant up`.  The Vagrant provisioner must be commented if you wish to use knife-solo as the provisioner.
+
 To install this tool, type `bundle` within this directory, and it will use the `Gemfile` to install `knife-solo`.  Note that an existing Ruby environment should be in place along with the bundler tool (`gem install bundler`).
 
 After installing knife-solo, install chef-solo on the guest system:
