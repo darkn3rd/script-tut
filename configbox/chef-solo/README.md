@@ -100,22 +100,23 @@ $ cp nodes/${TARGET_VAGRANT}box.json 127.0.0.1.json
 
 2. Extract Information for the target vagrant's ssh port and ssh key
 
-```$ cd /path/to/script-tut/configbox/chef-solo/vagrants/${TARGET_VAGRANT}
+```bash
+$ cd /path/to/script-tut/configbox/chef-solo/vagrants/${TARGET_VAGRANT}
 $ VAGRANT_PORT=$(vagrant ssh-config | grep Port | grep -oE '\d+')
 $ VAGRANT_KEY=$(vagrant ssh-config | grep IdentityFile | awk '{ print $2 }')
 ```
 
-3. Navigate back to chef-solo directory
+3. Navigate to chef-solo directory
 
 ```bash
 $ cd ../..
 ```
 
-### Install Chef-Solo of virtual guest
+### Install Chef-Solo onto virtual guest
 
 `knife solo prepare vagrant@127.0.0.1 -p ${VAGRANT_PORT} -i ${VAGRANT_KEY}`
 
-### Do a Run
+### Provision virtual guest
 
 `knife solo cook vagrant@127.0.0.1 -p ${VAGRANT_PORT} -i ${VAGRANT_KEY}`
 
