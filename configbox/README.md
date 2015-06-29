@@ -15,14 +15,18 @@ Currently developing some Vagrant scripts for:
 
 I have had some success with ***Mac OS X*** and ***Windows*** systems, but holding off on these as they are more complicated and require special care for packages on those systems.
 
-## Puppet
+## Change Configuration Systems
+
+These are the current systems I am working for this simple experiment.
+
+### Puppet
 
 There are numerous ways to configure Puppet. I am focusing on these two areas:
 
 * **Puppet with Node Definitions** - uses main site manifests (`manifests/site.pp`)
 * **Puppet with Hiera** - an alternative system to store configurations and parameters using YAML (or another datasource like JSON or LDAP)
 
-## Chef
+### Chef
 
 There are also numerous ways to configure a system with Chef as well.  I am focusing on these tools:
 
