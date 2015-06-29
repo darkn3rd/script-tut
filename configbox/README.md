@@ -16,18 +16,17 @@ I have had some success with ***Mac OS X*** and ***Windows*** systems, but holdi
 
 There are numerous ways to configure Puppet. I am focusing on these two areas:
 
-* Puppet with Node Definitions - uses main site manifests (`manifests/site.pp`)
-* Puppet with Hiera - an alternative system to store configurations and parameters using YAML (or another datasource like JSON or LDAP)
+* **Puppet with Node Definitions** - uses main site manifests (`manifests/site.pp`)
+* **Puppet with Hiera** - an alternative system to store configurations and parameters using YAML (or another datasource like JSON or LDAP)
 
 ## Chef
 
 There are also numerous ways to configure a system with Chef as well.  I am focusing on these tools:
 
-* Chef-Solo
+* **Chef-Solo**
   * Vagrant's Chef-Solo Provisioner
-  * Knife-Solo as the provisioner
-* Chef-Zero
-  * Chef-Client provisioner with Chef-Zero enabled
+  * **Knife-Solo** as the provisioner
+* **Chef-Client with Chef-Zero**
 
 In my current research (as of Vagrant 1.7 and earlier), the Vagrant provionser labeled `chef-zero` does not really configure the system with using Chef-Zero.  Vagrant installs a ***Chef-Zero*** server, and then ignores the server and uses ***Chef-Solo*** to configure the system.  This had added quite a bit of confusion in the community.
 
