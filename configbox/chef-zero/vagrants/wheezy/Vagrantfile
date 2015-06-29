@@ -33,8 +33,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision :chef_client do |chef|
     chef.chef_server_url        = "http://127.0.0.1:8889"
-    chef.validation_key_path    = Chef::Config[:validation_key]
-    chef.validation_client_name = Chef::Config[:validation_client_name]
+    chef.validation_key_path    = "../../.chef/dummy.pem"
+    chef.validation_client_name = "validator" # don't know what this is
     chef.chef_zero.enabled      = true
     chef.node_name              = config.vm.hostname
     #chef.node_name = options[:hostname]

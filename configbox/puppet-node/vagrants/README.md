@@ -6,7 +6,7 @@ These are Vagrant Virtualbox systems that can be used with Vagrant's build-in Pu
 
 To use these systems, just navigate to the desired directory and type `vagrant up`.  This may take a while, but will configure and install the system.
 
-## Vagrant's Chef-Solo Provisioner
+## Vagrant's Puppet Provisioner
 
 The built-in support for *Puppet* is activated by either doing an initial `vagrant up` or after the system is running, doing a `vagrant provision`.  The `Vagrantfile` provided has all the needed magic to make this just work.
 
