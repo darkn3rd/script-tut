@@ -8,7 +8,7 @@ This area will have details about how to configure a system with all the scripti
 
 ## Vagrant
 
-Currently developing some Vagrant scripts for ***Wheezy (Debian 7)****, ***Precise (Ubuntu 12)***, and ***CentOS 6***.
+Currently developing some Vagrant scripts for ***Wheezy (Debian 7)***, ***Precise (Ubuntu 12)***, and ***CentOS 6***.
 
 I have had some success with ***Mac OS X*** and ***Windows*** systems, but holding off on these as they are more complicated and require special care for packages on those systems.
 
