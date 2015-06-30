@@ -78,6 +78,6 @@ EOF >> ~/.ssh/config
 Then after, you should be able to do this:
 
 ```bash
-$ knife solo prepare ${TARGET_VAGRANT}box
-$ knife solo cook ${TARGET_VAGRANT}box
+$ knife solo prepare "${TARGET_VAGRANT}box"
+$ knife solo cook "${TARGET_VAGRANT}box"
 ```
