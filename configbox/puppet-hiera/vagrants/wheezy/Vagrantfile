@@ -3,18 +3,19 @@
 
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "puppetlabs/debian-7.8-64-puppet"
-  config.vm.hostname = "wheezybox"
+  config.vm.box = "puppetlabs/debian-7.8-64-puppet" # source box on atlas
+  config.vm.hostname = "wheezybox"                  # hostname of box
 
   # Include Hiera Data Directory (no automatic option for this)
   config.vm.synced_folder "../../hieradata", "/tmp/vagrant-puppet/hieradata"
 
+  # Puppet Configuration
   config.vm.provision :puppet do |puppet|
     puppet.manifests_path    = "../../manifests/"
     puppet.manifest_file     = "site.pp"
-    puppet.module_path       = ["../../modules/"]     # shared modules
-    puppet.hiera_config_path = "../../hiera.yaml"     # hiera config file
-    puppet.working_directory = "/tmp/vagrant-puppet"  # default hiera path
+    puppet.module_path       = ["../../modules/"]    # shared modules
+    puppet.hiera_config_path = "../../hiera.yaml"    # hiera config file
+    puppet.working_directory = "/tmp/vagrant-puppet" # default hiera path
     puppet.options           = "--verbose --debug"
   end
 end
