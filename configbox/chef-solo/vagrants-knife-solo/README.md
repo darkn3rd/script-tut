@@ -58,3 +58,26 @@ knife solo cook vagrant@127.0.0.1 -p ${VAGRANT_PORT} -i ${VAGRANT_KEY}
 ```
 
 Reference: http://matschaffer.github.io/knife-solo/
+
+### SSH Tips
+
+You can automate the SSH options to log into the system by changing or adding a `~/.ssh/config` file.  
+
+From the above you would add:
+
+```bash
+$ echo <<EOF
+Host ${TARGET_VAGRANT}
+    HostName 127.0.0.1
+    Port ${VAGRANT_PORT}
+    IdentityFile ${VAGRANT_KEY}
+    User vagrant
+EOF >> ~/.ssh/config
+```
+
+Then after, you should be able to do this:
+
+```bash
+$ knife solo prepare ${TARGET_VAGRANT}
+$ knife solo cook ${TARGET_VAGRANT}
+```
