@@ -66,13 +66,14 @@ You can automate the SSH options to log into the system by changing or adding a 
 From the above you would add:
 
 ```bash
-$ echo <<EOF
+$ echo << EOF >> ~/.ssh/config
 Host ${TARGET_VAGRANT}box
     HostName 127.0.0.1
     Port ${VAGRANT_PORT}
     IdentityFile ${VAGRANT_KEY}
     User vagrant
-EOF >> ~/.ssh/config
+EOF
+
 ```
 
 Then after, you should be able to do this:
