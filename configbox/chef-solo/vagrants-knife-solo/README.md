@@ -67,7 +67,7 @@ From the above you would add:
 
 ```bash
 $ echo <<EOF
-Host ${TARGET_VAGRANT}
+Host ${TARGET_VAGRANT}box
     HostName 127.0.0.1
     Port ${VAGRANT_PORT}
     IdentityFile ${VAGRANT_KEY}
@@ -78,6 +78,6 @@ EOF >> ~/.ssh/config
 Then after, you should be able to do this:
 
 ```bash
-$ knife solo prepare ${TARGET_VAGRANT}
-$ knife solo cook ${TARGET_VAGRANT}
+$ knife solo prepare ${TARGET_VAGRANT}box
+$ knife solo cook ${TARGET_VAGRANT}box
 ```
