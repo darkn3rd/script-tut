@@ -1,9 +1,18 @@
 ---
 
-- hosts: centos6box
+- hosts: scriptbox
   gather_facts: yes
 
   vars_files:
     - vars/main.yml
 
-  roles:
+  tasks:
+  - name: install the Debian packages
+    package: name={{ item }} state=latest
+    with_items: packages_debian
+    when: ansible_os_family == "Debian"
+
+  - name: install the RedHat packages
+    package: name={{ item }} state=latest
+    with_items: packages_redhat
+    when: ansible_os_family == "RedHat"

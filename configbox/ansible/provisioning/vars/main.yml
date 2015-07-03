@@ -1,0 +1,24 @@
+---
+vars:
+  - packages_debian
+    - dash
+    - bash
+    - ksh
+    - tcsh
+    - gawk
+    - perl
+    - python
+    - php5-cli
+    - ruby
+    - tcl8.5
+  - packages_redhat
+    - dash
+    - bash
+    - ksh
+    - tcsh
+    - gawk
+    - perl
+    - python
+    - php-cli
+    - ruby
+    - tcl
