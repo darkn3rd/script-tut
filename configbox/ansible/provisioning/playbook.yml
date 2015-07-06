@@ -1,6 +1,6 @@
 ---
 
-- hosts: scriptbox
+- hosts: all
   gather_facts: yes
 
   vars_files:
@@ -8,11 +8,31 @@
 
   tasks:
   - name: install the Debian packages
-    package: name={{ item }} state=latest
-    with_items: packages_debian
+    apt: name={{ item }} state=latest
+    with_items:
+          - dash
+          - bash
+          - ksh
+          - tcsh
+          - gawk
+          - perl
+          - python
+          - php5-cli
+          - ruby
+          - tcl8.5
     when: ansible_os_family == "Debian"
 
   - name: install the RedHat packages
-    package: name={{ item }} state=latest
-    with_items: packages_redhat
+    yum: pkg={{ item }} state=latest
+    with_items:
+          - dash
+          - bash
+          - ksh
+          - tcsh
+          - gawk
+          - perl
+          - python
+          - php-cli
+          - ruby
+          - tcl
     when: ansible_os_family == "RedHat"
