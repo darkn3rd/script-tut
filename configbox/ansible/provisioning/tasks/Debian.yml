@@ -1,0 +1,6 @@
+- name: install the Debian packages
+  apt: name={{ item }} state=latest
+  with_items: "{{ packages }}"
+  when: ansible_os_family == "Debian"
+- name: Debugging
+  debug: msg="DEBIAN TASKS INCLUDED"

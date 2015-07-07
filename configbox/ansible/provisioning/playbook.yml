@@ -7,15 +7,8 @@
      - vars/main.yml
 
   tasks:
-    - name: install the Debian packages
-      apt: name={{ item }} state=latest
-      with_items: "{{ packages }}"
+    - include: "tasks/Debian.yml"
       when: ansible_os_family == "Debian"
 
-    - name: install the RedHat packages
-      yum: pkg={{ item }} state=latest
-      with_items: "{{ packages }}"
+    - include: "tasks/RedHat.yml"
       when: ansible_os_family == "RedHat"
-
-    #  - name: Debugging
-    #    debug: msg="{{packages}}"
