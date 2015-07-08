@@ -7,6 +7,9 @@
      - vars/main.yml
 
   tasks:
+    # - name: Debugging
+    #   debug: msg="{{ packages[ansible_os_family] }}"
+
     - include: "tasks/Debian.yml"
       when: ansible_os_family == "Debian"
 

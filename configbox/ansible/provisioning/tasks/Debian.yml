@@ -1,6 +1,6 @@
+- name: Update Repository Data
+  apt: update_cache=yes
 - name: install the Debian packages
   apt: name={{ item }} state=latest
-  with_items: "{{ packages }}"
-  when: ansible_os_family == "Debian"
-- name: Debugging
-  debug: msg="DEBIAN TASKS INCLUDED"
+  with_items: "{{ packages[ansible_os_family] }}"
+#  when: ansible_os_family == "Debian"

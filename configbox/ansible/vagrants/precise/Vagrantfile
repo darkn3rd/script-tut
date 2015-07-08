@@ -3,14 +3,11 @@
 
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "chef/centos-6.6"
-
-  config.vm.hostname = "centos6box"
-
+  config.vm.box = "puppetlabs/ubuntu-12.04-64-puppet"
+  config.vm.hostname = "precisebox"
   config.vm.provision :ansible do |ansible|
     ansible.playbook = "../../provisioning/playbook.yml"
   #  ansible.inventory_path = "../../provisioning/inventory.ini"
     ansible.sudo = true
   end
-
 end

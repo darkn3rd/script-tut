@@ -1,6 +1,4 @@
 - name: install the RedHat packages
   yum: pkg={{ item }} state=latest
-  with_items: "{{ packages }}"
-  when: ansible_os_family == "RedHat"
-- name: Debugging
-  debug: msg="REDHAT TASKS INCLUDED"
+  with_items: "{{ packages[ansible_os_family] }}"
+#  when: ansible_os_family == "RedHat"

@@ -4,7 +4,13 @@
 
 ## Overview
 
-This is under experimentation.  Check-ins are mere save states until I figure this section out.
+This area demonstrates how Ansible can be used to configure a ScriptBox environment.  The ScriptBox is an environment that can run demonstration scripts found within this tutorial.
+
+Currently this section in under experimentation.
+
+## Push Technolgy
+
+Ansible is interesting in that it is a push technology, rather than a pull technology like Chef or Puppet.  Thus you need to know the systems in advance, before provisioning the systems.  As Vagrant systems are dynamically created, with a unique port for accessing ssh, this provides a bit of a challenge.
 
 ## Links
 

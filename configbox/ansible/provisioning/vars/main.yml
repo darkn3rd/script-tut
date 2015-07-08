@@ -1,26 +1,24 @@
 ---
 packages:
-  - dash
-  - bash
-  - ksh
-  - tcsh
-  - gawk
-  - perl
-  - python
-  - php5-cli
-  - ruby
-  - tcl8.5
-when: ansible_os_family == "Debian"
-
-packages:
-  - dash
-  - bash
-  - ksh
-  - tcsh
-  - gawk
-  - perl
-  - python
-  - php-cli
-  - ruby
-  - tcl
-when: ansible_os_family == "RedHat"
+  Debian:
+    - dash
+    - bash
+    - ksh
+    - tcsh
+    - gawk
+    - perl
+    - python
+    - php5-cli
+    - ruby
+    - tcl8.5
+  RedHat:
+    - dash
+    - bash
+    - ksh
+    - tcsh
+    - gawk
+    - perl
+    - python
+    - php-cli
+    - ruby
+    - tcl
