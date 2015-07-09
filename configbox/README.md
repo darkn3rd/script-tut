@@ -26,14 +26,13 @@ I would like to support language specific version managers (gvm, rvm, rbenv) and
 
 These are the current systems I am working for this simple experiment.
 
-### Puppet
+### Ansible
 
-There are numerous ways to configure Puppet. I am focusing on these two areas:
+This has to be the easiest one to get working (15 minutes).  All systems regardless of host name will get the same configuration, as node based configuration is implausible with only Vagrant's automation.
 
-* **Puppet with Node Definitions** - uses main site manifests (`manifests/site.pp`)
-* **Puppet with Hiera** - an alternative system to store configurations and parameters using YAML (or another datasource like JSON or LDAP)
+For details on why node based configuration is diffcult, this has to due with the nature of push-based change-config tools, which have to know IP addresses and unique SSH port in advance before pushing a configuration to the system.
 
-Both of these I have used using the Vagrant's puppet provisioner.
+On virtual systems hosted on the same system, all the servers will have 127.0.0.1 as their address, and some random port for SSH access.
 
 ### Chef
 
@@ -42,7 +41,14 @@ There are also numerous ways to configure a system with Chef as well.  I am focu
 * **Chef-Solo**
   * Vagrant's `chef_solo` Provisioner
   * **Knife-Solo** as the provisioner
-* **Chef-Client** with **Chef-Zero**
-* **Chef-Client** with **Chef Server**
 
 I was able to have node based configuration (using hostname) with Vagrant's Chef-Solo provisioner, and Knife-Solo tool.  Both remotely log into the system and run `chef solo`.
+
+### Puppet
+
+There are numerous ways to configure Puppet. I am focusing on these two areas:
+
+* **Puppet with Node Definitions** - uses main site manifests (`manifests/site.pp`)
+* **Puppet with Hiera** - an alternative system to store configurations and parameters using YAML (or another datasource like JSON or LDAP)
+
+Both of these I have used using the Vagrant's puppet provisioner.

@@ -27,3 +27,4 @@ Using these as references:
 * Some PDF Reference (Don't know what this is yet) - http://www-uxsup.csx.cam.ac.uk/~jw35/docs/ansible/ansible-summary.pdf
 * Vagrant Docs - http://docs.vagrantup.com/v2/provisioning/ansible.html
 * Environment Vars - http://www.geedew.com/setting-up-ansible-for-multiple-environment-deployments/
+* pedantically_commented_playbook.yml - https://gist.github.com/marktheunissen/2979474
