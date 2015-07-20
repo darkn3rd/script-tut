@@ -1,0 +1,10 @@
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box      = "chef/debian-7.8" # Get Debian Wheezy From Somewhere
+  config.vm.hostname = "wheezybox"       # Give System a Hostname
+
+  # Vagrant CFEngine Provisioner
+  config.vm.provision :cfengine do |cf|
+    cf.am_policy_hub = true
+  end
+end
