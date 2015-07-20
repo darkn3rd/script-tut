@@ -28,3 +28,6 @@ Using these as references:
 * Vagrant Docs - http://docs.vagrantup.com/v2/provisioning/ansible.html
 * Environment Vars - http://www.geedew.com/setting-up-ansible-for-multiple-environment-deployments/
 * pedantically_commented_playbook.yml - https://gist.github.com/marktheunissen/2979474
+* http://tomoconnor.eu/blogish/getting-started-ansible/#.VZ1YtqZ8tTU
+* https://nylas.com/blog/graduating-past-playbooks
+* http://probably.co.uk/ansible-for-puppet-users.html
