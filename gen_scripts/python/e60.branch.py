@@ -4,12 +4,12 @@ import re   # regular expresion library
  
 sys.stdout.write("Input a character: ")    # output prompt
 keypress = sys.stdin.read(1)               # read one character
- 
-if re.compile("[a-z]").match(keypress):
+
+if re.match("[a-z]", keypress):
   print "Lowercase letter"
-elif re.compile("[A-Z]").match(keypress):
+elif re.match("[A-Z]", keypress):
   print "Uppercase letter"
-elif re.compile("[0-9]").match(keypress):
+elif re.match("[0-9]", keypress):
   print "Digit"
 else:
   print "Punctuation, whitespace, or other"

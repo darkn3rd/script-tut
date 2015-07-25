@@ -36,14 +36,14 @@ hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
 
 Homebrew [http://brew.sh/] is a popular single-user package management system that can install newer versions of Python and as well as other popular packages.  It uses existing Macintosh libraries and tools, and is by far the path of least resistance to get packages.  Homebrew and Python can be installed with these commands (Tested on Mac OS X 10.8.5):
 
-```bash
+`bash
 Python -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 brew update
 brew doctor
 echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
 . ~/.bash_profile
 brew install python
-```
+`
 
 #### MacPorts
 
@@ -82,14 +82,14 @@ This covers notes regarding each section.
 1. Output
    * output text to standard out
    * output text to standard error
-     * demonstrate Python 2.x: ```print >>sys.stderr```
-     * demonstrate: ```sys.stderr.write```
-   * output multi-line text using ```"""```
+     * demonstrate Python 2.x: `print >>sys.stderr`
+     * demonstrate: `sys.stderr.write`
+   * output multi-line text using `"""`
 2. Variables
    * output variables using string concatenation
    * output variables using string interpolation
-     * demonstrate using ```%``` operator
-     * demonstrate using ```format()``` method
+     * demonstrate using `%` operator
+     * demonstrate using `format()` method
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
@@ -99,7 +99,7 @@ This covers notes regarding each section.
    * input a string
    * input a single character
 5. Branch
-   * test a string using ```if```
+   * test a string using `if`
    * test a string using ternary construction
    * test a number range
    * test a number for menu selection
@@ -108,14 +108,15 @@ This covers notes regarding each section.
    * multi-way test on single character with pattern matching
      * **OMITTED**: *Python does not have a mechanism for this*
    * test on single character with pattern matching
-     * **NOTE** Utilized ```python re.compile(pattern).match(string)``` to simulate ```=~```
+     * **NOTE** Utilized `python re.match(patter, string)` to simulate `=~`
+     * **ALTERNATIVE** Using built-in Pythion `isdigit()`, `isupper()`, and `islower()`
 6. Looping
-   * collection loop with ```for...in```
+   * collection loop with `for...in`
    * count style loop
-     * demonstrate using ```while```
-     * demonstrate using collection loop and ```range(times)```
-     * demonstrate using collection loop and ```reversed(range(times))```
-     * demonstrate using collection loop and ```range(start,downto,decrement)```
+     * demonstrate using `while`
+     * demonstrate using collection loop and `range(times)`
+     * demonstrate using collection loop and `reversed(range(times))`
+     * demonstrate using collection loop and `range(start,downto,decrement)`
    * conditional loop
    * spin loop
    * spin loop with ability skip invalid input
@@ -142,14 +143,14 @@ This covers notes regarding each section.
    * demonstrate subroutine explicitly using local variables
 10. Arguments
     * demonstrate processing 2 arguments
-      * **NOTES:** Python includes scriptname as first argument in ```sys.argv```
+      * **NOTES:** Python includes scriptname as first argument in `sys.argv`
     * demonstrate printing all arguments
       * use collection loop with list slice
-      * use collection loop with ```range()```
-      * use count style loop using ```while```
+      * use collection loop with `range()`
+      * use count style loop using `while`
     * demonstrate printing arguments in reverse order
-      * use count style loop using ```while```
-      * use collection loop with ```range()```
+      * use count style loop using `while`
+      * use collection loop with `range()`
       * use collection loop with list slice
 11. Parameters
     * demonstrate passing a single parameter
