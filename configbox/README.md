@@ -1,4 +1,4 @@
-# ConfigBox
+# ConfigBox Overview
 
 © Joaquin Menchaca, 2015
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This area will have details about how to configure a system with all the scripting languages needed for this tutorial.  There are the targeted tools and environemnts
+This area will have details about how to configure a system with all the scripting languages needed for this tutorial.  There are the targeted tools and environments.  This area requires the **Vagrant** and **VirtualBox** to be installed on the host system.
 
 ## Knife-Solo
 
@@ -20,7 +20,7 @@ This is for future mention.  Test Kitchen is a great tool that can automate seve
 
 Vagrant directory contains configurations that use the built-in provisioners that come with Vagrant.
 
-The current provioners being tested are the following:
+The current provisioners tested are the following:
 
   * ansible
   * chef_solo

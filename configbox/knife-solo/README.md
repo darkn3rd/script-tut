@@ -1,10 +1,10 @@
-# ConfigBox: Chef-Solo
+# ConfigBox: Knife-Solo
 
 © Joaquin Menchaca, 2015
 
 ## Overview
 
-Chef-Solo is a popular open source tool that allows running chef cookbooks with nodes without requiring access to a Chef Server.  The documentation online says that chef-client now supports a local mode, so this is not needed.  However, there is a lot of community support and usage, including vagrant.
+Chef-Solo is a popular open source tool that allows running chef cookbooks without requiring access to a Chef Server.
 
 According to documentation, the chef-solo does not support these features:
 
@@ -17,27 +17,13 @@ According to documentation, the chef-solo does not support these features:
 
 Reference: https://docs.chef.io/chef_solo.html
 
-# Provisioning Virtual Guest
+## Provisioning Virtual Guest Using Knife-Solo
 
-There are a few ways to provision a virtual guest using *Chef-Solo* solution.  There's Vagrant's built-in Chef-Solo provisioner, or a tool called *Knife-Solo*.  Ultimately these tools will call the following command on the virtual guest system:
+The *Knife-Solo* tool will dynamically build a configuration file called `solo.rb` and a data file called `dna.json` based on the `nodes/hostname.json` datafile. This allows you to configure a system and desired cookbooks based on the hostname.  Knife-Solo will then run this command on the target system:
 
 ```bash
 chef-solo -c solo.rb -j dna.json
 ```
-
-Each tool dynically creates these two files.
-
-## Vagrant Provision
-
-Vagrant has built in support for *Chef-Solo*, and will dynamically build required files (`solo.rb` and `dna.json`) based on settings in the `Vagrantfile`.
-
-***See***: [Chef-Solo Vagrants ReadMe](vagrants-vagrant-chef-solo/README.md)
-
-Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
-
-## Knife Solo Provision
-
-Knife Solo remotely logs into the system, dynamically builds required files based (`solo.rb` and `dna.json`) on node configuration, i.e. `nodes/hostname.json`.
 
 ***See***: [Knife Vagrant's ReadMe](vagrants-knife-solo/README.md)
 
