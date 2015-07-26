@@ -8,6 +8,8 @@ Puppet can configure a system using a tool called Hiera.  Hiera will uniquely co
 
 Hiera can use a variety of backend systems to store these hierarchical configurations, such as YAML, JSON, SQL database, or LDAP.  For this demonstration, we use YAML files.
 
+Reference: http://docs.puppetlabs.com/hiera/1/
+
 # Provisioning Virtual Guest with Vagrant
 
 In an ideal world, the puppet agent is configured to fetch configurations from a Puppet Master server, and then runs the scripts using `puppet agent`.  Vagrant can simulate similar behavior by running puppet locally and calling `puppet apply`.
