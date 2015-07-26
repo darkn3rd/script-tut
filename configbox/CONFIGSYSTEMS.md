@@ -44,4 +44,4 @@ Currently, I am not actively experimenting with these, but I have strong interes
 * **MCollective** - solution popular in Puppet community and has heavy requirements (queue architecture)
 * **Octopus** - system that is popular in .NET community
 
-Additionally, both Ansible and Salt Stack have are push-oriented technologies and thus can be used to deploy code, such as copying source files and building assets, to a target system, and doing orchestration of multiple systems as well.
+Additionally, both **Ansible** and **Salt Stack** have are push-oriented technologies and thus can be used to deploy code, such as copying source files and building assets, to a target system, and doing orchestration of multiple systems as well.
