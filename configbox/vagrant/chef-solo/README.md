@@ -27,6 +27,4 @@ chef-solo -c solo.rb -j dna.json
 
 This provisioner (`chef_solo`) is unfortunately quite limited, in that it does not support the node configuration, such as `nodes/myhost.json`.  For this, there's some popular hack using Ruby in the Vagrantfile to get this functionality.
 
-***See***: [Chef-Solo Vagrants ReadMe](vagrants-vagrant-chef-solo/README.md)
-
 Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
