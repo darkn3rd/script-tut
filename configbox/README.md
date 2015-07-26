@@ -27,6 +27,12 @@ Vagrant is supported on ***Debian*** and ***Redhat*** Linux distributions, which
 
 This has been tested from **OS X 10.8.5**
 
+## Change Configuration Systems
+
+I put some documentation together on change configuration systems and concepts:
+
+* [Change Configuration Systems](CONFIGSYSTEMS.md)
+
 ## The Provisioners
 
 There are different tools that can be used to provision a guest virtual system.
@@ -45,7 +51,8 @@ Vagrant comes with some built-in provisioners that can be configured in the `Vag
 
 The current provisioners tested are the following:
 
-  * ansible
-  * chef_solo
-  * cfengine
-  * puppet
+  * :snake: ansible
+  * :gem: chef_solo
+  * :page_with_curl: cfengine
+  * :gem: puppet
+  * :snake: saltstack (TBA)
