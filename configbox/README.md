@@ -51,8 +51,10 @@ Vagrant comes with some built-in provisioners that can be configured in the `Vag
 
 The current provisioners tested are the following:
 
-  * :snake: ansible
-  * :gem: chef_solo
-  * :page_with_curl: cfengine
-  * :gem: puppet
-  * :snake: saltstack (TBA)
+  * :snake: [Ansible](vagrant/ansible)
+  * :gem: [Chef Solo](vagrant/chef-solo)
+  * :page_with_curl: [CFEngine 3](vagrant/cfengine)
+  * :gem: Puppet 3
+    * [Puppet using Node Manifests](vagrant/puppet-node)
+    * [Puppet using Hiera](vagrant/puppget-hiera-yaml)
+  * :snake: Salt Stack (TBA)
