@@ -17,28 +17,16 @@ According to documentation, the chef-solo does not support these features:
 
 Reference: https://docs.chef.io/chef_solo.html
 
-# Provisioning Virtual Guest
+## Provisioning Virtual Guest Using Vagrant
 
-There are a few ways to provision a virtual guest using *Chef-Solo* solution.  There's Vagrant's built-in Chef-Solo provisioner, or a tool called *Knife-Solo*.  Ultimately these tools will call the following command on the virtual guest system:
+Vagrant has built in support for *Chef-Solo*, and will dynamically build required files (`solo.rb` configuration file and `dna.json` data file) based on settings in the `Vagrantfile`.  One these files are constructed, then Vagrant will run the following:
 
 ```bash
 chef-solo -c solo.rb -j dna.json
 ```
 
-Each tool dynically creates these two files.
-
-## Vagrant Provision
-
-Vagrant has built in support for *Chef-Solo*, and will dynamically build required files (`solo.rb` and `dna.json`) based on settings in the `Vagrantfile`.
+This provisioner (`chef_solo`) is unfortunately quite limited, in that it does not support the node configuration, such as `nodes/myhost.json`.  For this, there's some popular hack using Ruby in the Vagrantfile to get this functionality.
 
 ***See***: [Chef-Solo Vagrants ReadMe](vagrants-vagrant-chef-solo/README.md)
 
 Reference: http://docs.vagrantup.com/v2/provisioning/chef_solo.html
-
-## Knife Solo Provision
-
-Knife Solo remotely logs into the system, dynamically builds required files based (`solo.rb` and `dna.json`) on node configuration, i.e. `nodes/hostname.json`.
-
-***See***: [Knife Vagrant's ReadMe](vagrants-knife-solo/README.md)
-
-Reference: http://matschaffer.github.io/knife-solo/

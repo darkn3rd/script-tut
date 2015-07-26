@@ -55,6 +55,6 @@ The current provisioners tested are the following:
   * :gem: [Chef Solo](vagrant/chef-solo)
   * :page_with_curl: [CFEngine 3](vagrant/cfengine)
   * :gem: Puppet 3
-    * [Puppet using Node Manifests](vagrant/puppet-node)
+    * [Puppet using Node Definitions](vagrant/puppet-node)
     * [Puppet using Hiera](vagrant/puppget-hiera-yaml)
   * :snake: Salt Stack (TBA)
