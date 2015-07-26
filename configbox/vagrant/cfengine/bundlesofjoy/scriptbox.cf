@@ -1,11 +1,7 @@
 body common control
 {
   bundlesequence => { "scriptbox" };
-}
-
-body file control
-{
-    inputs => { "/var/cfengine/masterfiles/lib/3.7/files.cf", "/var/cfengine/masterfiles/lib/3.7/packages.cf" };
+  inputs => { "$(sys.libdir)/stdlib.cf" };
 }
 
 bundle agent scriptbox
