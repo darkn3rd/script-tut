@@ -1,16 +1,22 @@
 body common control
 {
-  bundlesequence => { "test" };
+  bundlesequence => { "scriptbox" };
 }
 
-bundle agent test
+body file control
+{
+    inputs => { "/var/cfengine/masterfiles/lib/3.7/files.cf", "/var/cfengine/masterfiles/lib/3.7/packages.cf" };
+}
+
+bundle agent scriptbox
 {
   vars:
       debian::
         "packages" slist => { "dash", "bash", "ksh", "tcsh", "gawk", "perl", "python", "php5-cli", "ruby", "tcl8.5"};
       redhat::
         "packages" slist => { "dash", "bash", "ksh", "tcsh", "gawk", "perl", "python", "php-cli", "ruby", "tcl"};
-  reports:
-      cfengine::
-        "$(packages)";
+  packages:
+      "$(packages)"
+      package_policy => "addupdate",
+      package_method => generic;
 }
