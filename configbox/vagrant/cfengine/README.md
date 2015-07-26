@@ -6,10 +6,14 @@
 
 CFEngine is an powerful configuration management system that can be custom tailored to not only do change configuration, but also inventory and reporting.  It is a very flexible system, but with this flexibility comes complexity.
 
-
 ### Status
 
 Currently, I am still experimenting with this system.  My initial goal is to get the system to work using the Vagrant provisioner, and then later attempt to build a system on top of CFEngine to select a unique configuration per hostname.
+
+Some things I noticed about CFEngine 3 so far:
+
+ * Difficult to separate managed scripts (git or svn repo) as these are intermixed with CFEngine's configuration system in `masterfiles` directory.  There are technqiues to help with this in CFEngine 3.7 using autorun and `def.json` (which replaces `def.cf`)
+ * No built-in mechanism to select configurations based on environment, role, or hostname criteria.  You can add this functionality through ***classes***, which is CFEngine's tagging system.
 
 ## Provisioning with Vagrant
 
