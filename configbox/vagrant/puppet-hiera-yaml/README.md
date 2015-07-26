@@ -4,7 +4,7 @@
 
 ## Overview
 
-Puppet can configure a system using a tool called Hiera.  Hiera will uniquely configure your system based on a hierarchical structure of your own design.  For example, you can configure a system based on the *environment* (`development`, `staging`, `production`), followed by *role* (`web`, `database`, `message`), and then by *hostname*. In this demonstration, we keep is simple and use just the *hostname* (`å`, `db_shrdset02_master01`) as our hierarchy.  
+Puppet can configure a system using a tool called Hiera.  Hiera will uniquely configure your system based on a hierarchical structure of your own design.  For example, you can configure a system based on the *environment* (`development`, `staging`, `production`), followed by *role* (`web`, `database`, `message`), and then by *hostname*. In this demonstration, we keep is simple and use just the *hostname* (`db_shrdset01_slave01`, `db_shrdset02_master01`) as our hierarchy.  
 
 Hiera can use a variety of backend systems to store these hierarchical configurations, such as YAML, JSON, SQL database, or LDAP.  For this demonstration, we use YAML files.
 
