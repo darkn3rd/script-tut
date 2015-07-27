@@ -8,10 +8,15 @@
 
 In my experience, I organized change into the following cognitive groups:
 
-* **Change Configuration** - changing a target system to a desired configuration state
-* **Change Coordination (Data Sharing)** - gathering information on one system, using this information to configure another system, such as configure web servers, then using this information to configure a load balancer or a monitoring server, which uses information from configuring the web servers.
-* **Application Deployment** - deploying software (such as copying files) to a target system, usually a process launched from a continuous integration or continuous delivery system.  The output of a CI system is called an artifact, which can be a directory copied to the target system, or can be archived into an installable package, which can later be pulled down using the change configuration system.
-* **Application Orchestration** - coordinating which services needs to be suspended, such a database server with new schema or a message queue system with newly configured queues.  This way the web application uses updated external resources.   This can be also used to restart servers in an order, such as removing a configuration on the load balancer, so that the web server stops servicing new users, and once users have finished processing their current tasks, it can then be restarted with the new software, and reconnected to the load balancer.
+* System Activities
+  * **Change Configuration** - changing a target system to a desired configuration state
+  * **Change Coordination (Data Sharing)** - gathering information on one system, using this information to configure another system, such as configure web servers, then using this information to configure a load balancer or a monitoring server, which uses information from configuring the web servers.
+* Application Activities
+  * **Deployment** - deploying software (such as copying files) to a target system, usually a process launched from a continuous integration or continuous delivery system.  The output of a CI system is called an artifact, which can be a directory copied to the target system, or can be archived into an installable package, which can later be pulled down using the change configuration system.
+  * **Orchestration** - coordinating which services needs to be suspended, such a database server with new schema or a message queue system with newly configured queues.  This way the web application uses updated external resources.   This can be also used to restart servers in an order, such as removing a configuration on the load balancer, so that the web server stops servicing new users, and once users have finished processing their current tasks, it can then be restarted with the new software, and reconnected to the load balancer.
+* Ancillary Activities
+  * **Reporting** - reporting on the status of changes, such as changes successfully made, not made, agents not responding or suspended, last change made, schedule changes.
+  * **Inventory** - reporting on the systems and software themselves.
 
 ## Change Configuration Systems
 
