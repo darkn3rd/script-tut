@@ -9,5 +9,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Vagrant CFEngine Provisioner
   config.vm.provision :cfengine do |cf|
     cf.am_policy_hub = true
+    cf.run_file = "../../bundlesofjoy/scriptbox.cf"
   end
 end

@@ -49,3 +49,5 @@ gpgcheck=1
 EOF
 yum -y install cfengine-community
 ```
+
+Reference: https://cfengine.com/product/community/cfengine-linux-distros/

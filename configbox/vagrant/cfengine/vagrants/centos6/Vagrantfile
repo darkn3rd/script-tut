@@ -6,11 +6,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box      = "chef/centos-6.6" # Get Debian Wheezy From Somewhere
   config.vm.hostname = "centos6box"      # Give System a Hostname
 
-  config.vm.synced_folder "../../bundlesofjoy", "/tmp/bundlesofjoy"
+  #config.vm.synced_folder "../../bundlesofjoy", "/tmp/bundlesofjoy"
 
 
   # Vagrant CFEngine Provisioner
   config.vm.provision :cfengine do |cf|
     cf.am_policy_hub = true
+    cf.mode = bootstrap
+    cf.run_file = "../../bundlesofjoy/scriptbox.cf"
   end
 end
