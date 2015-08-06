@@ -3,11 +3,18 @@
 
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "puppetlabs/ubuntu-12.04-64-puppet"
-  config.vm.hostname = "precisebox"
+  config.vm.box = "puppetlabs/ubuntu-12.04-64-puppet" # Get Ubuntu Precise From Somewhere
+  config.vm.hostname = "precisebox"                   # Give System a Hostname
+
+  # Retreive and Configure Default SSH host port
+  ssh_port = open('../../provisioning/vagrant.ini').grep(/#{config.vm.hostname}/)[0].split(/[=\s]/)[4]
+  config.vm.network :forwarded_port, guest: 22, host: ssh_port, id: "ssh"
+
+  # Provision System
   config.vm.provision :ansible do |ansible|
-    ansible.playbook = "../../provisioning/playbook.yml"
-  #  ansible.inventory_path = "../../provisioning/inventory.ini"
-    ansible.sudo = true
+     ansible.limit = config.vm.hostname
+     ansible.playbook = "../../provisioning/playbook.yml"
+     ansible.inventory_path = "../../provisioning/vagrant.ini"
+     ansible.sudo = true
   end
 end

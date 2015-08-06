@@ -3,14 +3,18 @@
 
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "chef/centos-6.6"
+  config.vm.box = "chef/centos-6.6" # Get CentOS6 From Somewhere
+  config.vm.hostname = "centos6box" # Give System a Hostname
 
-  config.vm.hostname = "centos6box"
+  # Retreive and Configure Default SSH host port
+  ssh_port = open('../../provisioning/vagrant.ini').grep(/#{config.vm.hostname}/)[0].split(/[=\s]/)[4]
+  config.vm.network :forwarded_port, guest: 22, host: ssh_port, id: "ssh"
 
+  # Provision System
   config.vm.provision :ansible do |ansible|
-    ansible.playbook = "../../provisioning/playbook.yml"
-  #  ansible.inventory_path = "../../provisioning/inventory.ini"
-    ansible.sudo = true
+     ansible.limit = config.vm.hostname
+     ansible.playbook = "../../provisioning/playbook.yml"
+     ansible.inventory_path = "../../provisioning/vagrant.ini"
+     ansible.sudo = true
   end
-
 end
