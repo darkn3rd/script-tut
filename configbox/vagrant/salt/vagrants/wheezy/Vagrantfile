@@ -6,15 +6,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "puppetlabs/debian-7.8-64-puppet" # Get Debian Wheezy From Somewhere
   config.vm.hostname = "wheezybox"                  # Give System a Hostname
 
-  # Retreive and Configure Default SSH host port
-  ssh_port = open('../../provisioning/vagrant.ini').grep(/#{config.vm.hostname}/)[0].split(/[=\s]/)[4]
-  config.vm.network :forwarded_port, guest: 22, host: ssh_port, id: "ssh"
+  config.vm.synced_folder "../../provisioning/salt", "/srv/salt/"
 
   # Provision System
-  config.vm.provision :ansible do |ansible|
-     ansible.limit = config.vm.hostname
-     ansible.playbook = "../../provisioning/playbook.yml"
-     ansible.inventory_path = "../../provisioning/vagrant.ini"
-     ansible.sudo = true
+  config.vm.provision :salt do |salt|
+    salt.run_highstate = true
+    salt.minion_config = "../../provisioning/vagrant"
+    salt.verbose = true
   end
 end
