@@ -1,0 +1,17 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "chef/centos-6.6" # Get CentOS6 From Somewhere
+  config.vm.hostname = "centos6box" # Give System a Hostname
+
+  config.vm.synced_folder "../../provisioning/salt", "/srv/salt/"
+
+  # Provision System
+  config.vm.provision :salt do |salt|
+    salt.run_highstate = true
+    salt.minion_config = "../../provisioning/vagrant"
+    salt.verbose = true
+  end
+end
