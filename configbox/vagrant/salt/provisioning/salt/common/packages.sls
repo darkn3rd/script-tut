@@ -10,10 +10,10 @@ common_packages:
       - python
       - ruby
       - perl
-      {% if grains['os_familiy'] == 'Debian' %}
+      {% if grains['os_family'] == 'Debian' %}
       - php5-cli
       - tcl8.5
-      {% if grains['os_familiy'] == 'RedHat' %}
+      {% elif grains['os_family'] == 'RedHat' %}
       - php-cli
       - tcl
       {% endif %}
