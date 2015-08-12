@@ -8,14 +8,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.synced_folder "../../provisioning/salt", "/srv/salt/"
 
-  config.ssh.username = "root"
-  config.ssh.password = "vagrant"
-
   # Provision System
   config.vm.provision :salt do |salt|
     salt.run_highstate = true
     salt.minion_config = "../../provisioning/minion"
-    salt.bootstrap_options = "-F -c /tmp"
+    salt.bootstrap_options = "-F -c /tmp"          # Vagrant Issue #6029
     salt.verbose = true
   end
 end
