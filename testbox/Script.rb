@@ -291,6 +291,48 @@ class ScriptBase
     raise NotImplementedError, "#{name} must implement line_continuation"
   end
 
+  # posix?() - true if this environment is a genuine POSIX shell (so a
+  #  test tagged `requires=posix` should run), false otherwise.
+  def self.posix?
+    raise NotImplementedError, "#{name} must implement posix?"
+  end
+
+  # ---------------------------------------------------------------------
+
+  # testbox_tags(file) - parses "# testbox: key=value" / "# testbox:
+  #  key="quoted value"" comments from the first few lines of `file` into
+  #  a hash, e.g. {"requires" => "posix", "title" => "subshell with
+  #  for..in collection"}. Lets a lesson file carry harness metadata
+  #  right where a reader of that file will actually see it, instead of a
+  #  separate manifest that can drift out of sync.
+  def self.testbox_tags(file)
+    tags = {}
+    File.foreach(file).first(5).each do |line|
+      line.scan(/testbox:\s*(\w+)=(?:"([^"]*)"|(\S+))/) do |key, quoted, bare|
+        tags[key] = quoted || bare
+      end
+    end
+    tags
+  rescue Errno::ENOENT
+    {}
+  end
+
+  # requires_posix?(file) - true if `file` is tagged `requires=posix`,
+  #  i.e. it's a lesson intentionally demonstrating a POSIX-only
+  #  technique (subshell output, etc.) rather than a portability bug to
+  #  fix.
+  def self.requires_posix?(file)
+    testbox_tags(file)["requires"] == "posix"
+  end
+
+  # implementation_title(file) - this file's `title=` tag, if any, e.g.
+  #  "subshell with for..in collection". Used to label an implementation
+  #  in test output when a category has more than one, so it's clear
+  #  which technique each result belongs to.
+  def self.implementation_title(file)
+    testbox_tags(file)["title"]
+  end
+
   # ---------------------------------------------------------------------
 
   # truncate_precision(str, digits) - truncate the fractional part of every
@@ -383,7 +425,8 @@ class ScriptBase
     #  not counted toward the total (the language may not support/need it)
     if results["skipped"]
       @@summary[:skip] += 1
-      puts "#{label}: [#{yellow['SKIP']}]"
+      reason = results["skip_reason"] ? " (#{results["skip_reason"]})" : ""
+      puts "#{label}: [#{yellow['SKIP']}]#{reason}"
       return
     end
 
@@ -394,24 +437,33 @@ class ScriptBase
     #  passed via tolerance, so we still surface the detail below
     any_diff = results["results"].values.flatten.any? { |t| t["diff"] }
 
+    # any testcase whose implementation carries a "title=" tag - when a
+    #  category has more than one implementation of the same lesson (see
+    #  implementation_title), surface the breakdown even on a clean pass
+    #  so it's clear which technique each result demonstrates
+    has_titles = results["results"].values.flatten.any? { |t| t["title"] }
+
     # print test result for category group
     puts "#{label}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
-    if ! results["final_result"] || any_diff
+    if ! results["final_result"] || any_diff || has_titles
       if results["results"].empty?
         puts "      - There are no implementations for this category."
       else
         # process each category
         results["results"].each do |category|
+          impl_title = category[1][0]["title"]
+          impl_label = category[0].capitalize + (impl_title ? " - #{impl_title}" : "")
+
           # process category with one test
           if category[1].length == 1
             testcase = category[1][0]
-            puts "      - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
+            puts "      - #{impl_label}: [#{passfail[testcase["test_result"]]}]"
             print_diff[testcase]
           else
-            puts "      - #{category[0].capitalize} (#{category.length[1]} testcases):"
+            puts "      - #{impl_label} (#{category.length[1]} testcases):"
             # process category with multiple tests
             category[1].each_with_index do |testcase, count|
               puts "        - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
@@ -424,7 +476,16 @@ class ScriptBase
   end
 
   def self.execute(task, list)
-    final_result, message, results, skipped = true, "", {}, false
+    final_result, message, results, skipped, skip_reason = true, "", {}, false, nil
+    # Drop implementations that are intentionally POSIX-only (see
+    #  requires_posix?) when we're not running under a POSIX shell. If
+    #  that empties the list, this reports as SKIP below - same as any
+    #  other category with no implementation for the current platform -
+    #  but remember whether POSIX-only filtering is *why*, so report()
+    #  can say so instead of leaving it looking like there's just no
+    #  implementation at all.
+    had_posix_only_implementation = !posix? && list.any? { |cmd| requires_posix?(cmd) }
+    list = list.reject { |cmd| requires_posix?(cmd) } unless posix?
     if list.any?
       if taskdata = @@dataset[task]
         # Execute Every Implementation per Feature (0+ implementations)
@@ -480,7 +541,12 @@ class ScriptBase
               "expected" => expected,
               "test_result" => test_result,
               # raw strings differ even when test_result passed via tolerance
-              "diff" => expected != output
+              "diff" => expected != output,
+              # this implementation's "title=" tag, if any (see
+              #  implementation_title) - lets report() show which
+              #  technique a multi-implementation category's result
+              #  belongs to
+              "title" => implementation_title(cmd)
             }
 
             final_result &= test_result
@@ -496,6 +562,7 @@ class ScriptBase
       end #taskdata = @@dataset[task]
     else
       skipped = true
+      skip_reason = "requires a POSIX shell" if had_posix_only_implementation
     end # list.any?
     #puts "Array output: #{outputs}"
 
@@ -505,6 +572,7 @@ class ScriptBase
       "language" => language_name,
       "final_result" => final_result,
       "skipped"  => skipped,
+      "skip_reason" => skip_reason,
       "results" => results
     }
   end
@@ -542,6 +610,10 @@ class PosixShellScript < ScriptBase
 
   def self.line_continuation
     "\\"
+  end
+
+  def self.posix?
+    true
   end
 end
 
@@ -590,6 +662,28 @@ class CommandShellScript < ScriptBase
 
   def self.line_continuation
     "^"
+  end
+
+  def self.posix?
+    false
+  end
+end
+
+# =============================================
+# Msys2ShellScript - MSYS2/UCRT64 Ruby. This is still a native (MinGW)
+# Windows Ruby build, so Kernel#` is cmd.exe-backed exactly like
+# CommandShellScript - confirmed directly: `` `echo hi 2> /dev/null` ``
+# fails ("The system cannot find the path specified"), `` `echo hi 2>
+# NUL` `` works. So every shell-mechanics method here is inherited
+# unchanged from CommandShellScript. The one real difference is that
+# MSYS2's own bin directory is on PATH, giving genuine POSIX tools
+# (ls, which, gawk, printf, ...) that cmd.exe can find and run just
+# like any other program - so, unlike plain CommandShellScript,
+# `requires=posix` lessons genuinely work here.
+# =============================================
+class Msys2ShellScript < CommandShellScript
+  def self.posix?
+    true
   end
 end
 
@@ -645,6 +739,10 @@ class PowerShellScript < ScriptBase
   def self.line_continuation
     "`"
   end
+
+  def self.posix?
+    false
+  end
 end
 
 # =============================================
@@ -696,8 +794,19 @@ end
 # =============================================
 # Bind Script to whichever concrete environment subclass matches how this
 # process is actually running. testbox.rake only ever refers to `Script`.
+#
+# MSYS2/UCRT64 Ruby reports RUBY_PLATFORM as "x64-mingw-ucrt" - the same
+# "mingw" family as native Windows Ruby - so that check alone can't tell
+# them apart. ENV['MSYSTEM'] (e.g. "MINGW64", "UCRT64") is set only by
+# MSYS2's own shell startup, never by a plain cmd.exe/PowerShell session
+# (unlike PSModulePath/PROMPT, which turned out to leak into both), so it
+# takes priority. But MSYS2 Ruby is still cmd.exe-backed for Kernel#`
+# (confirmed directly - see Msys2ShellScript), so it needs its own class,
+# not PosixShellScript outright.
 # =============================================
-Script = if RUBY_PLATFORM =~ /mingw|mswin/i
+Script = if ENV['MSYSTEM']
+  Msys2ShellScript
+elsif RUBY_PLATFORM =~ /mingw|mswin/i
   windows_host_shell(Process.ppid) == :powershell ? PowerShellScript : CommandShellScript
 else
   PosixShellScript
