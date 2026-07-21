@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # get input from user
-read -p "Would you like a toast? [Yes/No]: " response
+printf "%s" "Would you like a toast? [Yes/No]: "
+read response
 
 # set response string using if/else construction
 #   Test response to a string

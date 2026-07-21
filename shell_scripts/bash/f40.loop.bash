@@ -2,7 +2,8 @@
 # spin loop as always true
 while [[ true ]]; do
    # output prompt and get input
-   read -p "Enter your name (quit to exit): " answer
+   printf "%s" "Enter your name (quit to exit): "
+   read answer
 
    if [[ $answer =~ ^[\s\t]*$ ]] ; then                 
      continue                        # skip loop if no answer

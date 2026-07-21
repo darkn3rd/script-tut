@@ -9,4 +9,5 @@ nicknames[5]=deb
 nicknames[6]=kate
 
 echo "The total nicknames are: ${#nicknames[*]}"  # print length of array
-echo "The nicknames are: ${nicknames[*]}"         # enumerate array
+joined=$(printf ", %s" "${nicknames[@]}")         # join with ", " separator
+echo "The nicknames are: ${joined:2}"             # enumerate array
