@@ -7,7 +7,7 @@ def addNums (Object[] numbers) {
 }
 
 // output numbers before function
-println "The numbers to be added are ${[5, 2, 4, 3, 6]}."
+println "The numbers to be added are ${[5, 2, 4, 3, 6].join(", ")}."
 
 // call the function
 result = addNums 5, 2, 4, 3, 6

@@ -10,5 +10,7 @@ ages['deb']   = 46
 ages['kate']  = 19
 
 // output all keys and values in list
-println "Keys (names):  ${ages.keySet().toString().replaceAll(/[\]\[,]/, "")}"
-println "Values (ages): ${ages.values().toString().replaceAll(/[\]\[,]/, "")}"
+//   only strip the surrounding brackets; keep the ", " separators that
+//   List.toString() already produces
+println "Keys (names):  ${ages.keySet().toString().replaceAll(/[\]\[]/, "")}"
+println "Values (ages): ${ages.values().toString().replaceAll(/[\]\[]/, "")}"

@@ -1,7 +1,9 @@
 #!/usr/bin/env groovy
 // prompt, get input, and convert to integer
-//number = int(raw_input("Input a number: "))
-number = System.console().readLine("Input a number: ").toInteger()
+//   System.console() is null when stdin isn't an interactive terminal
+//   (e.g. piped input), so read from System.in directly instead
+print "Input a number: "
+number = System.in.newReader().readLine().toInteger()
 
 // test number range 
 if (number > 0) {

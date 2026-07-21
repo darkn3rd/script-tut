@@ -8,5 +8,5 @@ ages += ["deb": 46, "kate": 19]
 // output the dictionary with key, one item per line
 println "The ages are: "
 ages.each { name, age ->
-    println "  ages[$name]=${age}"
+    println " ages[$name]=${age}"
 }

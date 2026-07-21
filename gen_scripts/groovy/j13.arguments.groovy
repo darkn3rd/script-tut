@@ -5,7 +5,7 @@ FIRST       = 0             // set index of first argument in list
 START_COUNT = 1             // set starting counter to output to user
 END_COUNT   = ARG_COUNT     // set ending counter to output to user
 
-println "The arugments passed are:"
+println "The arguments passed are:"
 // loop arbitrary number of times based on original size of list
 for (count in START_COUNT..END_COUNT) {   
    arg = args[FIRST]              // get first argument of list

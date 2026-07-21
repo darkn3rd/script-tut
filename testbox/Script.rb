@@ -82,7 +82,7 @@ class Script
   @@nix_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :pl     => 'perl --version | grep -oE \'v[0-9]\.[0-9]{1,2}\.[0-9]\'',
     :php    => 'php --version | head -1',
     :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk \'{ print $2 }\'',
@@ -97,7 +97,7 @@ class Script
   @@win_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :pl     => 'perl --version | grep -oE \'v[0-9]\.[0-9]{1,2}\.[0-9]\'',
     :php    => 'php --version | head -1',
     :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk "{ print $2 }"',

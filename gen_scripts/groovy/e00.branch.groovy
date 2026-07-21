@@ -1,6 +1,9 @@
 #!/usr/bin/env groovy
 // get input from user
-response = System.console().readLine "Would you like a toast? [Yes/No]: "
+//   System.console() is null when stdin isn't an interactive terminal
+//   (e.g. piped input), so read from System.in directly instead
+print "Would you like a toast? [Yes/No]: "
+response = System.in.newReader().readLine()
 
 // set response string using if/else construction
 //   Test response to a string
