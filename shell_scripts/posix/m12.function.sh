@@ -8,7 +8,10 @@ capitalize() {
   echo $1 | awk '{print toupper($0)}' # print fully uppercase string
 }
 
+string="ibm"
+echo "The current string is: \"$string\"."
+
 # call function in subshell, capture result from stdout
-result=$(capitalize ibm)
+result=$(capitalize "$string")
 # output result
-echo "The result of summation is: $result"
+echo "The capitalized string is: \"$result\"."

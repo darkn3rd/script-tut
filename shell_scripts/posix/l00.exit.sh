@@ -18,7 +18,7 @@ add_nums() {
   # add all the $num in @numbers list
   for num in "$@"; do sum=$(($sum + $num)); done
   # output results
-  echo "The summation is: $sum"
+  echo "The summation is: $sum."
 
   return $EX_OK  # return a success
 }
