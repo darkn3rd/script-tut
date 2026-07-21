@@ -23,7 +23,7 @@
   "f1": "Count Loop",
   "f2": "Conditional Loop",
   "f3": "Spin Loop",
-  "f4": "Skipping",
+  "f4": "Skip Loop Iteration",
   "g0": "Assign by Index and Length",
   "g1": "Assign by List and Enumeration by Item",
   "g2": "Assign by List and Enumeration by Index",

@@ -287,11 +287,11 @@ class Script
     print_diff = ->(testcase) {
       return unless !testcase["test_result"] || testcase["diff"]
       if testcase["test_result"]
-        puts "       Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "       Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+        puts "         Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "         Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
       else
-        puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+        puts "         Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "         Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
       end
     }
 
@@ -306,7 +306,6 @@ class Script
     if results["skipped"]
       @@summary[:skip] += 1
       puts "#{label}: [#{yellow['SKIP']}]"
-      puts "    - #{results["notes"]}"
       return
     end
 
@@ -324,20 +323,20 @@ class Script
 
     if ! results["final_result"] || any_diff
       if results["results"].empty?
-        puts "    - There are no implementations for this category."
+        puts "      - There are no implementations for this category."
       else
         # process each category
         results["results"].each do |category|
           # process category with one test
           if category[1].length == 1
             testcase = category[1][0]
-            puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
+            puts "      - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
             print_diff[testcase]
           else
-            puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
+            puts "      - #{category[0].capitalize} (#{category.length[1]} testcases):"
             # process category with multiple tests
             category[1].each_with_index do |testcase, count|
-              puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
+              puts "        - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
               print_diff[testcase]
             end
           end
@@ -423,7 +422,6 @@ class Script
       end #taskdata = @@dataset[task]
     else
       skipped = true
-      notes = "No implementation file found for this category; skipping."
     end # list.any?
     #puts "Array output: #{outputs}"
 
@@ -433,7 +431,6 @@ class Script
       "language" => Script.language_name,
       "final_result" => final_result,
       "skipped"  => skipped,
-      "notes"    => notes,
       "results" => results
     }
   end

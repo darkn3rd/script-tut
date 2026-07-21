@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-PI     = 3.14159265359    # approximation of π
+PI     = Math::PI         # π
 radius = 3
 area   = PI * radius ** 2 # calculate  π * r^2
 
