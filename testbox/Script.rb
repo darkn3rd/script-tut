@@ -146,7 +146,8 @@ class Script
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@dirname   = File.basename(Dir.pwd)
-  @@jsonfile  = "../../testbox/expected.json"
+  @@jsonfile   = "../../testbox/expected.json"
+  @@titlesfile = "../../testbox/titles.json"
 
   # tally of category-level results across a run, printed by print_summary
   @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
@@ -160,12 +161,23 @@ class Script
     exit 1
   end
 
+  # Titles are cosmetic (human-readable lesson names in test output), so a
+  #  missing/unreadable titles.json falls back to no title rather than
+  #  aborting the run.
+  @@titles = File.exist?(@@titlesfile) ? JSON.parse(File.read(@@titlesfile)) : {}
+
   def self.language_name
     @@language_name[@@language.to_sym]
   end
 
   def self.data(reference)
     @@dataset[reference]
+  end
+
+  # title(reference) - human-readable lesson name for a category (e.g.
+  #  "g0" -> "Assign by Index and Length"), or "" if not found.
+  def self.title(reference)
+    @@titles[reference.to_s] || ""
   end
 
 
@@ -275,20 +287,25 @@ class Script
     print_diff = ->(testcase) {
       return unless !testcase["test_result"] || testcase["diff"]
       if testcase["test_result"]
-        puts "       Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "       Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+        puts "         Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "         Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
       else
-        puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+        puts "         Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "         Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
       end
     }
+
+    # human-readable lesson name (e.g. "Assign by Index and Length"),
+    #  appended to the category code so output is readable without having
+    #  to cross-reference the README
+    title = Script.title(results["category"])
+    label = results["category"].capitalize + (title.empty? ? "" : " - #{title}")
 
     # a category with no implementation file is skipped, not failed, and
     #  not counted toward the total (the language may not support/need it)
     if results["skipped"]
       @@summary[:skip] += 1
-      puts "#{results["category"].capitalize}: [#{yellow['SKIP']}]"
-      puts "    - #{results["notes"]}"
+      puts "#{label}: [#{yellow['SKIP']}]"
       return
     end
 
@@ -300,26 +317,26 @@ class Script
     any_diff = results["results"].values.flatten.any? { |t| t["diff"] }
 
     # print test result for category group
-    puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
+    puts "#{label}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
     if ! results["final_result"] || any_diff
       if results["results"].empty?
-        puts "    - There are no implementations for this category."
+        puts "      - There are no implementations for this category."
       else
         # process each category
         results["results"].each do |category|
           # process category with one test
           if category[1].length == 1
             testcase = category[1][0]
-            puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
+            puts "      - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
             print_diff[testcase]
           else
-            puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
+            puts "      - #{category[0].capitalize} (#{category.length[1]} testcases):"
             # process category with multiple tests
             category[1].each_with_index do |testcase, count|
-              puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
+              puts "        - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
               print_diff[testcase]
             end
           end
@@ -405,7 +422,6 @@ class Script
       end #taskdata = @@dataset[task]
     else
       skipped = true
-      notes = "No implementation file found for this category; skipping."
     end # list.any?
     #puts "Array output: #{outputs}"
 
@@ -415,7 +431,6 @@ class Script
       "language" => Script.language_name,
       "final_result" => final_result,
       "skipped"  => skipped,
-      "notes"    => notes,
       "results" => results
     }
   end
