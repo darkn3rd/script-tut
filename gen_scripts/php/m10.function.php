@@ -5,9 +5,13 @@ function capitalize($string) {
 	return strtoupper($string); // return capitlized string
 }
 
-// call the function
-$result = capitalize("ibm");    // pass string 
+// output string before calling function
+$string = "ibm";
+echo "The current string is: \"$string\".\n";
 
-# output results with resulting integer
-echo "The result of capitalization is: $result.\n";
+// call the function
+$result = capitalize($string);  // pass string
+
+# output results after calling function
+echo "The capitalized string is: \"$result\".\n";
 ?>

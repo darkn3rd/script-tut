@@ -9,5 +9,5 @@ $nicknames[5] = "deb";
 $nicknames[6] = "kate";
 
 echo "The total nicknames are: ", count($nicknames), "\n";
-echo "The nicknames are: ", implode(" ", $nicknames), "\n";
+echo "The nicknames are: ", implode(", ", $nicknames), "\n";
 ?>

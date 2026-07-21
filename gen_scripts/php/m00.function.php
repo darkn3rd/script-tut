@@ -12,9 +12,12 @@ function addNums()
    return $sum;                   // return result
 }
 
+// output numbers before function
+echo "The numbers to be added are 5, 2, 4, 3, 6.\n";
+
 // call the function
 $result = addNums(5, 2, 4, 3, 6); // pass variable number of numbers
 
 # output results with resulting integer
-echo "The result of summation is: $result.\n";
+echo "The result of their summation is: $result.\n";
 ?>
