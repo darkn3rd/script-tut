@@ -8,5 +8,5 @@ puts "The arguments passed are:"
 # iterative loop to enumerate args
 for {set count $first} {$count <= $last} {incr count 1} {
   # output each element from $last_item to 0
-  puts "  item [expr $count + 1]: [lindex $argv $count]"
+  puts " item [expr $count + 1]: [lindex $argv $count]"
 }

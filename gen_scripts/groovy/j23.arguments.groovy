@@ -4,7 +4,7 @@ ARG_COUNT = args.size() // get number of arguments
 // utility variables
 count     = ARG_COUNT   // initialize counter
 
-println "The arugments passed are:"
+println "The arguments passed are (reverse order):"
 // iteration with each to output arg and count
 args.reverse().each { arg -> 
     println " item ${count}: $arg" 

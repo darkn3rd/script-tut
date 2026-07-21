@@ -1,7 +1,6 @@
 #!/usr/bin/env ksh
 # create a menu string to output to user
-MENU='
-Select an item from the menu.
+MENU='Select an item from the menu.
 
   1 - Coffee
   2 - Espresso
@@ -13,8 +12,9 @@ Select an item from the menu.
 
 Make your selection: '
  
-# get user output 
-read selection?"$MENU"      # prompt and get input
+# get user output
+print -n "$MENU"            # prompt
+read selection               # get input
 selection=${selection:0:1}  # substring for only 1st char
 
 # test each selection using a numerical comparision

@@ -8,5 +8,5 @@ BEGIN {
   # print out array item by item - can arrrive in any order
   print "The names are: "
   for (name in nicknames)
-    print " " nicknames[name]
+    print "  " nicknames[name]
 }

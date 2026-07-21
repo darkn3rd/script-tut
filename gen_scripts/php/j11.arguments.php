@@ -9,5 +9,5 @@ echo "The arguments passed are:\n";
 // iterative loop to enumerate args
 for ( $count = $first; $count <= $last ; $count++ )
   // output count and argument using count index
-  echo "  item $count: $argv[$count]\n";
+  echo " item $count: $argv[$count]\n";
 ?>

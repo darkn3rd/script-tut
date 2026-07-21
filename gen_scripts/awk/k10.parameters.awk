@@ -1,13 +1,19 @@
 #!/usr/bin/env awk -f
 # create the subroutine (function)
-function addNums(numbers)
+function addNums(numbers,    num, count, sending, sum)
 {
-   sum = 0                        # initalize to 0
-   for (num in numbers) {
-     sum += numbers[num]          # add all nums in array
-   }
+   count = 0
+   for (num in numbers) count++   # POSIX awk has no length(array)
 
-   print "The summation is: " sum # output results
+   # build ordered "Sending: ..." list; split() guarantees array
+   #  indices 1..count in the original order
+   sending = numbers[1]
+   for (num = 2; num <= count; num++) sending = sending ", " numbers[num]
+   print "Sending: " sending
+
+   sum = 0
+   for (num = 1; num <= count; num++) sum += numbers[num] # add all nums
+   print "The summation is: " sum "."                     # output results
 }
 
 BEGIN {

@@ -16,6 +16,7 @@ task :default do
   Rake::Task["parameters"].invoke
   Rake::Task["exit"].invoke
   Rake::Task["function"].invoke
+  Script.print_summary
 end
 
 task :header do

@@ -5,6 +5,6 @@ char=a                     # set a character
 string="This is a string"  # set a string
 
 # output results using formatting
-printf "Number is %d." $num
-printf "Character is \'%c\'." $char
-printf "String is \"%s\"." $string
+printf "Number is %d.\n" $num
+printf "Character is '%c'.\n" $char
+printf "String is \"%s\".\n" "$string"

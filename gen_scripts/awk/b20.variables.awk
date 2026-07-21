@@ -6,7 +6,7 @@ BEGIN {
   string = "This is a string"
 
   # output values using string interpolation
-  printf "Number is  %d.\n", num
+  printf "Number is %d.\n", num
   printf "Character is '%c'.\n", char
   printf "String is \"%s\".\n", string
 }

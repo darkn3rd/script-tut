@@ -9,7 +9,8 @@ function add {
   print $sum               # send result to stdout
 }
 
+print "The numbers to be added are 5, 2, 4, 3, 6."
 # call function in subshell, capture result from stdout
 result=$(add 5 2 4 3 6)
 # output result
-print "The result of summation is: $result"
+print "The result of their summation is: $result."

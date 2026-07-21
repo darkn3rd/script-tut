@@ -4,7 +4,7 @@ ARG_COUNT = args.size()   // get num of real arguments
 LAST      = ARG_COUNT - 1 // index of last argument
 FIRST     = 0             // index of first argument
 
-println "The arugments passed are:"
+println "The arguments passed are:"
 // use count style loop
 for (count = FIRST; count <= LAST; count ++) {
    arg = args[count]      // get arg using index

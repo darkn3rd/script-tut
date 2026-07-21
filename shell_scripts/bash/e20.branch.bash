@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # prompt user and get input
-read -p "Input a number: " number
+printf "%s" "Input a number: "
+read number
 # test input and output result
 if (( $number > 0 )); then
   echo Number is greater than 0

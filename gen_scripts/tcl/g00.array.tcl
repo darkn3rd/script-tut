@@ -13,4 +13,4 @@ set nicknames [linsert $nicknames 6 kate]
 # print length
 puts "The total nicknames are: [llength $nicknames]"
 # enumerate full list
-puts "The nicknames are:  [lrange $nicknames 0 end]"
+puts "The nicknames are: [join $nicknames {, }]"

@@ -1,6 +1,7 @@
 #!/usr/bin/env ksh
 # prompt user and get input
-read number?"Input a number: "
+print -n "Input a number: "
+read number
 
 # test input and output result
 if (( $number > 0 )); then

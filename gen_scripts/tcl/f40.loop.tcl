@@ -2,7 +2,7 @@
 # spin loop with break to exit loop, continue to skip loop
 while {true} {
   # send prompt to buffer
-  puts -nonewline "Enter you name (quit to Exit): "
+  puts -nonewline "Enter your name (quit to exit): "
   flush stdout         ;# output the buffer
   gets stdin answer    ;# get intput
  

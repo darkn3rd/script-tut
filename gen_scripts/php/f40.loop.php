@@ -3,7 +3,7 @@
 // spin loop as always true
 //   break used to exit loop
 do {
-    echo "Enter your name (quit to Exit): "; # output prompt
+    echo "Enter your name (quit to exit): "; # output prompt
     $answer = rtrim(fgets(STDIN));           # get input, trim newline
     # skip loop if not answer entered
     if (preg_match("/^[\s\t]*$/", $answer)) continue; 

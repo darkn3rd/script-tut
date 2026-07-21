@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # save a menu string to output to user
-MENU='
-Select an item from the menu.
+MENU='Select an item from the menu.
 
   1 - Coffee
   2 - Espresso
@@ -13,7 +12,8 @@ Select an item from the menu.
 
 Make your selection: '
 
-read -p "$MENU" selection  # prompt user and get input
+printf "%s" "$MENU"        # prompt user
+read selection              # get input
 selection=${selection:0:1} # substring for only 1st char
 
 

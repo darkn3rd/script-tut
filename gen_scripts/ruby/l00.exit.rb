@@ -13,7 +13,7 @@ EX_OK        = 0           # status for successful termination
 def add_nums (numbers)
    sum = 0                               # initialize starting sum value
    numbers.each {|num| sum += num.to_i } # sum up nums
-   puts "The summation is: #{sum}"       # output results
+   puts "The summation is: #{sum}."      # output results
 end
 
 # **************************************

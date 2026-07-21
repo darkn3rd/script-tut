@@ -10,7 +10,8 @@ add() {
   return $sum               # return error code that has sum
 }
 
-# call function 
+echo "The numbers to be added are 5, 2, 4, 3, 6."
+# call function
 add 5 2 4 3 6
 # output result using error code
-echo "The result of summation is: $?"
+echo "The result of their summation is: $?."

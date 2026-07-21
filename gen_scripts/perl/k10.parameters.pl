@@ -8,7 +8,7 @@ sub addNums {
    foreach $num (@numbers) { $sum += $num }
 
    # output results
-   print "The summation is: $sum\n";
+   print "The summation is: $sum.\n";
 }
 
 printf "Sending: 5, 2, 4, 3, 6\n";

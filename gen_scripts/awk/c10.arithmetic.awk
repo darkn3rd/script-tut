@@ -8,5 +8,5 @@ BEGIN {
  result = true && false || true
 
  # output results
- print "The statement (true AND false OR true) is " result
+ print "The statement (true AND false OR true) is: " result
 }

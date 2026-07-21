@@ -4,4 +4,4 @@ puts -nonewline "Enter your name: "
 flush stdout
 gets stdin name
 # output result
-puts "Hello $name"
+puts "Hello $name!"

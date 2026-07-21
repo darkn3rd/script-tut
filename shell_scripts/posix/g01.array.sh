@@ -4,11 +4,12 @@ nicknames="bob ed steve ralph joe deb kate"
 
 # print length of list
 total=$(echo $nicknames | wc -w | tr -d " ")
-echo "The number of nicknames is $total"
+echo "The total nicknames are: $total"
 
 # iterate through string with for/in/do..done construction
-printf "The nicknames are:"
+joined=""
 for name in $nicknames; do
-  printf " $name"
+  joined="$joined, $name"
 done
-printf "\n"
+joined=${joined#, }
+printf "The nicknames are: %s\n" "$joined"

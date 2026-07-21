@@ -18,7 +18,7 @@ def addNums (Object[] numbers) {
    numbers.each { num ->            // collection loop toprocess numbers
      sum += num.toInteger()         // sum up nums
    }
-   println "The summation is: $sum" // output results
+   println "The summation is: $sum." // output results
    System.exit(EX_OK)
 }
 

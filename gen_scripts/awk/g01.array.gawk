@@ -15,7 +15,7 @@ BEGIN {
   nicknames[6]="kate"
 
   # print number of elements
-  print  "The number of nicknames is: " length(nicknames)
+  print  "The total nicknames are: " length(nicknames)
 
   # print all of elements in one line
   printf "The nicknames are: " join(nicknames, ", ") "\n"

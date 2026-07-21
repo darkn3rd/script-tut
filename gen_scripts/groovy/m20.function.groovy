@@ -8,10 +8,10 @@ def sort_array (array) {
 // initialize initial array (list)
 array = ["bob","ed","steve","ralph","joe","deb","kate"]
 // output current list before calling function
-println "Current names are: $array" 
+println "Current names are: ${array.join(", ")}"
 
 // call the function
 result = sort_array(array)
 
 // output the result
-println "Sorted names are:  $result" 
+println "Sorted names are: ${result.join(", ")}" 

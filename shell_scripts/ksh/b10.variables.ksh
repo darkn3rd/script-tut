@@ -6,5 +6,5 @@ string="This is a string"  # set a string
 
 # output results using interpolation
 print "Number is $num."
-print "Character is \'$char\'."
+print "Character is '$char'."
 print "String is \"$string\"."

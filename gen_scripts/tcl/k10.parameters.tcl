@@ -10,9 +10,10 @@ proc addNums {args} {
   # add up all the num in nums array
   foreach num $nums { set sum [expr $sum + $num] }
   # output results of summation
-  puts "The sumation is: $sum" 
+  puts "The summation is: $sum."
 }
 
+puts "Sending: 5, 2, 4, 3, 6"
 # call subroutine with variable number of parameters
 addNums 5 2 4 3 6
 

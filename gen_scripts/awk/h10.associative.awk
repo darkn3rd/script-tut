@@ -13,10 +13,14 @@ BEGIN {
   # merge two associative arrays
   merge(ages, ages_two)
 
-  # iterate through associatve array, print key/value pairs
+  # iterate through associative array in insertion order, print key/value
+  #  pairs (awk's "for (key in array)" iteration order is unspecified, so
+  #  key_order, built up in make_array, is used instead)
   print "The ages are: "
-  for(name in ages)
-      printf " ages[\"%s\"] = %s\n", name, ages[name]
+  for (i = 1; i <= key_count; i++) {
+    name = key_order[i]
+    printf " ages[%s]=%s\n", name, ages[name]
+  }
 }
 
 # ==================== HELPER FUNCTIONS ==================== #
@@ -24,13 +28,21 @@ BEGIN {
 #   arrays in one line or merge two associative arrays
 
 # **************************************
-# make_array (scalar, array) - populates array given a string scalar
+# make_array (scalar, array) - populates array given a string scalar.
+#   Also appends each key to the global key_order/key_count so callers
+#   can enumerate in insertion order later.
 # **************************************
-function make_array(strIn, arrOut)
+function make_array(strIn, arrOut,    couplets, count, i, pair, name, age)
 {
   split(strIn, couplets)              # craft new array from key:value pairs
 
-  for (i in couplets) {
+  count = 0
+  for (i in couplets) count++         # POSIX awk has no length(array)
+
+  # Note: split() always starts array indices at 1, so an explicit
+  #  numeric loop (rather than "for (i in couplets)") walks it in the
+  #  original key:value order
+  for (i = 1; i <= count; i++) {
     split(couplets[i], pair, ":")     # create mini-array of key and value
 
     # not the most efficient, but more illustrative
@@ -39,6 +51,7 @@ function make_array(strIn, arrOut)
 
     # build the output associative array
     arrOut[name] = age
+    key_order[++key_count] = name     # remember insertion order (global)
   }
 }
 

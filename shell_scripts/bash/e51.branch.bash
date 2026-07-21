@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-read -p "Input a character: " keypress # prompt user and get input
+printf "%s" "Input a character: " # prompt user
+read keypress                      # get input
 keypress=${keypress:0:1}               # substring for only 1st char
  
 # case construction

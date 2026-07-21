@@ -4,7 +4,7 @@ ARG_COUNT = args.size() // get number of arguments
 // utility variables
 count     = ARG_COUNT   // initialize counter
 
-println "The arugments passed are:"
+println "The arguments passed are (reverse order):"
 // use collection loop on a reversed list
 for (arg in args.reverse()) {   //   collection loop produces arg
    // output count and argument using count

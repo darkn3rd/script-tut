@@ -1,8 +1,8 @@
 # Scripting Tutorial: Groovy
 
-Version 1.6
+Version 1.7
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
 ## Overview
 
@@ -20,63 +20,79 @@ Today (2014) there are a number of popular tools are developed using Groovy, suc
 * **Grafitti** [https://github.com/webdevwilson/graffiti] - a web micro-framework inspired by Sinatra.
 * **Grails** [https://grails.org/] - robust web MVC framework
 * **Griffon** [http://griffon.codehaus.org/] - MVC framework for desktop applications
-* **Groovy enVironment Manager** [http://gvmtool.net/] - tools to manage versions of Groovy and popolar Groovy tools and frameworks.
+
 
 ## History
 
-Groovy was developed by James Strachan and officially released in 2007.  Strachan silently left the project a year before its release.  Groovy 2.0 was released in 2012.
+**Groovy** was developed by James Strachan and officially released in 2007.  Strachan silently left the project a year before its release.
+
+* Tested with Groovy 5.0.6
 
 ## Getting Groovy
 
-Groovy requires Java Development Kit, and so this must be installed for Groovy to run.
+Groovy requires **Java Development Kit**, and so this must be installed for **Groovy** to run.
 
-Groovy 2.3 adds support for Java NIO (Non-Blocking I/O), which requires JDK7.  This will need to be installed to avoid constant warnings that NIO is not available when working with Groovy 2.3.
+### Installation with Runtime Version Managers
 
-### Getting Groovy on Mac
+Runtime version managers can install and manage different versions of Groovy and Java JDK across multiple platforms. 
 
-As for prerequisites on the Mac, you'll need to install XCode, XCode command line tools, and the most recent JDK.
+#### Groovy enVironment Manager (Deprecated)
 
-Apple provides an updated version of JDK6 (Java 1.6) for Mac OS X 10.8 Mountain Lion.  Optionally, a more recent JDK, such as the one from Java 1.7 or Java 1.8 can be installed from Oracle.
+This tool is deprecated and completely replaced with **[SDKMan](https://sdkman.io/)**. 
 
-#### Homebrew
+#### SDKMan
 
-Homebrew [http://brew.sh/] is a popular single-user package management system that can install a variety of scripting languages and tools, which includes Groovy.
-
-This version of Groovy installed by Homebrew may not be the latest stable release.  Consider alternatively installng GVM (Groovy enVironment Manager) to get the latest Groovy and manage or test different versions of Groovy.
-
-Homebrew and Groovy can be installed with these commands (Tested on Mac OS X 10.8.5):
+**[SDKMan](https://sdkman.io/)** manages SDKs on the Java platform. 
 
 ```bash
-ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
-brew update
-brew doctor
-echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
-. ~/.bash_profile
+# Install SDKMan
+curl -s "https://sdkman.io" | bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+# Install Java
+sdk install java 17.0.19-amzn
+sdk default java 17.0.19-amzn
+# Install Groovy
+sdk install groovy 5.0.7
+sdk use groovy 5.0.7
+```
+
+#### ASDF
+
+**[ASDK](https://asdf-vm.com/)** is a universal runtime version manager that uses modular plugins to manage the software. 
+
+```bash
+# Install ASDF
+sudo apt install curl git
+git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
+# Install Java
+asdf plugin add java https://github.com/halcyon/asdf-java.git
+asdf install java corretto-17.0.19.10.1
+asdf global java corretto-17.0.19.10.1
+# Install Groovy
+asdf plugin-add groovy https://github.com/weibemoura/asdf-groovy.git
+asdf install groovy 5.0.7
+asdf global groovy 5.0.7
+```
+
+### macOS: Homebrew
+
+You can use [Homebrew](https://brew.sh/) to install Groovy along with the dependent Java JDK. This will install the latest versions (2026-07-20):
+
+* [Azul Zulu Build of OpenJDK](https://www.azul.com/downloads/?package=jdk#zulu) 11.88.17
+* [Groovy](https://groovy.apache.org/download.html) 5.0.7
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install OpenJDK (Azul Zulu) and Groovy
 brew install groovy
 ```
 
-#### Groovy enVironment Manager
-
-GVM [http://gvmtool.net/] is tool that can manages versions of Groovy and related tools and frameworks.
-
-GVM can be installed on Mac OS X with an active Internet connection and using:
-
-```bash
-curl -s get.gvmtool.net | bash
-```
-
-Afterwards, you can install groovy with the following command.  It will download, compile, and install groovy.
-
-```bash
-gvm install groovy
-```
 
 ## Testing
 
-* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
-  * :package: Groovy 2.3.3 (GVM: `gvm install groovy`)
-    * :package: Groovy Version Manager 1.3.13 (GVM: `curl -s get.gvmtool.net | bash`)
-    * :package: Oracle Java™ SE Runtime Environment (build 1.7.0_60-b19)
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 Groovy 5.0.7
+    * 📦 OpenJDK Runtime Environment (Azul Zulu 11.88.17 build 11.0.31+11)
 
 
 ## Notes

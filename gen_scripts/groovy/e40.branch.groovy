@@ -12,7 +12,7 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection : """
+Make your selection: """
  
 // get user output 
 print menu                   // output menu and prompt

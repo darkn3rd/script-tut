@@ -9,7 +9,8 @@ function add {
   return $sum               # return error code that has sum
 }
 
-# call function 
+print "The numbers to be added are 5, 2, 4, 3, 6."
+# call function
 add 5 2 4 3 6
 # output result using error code
-print "The result of summation is: $?"
+print "The result of their summation is: $?."

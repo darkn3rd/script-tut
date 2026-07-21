@@ -7,4 +7,4 @@ string="This is a string"  # set a string
 # show the results using formatting
 printf "Number is %d.\n" $num
 printf "Character is \'%c\'.\n" $char
-printf "String is \"%s\".\n" $string
+printf "String is \"%s\".\n" "$string"

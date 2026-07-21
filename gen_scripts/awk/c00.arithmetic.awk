@@ -8,5 +8,5 @@ BEGIN {
  area   = width * len
 
  # output result
- print "The area of a square (width=" width ", length=" len ") is " area
+ print "The area of a square (width=" width ", length=" len ") is " area "."
 }

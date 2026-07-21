@@ -11,5 +11,7 @@ nicknames[5] = "deb"
 nicknames[6] = "kate"
 
 // output length and all values
-println "The number of nicknames is ${nicknames.size()}"
-println "The nicknames are: ${nicknames.toString().replaceAll(/[\]\[,]/, "")}"
+//   only strip the surrounding brackets; keep the ", " separators that
+//   List.toString() already produces
+println "The total nicknames are: ${nicknames.size()}"
+println "The nicknames are: ${nicknames.toString().replaceAll(/[\]\[]/, "")}"

@@ -13,5 +13,5 @@ print "The ages are: "
 # use collection loop with list of keys
 for name in ${!ages[@]}
 do
-  print "  ages[$name]=${ages[$name]}"
+  print " ages[$name]=${ages[$name]}"
 done

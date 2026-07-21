@@ -2,7 +2,7 @@
 # utility variables
 count=1      # initialize counter
  
-print "The arugments passed are:"
+print "The arguments passed are:"
 #  collection loop to enumerate lists
 for arg in "$@"; do
   print " item $count: $arg" # output count and arg

@@ -9,5 +9,5 @@ echo "The arguments passed are (reverse order):\n";
 // iterative loop to enumerate args
 for ( $count = $last; $count >= $first; $count-- )
   // output count and argument suing count index
-  echo "  item $count: $argv[$count]\n";
+  echo " item $count: $argv[$count]\n";
 ?>

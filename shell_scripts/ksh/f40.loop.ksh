@@ -2,7 +2,8 @@
 # spin loop as always true, break exits loop 
 while [[ 1 ]]; do
    # prompt and get input
-   read answer?"Enter your name (quit to exit): " 
+   print -n "Enter your name (quit to exit): "
+   read answer
    # check for answer
    if [[ $answer = ~(E)(^[ \t]*$) ]]; then 
 	  continue           # skip loop if no answer

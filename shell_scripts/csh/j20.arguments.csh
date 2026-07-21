@@ -1,5 +1,7 @@
 #!/usr/bin/env tcsh
 
+echo "The arguments passed are (reverse order):"
+
 # set count to max item in array
 @ count = $#argv
 

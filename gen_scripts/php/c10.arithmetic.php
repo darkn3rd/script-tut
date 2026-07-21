@@ -4,5 +4,5 @@
 $result = TRUE && FALSE || TRUE;
 
 // output results
-echo "The statement (true AND false OR true) is $result\n";
+echo "The statement (true AND false OR true) is: $result\n";
 ?>

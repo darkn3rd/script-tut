@@ -82,30 +82,30 @@ class Script
   @@nix_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :pl     => 'perl --version | grep -oE \'v[0-9]\.[0-9]{1,2}\.[0-9]\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version 2>&1",
+    :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
-    :ksh    => "ksh --version",
+    :ksh    => "ksh --version 2>&1",
   }
 
   # commands required to retrieve version (battle tested on Windows cmd.exe)
   @@win_version = {
     :awk    => "gawk --version | head -1",
     :groovy => "groovy --version",
-    :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
+    :pl     => 'perl --version | grep -oE \'v[0-9]\.[0-9]{1,2}\.[0-9]\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version 2>&1",
+    :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk "{ print $2 }"',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
-    :ksh    => "ksh --version",
+    :ksh    => "ksh --version 2>&1",
     :js     => "cscript | grep -o \"Windows Script Host Version ...\"",
     :vbs     => "cscript | grep -o \"Windows Script Host Version ...\"",
     # bad mojo
@@ -133,14 +133,27 @@ class Script
     :cmd    => "Batch"
   }
 
+  # Some languages have multiple, incompatible major versions that share a
+  # file extension (e.g. python2/ and python3/ both use *.py). When the
+  # directory name matches a key here, it overrides the extension-derived
+  # command so each directory runs with its own interpreter binary.
+  @@command_override = {
+    "python2" => "python2",
+    "python3" => "python3"
+  }
+
   @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
+  @@dirname   = File.basename(Dir.pwd)
   @@jsonfile  = "../../testbox/expected.json"
+
+  # tally of category-level results across a run, printed by print_summary
+  @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
 
   # Process JSON files and configure @@dataset
   require 'json'
-  if File.exists?(@@jsonfile)
+  if File.exist?(@@jsonfile)
     @@dataset = JSON.parse(File.read(@@jsonfile))
   else
     STDERR.puts "ERROR: Cannot Find JSON File"
@@ -156,23 +169,30 @@ class Script
   end
 
 
+  # command() - returns the interpreter binary to invoke, preferring a
+  #  directory-specific override (see @@command_override) over the
+  #  extension-derived default.
+  def self.command
+    @@command_override[@@dirname] || @@command[@@language.to_sym]
+  end
+
   def self.runner
-    "#{@@command[@@language.to_sym]} #{@@option[@@language.to_sym]}"
+    "#{Script.command} #{@@option[@@language.to_sym]}"
   end
 
   def self.version
-    if @@ostype[0] == "mingw"
-      #puts "DEBUG #{@@win_version[@@language.to_sym]}"
-      `#{@@win_version[@@language.to_sym]}`.chomp
+    version_cmd = if @@ostype[0] == "mingw"
+      @@win_version[@@language.to_sym]
     else
-      `#{@@nix_version[@@language.to_sym]}`.chomp
+      @@nix_version[@@language.to_sym]
     end
+    `#{version_cmd % {cmd: Script.command}}`.chomp
   end
 
   # path() - returns path of executable
   #  REQUIREMENTS: which
   def self.path
-      `which "#{@@command[@@language.to_sym]}"`.chomp
+      `which "#{Script.command}"`.chomp
   end
 
   def self.ostype
@@ -183,18 +203,108 @@ class Script
     @@cputype
   end
 
+  # truncate_precision(str, digits) - truncate the fractional part of every
+  #  floating point number embedded in str to at most `digits` characters.
+  #  Used to tolerate floating point precision differences across language
+  #  runtimes (e.g. cosine/area calculations) when comparing test output.
+  def self.truncate_precision(str, digits)
+    str.gsub(/(\d+\.\d+)/) do |match|
+      whole, frac = match.split(".")
+      "#{whole}.#{frac[0, digits]}"
+    end
+  end
+
+  # normalize_bool(str) - fold the common truthy representations different
+  #  languages print ("true", "True", "1") down to a single canonical form,
+  #  so a boolean result can be compared across languages that render
+  #  booleans differently (e.g. awk prints 1/0, Python prints True/False).
+  def self.normalize_bool(str)
+    str.gsub(/\b(?:true|True|1)\b/, "true")
+  end
+
+  # normalize_unordered_csv(str) - within each line that has a
+  #  "label: a, b, c" shape, sort the comma-separated items after the
+  #  colon. Used when a hash/dict's keys or values are printed
+  #  comma-separated on one line and enumeration order isn't guaranteed
+  #  by the language (e.g. Perl, awk hashes have no defined order).
+  def self.normalize_unordered_csv(str)
+    str.split("\n").map do |line|
+      if line =~ /^([^:]*:\s*)(.*)$/
+        prefix, items = $1, $2
+        prefix + items.split(",").map(&:strip).sort.join(", ")
+      else
+        line
+      end
+    end.join("\n")
+  end
+
+  # normalize_unordered_lines(str) - sort every line in str. Used when
+  #  each hash/dict entry is printed on its own line and the set of
+  #  lines, not their order, is what should be compared.
+  def self.normalize_unordered_lines(str)
+    str.split("\n").sort.join("\n")
+  end
+
+  def self.colorize(text, color_code)
+    "#{color_code}#{text}\033[0m"
+  end
+
+  def self.red(text);    Script.colorize(text, "\033[31m"); end
+  def self.green(text);  Script.colorize(text, "\033[32m"); end
+  def self.yellow(text); Script.colorize(text, "\033[33m"); end
+
+  # print_summary() - print the accumulated total/pass/fail/skip tally
+  #  for every category run so far in this process.
+  def self.print_summary
+    puts "==============================================================="
+    puts "Summary: Total=#{@@summary[:total]}  " +
+         "#{Script.green('Pass')}=#{@@summary[:pass]}  " +
+         "#{Script.red('Fail')}=#{@@summary[:fail]}  " +
+         "#{Script.yellow('Skip')}=#{@@summary[:skip]}"
+  end
+
   def self.report(results)
-    colorize = ->(text, color_code) { "#{color_code}#{text}\033[0m" }
-    red      = ->(text) { colorize[text, "\033[31m"] }
-    green    = ->(text) { colorize[text, "\033[32m"] }
+    red      = ->(text) { Script.red(text) }
+    green    = ->(text) { Script.green(text) }
+    yellow   = ->(text) { Script.yellow(text) }
     passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
+
+    # print expected/actual for a testcase: always on FAIL, and also on a
+    #  PASS that only succeeded via tolerance (e.g. "precision"), so the
+    #  raw difference is still visible.
+    print_diff = ->(testcase) {
+      return unless !testcase["test_result"] || testcase["diff"]
+      if testcase["test_result"]
+        puts "       Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "       Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+      else
+        puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+      end
+    }
+
+    # a category with no implementation file is skipped, not failed, and
+    #  not counted toward the total (the language may not support/need it)
+    if results["skipped"]
+      @@summary[:skip] += 1
+      puts "#{results["category"].capitalize}: [#{yellow['SKIP']}]"
+      puts "    - #{results["notes"]}"
+      return
+    end
+
+    @@summary[:total] += 1
+    @@summary[results["final_result"] ? :pass : :fail] += 1
+
+    # any testcase whose raw output differs from expected, even one that
+    #  passed via tolerance, so we still surface the detail below
+    any_diff = results["results"].values.flatten.any? { |t| t["diff"] }
 
     # print test result for category group
     puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
-    if ! results["final_result"]
+    if ! results["final_result"] || any_diff
       if results["results"].empty?
         puts "    - There are no implementations for this category."
       else
@@ -204,21 +314,13 @@ class Script
           if category[1].length == 1
             testcase = category[1][0]
             puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
-            # if FAIL, print expected/actual output
-            if ! testcase["test_result"]
-              puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-              puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
-            end
+            print_diff[testcase]
           else
             puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
             # process category with multiple tests
             category[1].each_with_index do |testcase, count|
               puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
-              # if FAIL, print expected/actual output
-              if ! testcase["test_result"]
-                puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-                puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
-              end
+              print_diff[testcase]
             end
           end
         end # enumerate HoA structure
@@ -227,7 +329,7 @@ class Script
   end
 
   def self.execute(task, list)
-    final_result, message, results = true, "", {}
+    final_result, message, results, skipped = true, "", {}, false
     if list.any?
       if taskdata = @@dataset[task]
         # Execute Every Implementation per Feature (0+ implementations)
@@ -265,13 +367,29 @@ class Script
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
-            test_result = expected == output
+            if test.has_key?("precision")
+              digits = test["precision"]
+              test_result = Script.truncate_precision(expected, digits) ==
+                            Script.truncate_precision(output, digits)
+            elsif test.has_key?("bool")
+              test_result = Script.normalize_bool(expected) == Script.normalize_bool(output)
+            elsif test.has_key?("unordered_csv")
+              test_result = Script.normalize_unordered_csv(expected) ==
+                            Script.normalize_unordered_csv(output)
+            elsif test.has_key?("unordered_lines")
+              test_result = Script.normalize_unordered_lines(expected) ==
+                            Script.normalize_unordered_lines(output)
+            else
+              test_result = expected == output
+            end
 
             (results[cmd.split(".")[0]] ||=[]) << {
               "command"  => command,
               "output"   => output,
               "expected" => expected,
-              "test_result" => test_result
+              "test_result" => test_result,
+              # raw strings differ even when test_result passed via tolerance
+              "diff" => expected != output
             }
 
             final_result &= test_result
@@ -286,8 +404,8 @@ class Script
         message = "FAIL"
       end #taskdata = @@dataset[task]
     else
-      final_result = false
-      notes = "Feature not implemented or not supported."
+      skipped = true
+      notes = "No implementation file found for this category; skipping."
     end # list.any?
     #puts "Array output: #{outputs}"
 
@@ -296,6 +414,7 @@ class Script
     { "category" => task.to_s,
       "language" => Script.language_name,
       "final_result" => final_result,
+      "skipped"  => skipped,
       "notes"    => notes,
       "results" => results
     }

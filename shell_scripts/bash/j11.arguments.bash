@@ -2,7 +2,7 @@
 # illustrative variables
 ARG_COUNT=$#         # get number of arguments
 
-echo "The arugments passed are:"
+echo "The arguments passed are:"
 #  count style loop with range to generate sequence of numbers
 #   Note: Bash only accepts raw static numbers, so eval needed
 for count in $(eval echo {1..$ARG_COUNT}); do

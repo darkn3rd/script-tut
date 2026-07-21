@@ -4,5 +4,5 @@
 #  Note: Test by redirecting stdout to nowhere, e.g.
 #   script > /dev/null
 fwrite(STDERR, "This is a test of the emergency script system." .
-	           "  This is only a test.")
+	           "  This is only a test.\n");
 ?>

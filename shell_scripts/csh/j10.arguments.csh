@@ -1,4 +1,5 @@
 #!/usr/bin/env tcsh
+echo "The arguments passed are:"
 # print count and current argument
 foreach arg ($argv[1-])
   @ count ++                  # increment count, starting from 0

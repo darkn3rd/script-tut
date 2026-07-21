@@ -10,9 +10,10 @@ function addNums()
      $sum += $num;             // add all nums in array 
  
    // output results
-   echo "The summation is: $sum\n";
+   echo "The summation is: $sum.\n";
 }
 
+echo "Sending: 5, 2, 4, 3, 6\n";
 // call the subroutine (function)
 addNums(5, 2, 4, 3, 6);        // pass variable number of numbers
 

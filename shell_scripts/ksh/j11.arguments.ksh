@@ -2,7 +2,7 @@
 # illustrative variables
 arg_count=$#         # get number of arguments
   
-print "The arugments passed are:"
+print "The arguments passed are:"
 #  iterative style loop with range to enumerate list
 for count in {1..$arg_count}; do
   arg=$1                     # get arg from first positional
