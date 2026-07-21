@@ -148,6 +148,9 @@ class Script
   @@dirname   = File.basename(Dir.pwd)
   @@jsonfile  = "../../testbox/expected.json"
 
+  # tally of category-level results across a run, printed by print_summary
+  @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
+
   # Process JSON files and configure @@dataset
   require 'json'
   if File.exist?(@@jsonfile)
@@ -211,11 +214,28 @@ class Script
     end
   end
 
+  def self.colorize(text, color_code)
+    "#{color_code}#{text}\033[0m"
+  end
+
+  def self.red(text);    Script.colorize(text, "\033[31m"); end
+  def self.green(text);  Script.colorize(text, "\033[32m"); end
+  def self.yellow(text); Script.colorize(text, "\033[33m"); end
+
+  # print_summary() - print the accumulated total/pass/fail/skip tally
+  #  for every category run so far in this process.
+  def self.print_summary
+    puts "==============================================================="
+    puts "Summary: Total=#{@@summary[:total]}  " +
+         "#{Script.green('Pass')}=#{@@summary[:pass]}  " +
+         "#{Script.red('Fail')}=#{@@summary[:fail]}  " +
+         "#{Script.yellow('Skip')}=#{@@summary[:skip]}"
+  end
+
   def self.report(results)
-    colorize = ->(text, color_code) { "#{color_code}#{text}\033[0m" }
-    red      = ->(text) { colorize[text, "\033[31m"] }
-    green    = ->(text) { colorize[text, "\033[32m"] }
-    yellow   = ->(text) { colorize[text, "\033[33m"] }
+    red      = ->(text) { Script.red(text) }
+    green    = ->(text) { Script.green(text) }
+    yellow   = ->(text) { Script.yellow(text) }
     passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
 
     # print expected/actual for a testcase: always on FAIL, and also on a
@@ -232,12 +252,17 @@ class Script
       end
     }
 
-    # a category with no implementation file is skipped, not failed
+    # a category with no implementation file is skipped, not failed, and
+    #  not counted toward the total (the language may not support/need it)
     if results["skipped"]
+      @@summary[:skip] += 1
       puts "#{results["category"].capitalize}: [#{yellow['SKIP']}]"
       puts "    - #{results["notes"]}"
       return
     end
+
+    @@summary[:total] += 1
+    @@summary[results["final_result"] ? :pass : :fail] += 1
 
     # any testcase whose raw output differs from expected, even one that
     #  passed via tolerance, so we still surface the detail below
