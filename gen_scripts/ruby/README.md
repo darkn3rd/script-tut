@@ -1,95 +1,87 @@
 # Scripting Tutorial: Ruby
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.4
+Version 1.5
 
 ## Getting Ruby
 
-### Getting Ruby on Mac
+There are some excellent documentation on [Installing Ruby](https://www.ruby-lang.org/en/documentation/installation/) for a variety of environments. These are my notes on top of that. 
 
-Before taking full advantage of Ruby or using some of the package managers mentioned in this ReadMe, you will need to get Xcode Developer Tools from Apple and also install the Xcode command line tools.  This process unfortunately differs from OS version to OS version.  There are some decent instructions at: http://guide.macports.org/#installing.xcode.
+### macOS (default)
 
-```bash
-hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg
-sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
-sudo xcodebuild -license
-hdiutil mount $HOME/Downloads/command_line_tools_for_osx_mountain_lion_april_2014.dmg
-sudo -S installer -verbose -pkg "/Volumes/Command Line Tools (Mountain Lion)/Command Line Tools (Mountain Lion).mpkg" -target /
-hdiutil unmount /Volumes/Xcode
-hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
-```
+The macOS (Mac OS X) 26.5 "Tahoe" comes bundled with Ruby 2.6.10:
 
-#### Default
+* `ruby 2.6.10p210 (2022-04-12 revision 67958) [unverisal.86_64-darwin25]`
 
-A vanilla Mac OS X 10.8.5 will come with a 6-year old Ruby 1.8.7.  Most likely, you'll want something more modern.
+Fore recent versions, you can use a package manager or a version manager:
 
-```bash
-$ ruby -v
-ruby 1.8.7 (2012-02-08 patchlevel 358) [universal-darwin12.0]
-```
+* Package Manager
+  * **[Homebrew](https://brew.sh/)**
+  * **[MacPorts](https://www.macports.org/)**
+  * **[Fink](https://www.finkproject.org/)**
+* Version Managers
+  * **[RVM](https://rvm.io/)**
+  * **[rbenv](https://rbenv.org/)**
+  * **[ASDF](https://asdf-vm.com/)** with **[asdf-ruby](https://github.com/asdf-vm/asdf-ruby)** plugin
 
-#### Homebrew
+### macOS: HomeBrew
 
-Homebrew [http://brew.sh/] is a popular single-user package management system that can install newer versions of Ruby and as well as other popular packages.  It uses existing Macintosh libraries and tools, and is by far the path of least resistance to get packages.  Homebrew and Ruby can be installed with these commands (Tested on Mac OS X 10.8.5):
+**[Homebrew](https://brew.sh/)** is a command-line package manager for **macOS** that simplifies software installation by letting you download, update, and manage applications and tools using quick, automated commands.
 
 ```bash
-ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
-brew update
-brew doctor
-echo export PATH='/usr/local/bin:$PATH' >> ~/.bash_profile
-. ~/.bash_profile
+# Install Homebrew on macOS
+script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+/bin/bash -c "$(curl -fsSL "$script_url")"
+
+# Install Ruby
 brew install ruby
 ```
 
-After much text, including notes about GNU Readline vs. BSD libedit libraries, certs, and such, you can check your installations.
+### Windows: Chocolatey
 
+**[Chocolatey](https://chocolatey.org)** is a command-line package manager for Windows, built on top of the NuGet infrastructure, that lets you install, update, and manage software using simple, automated commands instead of clicking through setup wizards.
+
+```powershell
+# Install Chocolatey on Windows 11
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = 
+    [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+$WebClient = New-Object System.Net.WebClient
+$ScriptUrl = 'https://community.chocolatey.org/install.ps1'
+Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
+
+# Install Ruby
+choco install ruby
 ```
-$ which ruby
-/usr/local/bin/ruby
-$ ruby -v
-ruby 2.1.2p95 (2014-05-08 revision 45877) [x86_64-darwin12.0]
-```
 
-#### MacPorts
+### Windows: MSYS2
 
-Mac Ports is a package management solution inspired from BSD ports.  MacPorts has the largest library of packages to date.  MacPorts works for all users, not just for only one developer on the system, and as such, making this more ideal if multiple users use the same system.  MacPorts installs latest tools and libraries as needed for the packages it installs.  This may be a good thing as Apple Mac OS X has extremely old versions of many tools that may have numerous bugs and security problems.
+If you have **[Chocolatey](https://chocolatey.org)** setup, you can install MSYS2 with `choco install msys2`.  Othwerwise you can fetch **[MSYS](https://www.msys2.org/)** installer from their website.
 
-The disadvantage these days, is that most of the Ruby developer community uses Homebrew (along with RVM) to install and manage Ruby.  Some gems (ruby packages), are in particular engineered to only work with Homebrew (such as hard coded absolute paths), and thus will fail with MacPorts.
-
-For MacPorts, you can install MacPorts on the desired target Mac OS X.  For example, for Mac OS X 10.8.5, you can do this:
+Once you launch the shell, you can install ruby using either UCRT64 environment or classic MINGW64 environment. 
 
 ```bash
-curl -O https://distfiles.macports.org/MacPorts/MacPorts-2.3.0-10.8-MountainLion.pkg
-sudo -S installer -verbose -pkg MacPorts-2.3.0-10.8-MountainLion.pkg -target /
+# Update Packages
+pacman -Syu
+# UCRT64 Environment (Recommended)
+pacman -S mingw-w64-ucrt-x86_64-ruby
+# MINGW64 Environment (Classic)
+pacman -S mingw-w64-x86_64-ruby
 ```
 
-After, you can update and install Ruby using something like this:
+## Testing
 
-```bash
-sudo port -v selfupdate
-sudo port install ruby20
-sudo port select --set ruby ruby20
-sudo port select --list ruby
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 ruby 4.0.5 (2026-05-20 revision 64336ffd0e) +PRISM [x86_64-darwin23]
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
+  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+    * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
+  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+    * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
 
-```
-
-#### RVM
-
-The most popular way to install Ruby and manage Ruby versions is to use RVM (Ruby Version Manager) [https://rvm.io/]: 
-
-```bash
-\curl -sSL https://get.rvm.io | bash -s stable
-```
-
-On Mac OS X, it seems that RVM now (June 2014) requires Homebrew [http://brew.sh/], and will attempt to install Homebrew in any attempt to install Ruby using RVM.  Thus, I backed out of this, installed Homebrew myself and then proceeded to install Ruby 2.1.2: ```rvm install ruby-2.1.2```.  Afterwards, I can test the results:
-
-```bash
-$ which ruby 
-/Users/developer/.rvm/rubies/ruby-2.1.2/bin/ruby
-$ ruby -v
-ruby 2.1.2p95 (2014-05-08 revision 45877) [x86_64-darwin13.0]
-```
 
 ## Notes 
 
