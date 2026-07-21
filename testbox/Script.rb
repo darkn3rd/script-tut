@@ -146,7 +146,8 @@ class Script
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
   @@dirname   = File.basename(Dir.pwd)
-  @@jsonfile  = "../../testbox/expected.json"
+  @@jsonfile   = "../../testbox/expected.json"
+  @@titlesfile = "../../testbox/titles.json"
 
   # tally of category-level results across a run, printed by print_summary
   @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
@@ -160,12 +161,23 @@ class Script
     exit 1
   end
 
+  # Titles are cosmetic (human-readable lesson names in test output), so a
+  #  missing/unreadable titles.json falls back to no title rather than
+  #  aborting the run.
+  @@titles = File.exist?(@@titlesfile) ? JSON.parse(File.read(@@titlesfile)) : {}
+
   def self.language_name
     @@language_name[@@language.to_sym]
   end
 
   def self.data(reference)
     @@dataset[reference]
+  end
+
+  # title(reference) - human-readable lesson name for a category (e.g.
+  #  "g0" -> "Assign by Index and Length"), or "" if not found.
+  def self.title(reference)
+    @@titles[reference.to_s] || ""
   end
 
 
@@ -283,11 +295,17 @@ class Script
       end
     }
 
+    # human-readable lesson name (e.g. "Assign by Index and Length"),
+    #  appended to the category code so output is readable without having
+    #  to cross-reference the README
+    title = Script.title(results["category"])
+    label = results["category"].capitalize + (title.empty? ? "" : " - #{title}")
+
     # a category with no implementation file is skipped, not failed, and
     #  not counted toward the total (the language may not support/need it)
     if results["skipped"]
       @@summary[:skip] += 1
-      puts "#{results["category"].capitalize}: [#{yellow['SKIP']}]"
+      puts "#{label}: [#{yellow['SKIP']}]"
       puts "    - #{results["notes"]}"
       return
     end
@@ -300,7 +318,7 @@ class Script
     any_diff = results["results"].values.flatten.any? { |t| t["diff"] }
 
     # print test result for category group
-    puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
+    puts "#{label}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
