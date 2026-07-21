@@ -42,7 +42,7 @@ proc addNums {args} {
     foreach num $nums { set sum [expr $sum + $num] }
 
     # output results of summation
-    puts "The summation is: $sum"
+    puts "The summation is: $sum."
 }
 
 # **************************************

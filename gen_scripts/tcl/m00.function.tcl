@@ -12,7 +12,10 @@ proc addNums {args} {
   return $sum
 }
 
+# output numbers before function
+puts "The numbers to be added are 5, 2, 4, 3, 6."
+
 # call function
 set result [addNums 5 2 4 3 6]
-puts "The result of summation is: $result."
+puts "The result of their summation is: $result."
 

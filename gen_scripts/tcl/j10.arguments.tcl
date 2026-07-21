@@ -7,6 +7,6 @@ puts "The arguments passed are:"
 
 # collection loop to enumerate args
 foreach arg $argv {
-  puts "  item $count: $arg" ;# output count and arg
+  puts " item $count: $arg" ;# output count and arg
   incr count 1               ;# counter
 }

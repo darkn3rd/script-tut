@@ -4,6 +4,7 @@ array set ages {bob 34 ed 58 steve 32 ralph 23}
 # append more items into array
 array set ages {deb 46 kate 19}
 # iterate through array, print key/value pairs
+puts "The ages are: "
 foreach name [array names ages] {
-  puts "ages\[$name\]=$ages($name)"
+  puts " ages\[$name\]=$ages($name)"
 }

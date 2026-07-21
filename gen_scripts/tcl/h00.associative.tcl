@@ -7,7 +7,8 @@ set ages(ralph) 23
 set ages(deb)   46
 set ages(kate)  19
 # enumerate & print keys
-puts "Keys (names): [array names ages]"
+puts "Keys (names):  [join [array names ages] {, }]"
 # enumerate & print values
-puts -nonewline "Values (set ages): "
-puts [lsearch -all -inline -regexp [split [array get ages]] {[0-9]+}]
+set values {}
+foreach name [array names ages] { lappend values $ages($name) }
+puts "Values (ages): [join $values {, }]"

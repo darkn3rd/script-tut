@@ -5,7 +5,11 @@ proc capitalize {string} {
   return [string toupper $string]
 }
 
+# output string before calling function
+set string "ibm"
+puts "The current string is: \"$string\"."
+
 # call function with variable number of parameters
-set result [capitalize "ibm"]
-puts "The result of capitalization is: $result."
+set result [capitalize $string]
+puts "The capitalized string is: \"$result\"."
 
