@@ -4,7 +4,7 @@ import sys
 ARG_COUNT = len(sys.argv) - 1 # get num of real arguments
 FIRST     = 1                 # index of first argument
 
-print("The arugments passed are:")
+print("The arguments passed are:")
 # use collection loop with range to enumerate arguments
 #   Note: range ending must be one greater than desired range
 for count in range(FIRST,ARG_COUNT+1): # range to gen sequence of numbers

@@ -6,7 +6,7 @@ FIRST = 1                 # index of first argument
 # utility variables
 count = 1                 # initialize counter
 
-print("The arugments passed are:")
+print("The arguments passed are:")
 # use collection loop to enumerate arguments
 #   Note: Python includes scriptname into collection
 for arg in sys.argv[FIRST:]:

@@ -11,5 +11,5 @@ nicknames.append("deb")
 nicknames.append("kate")
 
 # output length and all values
-print("The total nicknames are: ", len(nicknames))
-print("The nicknames are: ", nicknames)
+print("The total nicknames are: %d" % len(nicknames))
+print("The nicknames are: " + ", ".join(nicknames))

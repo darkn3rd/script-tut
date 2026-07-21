@@ -8,7 +8,7 @@ FIRST = 1              # index of first argument
 # utility variables
 count = FIRST          # initialize counter
 
-print("The arugments passed are:")
+print("The arguments passed are:")
 # use count style loop
 while count < LAST:
    arg = sys.argv[count]  # get arg using index
