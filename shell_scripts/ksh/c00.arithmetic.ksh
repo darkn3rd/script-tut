@@ -6,4 +6,4 @@ width=5; length=6
 area=$(($length * $width))
 
 # output result
-print "The area of a square (width=$width, length=$length) is $area"
+print "The area of a square (width=$width, length=$length) is $area."

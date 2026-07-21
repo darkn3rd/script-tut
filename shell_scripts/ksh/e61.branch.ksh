@@ -1,5 +1,6 @@
 #!/usr/bin/env ksh
-read keypress?"Input a character: " # prompt & get input
+print -n "Input a character: " # prompt user
+read keypress                   # get input
 keypress=${keypress:0:1}            # substring for only 1st char
  
 # test if keypress matches pattern
@@ -11,5 +12,5 @@ elif [[ $keypress = [[:upper:]] ]]; then
 elif [[ $keypress = [[:digit:]] ]]; then
   print "Digit"
 else
-  print "Punctuation, whitepace, or other"
+  print "Punctuation, whitespace, or other"
 fi

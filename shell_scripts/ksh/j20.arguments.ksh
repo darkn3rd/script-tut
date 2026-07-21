@@ -10,7 +10,7 @@ print "The arguments passed are (reverse order):"
 while (( $count <= $arg_count )); do # loops while count is 1 or higher
   arg=$1                             # save argument from positional parameter
   # build ouput string by prepending previous result
-  output="  item $count: $arg\n$output" 
+  output=" item $count: $arg\n$output" 
   count=$(( $count + 1 ))            # decrement counter
   shift                              # shift positionals by one
 done

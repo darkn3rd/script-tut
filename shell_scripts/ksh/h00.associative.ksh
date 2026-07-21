@@ -11,5 +11,7 @@ ages[deb]=46
 ages[kate]=19
  
 # print all keys and values
-print "Keys  (names): ${!ages[@]}"
-print "Values (ages): ${ages[@]}"
+keys=$(printf ", %s" "${!ages[@]}")   # join with ", " separator
+values=$(printf ", %s" "${ages[@]}")  # join with ", " separator
+print "Keys (names):  ${keys:2}"
+print "Values (ages): ${values:2}"

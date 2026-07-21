@@ -9,5 +9,6 @@ nicknames[5]=deb
 nicknames[6]=kate
 
 # output number of elements and enumerated array
-print "The number of nicknames is ${#nicknames[*]}"
-print "The nicknames are: ${nicknames[*]}"
+print "The total nicknames are: ${#nicknames[*]}"
+joined=$(printf ", %s" "${nicknames[@]}") # join with ", " separator
+print "The nicknames are: ${joined:2}"

@@ -4,7 +4,7 @@ min_count=0  # set mininum number of arguments
 # utility variables
 count=1      # initialize counter
  
-print "The arugments passed are:"
+print "The arguments passed are:"
 #  conditional loop with shift to enumerate args
 while (( $# > $min_count )); do # fetch updated number of arguments
   arg=$1                        # fetch arg from first positional parameter

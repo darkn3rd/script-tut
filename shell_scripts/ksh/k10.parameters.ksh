@@ -6,8 +6,9 @@ function add {
     sum=$(( $sum + $num ))     # add num to sum
   done
  
-  print The summation is: $sum # print report of summation
+  print "The summation is: $sum." # print report of summation
 }
 
-# call the function (subroutine) 
+print "Sending: 5, 2, 4, 3, 6"
+# call the function (subroutine)
 add 5 2 4 3 6

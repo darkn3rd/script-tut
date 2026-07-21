@@ -5,7 +5,10 @@ function capitalize {
   print $string         # output result
 }
 
+string="ibm"
+print "The current string is: \"$string\"."
+
 # call function in subshell, capture result from stdout
-result=$(capitalize ibm)
+result=$(capitalize "$string")
 # output result
-print "The result of summation is: $result"
+print "The capitalized string is: \"$result\"."
