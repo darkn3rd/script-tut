@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 ages = {}          # create an empty dictionary
 
 # populate dictionary one item at a time 
@@ -10,5 +10,5 @@ ages['deb']=46
 ages['kate']=19
  
 # output all keys and values in list
-print "Keys (names): ", ages.keys()
-print "Values (ages): ", ages.values()
+print "Keys (names):  " + ", ".join(ages.keys())
+print "Values (ages): " + ", ".join(str(v) for v in ages.values())

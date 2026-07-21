@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys  # system library for standard input and output
 
 sys.stdout.write("Input a character: ")    # output prompt

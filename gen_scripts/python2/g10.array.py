@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # create a populated list
 nicknames = ["bob","ed","steve","ralph","joe","deb","kate"]
 

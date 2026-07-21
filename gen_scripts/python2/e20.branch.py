@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # prompt, get input, and convert to integer
 number = int(raw_input("Input a number: "))
 

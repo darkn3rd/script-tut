@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # spin loop as always true condition
 while True:
   # print a prompt and get answer
-  answer = raw_input("Enter your name (quit to Exit): ")
+  answer = raw_input("Enter your name (quit to exit): ")
   
   # determine if user wants to exit loop
   if answer == "quit":

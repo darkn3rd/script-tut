@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # initialize dictionary with key/value pairs
 ages = {"bob": 34, "ed": 58, "steve": 32, "ralph": 23}
 

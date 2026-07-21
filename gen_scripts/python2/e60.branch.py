@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys  # system library for standard input and output
 import re   # regular expresion library
  

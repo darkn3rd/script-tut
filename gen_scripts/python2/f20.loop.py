@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 answer = ""  # required to initialize answer before testing it
 
 # conditonal loop with while

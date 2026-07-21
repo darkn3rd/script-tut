@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # create the function
 def addNums (*numbers):
    sum = 0                            # initialize starting sum value
@@ -7,7 +7,7 @@ def addNums (*numbers):
    return sum                         # return the sum
 
 # output numbers before function
-print "The numbers to be added are {}.".format((5, 2, 4, 3, 6))
+print "The numbers to be added are {}.".format(", ".join(str(n) for n in (5, 2, 4, 3, 6)))
 
 # call the function
 result = addNums(5, 2, 4, 3, 6)

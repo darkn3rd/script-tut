@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 
 # illustrative variables 
@@ -7,7 +7,7 @@ FIRST     = 1                 # index of first argument
 # utility variables
 count     = ARG_COUNT         # initialize counter
 
-print "The arugments passed are:"
+print "The arguments passed are (reverse order):"
 # use count style loop
 while count >= FIRST:
    arg = sys.argv[count]  # get arg using index

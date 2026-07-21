@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # count style loop using range to generate a sequence
 for count in range(10):
 	# using some math to reverse each count from 10 to 1

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 
 # illustrative variables
@@ -18,7 +18,7 @@ def addNums (numbers):
    sum = 0                      # initialize starting sum value
    for num in numbers:          # collection loop toprocess numbers
      sum += int(num)            # sum up nums
-   print "The summation is: %d" % sum # output results
+   print "The summation is: %d." % sum # output results
    sys.exit(EX_OK)
 
 # check for only 2 arguments

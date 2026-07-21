@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # declare some variables
 pond     = 500 # pond contains some available fish
 captured = 0   # captured represents fish capture

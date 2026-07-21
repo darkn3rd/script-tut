@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 # output message to standard error
 #  Note: Test by redirecting stdout to nowhere; Examples:
