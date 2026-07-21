@@ -200,12 +200,37 @@ class Script
     @@cputype
   end
 
+  # truncate_precision(str, digits) - truncate the fractional part of every
+  #  floating point number embedded in str to at most `digits` characters.
+  #  Used to tolerate floating point precision differences across language
+  #  runtimes (e.g. cosine/area calculations) when comparing test output.
+  def self.truncate_precision(str, digits)
+    str.gsub(/(\d+\.\d+)/) do |match|
+      whole, frac = match.split(".")
+      "#{whole}.#{frac[0, digits]}"
+    end
+  end
+
   def self.report(results)
     colorize = ->(text, color_code) { "#{color_code}#{text}\033[0m" }
     red      = ->(text) { colorize[text, "\033[31m"] }
     green    = ->(text) { colorize[text, "\033[32m"] }
     yellow   = ->(text) { colorize[text, "\033[33m"] }
     passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
+
+    # print expected/actual for a testcase: always on FAIL, and also on a
+    #  PASS that only succeeded via tolerance (e.g. "precision"), so the
+    #  raw difference is still visible.
+    print_diff = ->(testcase) {
+      return unless !testcase["test_result"] || testcase["diff"]
+      if testcase["test_result"]
+        puts "       Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "       Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+      else
+        puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
+        puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+      end
+    }
 
     # a category with no implementation file is skipped, not failed
     if results["skipped"]
@@ -214,12 +239,16 @@ class Script
       return
     end
 
+    # any testcase whose raw output differs from expected, even one that
+    #  passed via tolerance, so we still surface the detail below
+    any_diff = results["results"].values.flatten.any? { |t| t["diff"] }
+
     # print test result for category group
     puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
 
     #puts "DEBUG: #{results["results"]}"
 
-    if ! results["final_result"]
+    if ! results["final_result"] || any_diff
       if results["results"].empty?
         puts "    - There are no implementations for this category."
       else
@@ -229,21 +258,13 @@ class Script
           if category[1].length == 1
             testcase = category[1][0]
             puts "    - #{category[0].capitalize}: [#{passfail[testcase["test_result"]]}]"
-            # if FAIL, print expected/actual output
-            if ! testcase["test_result"]
-              puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-              puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
-            end
+            print_diff[testcase]
           else
             puts "    - #{category[0].capitalize} (#{category.length[1]} testcases):"
             # process category with multiple tests
             category[1].each_with_index do |testcase, count|
               puts "      - Test #{count+1}: [#{passfail[testcase["test_result"]]}]"
-              # if FAIL, print expected/actual output
-              if ! testcase["test_result"]
-                puts "       Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-                puts "       Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
-              end
+              print_diff[testcase]
             end
           end
         end # enumerate HoA structure
@@ -290,13 +311,21 @@ class Script
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
-            test_result = expected == output
+            if test.has_key?("precision")
+              digits = test["precision"]
+              test_result = Script.truncate_precision(expected, digits) ==
+                            Script.truncate_precision(output, digits)
+            else
+              test_result = expected == output
+            end
 
             (results[cmd.split(".")[0]] ||=[]) << {
               "command"  => command,
               "output"   => output,
               "expected" => expected,
-              "test_result" => test_result
+              "test_result" => test_result,
+              # raw strings differ even when test_result passed via tolerance
+              "diff" => expected != output
             }
 
             final_result &= test_result

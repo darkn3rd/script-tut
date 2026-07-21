@@ -7,8 +7,12 @@ def addNums (*numbers)
    sum                              # return value
 end
 
+numbers = [5, 2, 4, 3, 6]
+# output numbers before function
+puts "The numbers to be added are #{numbers.join(", ")}."
+
 # call the method (function)
-result = addNums 5, 2, 4, 3, 6
+result = addNums(*numbers)
 
 # output results
-puts "The result of summation is: #{result}"
+puts "The result of their summation is: #{result}."
