@@ -12,6 +12,8 @@ BEGIN {
   max = length(nicknames)          # Note: Only works in Gawk 3.1.5 and above
 
   # count style loop to record index
+  #  Note: split() always starts array indices at 1, so display count-1
+  #  to present the list as zero-indexed
   for (count = 1; count <= max; count++)
-    print "  nicknames[" count "] = " nicknames[count]
+    print " nicknames[" count-1 "]=" nicknames[count]
 }

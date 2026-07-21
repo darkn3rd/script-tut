@@ -6,9 +6,13 @@ function capitalize(string)
 }
 
 BEGIN {
-  # call the function
-  result = capitalize("ibm")  # pass string
+  # output string before calling function
+  string = "ibm"
+  print "The current string is: \"" string "\"."
 
-  # output results with resulitng string
-  print "The result of capitalization is: " result
+  # call the function
+  result = capitalize(string)  # pass string
+
+  # output results with resulting string
+  print "The capitalized string is: \"" result "\"."
 }

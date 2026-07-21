@@ -17,17 +17,26 @@ function add_nums(numbers)
      sum += numbers[num]          # add all nums in array
    }
 
-   print "The summation is: " sum # output results
+   print "The summation is: " sum "." # output results
 
    exit EX_OK                     # exit program with success status
 }
 
 BEGIN {
     # illustrative variables
-    ARG_COUNT   = ARGC - 1 # get num of arguments
-    SCRIPT_NAME = ARGV[0]  # get script name
-    EX_USAGE    = 64       # status for command line usage error
-    EX_OK       = 0        # status for successful termination
+    ARG_COUNT = ARGC - 1   # get num of arguments
+    EX_USAGE  = 64         # status for command line usage error
+    EX_OK     = 0          # status for successful termination
+
+    # ARGV[0] is just "gawk", not the -f script name (gawk gives no direct
+    #  variable for it). PROCINFO["argv"] is a gawk extension holding the
+    #  full raw command line, so scan it for the argument after "-f".
+    for (i = 0; i < length(PROCINFO["argv"]); i++) {
+      if (PROCINFO["argv"][i] == "-f") {
+        SCRIPT_NAME = PROCINFO["argv"][i+1]
+        break
+      }
+    }
 
     if (ARG_COUNT < 1) {
         usage_message() # output usage statement to standard error

@@ -214,6 +214,14 @@ class Script
     end
   end
 
+  # normalize_bool(str) - fold the common truthy representations different
+  #  languages print ("true", "True", "1") down to a single canonical form,
+  #  so a boolean result can be compared across languages that render
+  #  booleans differently (e.g. awk prints 1/0, Python prints True/False).
+  def self.normalize_bool(str)
+    str.gsub(/\b(?:true|True|1)\b/, "true")
+  end
+
   def self.colorize(text, color_code)
     "#{color_code}#{text}\033[0m"
   end
@@ -340,6 +348,8 @@ class Script
               digits = test["precision"]
               test_result = Script.truncate_precision(expected, digits) ==
                             Script.truncate_precision(output, digits)
+            elsif test.has_key?("bool")
+              test_result = Script.normalize_bool(expected) == Script.normalize_bool(output)
             else
               test_result = expected == output
             end

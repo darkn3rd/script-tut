@@ -1,46 +1,47 @@
 #!/usr/bin/env awk -f
 BEGIN {
-  # individually build array
-  ages["bob"]=34
-  ages["ed"]=58
-  ages["steve"]=32
-  ages["ralph"]=23
-  ages["deb"]=46
-  ages["kate"]=19
+  # individually build array, tracking insertion order in a parallel
+  #  array too since awk's "for (key in array)" iteration order is
+  #  unspecified
+  n = 0
+  ages["bob"]=34;   key_order[++n] = "bob"
+  ages["ed"]=58;    key_order[++n] = "ed"
+  ages["steve"]=32; key_order[++n] = "steve"
+  ages["ralph"]=23; key_order[++n] = "ralph"
+  ages["deb"]=46;   key_order[++n] = "deb"
+  ages["kate"]=19;  key_order[++n] = "kate"
 
   # print all key indexes
-  print "Keys  (names): " keys(ages)
+  print "Keys (names):  " keys(ages, key_order, n)
 
   # print all values
-  print "Values (ages): " values(ages)
+  print "Values (ages): " values(ages, key_order, n)
 }
 
 # ==================== HELPER FUNCTIONS ==================== #
 # Helper Functions as Awk has no method to enumerate all values or keys
-#   from an array
+#   from an array in insertion order
 
 # **************************************
-# keys (array) - return list of keys as string
-#  keys may be completely out of order
+# keys (array, order, count) - return comma-separated list of keys,
+#  in the insertion order recorded in order[1..count]
 # **************************************
-function keys(array)
+function keys(array, order, count,    i, keyStr)
 {
-    keyStr = ""
-
-    for (key in ages) keyStr = keyStr " " key
+    keyStr = order[1]
+    for (i = 2; i <= count; i++) keyStr = keyStr ", " order[i]
 
     return keyStr
 }
 
 # **************************************
-# values (array) - return list of values as string
-#  values may be completely out of order
+# values (array, order, count) - return comma-separated list of values,
+#  in the insertion order recorded in order[1..count]
 # **************************************
-function values(array)
+function values(array, order, count,    i, valueStr)
 {
-    valueStr = ""
-
-    for (key in ages) valueStr = valueStr " " ages[key]
+    valueStr = array[order[1]]
+    for (i = 2; i <= count; i++) valueStr = valueStr ", " array[order[i]]
 
     return valueStr
 }

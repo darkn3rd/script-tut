@@ -8,5 +8,5 @@ BEGIN {
  area   = PI * radius^2
 
  # output results
- print "The area of a circle with a radius of 3 is: " area
+ print "The area of a circle (radius=" radius ") is: " area "."
 }

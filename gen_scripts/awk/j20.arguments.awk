@@ -9,6 +9,6 @@ BEGIN {
   # iterative loop to enumerate arguments
   for (count = START_COUNT; count >= END_COUNT; count--) {
     arg = ARGV[count]                     # fetch arg from index in array
-    printf "  item %d: %s\n", count, arg  # display count and arg
+    printf " item %d: %s\n", count, arg  # display count and arg
   }
 }

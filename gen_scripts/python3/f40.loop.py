@@ -3,7 +3,7 @@ import re
 # spin loop as always true condition
 while True:
   # print a prompt and get answer
-  answer = input("Enter your name (quit to Exit): ")
+  answer = input("Enter your name (quit to exit): ")
 
   # skip loop if user enters an empty string
   if re.compile(r"^[\s\t]*$").match(answer):

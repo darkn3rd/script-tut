@@ -2,7 +2,7 @@
 # spin loop as always true condition
 while True:
   # print a prompt and get answer
-  answer = input("Enter your name (quit to Exit): ")
+  answer = input("Enter your name (quit to exit): ")
 
   # determine if user wants to exit loop
   if answer == "quit":

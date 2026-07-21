@@ -9,8 +9,10 @@ BEGIN {
   print "The names are: "
   max = array_length(nicknames)     # save length for efficiency
   # count style loop to record index
+  #  Note: split() always starts array indices at 1, so display count-1
+  #  to present the list as zero-indexed
   for (count = 1; count <= max; count++)
-    print "  nicknames[" count "] = " nicknames[count]
+    print " nicknames[" count-1 "]=" nicknames[count]
 }
 
 # ==================== HELPER FUNCTIONS ==================== #
