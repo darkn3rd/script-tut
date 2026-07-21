@@ -13,5 +13,6 @@ set nicknames = ( $nicknames "deb")
 set nicknames = ( $nicknames "kate")
 
 # output results
-echo The number of nicknames is $#nicknames  # size of array
-echo The nicknames are: $nicknames            # enumerate array list
+echo "The total nicknames are: $#nicknames"  # size of array
+set joined = `echo $nicknames | sed "s/ /, /g"`
+echo "The nicknames are: $joined"            # enumerate array list
