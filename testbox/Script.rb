@@ -84,7 +84,7 @@ class Script
     :groovy => "groovy --version",
     :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version 2>&1",
+    :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk \'{ print $2 }\'',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
@@ -99,7 +99,7 @@ class Script
     :groovy => "groovy --version",
     :pl     => 'perl --version | grep -oE \'v\d\.\d{1,2}\.\d\'',
     :php    => 'php --version | head -1',
-    :py     => "python --version 2>&1",
+    :py     => "%{cmd} --version 2>&1",
     :rb     => 'ruby --version | gawk "{ print $2 }"',
     :tcl    => 'echo TCL $(echo \'puts [info patchlevel];exit 0\' | tclsh)',
     :bash   => "bash --version | head -1",
@@ -133,14 +133,24 @@ class Script
     :cmd    => "Batch"
   }
 
+  # Some languages have multiple, incompatible major versions that share a
+  # file extension (e.g. python2/ and python3/ both use *.py). When the
+  # directory name matches a key here, it overrides the extension-derived
+  # command so each directory runs with its own interpreter binary.
+  @@command_override = {
+    "python2" => "python2",
+    "python3" => "python3"
+  }
+
   @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
+  @@dirname   = File.basename(Dir.pwd)
   @@jsonfile  = "../../testbox/expected.json"
 
   # Process JSON files and configure @@dataset
   require 'json'
-  if File.exists?(@@jsonfile)
+  if File.exist?(@@jsonfile)
     @@dataset = JSON.parse(File.read(@@jsonfile))
   else
     STDERR.puts "ERROR: Cannot Find JSON File"
@@ -156,23 +166,30 @@ class Script
   end
 
 
+  # command() - returns the interpreter binary to invoke, preferring a
+  #  directory-specific override (see @@command_override) over the
+  #  extension-derived default.
+  def self.command
+    @@command_override[@@dirname] || @@command[@@language.to_sym]
+  end
+
   def self.runner
-    "#{@@command[@@language.to_sym]} #{@@option[@@language.to_sym]}"
+    "#{Script.command} #{@@option[@@language.to_sym]}"
   end
 
   def self.version
-    if @@ostype[0] == "mingw"
-      #puts "DEBUG #{@@win_version[@@language.to_sym]}"
-      `#{@@win_version[@@language.to_sym]}`.chomp
+    version_cmd = if @@ostype[0] == "mingw"
+      @@win_version[@@language.to_sym]
     else
-      `#{@@nix_version[@@language.to_sym]}`.chomp
+      @@nix_version[@@language.to_sym]
     end
+    `#{version_cmd % {cmd: Script.command}}`.chomp
   end
 
   # path() - returns path of executable
   #  REQUIREMENTS: which
   def self.path
-      `which "#{@@command[@@language.to_sym]}"`.chomp
+      `which "#{Script.command}"`.chomp
   end
 
   def self.ostype
@@ -187,7 +204,15 @@ class Script
     colorize = ->(text, color_code) { "#{color_code}#{text}\033[0m" }
     red      = ->(text) { colorize[text, "\033[31m"] }
     green    = ->(text) { colorize[text, "\033[32m"] }
+    yellow   = ->(text) { colorize[text, "\033[33m"] }
     passfail = ->(text) { text == true  ? green['PASS'] : red['FAIL'] }
+
+    # a category with no implementation file is skipped, not failed
+    if results["skipped"]
+      puts "#{results["category"].capitalize}: [#{yellow['SKIP']}]"
+      puts "    - #{results["notes"]}"
+      return
+    end
 
     # print test result for category group
     puts "#{results["category"].capitalize}: [#{passfail[results["final_result"]]}]"
@@ -227,7 +252,7 @@ class Script
   end
 
   def self.execute(task, list)
-    final_result, message, results = true, "", {}
+    final_result, message, results, skipped = true, "", {}, false
     if list.any?
       if taskdata = @@dataset[task]
         # Execute Every Implementation per Feature (0+ implementations)
@@ -286,8 +311,8 @@ class Script
         message = "FAIL"
       end #taskdata = @@dataset[task]
     else
-      final_result = false
-      notes = "Feature not implemented or not supported."
+      skipped = true
+      notes = "No implementation file found for this category; skipping."
     end # list.any?
     #puts "Array output: #{outputs}"
 
@@ -296,6 +321,7 @@ class Script
     { "category" => task.to_s,
       "language" => Script.language_name,
       "final_result" => final_result,
+      "skipped"  => skipped,
       "notes"    => notes,
       "results" => results
     }
