@@ -90,7 +90,7 @@ class Script
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
-    :ksh    => "ksh --version",
+    :ksh    => "ksh --version 2>&1",
   }
 
   # commands required to retrieve version (battle tested on Windows cmd.exe)
@@ -105,7 +105,7 @@ class Script
     :bash   => "bash --version | head -1",
     :sh     => 'echo Shell \(sh\) = $(sh --version 2> /dev/null | head -1 || echo unknown)',
     :csh    => "csh --version",
-    :ksh    => "ksh --version",
+    :ksh    => "ksh --version 2>&1",
     :js     => "cscript | grep -o \"Windows Script Host Version ...\"",
     :vbs     => "cscript | grep -o \"Windows Script Host Version ...\"",
     # bad mojo
