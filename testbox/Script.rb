@@ -222,6 +222,29 @@ class Script
     str.gsub(/\b(?:true|True|1)\b/, "true")
   end
 
+  # normalize_unordered_csv(str) - within each line that has a
+  #  "label: a, b, c" shape, sort the comma-separated items after the
+  #  colon. Used when a hash/dict's keys or values are printed
+  #  comma-separated on one line and enumeration order isn't guaranteed
+  #  by the language (e.g. Perl, awk hashes have no defined order).
+  def self.normalize_unordered_csv(str)
+    str.split("\n").map do |line|
+      if line =~ /^([^:]*:\s*)(.*)$/
+        prefix, items = $1, $2
+        prefix + items.split(",").map(&:strip).sort.join(", ")
+      else
+        line
+      end
+    end.join("\n")
+  end
+
+  # normalize_unordered_lines(str) - sort every line in str. Used when
+  #  each hash/dict entry is printed on its own line and the set of
+  #  lines, not their order, is what should be compared.
+  def self.normalize_unordered_lines(str)
+    str.split("\n").sort.join("\n")
+  end
+
   def self.colorize(text, color_code)
     "#{color_code}#{text}\033[0m"
   end
@@ -350,6 +373,12 @@ class Script
                             Script.truncate_precision(output, digits)
             elsif test.has_key?("bool")
               test_result = Script.normalize_bool(expected) == Script.normalize_bool(output)
+            elsif test.has_key?("unordered_csv")
+              test_result = Script.normalize_unordered_csv(expected) ==
+                            Script.normalize_unordered_csv(output)
+            elsif test.has_key?("unordered_lines")
+              test_result = Script.normalize_unordered_lines(expected) ==
+                            Script.normalize_unordered_lines(output)
             else
               test_result = expected == output
             end

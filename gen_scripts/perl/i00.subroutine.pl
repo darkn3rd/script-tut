@@ -3,7 +3,7 @@ use POSIX qw(strftime);  # library to get us strftime
 
 # create subroutine
 sub show_date {
-  my $date = strftime("%B %d, %Y", gmtime(time));
+  my $date = strftime("%B %d, %Y", localtime(time));
   print "Today is $date.\n";
 }
 
