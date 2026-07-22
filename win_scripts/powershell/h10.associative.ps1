@@ -6,5 +6,5 @@ $ages += @{"deb"=46; "kate"=19}
 # output results
 "The ages are: "
 foreach ($name in $ages.keys) {   # cycle through whole list
-  "  ages[$name]=" + $ages[$name]  # print out each element
+  " ages[$name]=" + $ages[$name]  # print out each element
 }

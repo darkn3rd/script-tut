@@ -1,5 +1,7 @@
 #!/usr/bin/env pash
-$keypress = Read-Host "Input a character: " # prompt user and get input
+# Read-Host echoes back piped/redirected input - see d00.input.ps1
+Write-Host -NoNewline "Input a character: "
+$keypress = [Console]::In.ReadLine()          # prompt user and get input
 $keypress = $keypress.substring(0,1)        # substring for only 1st char
 
 # switch w/ regexp construction

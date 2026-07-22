@@ -11,11 +11,13 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection
+Make your selection:
 "@
- 
-# get user input 
-$selection = [int](Read-Host $menu)
+
+# get user input
+# Read-Host echoes back piped/redirected input - see d00.input.ps1
+Write-Host -NoNewline "$menu "
+$selection = [int]([Console]::In.ReadLine())
 
 # multiway test on selection to matching number using numerical comparison
 switch ($selection) {

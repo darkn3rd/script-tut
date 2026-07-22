@@ -1,6 +1,8 @@
 #!/usr/bin/env pash
 # prompt user and get input
-$number = [int](Read-Host "Input a number: ")
+# Read-Host echoes back piped/redirected input - see d00.input.ps1
+Write-Host -NoNewline "Input a number: "
+$number = [int]([Console]::In.ReadLine())
 # evaluate input and print result
 if ( $number -gt 0 ) {
   "Number is greater than 0"
