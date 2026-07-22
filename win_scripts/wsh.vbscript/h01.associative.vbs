@@ -9,5 +9,8 @@ ages.Add "deb", 46
 ages.Add "kate", 19
 
 ' enumerate & print values
-wscript.echo "Keys (names): ", Join(ages.Keys, " ")
-wscript.echo "Values (ages): ", Join(ages.Items, " ")
+' NOTE: wscript.echo joins comma-separated arguments with its own space,
+'  which was stacking with each literal's own trailing space inconsistently -
+'  build the full string explicitly instead for exact control over spacing.
+wscript.echo "Keys (names):  " & Join(ages.Keys, ", ")
+wscript.echo "Values (ages): " & Join(ages.Items, ", ")

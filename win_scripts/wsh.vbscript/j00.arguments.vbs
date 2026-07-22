@@ -4,8 +4,8 @@ script_name = WScript.ScriptName      ' get script name
 ' check for only 2 arguments
 If arg_count <> 2 Then
  ' print helpful instructions
- WScript.StdErr.Write vbCrLf & "You need to enter two numbers: " & vbCrLf
- WScript.StdErr.Write vbCrLf & "   Usage: " & script_name & " [num1] [num2]"
+ WScript.StdErr.Write vbCrLf & "You need to enter two numbers:" & vbCrLf
+ WScript.StdErr.Write vbCrLf & "   Usage: " & script_name & " [num1] [num2]" & vbCrLf
  WScript.StdErr.Write vbCrLf
 Else
  ' get sum of both arguments, force cast to integer

@@ -5,5 +5,5 @@ nicknames = Array("bob","ed","steve","ralph","joe","deb","kate")
 WScript.Echo "The names are: "
 ' collection loop get each element
 For Each name In nicknames
-    wscript.echo " " & name
+    wscript.echo "  " & name
 Next

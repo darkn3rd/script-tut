@@ -5,7 +5,7 @@ noInput.pattern = "^$"      ' initialize empty string regexp pattern
 ' spin loop at condition is always true
 Do While True 
   ' prompt user for input
-  WScript.StdOut.Write "Enter your name (quit to Exit): "
+  WScript.StdOut.Write "Enter your name (quit to exit): "
   ' get answer from user
   answer = WScript.StdIn.ReadLine 
   

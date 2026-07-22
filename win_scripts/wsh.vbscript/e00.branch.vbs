@@ -1,10 +1,10 @@
-wscript.stdout.write "Input a number: "
-number = cint(wscript.stdin.readline)
+' prompt and read response
+wscript.stdout.write "Would you like a toast? [Yes/No]: "
+response = wscript.stdin.readline
 
-if number > 0 then
-  wscript.echo "Number is greater than 0"
-ElseIf Number < 0 then
-  wscript.echo "Number is less than 0"
-Else
-  wscript.echo "Number is 0"
+' test response to a string using if/else construction
+if response = "Yes" then
+  wscript.echo "That's great!"
+else
+  wscript.echo "How about a muffin?"
 end if
