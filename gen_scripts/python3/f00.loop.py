@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# testbox: requires=posix
+# testbox: title="subshell (ls) with for..in collection"
 import os
 
 # collection loop on buffered output from subshell

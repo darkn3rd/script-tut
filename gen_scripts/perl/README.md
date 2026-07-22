@@ -1,6 +1,6 @@
 # Scripting Tutorial: Perl
 
-Version 1.0
+Version 1.1
 
 © Joaquin Menchaca, 2014-2026
 
@@ -38,7 +38,11 @@ choco install -y strawberryperl
 
 ### Windows: UCRT64 (MSYS2)
 
-If you have **[Chocolatey](https://chocolatey.org)** setup, you can install MSYS2 with `choco install msys2`.  Othwerwise you can fetch **[MSYS](https://www.msys2.org/)** installer from their website.
+**[MSYS2](https://www.msys2.org/)** is a software building and distribution platform for Windows that provides a Unix-like environment (including a Bash shell and the [pacman package manager](https://www.msys2.org/docs/package-management/) from Arch Linux). It allows you to compile, install, and run native Windows software using tools like GCC, MinGW-w64, and CMake. 
+
+**UCRT64** is one of the specific environments (or subsystems) available within **[MSYS2](https://www.msys2.org/)** used to compile native 64-bit Windows software. It targets Microsoft's modern Universal C Runtime (UCRT), which comes pre-installed by default on all modern versions of Windows 10 and 11.
+
+If you have **[Chocolatey](https://chocolatey.org)** setup, you can install MSYS2 with `choco install msys2`.
 
 Once you launch the shell, you can install perl using either UCRT64 environment or classic MINGW64 environment.
 

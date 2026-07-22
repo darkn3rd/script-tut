@@ -191,7 +191,13 @@ class ScriptBase
   #  directory-specific override (see @@command_override) over the
   #  extension-derived default.
   def self.command
-    @@command_override[@@dirname] || @@command[@@language.to_sym]
+    cmd = @@command_override[@@dirname] || @@command[@@language.to_sym]
+    # Windows Python installers only ever produce a single, unsuffixed
+    #  python.exe - never a version-suffixed python3.exe the way most
+    #  POSIX package managers provide alongside python2. Fall back to
+    #  the unsuffixed name on non-POSIX shells.
+    cmd = "python" if cmd == "python3" && !posix?
+    cmd
   end
 
   def self.runner

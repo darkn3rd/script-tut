@@ -10,24 +10,64 @@ f-strings-friendly idioms, etc.).
 
 ## Getting Python
 
-### macOS
+On Windows 11, you can get Python from [Python Download](https://www.python.org/downloads/) or install it using a package manager like Chocolatey.
 
-macOS no longer ships a system Python. Install Python 3 with one of:
+### macOS: Homebrew
 
-* Homebrew [https://brew.sh/]: `brew install python3`
-* The official installer from https://www.python.org/downloads/
-* [pyenv](https://github.com/pyenv/pyenv) if you need to manage multiple versions
+**[Homebrew](https://brew.sh/)** is a command-line package manager for **macOS** that simplifies software installation by letting you download, update, and manage applications and tools using quick, automated commands.
 
-### Linux
+```bash
+# Install Python3
+brew install python
+```
 
-Most distributions ship Python 3 by default (`python3 --version`). If not,
-install it via your package manager, e.g. `apt install python3` (Debian/Ubuntu)
-or `dnf install python3` (Fedora/RHEL).
+### Windows: Chocolatey
 
-### Windows
+**[Chocolatey](https://chocolatey.org)** is a command-line package manager for Windows, built on top of the [NuGet](https://www.nuget.org/) infrastructure, that lets you install, update, and manage software using simple, automated commands instead of clicking through setup wizards.
 
-Install from https://www.python.org/downloads/ (check "Add python.exe to PATH")
-or via the Microsoft Store.
+```powershell
+# Install Python3
+choco install -y python3
+
+# python3 should point to Python 3
+Copy-Item "C:\Python314\python.exe" "C:\Python314\python3.exe"
+Copy-Item "C:\Python314\pythonw.exe" "C:\Python314\python3w.exe"
+
+# If both Python2 and Python3 are installed, make sure `python` default is Python3
+# Fix Path so that `python.exe` will always get Python3 (assuming Python3 is installed)
+$sysPath = [Environment]::GetEnvironmentVariable("PATH", "Machine") -split ';' `
+  | Where-Object { $_ -ne '' }
+$python2Entries = $sysPath | Where-Object { $_ -like '*Python27*' }
+$otherEntries   = $sysPath | Where-Object { $_ -notlike '*Python27*' }
+$newPath = ($otherEntries + $python2Entries) -join ';'
+[Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
+```
+
+### Windows: UCRT64 (MSYS2)
+
+**[MSYS2](https://www.msys2.org/)** is a software building and distribution platform for Windows that provides a Unix-like environment (including a Bash shell and the [pacman package manager](https://www.msys2.org/docs/package-management/) from Arch Linux). It allows you to compile, install, and run native Windows software using tools like GCC, MinGW-w64, and CMake. 
+
+**UCRT64** is one of the specific environments (or subsystems) available within **[MSYS2](https://www.msys2.org/)** used to compile native 64-bit Windows software. It targets Microsoft's modern Universal C Runtime (UCRT), which comes pre-installed by default on all modern versions of Windows 10 and 11.
+
+If you have **[Chocolatey](https://chocolatey.org)** setup, you can install MSYS2 with `choco install msys2`.
+
+```bash
+# Update Packages
+pacman -Syu
+# UCRT64 Environment (Recommended)
+pacman -S mingw-w64-ucrt-x86_64-python
+```
+
+## Testing
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 Python3.14.6
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 Python 3.14.3
+  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+    * 📦 Python 3.14.3
+  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+    * 📦 Python 3.14.6
 
 ## Notes
 
