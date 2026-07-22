@@ -148,6 +148,32 @@ class ScriptBase
     "python3" => "python3"
   }
 
+  # Languages known to need interactive_shell_out for a test tagged
+  #  "interactive": true, rather than the normal shell_out. Batch's SET /p,
+  #  used in a GOTO loop, can't correctly consume a pre-built Windows pipe
+  #  across repeated reads (it just re-reads the first line forever) -
+  #  interactive_shell_out works around that by feeding input lines one at
+  #  a time in response to actual output, mimicking real keystrokes. Every
+  #  other language's own input construct (gets, <>, readline, ...)
+  #  already handles a pre-built pipe fine in every environment, so they
+  #  stay on the simpler/faster shell_out - and some (e.g. Perl, which
+  #  fully buffers STDOUT when it isn't a real terminal) would actually
+  #  deadlock under interactive_shell_out despite not needing it at all.
+  @@interactive_required_languages = [:cmd]
+
+  # Languages that need an explicit relative-path prefix (e.g. ".\file" on
+  #  Windows) rather than a bare filename when invoked. NoDefaultCurrentDirectoryInExePath
+  #  (a Windows security hardening setting - see execute) only disables
+  #  the implicit current-directory search used to resolve *the program
+  #  to execute*. That only matters for batch/:cmd, where the test file
+  #  itself is what's being resolved that way (cmd /c <file>). Every
+  #  other language passes the test file as a data argument to an
+  #  already-resolved interpreter (e.g. "ruby file.rb") - never affected
+  #  by that restriction - so prefixing it there was never necessary, and
+  #  it leaks into any script that prints its own invocation name/path
+  #  (e.g. Ruby's $0, Python's sys.argv[0]).
+  @@needs_path_prefix_languages = [:cmd]
+
   @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
   @@cputype   = RUBY_PLATFORM.split('-')[0]
   @@language  = Dir.glob('a00.*')[0].split('.')[-1]
@@ -211,6 +237,79 @@ class ScriptBase
   #  without changing this default.
   def self.shell_out(cmd_str)
     `#{cmd_str}`
+  end
+
+  # needs_interactive?(test) - true only if the test is tagged
+  #  "interactive" AND the current language is one known to actually need
+  #  the workaround (see @@interactive_required_languages). The tag alone
+  #  isn't enough: it's a property of the *test*, shared across every
+  #  language's implementation via expected.json, but the underlying
+  #  buffered-pipe problem is specific to individual languages/interpreters
+  #  (e.g. only batch's SET /p), not a general trait of a test category.
+  def self.needs_interactive?(test)
+    !!test["interactive"] && @@interactive_required_languages.include?(@@language.to_sym)
+  end
+
+  # interactive_shell_out(cmd_str, input_lines) - like shell_out, but for
+  #  tests tagged "interactive": true. Windows buffers a pre-built pipe's
+  #  entire input at once rather than delivering it incrementally, which
+  #  some interactive loops (e.g. a batch `SET /p` inside a GOTO loop)
+  #  can't correctly consume across repeated reads - it just re-reads the
+  #  same first line forever instead of advancing. Feeding input_lines
+  #  one at a time over a live stdin pipe, in response to the process
+  #  actually producing output, sidesteps that: it mimics real keystrokes
+  #  rather than one large pre-buffered write.
+  #  A stalled/runaway process is force-killed after timeout_seconds so a
+  #  broken script can't hang the whole test run.
+  def self.interactive_shell_out(cmd_str, input_lines, timeout_seconds: 15)
+    require 'open3'
+    output = String.new
+    remaining = input_lines.dup
+
+    Open3.popen3(cmd_str) do |stdin, stdout, _stderr, wait_thr|
+      # Ruby's Timeout can't reliably interrupt a thread blocked in a
+      #  native Windows pipe read, so instead of racing the read itself,
+      #  an independent watchdog thread kills the process directly after
+      #  timeout_seconds. That breaks the pipe out from under the blocked
+      #  readpartial, which is what actually unblocks it. Plain
+      #  Process.kill(wait_thr.pid) isn't enough: on native Windows Ruby,
+      #  wait_thr.pid is the outer cmd.exe wrapper Kernel#`/Open3 always
+      #  spawns, not the real interpreter running underneath it - killing
+      #  that outer PID leaves the actual hung grandchild (e.g. perl.exe)
+      #  alive and still holding the pipe open. taskkill's /T flag kills
+      #  the whole process tree rooted at that PID instead.
+      watchdog = Thread.new do
+        sleep timeout_seconds
+        `taskkill /F /T /PID #{wait_thr.pid}` if wait_thr.alive?
+      rescue StandardError
+      end
+
+      begin
+        while wait_thr.alive?
+          begin
+            output << stdout.readpartial(4096)
+          rescue EOFError, IOError, SystemCallError
+            break
+          end
+          stdin.puts(remaining.shift) unless remaining.empty?
+          stdin.flush
+        end
+      ensure
+        watchdog.kill
+        watchdog.join
+      end
+
+      stdin.close rescue nil
+      begin
+        loop { output << stdout.readpartial(4096) }
+      rescue EOFError, IOError, SystemCallError
+      end
+    end
+
+    # Open3.popen3's pipes are binary, unlike Kernel#` (used by shell_out),
+    #  which translates CRLF to LF on Windows automatically - normalize the
+    #  same way here so interactive/non-interactive tests compare equally.
+    output.gsub("\r\n", "\n")
   end
 
   # version() - human-readable version string for the language under test.
@@ -526,6 +625,7 @@ class ScriptBase
           # Execute Every Test per Implementation (1+ test per feature)
           taskdata.each do |test|
             test_result, redirect, expected, args, redirect, input = false, "", "", "", "", ""
+            input_lines = nil
             if test.has_key?("err")
               redirect = "2>&1"
               expected = test['err']
@@ -539,16 +639,40 @@ class ScriptBase
             end
 
             if test.has_key?("in")
-              input = input_redirect(test['in'])
+              # A test tagged "interactive" only actually runs through
+              #  interactive_shell_out if the current language is also in
+              #  @@interactive_required_languages - see needs_interactive?.
+              #  Those tests feed their input lines one at a time over a
+              #  live stdin pipe instead of via a pre-built shell pipe, so
+              #  they don't get an input_redirect prefix baked into the
+              #  command string.
+              if needs_interactive?(test)
+                input_lines = test['in'].split("\n")
+              else
+                input = input_redirect(test['in'])
+              end
             end
 
             # Replacements - replace dynamically generated data
             expected.gsub! /(\$cmd\$)/, "#{cmd}"
             expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
 
-            command = "#{input} #{runner} #{cmd} #{args} #{redirect}"
+            # Explicit relative-path prefix, only for languages that need it
+            #  (see @@needs_path_prefix_languages) - cmd.exe treats "/" as a
+            #  switch prefix (like /c itself), not a path separator, so an
+            #  unquoted "./" gets tokenized apart - ".\" is required there.
+            prefix = if @@needs_path_prefix_languages.include?(@@language.to_sym)
+              posix? ? "./" : ".\\"
+            else
+              ""
+            end
+            command = "#{input} #{runner} #{prefix}#{cmd} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
-            output = shell_out(command)
+            output = if needs_interactive?(test)
+              interactive_shell_out(command, input_lines)
+            else
+              shell_out(command)
+            end
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
