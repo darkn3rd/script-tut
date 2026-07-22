@@ -10,8 +10,8 @@ nicknames[4] = "joe";
 nicknames[5] = "deb";
 nicknames[6] = "kate";
 
-WScript.echo("The number of nicknames is " + nicknames.length);
-WScript.echo("The nicknames are: " + join(nicknames, " "));
+WScript.Echo("The total nicknames are: " + nicknames.length);
+WScript.Echo("The nicknames are: " + join(nicknames, ", "));
 
 /***********************************************
  * Join (array, sep) - returns string given array and seperator

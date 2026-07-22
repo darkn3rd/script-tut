@@ -10,9 +10,10 @@ ages["deb"]   = 46;
 ages["kate"]  = 19;
 
 // enumerate & print values
-WScript.stdout.write("Keys (names): ");
-for (var key in ages) WScript.stdout.write(" " + key);
-WScript.stdout.write("\n")
-WScript.stdout.write("Values (ages):");
-for (var key in ages) WScript.stdout.write(" " + ages[key]);
-WScript.stdout.write("\n")
+var keys = [];
+for (var key in ages) keys.push(key);
+WScript.stdout.write("Keys (names):  " + keys.join(", ") + "\n");
+
+var values = [];
+for (var key in ages) values.push(ages[key]);
+WScript.stdout.write("Values (ages): " + values.join(", ") + "\n");
