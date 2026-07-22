@@ -87,13 +87,38 @@ You can use [Homebrew](https://brew.sh/) to install Groovy along with the depend
 brew install groovy
 ```
 
+### Windows: Chocolatey
+
+```powershell
+# Install Chocolatey
+URL='https://community.chocolatey.org/install.ps1'
+Set-ExecutionPolicy Bypass -Scope Process -Force; `
+ [System.Net.ServicePointManager]::SecurityProtocol `
+   = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+ iex ((New-Object System.Net.WebClient).DownloadString($URL))
+
+# Install JDK
+choco install -y corretto17jdk
+$correctPath = (Get-ChildItem "C:\Program Files\Amazon Corretto\jdk17*").FullName
+[Environment]::SetEnvironmentVariable("JAVA_HOME", $correctPath, "Machine")
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
+
+# Install Groovy
+choco install -y groovy
+```
 
 ## Testing
 
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 Groovy 5.0.7
     * 📦 OpenJDK Runtime Environment (Azul Zulu 11.88.17 build 11.0.31+11)
-
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 Groovy Version: 3.0.25 JVM: 17.0.19 Vendor: Amazon.com Inc. OS: Windows 11
+      * 📦 OpenJDK Runtime Environment Corretto-17.0.19.10.1 (build 17.0.19+10-LTS))
+  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+    * 📦 Groovy Version: 3.0.25 JVM: 17.0.19 Vendor: Amazon.com Inc. OS: Windows 11
+      * 📦 OpenJDK Runtime Environment Corretto-17.0.19.10.1 (build 17.0.19+10-LTS))
 
 ## Notes
 

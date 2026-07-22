@@ -59,7 +59,7 @@
   "j1": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are:\n item 1: uno\n item 2: dos\n item 3: tres\n item 4: cuarto\n item 5: cinco\n item 6: seis\n item 7: siete\n item 8: ocho\n item 9: nueve\n item 10: deiz\n item 11: once\n item 12: doce\n"}],
   "j2": [{ "arg": "uno dos tres cuarto cinco seis siete ocho nueve deiz once doce", "out": "The arguments passed are (reverse order):\n item 12: doce\n item 11: once\n item 10: deiz\n item 9: nueve\n item 8: ocho\n item 7: siete\n item 6: seis\n item 5: cinco\n item 4: cuarto\n item 3: tres\n item 2: dos\n item 1: uno\n"
         }],
-  "k0": [{ "out": "The Celsius temperature is 22.8 degrees.\n"}],
+  "k0": [{ "out": "The Celsius temperature is 22.8 degrees.\n", "locale_decimal": true}],
   "k1": [{ "out": "Sending: 5, 2, 4, 3, 6\nThe summation is: 20.\n"}],
   "l0": [{"arg": "",      "err": "\nYou need to enter one or more numbers:\n\n   Usage: $cmd$ [num1] [num2] [num3]...\n\n"},
          {"arg": "4",     "out": "The summation is: 4.\n"},

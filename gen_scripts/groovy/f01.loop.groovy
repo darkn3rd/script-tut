@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+// testbox: title="File.listFiles() with each iterator"
 // iterate through each item in current directory
 //   item represents a File object
 //   eachFile() order isn't guaranteed by the filesystem, so sort first

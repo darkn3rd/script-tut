@@ -1,8 +1,8 @@
 # Scripting Tutorial: TCL (Tool Command Language)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.4
+Version 1.5
 
 ## Overview
 
@@ -29,10 +29,39 @@ These are some strange things I noticed when scripting in TCL:
 * ***Accosciative Arrays*** - these are just called *arrays* in TCL.  TCL can extract the keys from an associative array, but has no mechanism to extract the values.
 * ***Variable Parameters*** - when creating a sub-routine or function (called *procedures* in TCL) that accepts unknown number of arguments, you must explicitly call this `args`.
 
+## Getting TCL
+
+### macOS: Homebrew
+
+```bash
+brew install tcl-tk
+```
+
+### Windows: Chocolatey
+
+```powershell
+# Install Tcl/TK
+choco install -y magicsplat-tcl-tk
+```
+
+### Windows: UCRT64 (MSYS)
+
+```bash
+# UCRT64 Environment (Recommended)
+pacman -S mingw-w64-ucrt-x86_64-tcl
+```
+
 ## Testing
 
-* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
-  * :cd: tclsh 8.5 (bundled with operating system)
+* 📀 *__OS X 10.8.5 (Mountain Lion)__*
+  * 💿 tclsh 8.5 (bundled with operating system)
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 tcl-tk - `9.0.4`
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 MagicSplat TCL/TK - `9.0.3`
+  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+    * 📦 UCRT64 TCL - `8.6.18`
 
 ## Topics
 

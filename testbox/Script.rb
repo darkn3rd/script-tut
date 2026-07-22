@@ -346,6 +346,17 @@ class ScriptBase
     end
   end
 
+  # normalize_locale_decimal(str) - fold a comma-style decimal separator
+  #  (e.g. "22,8") down to the period form ("22.8"), so a number can be
+  #  compared across runs regardless of the runtime's locale-dependent
+  #  number formatting (e.g. Groovy's printf, which - unlike Ruby/Perl/
+  #  awk's - defaults to Locale.getDefault() instead of always using '.').
+  #  Only touches digit-comma-digit, so it won't disturb a genuine
+  #  comma-separated list (e.g. "bob, ed, steve").
+  def self.normalize_locale_decimal(str)
+    str.gsub(/(\d),(\d)/, '\1.\2')
+  end
+
   # normalize_bool(str) - fold the common truthy representations different
   #  languages print ("true", "True", "1") down to a single canonical form,
   #  so a boolean result can be compared across languages that render
@@ -531,6 +542,9 @@ class ScriptBase
             elsif test.has_key?("unordered_lines")
               test_result = normalize_unordered_lines(expected) ==
                             normalize_unordered_lines(output)
+            elsif test.has_key?("locale_decimal")
+              test_result = normalize_locale_decimal(expected) ==
+                            normalize_locale_decimal(output)
             else
               test_result = expected == output
             end

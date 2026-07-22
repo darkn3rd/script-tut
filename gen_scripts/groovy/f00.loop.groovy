@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+// testbox: title="File.list() with for..in collection"
 // use collection loop on directory listing
 //  item represents the file name
 //  File.list() order isn't guaranteed by the filesystem, so sort it
