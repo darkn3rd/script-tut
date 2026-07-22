@@ -245,28 +245,31 @@ function Invoke-InteractiveShellOut {
 
     $output = New-Object System.Text.StringBuilder
     $buffer = New-Object char[] 4096
-
-    # Watchdog: force-kills the whole process tree (taskkill /T - a plain
-    #  Stop-Process only kills the immediate cmd.exe wrapper, not any nested
-    #  cmd.exe grandchild actually holding the pipe open) if the read loop
-    #  below is still blocked in Read() after timeout_seconds.
-    $watchdog = [System.Threading.Thread]::new([System.Threading.ThreadStart]{
-        Start-Sleep -Seconds $TimeoutSeconds
-        if (-not $proc.HasExited) {
-            & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
-        }
-    }.GetNewClosure())
-    $watchdog.IsBackground = $true
-    $watchdog.Start()
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
     # StandardOutput.Peek() is unreliable on a redirected process pipe - it
     #  can return -1 (falsely signaling "no data") even while the process is
-    #  still alive and about to write more. A plain blocking Read() (like
-    #  Ruby's readpartial) is what actually works: it blocks until data
-    #  arrives or the pipe closes (0 = EOF), which is exactly what the
-    #  watchdog above is there to break out of on a stall.
+    #  still alive and about to write more. ReadAsync()+Task.Wait(timeout) is
+    #  what actually works: it blocks (like Ruby's readpartial) until data
+    #  arrives or the pipe closes (0 = EOF), but bounded, so a stalled/runaway
+    #  process can't hang the whole test run.
+    #  Deliberately not a separate watchdog Thread: a PowerShell scriptblock
+    #  invoked as a raw .NET ThreadStart delegate runs with no runspace
+    #  bound to that thread, and an unhandled error there crashes the whole
+    #  host process (not just this function) - which is exactly what an
+    #  earlier version of this code did, ~timeout_seconds after any
+    #  interactive test ran, even when that test had already passed.
+    #  Everything here stays on the calling thread instead.
     while ($true) {
-        $read = $proc.StandardOutput.Read($buffer, 0, $buffer.Length)
+        $remainingMs = [Math]::Max(0, ($deadline - (Get-Date)).TotalMilliseconds)
+        $readTask = $proc.StandardOutput.ReadAsync($buffer, 0, $buffer.Length)
+        if (-not $readTask.Wait([int]$remainingMs)) {
+            if (-not $proc.HasExited) {
+                & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+            }
+            break
+        }
+        $read = $readTask.Result
         if ($read -le 0) { break }
         [void]$output.Append($buffer, 0, $read)
         if ($remaining.Count -gt 0) {
@@ -275,7 +278,7 @@ function Invoke-InteractiveShellOut {
         }
     }
 
-    $proc.WaitForExit()
+    if (-not $proc.HasExited) { $proc.WaitForExit(2000) | Out-Null }
 
     return ($output.ToString() -replace "`r`n", "`n")
 }
