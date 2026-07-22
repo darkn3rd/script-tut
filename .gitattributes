@@ -1,0 +1,21 @@
+# Force LF for scripts, regardless of any machine's core.autocrlf setting.
+# Many of these start with a #!/usr/bin/env shebang line - a stray \r
+# before the newline there can break execution under a POSIX shell.
+*.rb      text eol=lf
+*.php     text eol=lf
+*.pl      text eol=lf
+*.py      text eol=lf
+*.awk     text eol=lf
+*.gawk    text eol=lf
+*.tcl     text eol=lf
+*.groovy  text eol=lf
+*.sh      text eol=lf
+*.ksh     text eol=lf
+*.tcsh    text eol=lf
+
+# Markdown/docs/config read fine with either ending, but keep them LF too
+# for consistency across contributors' machines.
+*.md      text eol=lf
+*.json    text eol=lf
+*.rake    text eol=lf
+Rakefile  text eol=lf

@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+// testbox: requires=posix
 // create subroutine
 function  show_date() {
   // strftime() is deprecated since PHP 8.1; use date() instead. PHP has

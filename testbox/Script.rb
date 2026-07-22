@@ -160,6 +160,7 @@ class ScriptBase
 
   # Process JSON files and configure @@dataset
   require 'json'
+  require 'date'
   if File.exist?(@@jsonfile)
     @@dataset = JSON.parse(File.read(@@jsonfile))
   else
@@ -357,6 +358,21 @@ class ScriptBase
     str.gsub(/(\d),(\d)/, '\1.\2')
   end
 
+  # dates_within_tolerance?(expected, output, days) - true if both
+  #  strings contain a "Month DD, YYYY"-style date (the $date$
+  #  substitution format - see execute) and those dates are within
+  #  `days` calendar days of each other. Used to tolerate a language
+  #  runtime that computes "today" in UTC instead of local time (e.g. a
+  #  native Windows binary invoked from MSYS2, which doesn't get MSYS2's
+  #  /etc/localtime path virtualization), so a run near a local/UTC day
+  #  boundary doesn't flip a genuine pass into a fail.
+  def self.dates_within_tolerance?(expected, output, days = 1)
+    fmt = /\b([A-Z][a-z]+ \d{1,2}, \d{4})\b/
+    exp_date, out_date = expected[fmt, 1], output[fmt, 1]
+    return false unless exp_date && out_date
+    (Date.strptime(exp_date, "%B %d, %Y") - Date.strptime(out_date, "%B %d, %Y")).abs <= days
+  end
+
   # normalize_bool(str) - fold the common truthy representations different
   #  languages print ("true", "True", "1") down to a single canonical form,
   #  so a boolean result can be compared across languages that render
@@ -545,6 +561,9 @@ class ScriptBase
             elsif test.has_key?("locale_decimal")
               test_result = normalize_locale_decimal(expected) ==
                             normalize_locale_decimal(output)
+            elsif test.has_key?("date_tolerance")
+              days = test["date_tolerance"] == true ? 1 : test["date_tolerance"]
+              test_result = dates_within_tolerance?(expected, output, days)
             else
               test_result = expected == output
             end
