@@ -1,3 +1,10 @@
 .DS_Store
 '~$script_tracker.xlsx'
 .vagrant
+
+# compiled_lang/*/bin/ holds build output only (see
+# compiled_lang/README.md) - `make clean` in the language directory
+# empties it too. .gitkeep keeps the otherwise-empty directory itself
+# tracked.
+compiled_lang/*/bin/*
+!compiled_lang/*/bin/.gitkeep

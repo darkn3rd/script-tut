@@ -1,0 +1,28 @@
+# NMAKE version of Makefile, for Microsoft's own build tools (cl.exe) -
+# see ../README.md for the shared bin/-output convention this follows.
+# Run from a "Developer Command Prompt" / after vcvars64.bat, via:
+#
+#   nmake /f Makefile.nmake
+#
+# NMAKE has no wildcard/glob function the way GNU Make's $(wildcard ...)
+# does, and its macro substitution can't prepend "bin\" to a whole list
+# the way $(addprefix ...) can - so, unlike the GNU Makefile, both lists
+# here are maintained by hand: add each new a00.output.cpp-style lesson
+# to SOURCES, and its matching bin\a00.output.exe entry to BINARIES.
+
+SOURCES  = a00.output.cpp
+BINARIES = bin\a00.output.exe
+
+CXX = cl
+CXXFLAGS = /nologo /EHsc /std:c++17 /O2 /W3
+
+all: bin $(BINARIES)
+
+bin:
+	if not exist bin mkdir bin
+
+{}.cpp{bin}.exe:
+	$(CXX) $(CXXFLAGS) /Fo:bin\ /Fe:$@ $<
+
+clean:
+	-del /q bin\*.exe bin\*.obj 2>nul

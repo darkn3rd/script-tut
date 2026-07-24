@@ -113,6 +113,11 @@ class ScriptBase
     :bash   => "bash --version 2>&1",
     :csh    => "csh --version 2>&1",
     :ksh    => "ksh --version 2>&1",
+    :java   => "javac -version 2>&1",
+    :go     => "go version 2>&1",
+    :rs     => "rustc --version 2>&1",
+    :cpp    => "g++ --version 2>&1",
+    :cs     => "csc /version 2>&1",
   }
 
   # Languages whose version can't be had from a simple "cmd --version"
@@ -136,8 +141,36 @@ class ScriptBase
     :js     => "JScript (WSH)",
     :vbs    => "VBScript (WSH)",
     :ps1    => "PowerShell",
-    :cmd    => "Batch"
+    :cmd    => "Batch",
+    :java   => "Java",
+    :go     => "Go",
+    :rs     => "Rust",
+    :cpp    => "C++",
+    :cs     => "C#",
   }
+
+  # compiler binary for each compiled language - see @@compiled_languages
+  # and ensure_compiled!. Unlike @@command (an interpreter that the test
+  #  file is handed to as a data argument), these only ever run once per
+  #  test session, via `make`, to produce the actual thing invoked per
+  #  test (see invocation_name).
+  @@compiler = {
+    :java => "javac",
+    :go   => "go",
+    :rs   => "rustc",
+    :cpp  => "g++",
+    # Classic `csc` (Mono, or the old .NET Framework compiler) needs no
+    #  project scaffolding for a single-file build, unlike the modern
+    #  `dotnet` SDK's project-oriented model - see compiled_lang/cs/README.md
+    #  for what to install if this isn't on PATH.
+    :cs   => "csc",
+  }
+
+  # Languages with no interpreter at all (see @@command) - a lesson file
+  #  here is only ever handed to `make` (see ensure_compiled!), and what
+  #  actually gets invoked per test is the resulting build artifact (see
+  #  invocation_name), not the source file itself.
+  @@compiled_languages = @@compiler.keys
 
   # Some languages have multiple, incompatible major versions that share a
   # file extension (e.g. python2/ and python3/ both use *.py). When the
@@ -162,21 +195,29 @@ class ScriptBase
   @@interactive_required_languages = [:cmd]
 
   # Languages that need an explicit relative-path prefix (e.g. ".\file" on
-  #  Windows) rather than a bare filename when invoked. NoDefaultCurrentDirectoryInExePath
-  #  (a Windows security hardening setting - see execute) only disables
-  #  the implicit current-directory search used to resolve *the program
-  #  to execute*. That only matters for batch/:cmd, where the test file
-  #  itself is what's being resolved that way (cmd /c <file>). Every
-  #  other language passes the test file as a data argument to an
+  #  Windows, "./file" on real POSIX) rather than a bare filename when
+  #  invoked. NoDefaultCurrentDirectoryInExePath (a Windows security
+  #  hardening setting - see execute) only disables the implicit
+  #  current-directory search used to resolve *the program to execute*.
+  #  That only matters for :cmd and the compiled languages, where the
+  #  test artifact itself is what's being resolved that way (cmd /c
+  #  <file>, or a compiled binary run directly). Every interpreted
+  #  language passes the test file as a data argument to an
   #  already-resolved interpreter (e.g. "ruby file.rb") - never affected
   #  by that restriction - so prefixing it there was never necessary, and
   #  it leaks into any script that prints its own invocation name/path
   #  (e.g. Ruby's $0, Python's sys.argv[0]).
-  @@needs_path_prefix_languages = [:cmd]
+  @@needs_path_prefix_languages = [:cmd] + @@compiled_languages
 
   @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
   @@cputype   = RUBY_PLATFORM.split('-')[0]
-  @@language  = Dir.glob('a00.*')[0].split('.')[-1]
+  # A compiled language's build artifacts (a00.output.exe, a00.output.cmd,
+  #  ...) sit right next to a00's source file and match this same glob -
+  #  restrict to extensions actually recognized as a source language (see
+  #  @@command/@@compiler) so a leftover binary from a previous `make`
+  #  never gets mistaken for the language itself.
+  @@known_extensions = (@@command.keys + @@compiler.keys).map(&:to_s)
+  @@language  = Dir.glob('a00.*').map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
   @@dirname   = File.basename(Dir.pwd)
   @@jsonfile   = "../../testbox/expected.json"
   @@titlesfile = "../../testbox/titles.json"
@@ -234,7 +275,14 @@ class ScriptBase
   #  native_unix?) - so fail once, loudly, and stop, rather than a wall of
   #  near-identical per-test failures.
   def self.command
-    cmd = @@command_override[@@dirname] || @@command[@@language.to_sym]
+    # @@command has no entry for a compiled language (see
+    #  @@compiled_languages) - it falls through to @@compiler, since
+    #  that's the one thing that actually needs to be on PATH to run
+    #  these lessons at all (see ensure_compiled!). Reusing `command`
+    #  for this, rather than a separate method, means the same
+    #  PATH-verification and header-display logic below covers both
+    #  cases for free.
+    cmd = @@command_override[@@dirname] || @@command[@@language.to_sym] || @@compiler[@@language.to_sym]
     # PowerShell's POSIX package (installed as `pwsh`) never provides a
     #  `powershell` binary - that name is only the Windows Desktop edition
     #  executable. Gated on native_unix?, not posix?: Msys2ShellScript is
@@ -254,8 +302,47 @@ class ScriptBase
     cmd
   end
 
+  # runner() - the interpreter (+ options) that a test file gets handed to
+  #  as a data argument, e.g. "ruby ". A compiled language has no such
+  #  thing - the build artifact (see invocation_name) runs itself - so
+  #  this is deliberately blank rather than "javac "/"g++ ", which would
+  #  otherwise get prepended to every test's command line.
   def self.runner
+    return "" if @@compiled_languages.include?(@@language.to_sym)
     "#{command} #{@@option[@@language.to_sym]}"
+  end
+
+  # invocation_name(cmd) - what to actually put on the command line for
+  #  lesson file `cmd`. For an interpreted language this is just `cmd`
+  #  itself (handed to runner as a data argument). For a compiled
+  #  language, `cmd` is the *source* file (e.g. "a00.output.rs") - what
+  #  actually needs to run is the build artifact make produced from it,
+  #  named after the source minus its language extension (see
+  #  compiled_lang/README.md's naming convention) plus whatever this
+  #  platform's runnable extension is (see binary_extension).
+  def self.invocation_name(cmd)
+    return cmd unless @@compiled_languages.include?(@@language.to_sym)
+    "#{cmd.sub(/\.[^.]+\z/, "")}#{binary_extension}"
+  end
+
+  # binary_extension() - the real on-disk extension of the artifact
+  #  `make` produces for the current compiled language (see
+  #  compiled_lang/*/Makefile). Every compiled language here builds a
+  #  native "*.exe" on a cmd.exe-backed environment except Java, which
+  #  has no standalone-binary story - its Makefile instead generates a
+  #  "*.cmd" launcher wrapping `java -cp . ClassName` (see
+  #  compiled_lang/java/Makefile). On real POSIX (native_unix?), every
+  #  language's Makefile produces an extension-less, executable-bit file
+  #  (a native binary, or - for Java - a "#!/bin/sh" launcher script), so
+  #  there's nothing to append.
+  def self.binary_extension
+    return "" if native_unix?
+    # ".bat", not ".cmd": :cmd (Batch) already owns ".cmd" as its own
+    #  lesson source extension - reusing it here made a Java wrapper
+    #  indistinguishable from an actual Batch lesson file to @@language
+    #  auto-detection (both are "a00.output.cmd"). cmd.exe treats ".bat"
+    #  as an equally native batch-script extension, so this loses nothing.
+    @@language.to_sym == :java ? ".bat" : ".exe"
   end
 
   # shell_out(cmd_str) - runs cmd_str the same way the harness runs a
@@ -361,7 +448,7 @@ class ScriptBase
   #  behaves identically regardless of which shell captured `raw`.
   def self.extract_version(raw, lang)
     case lang
-    when :awk, :php, :bash
+    when :awk, :php, :bash, :cpp
       raw.lines.first.to_s.strip
     when :pl
       raw[/v\d\.\d{1,2}\.\d/].to_s
@@ -652,7 +739,49 @@ class ScriptBase
     end # overall pass condition
   end
 
+  # ensure_compiled!() - for a compiled language (see @@compiled_languages),
+  #  runs `make` in the lesson directory once per test session, before any
+  #  test tries to invoke a build artifact that doesn't exist yet. `make`
+  #  itself, and the compiler it drives (see command()), are each
+  #  verified present and failed loudly and once if missing - the same
+  #  "fail once, clearly" reasoning as command()'s own PATH check,
+  #  because a broken build would otherwise surface as the exact same
+  #  confusing per-test "not recognized"/"no such file" error on every
+  #  single test in the directory.
+  @@compiled_ok = false
+  def self.ensure_compiled!
+    return unless @@compiled_languages.include?(@@language.to_sym)
+    return if @@compiled_ok
+
+    command # verifies the compiler itself is on PATH (see command())
+
+    if find_executable("make").to_s.empty?
+      STDERR.puts "ERROR: Cannot find \"make\" on PATH (needed to build #{@@dirname}/ lessons). " \
+                  "Check the setup instructions for this language."
+      exit 1
+    end
+
+    output = shell_out("make 2>&1")
+    unless $?.success?
+      STDERR.puts "ERROR: `make` failed while building #{@@dirname}/ lessons:"
+      STDERR.puts output
+      exit 1
+    end
+
+    @@compiled_ok = true
+  end
+
   def self.execute(task, list)
+    ensure_compiled!
+    # testbox.rake finds implementations with a bare Dir.glob("#{task}?.*")
+    #  - fine for an interpreted language, where the source file is the
+    #  only thing in the directory matching that pattern, but a compiled
+    #  language's build artifacts (a00.output.exe, a00.output.cmd, ...)
+    #  sit right next to the source and match it too. Restrict to the
+    #  real source extension so a generated binary never gets scanned as
+    #  if it were a second implementation (testbox_tags's line-by-line
+    #  read chokes on non-UTF8 binary bytes) or double-counted.
+    list = list.select { |cmd| cmd.end_with?(".#{@@language}") } if @@compiled_languages.include?(@@language.to_sym)
     final_result, message, results, skipped, skip_reason = true, "", {}, false, nil
     # Drop implementations that are intentionally POSIX-only (see
     #  requires_posix?) when we're not running under a POSIX shell. If
@@ -698,21 +827,49 @@ class ScriptBase
               end
             end
 
-            # Replacements - replace dynamically generated data
-            expected.gsub! /(\$cmd\$)/, "#{cmd}"
+            # invoked_name is what actually goes on the command line and
+            #  into the $cmd$ substitution below - for an interpreted
+            #  language that's just `cmd` (the source file itself,
+            #  handed to runner as a data argument); for a compiled one
+            #  it's the build artifact's own name (see invocation_name),
+            #  since that - not the source file - is what a lesson's own
+            #  $0/argv[0]/os.Args[0]-style self-name check would report.
+            invoked_name = invocation_name(cmd)
+
+            # Explicit relative-path prefix, only for languages that need
+            #  it (see @@needs_path_prefix_languages) - both cmd.exe and
+            #  a directly-run compiled binary are resolved as *the
+            #  program to execute itself* (not a data argument to an
+            #  already-resolved interpreter), so each is subject to
+            #  NoDefaultCurrentDirectoryInExePath. native_unix?, not
+            #  posix?: this is about which path separator the target
+            #  program loader wants (/ on real Unix, \ on cmd.exe -
+            #  including under Msys2ShellScript, which is posix? true
+            #  but still Windows underneath - see native_unix?'s comment).
+            #  A compiled language additionally builds into a bin/
+            #  subdirectory (see compiled_lang/README.md), so its prefix
+            #  includes that too.
+            is_compiled = @@compiled_languages.include?(@@language.to_sym)
+            if @@needs_path_prefix_languages.include?(@@language.to_sym)
+              sep = native_unix? ? "/" : "\\"
+              subdir = is_compiled ? "bin#{sep}" : ""
+              prefix = ".#{sep}#{subdir}"
+            else
+              prefix = ""
+            end
+
+            # Replacements - replace dynamically generated data. A
+            #  compiled language's own argv[0]/os.Args[0]-style self-name
+            #  check would report the *whole* invoked path (prefix and
+            #  all) since nothing in the program strips it - unlike
+            #  batch's j00-style lessons, which explicitly strip any
+            #  prefix themselves (see win_scripts/batch/j00.arguments.cmd's
+            #  %~nx0), so only compiled languages get prefix folded in
+            #  here.
+            expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
             expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
 
-            # Explicit relative-path prefix, only for languages that need it
-            #  (see @@needs_path_prefix_languages) - cmd.exe treats "/" as a
-            #  switch prefix (like /c itself), not a path separator, so an
-            #  unquoted "./" gets tokenized apart - ".\" is required there.
-            #  Unconditionally ".\", not posix?-gated: @@needs_path_prefix_languages
-            #  is only ever [:cmd], so this branch is only ever building a
-            #  cmd.exe command line - cmd.exe's own "/" quirk doesn't change
-            #  based on whether the *host* shell (e.g. Msys2ShellScript) has
-            #  POSIX tools available (same posix?-conflation as native_unix?).
-            prefix = @@needs_path_prefix_languages.include?(@@language.to_sym) ? ".\\" : ""
-            command = "#{input} #{runner} #{prefix}#{cmd} #{args} #{redirect}"
+            command = "#{input} #{runner} #{prefix}#{invoked_name} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
             output = if needs_interactive?(test)
               interactive_shell_out(command, input_lines)
