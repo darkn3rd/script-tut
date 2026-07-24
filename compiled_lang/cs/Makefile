@@ -40,5 +40,5 @@ bin/%$(OUTEXT): %.cs | bin
 	dotnet build bin/$*.csproj -o bin --nologo -v quiet
 
 clean:
-	rm -f bin/*.exe bin/*.dll bin/*.pdb bin/*.deps.json bin/*.runtimeconfig.json bin/*.csproj
+	rm -f $(BIN) bin/*.exe bin/*.dll bin/*.pdb bin/*.deps.json bin/*.runtimeconfig.json bin/*.csproj
 	rm -rf bin/obj
