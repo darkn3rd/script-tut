@@ -1,8 +1,8 @@
 # Scripting Tutorial: AWK
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.5
+Version 1.6
 
 ## Overview
 
@@ -21,50 +21,29 @@ GNU Awk is continues to be updated.  Gawk 3.1.5 added the ability to get the siz
 
 ## Getting AWK
 
-Today, AWK is found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have awk as apart of that tool set for compliance toward [IEEE Std 1003.1, 2013 Edition](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html).
+These scripts will work with GNU Awk (`gawk`) 4.0 or greater.  Earlier versions of GNU Awk, SVR4 Awk (`nawk`), or BSD flavors of Awk will not pass for all tests.
 
-Thus, with any UNIX or Linux system, you can expect awk to be available.  For Windows, that is another matter.  You can get awk from a number of locations.  
+### Unix and Linux
 
-### Getting AWK on Windows
+Today, AWK is found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have `awk` as apart of that tool set for compliance toward [IEEE Std 1003.1, 2013 Edition](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html).
 
-For Windows, you can run GNU in various environments, some mimicking a Unix-like environment on Windows:
+Thus, with any UNIX or Linux system, you can expect `awk` to be available.
 
- * **[CygWin](https://www.cygwin.com/)** - robust environment uses special library to provide Unix compatibility.  
- * **[GitBash](http://msysgit.github.io/)** - Git tools that bundles the MSYS environment (http://www.mingw.org/wiki/msys) that provides Bash shell and some GNU tools including GNU Awk.
- * **[GNUWin32](http://gnuwin32.sourceforge.net/)** - GNU tools that work directly from Command Shell.
-   * GNUWin32 Gawk - http://gnuwin32.sourceforge.net/packages/gawk.htm
- * **[UWIN](http://www2.research.att.com/sw/download/)** - toolset comes directly from AT&T and provides tools that are found with SVR4 Unix systems.  Tools seem to only work within their environment, i.e. `login.exe` program.
-   * Installer - http://www2.research.att.com/~astopen/download/tgz/uwin-base.2012-08-06.win32.i386-64.exe
+### Windows
 
-```batch
-C:\> "C:\Program Files (x86)"\GnuWin32\bin\gawk --version | head -1
-GNU Awk 3.1.6
-C:\>"C:\Program Files (x86)\Git\bin\gawk.exe" --version | head -1
-GNU Awk 3.0.4
+You can get GNU Awk 5.x with the following:
+
+```powershell
+choco install -y gawk
 ```
 
+### macOS
 
-### Getting AWK on Macintosh
-
-OS X 10.8.5 comes with a version of AWK that is normally distributed with BSD flavors of UNIX.  The newer features found in GAWK will not be available.  Thus you can use a tool like HomeBrew to grab the latest version of GAWK.  Here's a sample run of this on July, 2014:
+You can get GNU Awk 5.x with the following:
 
 ```bash
-$ brew install gawk
-==> Downloading https://downloads.sf.net/project/machomebrew/Bottles/gawk-4.1.1.mountain_lion.bottle.tar.gz
-######################################################################## 100.0%
-==> Pouring gawk-4.1.1.mountain_lion.bottle.tar.gz
-🍺  /usr/local/Cellar/gawk/4.1.1: 61 files, 2.8M
+brew install gawk
 ```
-
-### Getting AWK on CentOS 6.5 (or RHEL 6.5)
-
-The default awk that comes with Cent OS 6.5 is extremely old:
-
-```
-/bin/awk --version | head -1
-GNU Awk 3.1.7
-```
-
 
 ## How It Works
 
@@ -77,33 +56,30 @@ awkscript < somefile.txt
 
 AWK scripts have the ability to do pre-processing and post-processing before and after receiving input through the `BEGIN` and `END` blocks.  These tutorial scripts here will use the `BEGIN` blocks.  These tutorial scripts illustrate that AWK in and of itself is a powerful scripting language, and have the capabilities shared by other modern scripting languages.
 
-## Issues
-
-Environments will have AWK in either `/bin/awk` or `/usr/bin/awk` or both.  These scripts expect AWK to be in `/bin/awk`.  The workaround, provided you have administration privileges is to add a symbolic link.
-
-On Mac OS X 10.8.5, you can do this:
-`
-sudo ln -s `which awk` /bin/awk
-`
-
 ## Testing
 
-* :dvd: Windows 7 (32-bit)
-  * :package: Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
-    * :beetle: `length(array)` does not work.
-  * :package: Nawk (UWIN 2012-08-06)
-    * :beetle: `length(array)` does not work.
-  * :package: GNUWin32, GNU Awk 3.1.6
-    * :beetle: `length(array)` does not work.
-    * :beetle: last file from `ls` is not $9, but $8, so use $NF instead
-    * :beetle: UNIX `date` needs to be in the path.  Unix date is available with MSYS environment.
-* :dvd: OS X 10.8.5
-  * :package: BSD Awk 20070501 (bundled with OS)
-     * :beetle: awk not in `/bin/awk`, but found in `/usr/bin/awk`
-* :dvd: CentOS 6.5
-  * :package: GNU Awk 3.1.7
-    * :beetle: `switch` will not work as requires GNU Awk 4.0 and above.
-
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * 🐚 PowerShell 5.1 or Command Shell (cmd.exe)
+    * 📦 GNU Awk 5.3.2, API 4.0, (GNU MPFR 4.0.2, GNU MP 6.1.2)
+  * 🐚 MSYS2 UCRT64 20260611.0.0 - bash 5.1.4
+    * 📦 GNU Awk 5.4.1, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
+* 📀 Windows 7 (32-bit)
+  * 📦 Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
+    * 🪲 `length(array)` does not work.
+  * 📦 Nawk (UWIN 2012-08-06)
+    * 🪲 `length(array)` does not work.
+  * 📦 GNUWin32, GNU Awk 3.1.6
+    * 🪲 `length(array)` does not work.
+    * 🪲 last file from `ls` is not $9, but $8, so use $NF instead
+    * 🪲 UNIX `date` needs to be in the path.  Unix date is available with MSYS environment.
+* 📀 OS X 10.8.5
+  * 📦 BSD Awk 20070501 (bundled with OS)
+     * 🪲 awk not in `/bin/awk`, but found in `/usr/bin/awk`
+* 📀 CentOS 6.5
+  * 📦 GNU Awk 3.1.7
+    * 🪲 `switch` will not work as requires GNU Awk 4.0 and above.
 
 ## Topics
 

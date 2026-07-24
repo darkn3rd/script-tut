@@ -26,6 +26,15 @@ Once these components are installed, just type `rake` in the desired script dire
 
 Naturally, the desired scripting language must be installed for the test suite to work on that language.
 
+### Windows 11
+
+You can install the requirements with the following
+
+```bash
+# Install Ruby and Psake
+choco install -y choco.config 
+```
+
 ## Instructions
 
 The directory structure of this repository will include these directories:
