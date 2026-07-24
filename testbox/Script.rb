@@ -184,6 +184,12 @@ class ScriptBase
   # tally of category-level results across a run, printed by print_summary
   @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
 
+  # commands already confirmed present on PATH this run (see command()) -
+  #  a Set so a missing interpreter fails loudly exactly once, not on
+  #  every single test that would otherwise try and fail to invoke it.
+  require 'set'
+  @@verified_commands = Set.new
+
   # Process JSON files and configure @@dataset
   require 'json'
   require 'date'
@@ -215,18 +221,36 @@ class ScriptBase
 
   # command() - returns the interpreter binary to invoke, preferring a
   #  directory-specific override (see @@command_override) over the
-  #  extension-derived default.
+  #  extension-derived default. python2/ and python3/ are expected to have
+  #  their own unambiguous "python2"/"python3" binary on every supported
+  #  platform (see the project's setup docs - Windows needs an explicit
+  #  copy of python.exe under each name, since the stock installer only
+  #  ever provides a bare "python"; macOS/pyenv shims provide both
+  #  natively) - so, unlike a missing "pwsh", this is never silently
+  #  papered over. If the resolved binary isn't actually on PATH, that
+  #  means the documented setup step was skipped, and every test would
+  #  otherwise fail with the same confusing "not recognized" error
+  #  (exactly what happened when "pwsh" was assumed present - see
+  #  native_unix?) - so fail once, loudly, and stop, rather than a wall of
+  #  near-identical per-test failures.
   def self.command
     cmd = @@command_override[@@dirname] || @@command[@@language.to_sym]
-    # Windows Python installers only ever produce a single, unsuffixed
-    #  python.exe - never a version-suffixed python3.exe the way most
-    #  POSIX package managers provide alongside python2. Fall back to
-    #  the unsuffixed name on non-POSIX shells.
-    cmd = "python" if cmd == "python3" && !posix?
     # PowerShell's POSIX package (installed as `pwsh`) never provides a
     #  `powershell` binary - that name is only the Windows Desktop edition
-    #  executable.
-    cmd = "pwsh" if cmd == "powershell" && posix?
+    #  executable. Gated on native_unix?, not posix?: Msys2ShellScript is
+    #  posix? true but is still Windows underneath, where "powershell" is
+    #  the real (and likely only) binary - see native_unix?'s comment.
+    cmd = "pwsh" if cmd == "powershell" && native_unix?
+
+    unless @@verified_commands.include?(cmd)
+      if find_executable(cmd).to_s.empty?
+        STDERR.puts "ERROR: Cannot find \"#{cmd}\" on PATH (needed to run #{@@dirname}/ lessons). " \
+                    "Check the setup instructions for this language."
+        exit 1
+      end
+      @@verified_commands << cmd
+    end
+
     cmd
   end
 
@@ -405,6 +429,19 @@ class ScriptBase
   #  test tagged `requires=posix` should run), false otherwise.
   def self.posix?
     raise NotImplementedError, "#{name} must implement posix?"
+  end
+
+  # native_unix?() - true only for a genuinely non-Windows OS (macOS/
+  #  Linux native Ruby - i.e. PosixShellScript). NOT the same question as
+  #  posix?: Msys2ShellScript answers posix? true (it has real POSIX
+  #  tools available for `requires=posix` lessons) while still being a
+  #  native Windows Ruby build underneath (see that class's own comment)
+  #  - it has Windows's own "powershell" binary, not a POSIX PowerShell
+  #  package. Defaults to false rather than being a strict template
+  #  method (unlike posix?) since every subclass except PosixShellScript
+  #  wants this same answer.
+  def self.native_unix?
+    false
   end
 
   # ---------------------------------------------------------------------
@@ -791,6 +828,10 @@ class PosixShellScript < ScriptBase
   def self.posix?
     true
   end
+
+  def self.native_unix?
+    true
+  end
 end
 
 # =============================================
@@ -800,7 +841,10 @@ end
 # =============================================
 class CommandShellScript < ScriptBase
   def self.find_executable(cmd)
-    `where "#{cmd}"`.split("\n").first.to_s.chomp
+    # where.exe prints its own "INFO: Could not find files..." to stderr
+    #  on a miss - silence it so command()'s own error message (see
+    #  ScriptBase#command) is the only thing on screen when this fails.
+    `where "#{cmd}" 2>#{null_device}`.split("\n").first.to_s.chomp
   end
 
   def self.null_device

@@ -16,3 +16,14 @@ Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
 # Install MSYS2 environment
 choco install -y choco.config
 ```
+
+## macOS
+
+```bash
+# Install Homebrew
+script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+/bin/bash -c "$(curl -fsSL "$script_url")"
+
+# Install latest shell versions
+brew bundle --verbose
+```

@@ -84,7 +84,7 @@ The directory structure of this repository will include these directories:
 
 ## Running Tests
 
-These tools are executed as tasks using a build automation tool: **[Rake](https://github.com/ruby/rake)** or **[Psake](https://github.com/psake/psake)**.  Under the desired language directory, run either `rake` or `Invoke-psake .\psakefile.ps1 -Quiet` to execute test.  
+These tools are executed as tasks using a build automation tool: **[Rake](https://github.com/ruby/rake)** or **[Psake](https://github.com/psake/psake)**.  Under the desired language directory, run either `rake` or `Invoke-psake -Quiet` to execute test.  
 
 ### Windows 
 
@@ -101,7 +101,7 @@ The table below shows what is supported.
 
 ### macOS
 
-On macOS, you can run these commands using a POSIX Shell, such as `bash` or `zsh`.
+On macOS, you can run `rake` using a POSIX Shell, such as `bash` or `zsh` or under PowerShell (`pwsh`).  The `Invoke-psake` command will only run under PowerShell (`pwsh`).
 
 | Directory | Rake | Psake |
 |-----------|------|-------|
@@ -175,10 +175,6 @@ This system will perform the following features:
  * Environment detection for reporting and executing scripts
  * Dynamic generation of scripts to be tested
  * Dynamic configuration of expected inputs and results (`expecteed.json`)
-
-### Technical Requirements
-
-
 
 ### Testing
 

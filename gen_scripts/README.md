@@ -18,3 +18,14 @@ choco install -y corretto17jdk
 # Install all general scripting language
 choco install -y choco.config
 ```
+
+## macOS
+
+```bash
+# Install Homebrew
+script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+/bin/bash -c "$(curl -fsSL "$script_url")"
+
+# Install all general scripting languages and OpenJDK
+brew bundle --verbose
+```

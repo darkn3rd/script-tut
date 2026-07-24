@@ -1,0 +1,8 @@
+brew 'gawk'
+brew 'groovy'
+brew 'perl'
+brew 'python3'
+brew 'php'
+brew 'ruby'
+brew 'tcl-tk'
+
