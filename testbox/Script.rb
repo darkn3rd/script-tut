@@ -117,7 +117,7 @@ class ScriptBase
     :go     => "go version 2>&1",
     :rs     => "rustc --version 2>&1",
     :cpp    => "g++ --version 2>&1",
-    :cs     => "csc /version 2>&1",
+    :cs     => "dotnet --version 2>&1",
   }
 
   # Languages whose version can't be had from a simple "cmd --version"
@@ -159,11 +159,12 @@ class ScriptBase
     :go   => "go",
     :rs   => "rustc",
     :cpp  => "g++",
-    # Classic `csc` (Mono, or the old .NET Framework compiler) needs no
-    #  project scaffolding for a single-file build, unlike the modern
-    #  `dotnet` SDK's project-oriented model - see compiled_lang/cs/README.md
-    #  for what to install if this isn't on PATH.
-    :cs   => "csc",
+    # Not "csc": a bare csc needs either a hand-built ~240-file BCL
+    #  reference list (fragile) or Mono (an extra dependency, plus its
+    #  compiled .exe needs a wrapper to run on real POSIX). cs/Makefile
+    #  instead generates a minimal throwaway .csproj per lesson and
+    #  builds it with `dotnet build` - see that Makefile's own comment.
+    :cs   => "dotnet",
   }
 
   # Languages with no interpreter at all (see @@command) - a lesson file

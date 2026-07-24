@@ -14,10 +14,11 @@ Every language directory here follows the same shape:
 * `common.mk` (one level up, shared by all five) - figures out whether the build is targeting Windows or real POSIX, since that decides both the output extension and, for some languages, how the runnable artifact is actually shaped (see below).
 * `Rakefile` - a one-liner that imports the shared [testbox](../testbox/README.md) harness, exactly like every other lesson directory.
 
-Two languages can't produce a real standalone native binary from a single source file, so their Makefiles generate a small launcher instead, under the same naming convention:
+Java can't produce a real standalone native binary from a single source file, so its Makefile generates a small launcher instead, under the same naming convention:
 
 * **Java** - `javac` output is named after the *class* declared inside the file, not the source file, and there's no single-file "compile to a binary" option. Each lesson's class must **not** be `public` (a `public` class's file name is required to match the class name exactly, which would conflict with this project's dotted lesson-file naming) - see `java/a00.output.java` for the pattern. The Makefile compiles the `.class` file into `bin/` too, then generates a launcher in `bin/`, named after the source (a POSIX shell script, or a `.bat` wrapper on Windows), that runs `java -cp . ClassName`.
-* **C#** - same idea via `csc` and `mono` on real POSIX; on Windows, `csc`'s own `.exe` output (built directly into `bin/`) already is the runnable artifact, no wrapper needed.
+
+C# is the other exception, for a different reason: there's no simple, version-independent way to drive `csc` directly for a single file (see `cs/README.md`), so its Makefile generates a minimal, throwaway `.csproj` per lesson and builds it with `dotnet build` instead - a plain console app needs no NuGet/network access to do this. That produces a genuine native apphost on both Windows and real POSIX, so unlike Java, no wrapper script is needed.
 
 ## Building and testing
 
@@ -49,6 +50,6 @@ Every one of them needs [GNU Make](https://www.gnu.org/software/make/) on PATH:
 
 ## Status
 
-Java, Rust, C++, and Go have been built and run end-to-end through `rake` (compiler installed, `make` builds it, the harness runs and passes). C# is written the same way but hasn't been verified locally - the environment this was written in has a .NET 10 SDK but no bare `csc` on PATH, and both compiling via the SDK's bundled `Roslyn/bincore/csc.dll` directly and the newer single-file `dotnet run <file>.cs` hit dead ends (missing reference assemblies, and a NativeAOT-publish path that failed on unresolved NuGet packages) - if `make` doesn't work here either, that's the first thing to check.
+All five languages have been built and run end-to-end through `rake` (compiler/SDK installed, `make` builds it, the harness runs and passes).
 
 `a00` ("Hello"), `h00` ("Assign by Key"), and `h10` ("Assign by List and Appending") exist per language so far - everything else shows as SKIP, same as any other lesson directory with an implementation still missing for a given category.
