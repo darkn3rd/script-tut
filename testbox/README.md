@@ -35,6 +35,22 @@ You can install the requirements with the following
 choco install -y choco.config 
 ```
 
+### macOS 26.5 "Tahoe"
+
+```bash
+# Install Dotnet, Powershell, and Ruby
+brew bundle --verbose
+```
+
+Run `pwsh` shell and then run the following:
+
+```powershell
+# Install the Psake module
+Install-Module -Name psake -Scope CurrentUser
+# Import the Psake module
+Import-Module psake
+```
+
 ## Instructions
 
 The directory structure of this repository will include these directories:
@@ -68,16 +84,33 @@ The directory structure of this repository will include these directories:
 
 ## Running Tests
 
-These tools are executed as tasks using a build automation tool: **[Rake](https://github.com/ruby/rake)** or **[Psake](https://github.com/psake/psake)**.  Under the desired language directory, run either `rake` or `.\psake` to execute test.  The table below shows what is supported. 
+These tools are executed as tasks using a build automation tool: **[Rake](https://github.com/ruby/rake)** or **[Psake](https://github.com/psake/psake)**.  Under the desired language directory, run either `rake` or `Invoke-psake .\psakefile.ps1 -Quiet` to execute test.  
 
+### Windows 
+
+The table below shows what is supported.
 
 | Directory | Rake | Psake |
-|---|---|---|
-| `gen_scripts` | `cmd.exe`, **PowerShell**, **MSYS2** | `cmd.exe`, **PowerShell** |
-| `shell_scripts` | **MSYS2** or other bash shell only | — |
-| `win_scripts` | `cmd.exe`, **PowerShell** | `cmd.exe`, **PowerShell** |
+|-----------|------|-------|
+| `gen_scripts`              | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `shell_scripts`            | **MSYS2** or other bash shell only    | — |
+| `win_scripts/batch`        | `cmd.exe`, **PowerShell**             | `cmd.exe`, **PowerShell** |
+| `win_scripts/powershell`   | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `win_scripts/wsh.jscript`  | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `win_scripts/wsh.vbscript` | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
 
+### macOS
 
+On macOS, you can run these commands using a POSIX Shell, such as `bash` or `zsh`.
+
+| Directory | Rake | Psake |
+|-----------|------|-------|
+| `gen_scripts`              | POSIX shell, `pwsh` | `pwsh` |
+| `shell_scripts`            | POSIX shell, `pwsh` | — |
+| `win_scripts/batch`        | — |  — |
+| `win_scripts/powershell`   | POSIX shell, `pwsh` |  `pwsh` |
+| `win_scripts/wsh.jscript`  | — | — |
+| `win_scripts/wsh.vbscript` | — | — |
 
 ## Language Test Structure
 

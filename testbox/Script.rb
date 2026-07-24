@@ -223,6 +223,10 @@ class ScriptBase
     #  POSIX package managers provide alongside python2. Fall back to
     #  the unsuffixed name on non-POSIX shells.
     cmd = "python" if cmd == "python3" && !posix?
+    # PowerShell's POSIX package (installed as `pwsh`) never provides a
+    #  `powershell` binary - that name is only the Windows Desktop edition
+    #  executable.
+    cmd = "pwsh" if cmd == "powershell" && posix?
     cmd
   end
 
@@ -413,7 +417,11 @@ class ScriptBase
   #  separate manifest that can drift out of sync.
   def self.testbox_tags(file)
     tags = {}
-    File.foreach(file).first(5).each do |line|
+    # Explicit UTF-8 (with BOM-stripping) so a lesson file's encoding
+    #  doesn't depend on the shell's locale - some lesson files carry a
+    #  UTF-8 BOM, which isn't valid text under the "C"/US-ASCII locale
+    #  Ruby otherwise defaults to.
+    File.foreach(file, encoding: "bom|utf-8").first(5).each do |line|
       line.scan(/testbox:\s*(\w+)=(?:"([^"]*)"|(\S+))/) do |key, quoted, bare|
         tags[key] = quoted || bare
       end
@@ -766,6 +774,11 @@ class PosixShellScript < ScriptBase
     when :sh
       raw = `sh --version 2> /dev/null`.lines.first
       raw ? "Shell (sh) = #{raw.strip}" : "Shell (sh) = unknown"
+    when :ps1
+      # Single-quoted, unlike the Windows subclasses' equivalent - this
+      #  runs through Kernel#`'s POSIX /bin/sh, which (unlike cmd.exe)
+      #  expands a bare "$PSVersionTable" itself before pwsh ever sees it.
+      `pwsh -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()'`.strip
     else
       ""
     end

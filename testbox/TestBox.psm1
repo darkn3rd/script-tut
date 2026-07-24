@@ -6,12 +6,17 @@
 # as a PowerShell-idiomatic sibling to the Ruby/Rake-based testbox.rake,
 # for readers specifically interested in psake.
 #
-# Unlike Script.rb, this never needs to detect "which shell environment
-# am I running under" - psake only ever runs inside PowerShell on
-# Windows, so the cross-platform class hierarchy (PosixShellScript,
-# Msys2ShellScript, ...) has no equivalent here. The two Windows-specific
-# quirks Script.rb discovered for the :cmd language still apply and are
-# ported as-is:
+# Of the four, only :ps1 can ever run outside Windows - :cmd needs real
+# cmd.exe and :js/:vbs need cscript, neither of which exists on macOS/
+# Linux regardless of which shell drives them. So unlike Script.rb (which
+# has a full PosixShellScript/CommandShellScript/Msys2ShellScript class
+# hierarchy), this only branches on platform where :ps1 actually needs
+# it: which interpreter binary to invoke (Get-TestBoxCommand), the null
+# device (NullDevice), and how a test's stdin gets fed to the child
+# process (Invoke-ShellOut) - cmd.exe's piping trick doesn't exist on
+# POSIX, so that path writes directly to the child's redirected stdin
+# instead. The two Windows-specific quirks Script.rb discovered for the
+# :cmd language still apply there and are ported as-is:
 #   - NoDefaultCurrentDirectoryInExePath: cmd.exe's implicit current-
 #     directory search for a bare executable name can be disabled by a
 #     security hardening setting, so :cmd needs an explicit ".\" prefix
@@ -26,6 +31,15 @@
 # Only :cmd needs either of these - see the module header above.
 $script:NeedsPathPrefixLanguages    = @('cmd')
 $script:InteractiveRequiredLanguages = @('cmd')
+
+# $IsWindows doesn't exist on Windows PowerShell 5.1 (Desktop edition) -
+#  it's $null there, which is falsy, so testing it alone would
+#  misdetect a real Windows machine as non-Windows under Desktop. The
+#  Desktop edition only ever ships on Windows, so checking PSEdition
+#  first covers that case; $IsWindows (Core-only) covers pwsh on both
+#  Windows and POSIX.
+$script:IsWindowsHost = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows
+$script:NullDevice = if ($script:IsWindowsHost) { 'NUL' } else { '/dev/null' }
 
 $script:Command = @{
     cmd    = 'cmd'
@@ -100,7 +114,12 @@ function Get-TestBoxCommand {
     param([string]$Language)
     $dirName = Split-Path -Leaf (Get-Location)
     if ($script:CommandOverride.ContainsKey($dirName)) { return $script:CommandOverride[$dirName] }
-    return $script:Command[$Language]
+    $cmd = $script:Command[$Language]
+    # POSIX PowerShell (pwsh) ships as "pwsh", not "powershell" - the
+    #  latter is only the Windows Desktop edition executable name (see
+    #  the identical fix in Script.rb's `command`).
+    if ($cmd -eq 'powershell' -and -not $script:IsWindowsHost) { return 'pwsh' }
+    return $cmd
 }
 
 # ConvertTo-ExtractedVersion(raw, lang) - ported from Script.rb's
@@ -214,8 +233,11 @@ function Get-PathPrefix {
 
 function Find-TestBoxExecutable {
     param([string]$Command)
-    $found = & where.exe $Command 2>$null
-    if ($found) { return ($found -split "`n")[0].Trim() }
+    # Get-Command is a built-in cmdlet on both editions/platforms, unlike
+    #  where.exe (Windows-only) - also drops the need to branch on
+    #  IsWindowsHost here at all.
+    $found = Get-Command $Command -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { return $found.Source }
     return ''
 }
 
@@ -237,7 +259,13 @@ function Get-SpecialVersion {
             return ''
         }
         'tcl' {
-            return (cmd /c 'echo puts [info patchlevel] | tclsh').Trim()
+            # tclsh itself runs fine on POSIX - only the pipe used to feed
+            #  it a one-liner needs to differ (see Invoke-ShellOut for why
+            #  a real shell, not pwsh, is used on POSIX).
+            if ($script:IsWindowsHost) {
+                return (cmd /c 'echo puts [info patchlevel] | tclsh').Trim()
+            }
+            return (sh -c "echo 'puts [info patchlevel];exit 0' | tclsh").Trim()
         }
         default { return '' }
     }
@@ -256,8 +284,22 @@ function Get-TestBoxVersion {
     $probe = $script:VersionProbe[$Language]
     if (-not $probe) { return '' }
     $probe = $probe -f (Get-TestBoxCommand -Language $Language)
-    $raw = cmd /c $probe | Out-String
+    # Real shell, not pwsh, on POSIX - same reasoning as Invoke-ShellOut:
+    #  these probe strings embed their own "2>&1", which needs fd-level
+    #  redirection semantics.
+    $raw = if ($script:IsWindowsHost) { cmd /c $probe | Out-String } else { sh -c $probe | Out-String }
     return ConvertTo-ExtractedVersion -Raw $raw -Language $Language
+}
+
+# Get-TestBoxEnvironmentLabel() - "Windows (x64)" is always accurate on
+#  Windows (psake never runs anywhere else there), but on POSIX the
+#  actual OS/arch varies (macOS vs Linux, x86_64 vs arm64) - ask uname
+#  rather than hard-coding one.
+function Get-TestBoxEnvironmentLabel {
+    if ($script:IsWindowsHost) { return 'Windows (x64)' }
+    $os = (& uname -s).Trim()
+    $arch = (& uname -m).Trim()
+    return "$os ($arch)"
 }
 
 function Write-TestBoxHeader {
@@ -265,17 +307,26 @@ function Write-TestBoxHeader {
     $cmdName = Get-TestBoxCommand -Language $lang
     $path = Find-TestBoxExecutable -Command $cmdName
     $version = Get-TestBoxVersion -Language $lang
-    Write-Host "Environment:      Windows (x64) via psake"
+    Write-Host "Environment:      $(Get-TestBoxEnvironmentLabel) via psake"
     Write-Host "Language Target:  $($script:LanguageName[$lang]) ($path)"
     Write-Host "Language Version: $version"
     Write-Host ('=' * 63)
 }
 
-# Invoke-ShellOut(commandStr) - runs commandStr via cmd.exe (same as
-#  Kernel#` on native Windows Ruby) and returns raw stdout+stderr as
-#  merged text, matching how Script.rb's shell_out/backtick captures.
+# Invoke-ShellOut(commandStr, stdinText) - runs commandStr via cmd.exe on
+#  Windows (same as Kernel#` on native Windows Ruby) or via /bin/sh on
+#  POSIX (same as Kernel#`'s POSIX backend in Script.rb - see below for
+#  why it has to be a real shell, not pwsh itself), and returns raw
+#  stdout+stderr as merged text, matching how Script.rb's shell_out/
+#  backtick captures.
+#  StdinText, when given, is written directly to the child's redirected
+#  stdin after it starts - only used on POSIX (see Get-InputRedirect):
+#  cmd.exe's nested-`cmd /c "echo ...&echo ..."|` piping trick has no
+#  POSIX equivalent, and writing straight to a real redirected stdin
+#  pipe sidesteps ever having to embed a test's (arbitrary) input text
+#  inside a shell command line at all.
 function Invoke-ShellOut {
-    param([string]$CommandStr)
+    param([string]$CommandStr, [string]$StdinText = $null)
     # Not `cmd /c $CommandStr 2>&1 | Out-String`: PowerShell's native command
     #  capture splits output into a line-object array (losing whether a
     #  trailing newline was actually present at all), and Out-String
@@ -284,11 +335,31 @@ function Invoke-ShellOut {
     #  (e.g. an unfinished prompt) that specifically expect none. A raw
     #  .NET Process capture preserves the exact byte-for-byte text.
     # Only stdout is captured, matching Ruby's Kernel#` (shell_out) - the
-    #  command string always embeds its own "2>&1" or "2> NUL", so stderr
-    #  routing is already handled at the cmd.exe layer, not here.
+    #  command string always embeds its own "2>&1" or "2> $NullDevice",
+    #  so stderr routing is already handled at the shell layer, not here.
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'cmd.exe'
-    $psi.Arguments = "/c $CommandStr"
+    if ($script:IsWindowsHost) {
+        $psi.FileName = 'cmd.exe'
+        $psi.Arguments = "/c $CommandStr"
+    } else {
+        # /bin/sh, not pwsh: PowerShell's own "2>&1"/"2> file" redirection
+        #  operators work on *streams* (objects), not raw file descriptors -
+        #  a native child's stderr merged via pwsh's 2>&1 gets rewrapped as
+        #  a formatted, colorized ErrorRecord (literal ANSI escapes and
+        #  all) instead of passed through byte-for-byte, which corrupts any
+        #  test comparing exact stderr text. A real shell's 2>&1 is a
+        #  plain fd-level dup2, exactly like cmd.exe's on Windows and
+        #  Script.rb's own PosixShellScript (which also shells out through
+        #  /bin/sh, never pwsh, for this same reason).
+        $psi.FileName = '/bin/sh'
+        # ArgumentList (an actual argv array), not Arguments (a single
+        #  string .NET re-parses/re-quotes using Windows conventions even
+        #  on POSIX) - passing $CommandStr as one array element hands it
+        #  to sh exactly as written, with no quoting/escaping hazard
+        #  regardless of what a lesson's own test data happens to contain.
+        $psi.ArgumentList.Add('-c')
+        $psi.ArgumentList.Add($CommandStr)
+    }
     $psi.RedirectStandardOutput = $true
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -297,10 +368,16 @@ function Invoke-ShellOut {
     #  it's process-wide and can go stale across Set-Location calls, so the
     #  child would look for the test scripts in the wrong directory.
     $psi.WorkingDirectory = (Get-Location).Path
+    if ($StdinText) { $psi.RedirectStandardInput = $true }
 
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
+    if ($StdinText) {
+        $proc.StandardInput.Write($StdinText)
+        if (-not $StdinText.EndsWith("`n")) { $proc.StandardInput.Write("`n") }
+        $proc.StandardInput.Close()
+    }
     $stdout = $proc.StandardOutput.ReadToEnd()
     $proc.WaitForExit()
 
@@ -452,7 +529,10 @@ function Test-OutputMatches {
     }
 }
 
-# input_redirect(value) - ported 1:1 from CommandShellScript#input_redirect
+# input_redirect(value) - ported 1:1 from CommandShellScript#input_redirect.
+#  Windows-only: on POSIX, Invoke-TestBoxCategory feeds $test.in straight
+#  to Invoke-ShellOut's -StdinText instead of building piped command text
+#  (see the Invoke-ShellOut comment for why).
 function Get-InputRedirect {
     param([string]$Value)
     $lines = ($Value -split "`n") | ForEach-Object { "echo $_" }
@@ -502,12 +582,13 @@ function Invoke-TestBoxCategory {
             $args = ''
             $input = ''
             $inputLines = $null
+            $stdinText = $null
 
             if ($test.PSObject.Properties['err']) {
                 $redirect = '2>&1'
                 $expected = $test.err
             } else {
-                $redirect = '2> NUL'
+                $redirect = "2> $($script:NullDevice)"
                 $expected = $test.out
             }
 
@@ -516,8 +597,10 @@ function Invoke-TestBoxCategory {
             if ($test.PSObject.Properties['in']) {
                 if (Test-NeedsInteractive -Test $test -Language $language) {
                     $inputLines = $test.in -split "`n"
-                } else {
+                } elseif ($script:IsWindowsHost) {
                     $input = Get-InputRedirect -Value $test.in
+                } else {
+                    $stdinText = $test.in
                 }
             }
 
@@ -531,7 +614,7 @@ function Invoke-TestBoxCategory {
             if (Test-NeedsInteractive -Test $test -Language $language) {
                 $output = Invoke-InteractiveShellOut -CommandStr $command -InputLines $inputLines
             } else {
-                $output = Invoke-ShellOut -CommandStr $command
+                $output = Invoke-ShellOut -CommandStr $command -StdinText $stdinText
             }
 
             $testResult = Test-OutputMatches -Test $test -Expected $expected -Output $output
