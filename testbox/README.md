@@ -1,42 +1,26 @@
 # Testing Box
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
 ## Overview
 
-The idea for this area is to develop testing that can verify functionality of scripts on a given platform and environment. I can quickly expose any issues, and explore workarounds.
+Testbox is a shared test harness for testing the language lessons against a set of expected inputs and outputs specified in `expected.json`. This framework is useful for testing common language functionality and quickly learning a new language.   
 
-## Status
+The test harness (`Script.rb` for Rake, `TestBox.psm1` for psake) will run each languag's implmentation of the lession, catpure the final output, and compare it to the expected result, and then generate a a summary report. 
 
-* 2014-01-05:
-   * Basic framework organization.
-   * Test runner (Rake) executes scripts
-* 2015-01-11
-   * JSON container and expected data set
-   * Script class to facilitate running tests, collecting/reporting results, reporting environment.
-   * TestSuite (organization, structure, reporting) completed using Rakefile
-   * Adjustments to scripts, dataset, and bug fixes
-   * Initial support for dynamic data in dataset
-   * Discovered potential bugs in Groovy and Perl, other areas involved quirky behavior
-* 2015-01-12
-   * Added Initial Support for Windows (GNUWin32 + Ruby + PHP + Python)
-* 2015-01-20
-   * Updated TestSuite to support Windows
-     * Requires GetGNUWin32 0.6.3 commands: `cut`, `grep`, `tr`, `which`
-        * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
-        * single quotes are not supported with GNUWin32
-   * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell*.
-* 2015-01-23
-   * Observed bug with input on Windows.  Need to debug
+Each language directory just supplies a thin `Rakefile` or `psakefile.ps1` that imports the shared harness, so the comparison logic, tolerance rules (precision, unordered output, etc.), and pass/fail/skip reporting live in one place rather than being duplicated per language. Running `rake` or `.\psake.cmd` in any lesson directory drives this harness against that directory's scripts and prints a PASS/FAIL/SKIP report with a summary tally.
 
 ## Requirements
 
 * **Requirements**:
   * All Systems:
-    * Ruby 1.9 or higher
+    * **[Ruby](https://www.ruby-lang.org)** 1.9+
+      * **[Rake](https://github.com/ruby/rake)** - `gem install rake`
   * Windows Systems
-    * [GNUWin32](http://sourceforge.net/projects/getgnuwin32/files/) toolset must be installed.
-    * GNUWin32 binary path (example: `C:\gnuwin32\bin`) must be in the path after Windows system paths, but before MSYS or UWIN paths.
+    * **[MSYS2](https://www.msys2.org/)** for shell scripts `choco insatll msys2`
+    * **[Psake](https://psake.dev/)** (optional) `choco install psake`
+    * **[Ruby](https://www.ruby-lang.org)** `choco install ruby`
+      * **[Rake](https://github.com/ruby/rake)** - bundled with Ruby 
 
 Once these components are installed, just type `rake` in the desired script directory to run the tests. Type `rake header` to print out the environment.
 
@@ -47,20 +31,24 @@ Naturally, the desired scripting language must be installed for the test suite t
 The directory structure of this repository will include these directories:
 
 ```
-script-tut
+.
+├── configbox
 ├── gen_scripts
 │   ├── awk
 │   ├── groovy
 │   ├── perl
 │   ├── php
-│   ├── python
+│   ├── python2
+│   ├── python3
 │   ├── ruby
 │   └── tcl
+├── scriptbox
 ├── shell_scripts
 │   ├── bash
 │   ├── csh
 │   ├── ksh
 │   └── posix
+├── supporing_docs
 ├── testbox
 └── win_scripts
     ├── batch
@@ -69,32 +57,20 @@ script-tut
     └── wsh.vbscript
 ```
 
-Navigate to the desired directory of the script directory, and run the `rake` command.  
+## Running Tests
 
-On Mac OS X, you could do this:
+These tools are executed as tasks using a build automation tool: **[Rake](https://github.com/ruby/rake)** or **[Psake](https://github.com/psake/psake)**.  Under the desired language directory, run either `rake` or `.\psake` to execute test.  The table below shows what is supported. 
 
-```bash
-$ cd script-tut/gen_scripts/ruby
-$ rake header
-Environment:      Darwin (x86_64)
-Language Target:  Ruby (/usr/local/bin/ruby)
-Language Version: 2.1.5p273
 
-```
-
-On Windows 7, you can similarly do this:
-
-```batch
-C:\>cd script-tut\gen_scripts\ruby
-C:\>rake header
-Environment:      Mingw (x64)
-Language Target:  Ruby (C:\Ruby21-x64\bin\ruby.EXE)
-Language Version: 2.1.5p273
-```
+| Directory | Rake | Psake |
+|---|---|---|
+| `gen_scripts` | `cmd.exe`, **PowerShell**, **MSYS2** | `cmd.exe`, **PowerShell** |
+| `shell_scripts` | **MSYS2** or other bash shell only | — |
+| `win_scripts` | `cmd.exe`, **PowerShell** | `cmd.exe`, **PowerShell** |
 
 
 
-## The Product Plan
+## Language Test Structure
 
 ### Scope
 
@@ -160,34 +136,14 @@ This system will perform the following features:
 
 ### Technical Requirements
 
-On Windows, the following are needed:
 
- * [Ruby](http://rubyinstaller.org/) 1.9 or greater
- * [GNU Awk](http://www.gnu.org/software/gawk/)
- * [GNUWin32 Tools](http://gnuwin32.sourceforge.net/)
 
 ### Testing
 
-* :dvd: Darwin (Mac OS X 10.8.5)
-* :dvd: Mingw32 (Windows 7)
-  * :package: Ruby 2.1.5p273 (`rubyinstaller-2.1.5-x64.exe`)
-  * :package: `gawk-3.1.6-1-setup.exe`
-  * :package: `GetGnuWin32-0.6.3.exe`
-
-## Notes
-
-Here are issues with current test suite:
-
-* Booleans (C10):
-   * scripting languages will represent true as `1` or `true`
-   * need language dependent substitute to compare properly, leaving as is for now
-* Floating Point (C20):
-   * precision varies on support of scripting languages engine.
-   * leave as is to compare, otherwise can round value down for comparison
-* Associative Arrays (H10):
-   * hash order is not guaranteed, depends on internal hash algorithm
-   * some scripting languages, groovy, recall order at which items are inserted
-
+* 📀 macOS "Tahoe" 26.5
+* 📀 Windows 11 Home `[WinNT 10.0.26200.8875]`
+  * 📦 **[MSYS2](https://www.msys2.org/)** for `shell_scripts`
+  
 ## Research
 
 ### Ruby Rake Tool
@@ -203,9 +159,42 @@ Here are issues with current test suite:
 * Source
    * [Rake Source](https://github.com/ruby/rake)
 
+
+## Status
+
+* 2014-01-05:
+   * Basic framework organization.
+   * Test runner (Rake) executes scripts
+* 2015-01-11
+   * JSON container and expected data set
+   * Script class to facilitate running tests, collecting/reporting results, reporting environment.
+   * TestSuite (organization, structure, reporting) completed using Rakefile
+   * Adjustments to scripts, dataset, and bug fixes
+   * Initial support for dynamic data in dataset
+   * Discovered potential bugs in Groovy and Perl, other areas involved quirky behavior
+* 2015-01-12
+   * Added Initial Support for Windows (GNUWin32 + Ruby + PHP + Python)
+* 2015-01-20
+   * Updated TestSuite to support Windows
+     * Requires GetGNUWin32 0.6.3 commands: `cut`, `grep`, `tr`, `which`
+        * strange behavior and corruption with `grep | sed` or `grep | tr` patterns
+        * single quotes are not supported with GNUWin32
+   * Tested with **PowerShell**, **JScript**, **VBScript**, and **Batch** from *Windows Command Shell* (`cmd.exe`).
+* 2015-01-23
+   * Observed bug with input on Windows.  Need to debug
+* 2026-07-23
+   * **Rake** test framework updated to support command shell, powershell, and msys2
+   * Added **psake** support for `win_scripts` and `gen_scripts`
+   * All scripts in `win_scripts` and `gen_scripts` should work with either **rake** or **psake** provided the langauge is installed. 
+   * All scripts in `shell_scripts` and `gen_sripts` should work in MSYS2 using rake.
+   * Added tolerance logic in test harness to handle
+     * **floating point precision** varies across languages
+     * **booleans** when converted to strings varies across languages: `1`, `true`, or `True`.
+     * **associate array** (also hash, map, object): ordering of keys where order is not guaranteed. Groovy recalls the order at  which items are inserted
+
 ### Test Build Tools
 
-For a test runner, I could use any task-build tool as there are numerous:
+In general, for a test runner, I explored these built-task tools (around 2014):
 
 * [Cake](http://coffeescript.org/documentation/docs/cake.html) - CoffeeScript based
 * [Gradle](http://www.gradle.org/) - Groovy based
