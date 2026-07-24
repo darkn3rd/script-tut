@@ -34,6 +34,7 @@ Beyond these quirks, the language is extremely limited.  Here are a few of the l
     * arrays items can be retrieved by an index.
   * C-Shell definitely does not suport *associative arrays*.
 
+C-Shell also has no fd-duplication redirect (no `>&2` the way Bourne-family shells have it - `>&` in csh merges *both* streams to a file instead), so `/dev/stderr` is the only idiomatic way to write to stderr alone (see [A11] and [J01]). That's portable on real Unix, but under Cygwin/MSYS2 specifically, `/dev/stderr` (a symlink to `/proc/self/fd/2`) can only be opened when fd 2 is a regular file or console - not a pipe. Any test harness that captures a script's output (this one included, via Ruby's `` Kernel#\` ``) necessarily does so through a pipe, so [A11] and [J01] will always fail here with `/dev/stderr: No such file or directory`, even though the scripts are correct. The same lessons pass fine on a real Linux/macOS/BSD box.
 
 Lastly, besides BATCH programming, this language has the ***LEAST*** capabilities of any scripting language.  There are reasons many a system administrator are saying "*don't use it*". Unless job security is needed, such as C Shell that spawns Awk scripts that sub-shell perl one-liners that may call C Shell again, I don't see the utility... :)
 

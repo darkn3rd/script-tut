@@ -44,23 +44,28 @@ There is an open source equivalent to PowerShell called Pash.  The prerequisite 
 
 ## Testing
 
-* Windows NT 6.1 (Windows 7), PowerShell 2.0 (.NET 2.0)
-```batch
-C:\>powershell "get-host | select Version | ft -hide"
+* 📀 *__Windows 7 Home__* (`Microsoft Windows NT [Version 6.1]`)
+  * 🐚 PowerShell 2.0 (DotNet 2.0)
+* 📀 * Mac OS X "Mountain Lion" 10.8.5
+  * 🐚 Pash (Mono 3.4.0 MDK)
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * 🐚 PowerShell 5.1.26100.8875 (DotNet 4.0.30319.42000)
+  * 🐚 Command Shell (cmd.exe)
 
-2.0
-C:\>powershell "$PSVersionTable" | grep CLRVersion
-CLRVersion                     2.0.50727.5477
-```
+## Retreiving the Version
 
-* Mac OS X 10.8.5 (Mountain Lion), Pash (Mono 3.4.0 MDK)
+* Command Shell
+  ```batch
+  REM Print Powershell Version
+  for /f "delims=" %a in ( ^
+    'powershell "get-host | select Version | ft -hide"' ^
+  ) do @echo %a
 
-```bash
-$ mono --version | head -1
-Mono JIT compiler version 3.4.0 ((no/d4511ef Tue Mar 25 14:35:52 EDT 2014)
-$ mono Pash.exe "get-host" | grep Version | cut -d: -f2 | tr -d ' '
-1.0.0.0
-```
+  REM Print DotNet Version
+  for /f "tokens=2" %a in ( ^
+    'powershell "$PSVersionTable" ^| findstr CLRVersion' ^
+  ) do @echo %a
+  ```
 
 ## Topics with Details 
 

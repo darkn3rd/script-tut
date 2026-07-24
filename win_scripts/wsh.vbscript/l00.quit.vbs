@@ -13,9 +13,9 @@ End If
 
 Sub usage_message()
    ' print helpful instructions
-   WScript.StdErr.Write vbCrLf & "You need to enter two numbers: " & vbCrLf & _
-                        vbCrLf & vbCrLf & "   Usage: " & script_name & _ 
-                        " [num1] [num2] [num3]..." & vbCrlf
+   WScript.StdErr.Write vbCrLf & "You need to enter one or more numbers:" & vbCrLf & _
+                        vbCrLf & "   Usage: " & script_name & _
+                        " [num1] [num2] [num3]..." & vbCrLf & vbCrLf
    WScript.Quit EX_USAGE
 End Sub
 
@@ -25,6 +25,6 @@ Sub addNums(args)
         sum = sum + Int(num) ' sum up all the numbers
     Next
     
-    WScript.Echo "The summation is: " & sum & vbCrLf
+    WScript.Echo "The summation is: " & sum & "."
     WScript.Quit EX_OK       ' return a success
 End Sub

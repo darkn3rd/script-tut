@@ -35,7 +35,10 @@ Additionally, alternatives, such as WSH or PowerShell, are overly complex for si
 
 ## Testing
 
-* :dvd: Windows NT 6.1 (Windows 7)
+* 📀 *__Windows 7 Home__* (`Microsoft Windows NT [Version 6.1]`)
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * 🐚 PowerShell 5.1.26100.8875 (DotNet 4.0.30319.42000)
+  * 🐚 Command Shell (cmd.exe)
 
 ## Lessons
 

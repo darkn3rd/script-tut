@@ -1,7 +1,9 @@
 @ECHO OFF
 :::::: illustrative variables ::::::
-:: get name of script
-SET SCRIPT_NAME=%0
+:: get name of script (bare %0 would include any path prefix it was
+::  invoked with, e.g. ".\l00.exit.cmd" - %~nx0 strips that, keeping
+::  just the filename)
+SET SCRIPT_NAME=%~nx0
 :: get the total number of arguments
 SET /A ARG_COUNT=0
 FOR %%A IN (%*) DO SET /A ARG_COUNT+=1
@@ -22,12 +24,12 @@ EXIT /B %ERRORLEVEL%
 :::::: USAGE_MESSAGE Function ::::::
 :USAGE_MESSAGE
   :: print helpful instructions
-  ECHO. 1>&2
-  ECHO You need to enter one of more numbers: 1>&2
+  ECHO.>&2
+  ECHO You need to enter one or more numbers:>&2
   ::ECHO. 1>&2
-  ECHO. 1>&2
-  ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3]... 1>&2
-  ECHO. 1>&2
+  ECHO.>&2
+  ECHO    Usage: %SCRIPT_NAME% [num1] [num2] [num3]...>&2
+  ECHO.>&2
 
   EXIT /B %ERROR_INVALID_ARGS%
 GOTO :EOF

@@ -1,13 +1,9 @@
-// prompt and read one character
-WScript.stdout.write("Input a character: ");
-keypress = WScript.stdin.read(1);
+WScript.stdout.write("Input a number: ");
+number = WScript.stdin.readline();
 
-// find RegExp and print result
-if (RegExp("[a-z]").test(keypress)) 
-    WScript.Echo("Lowercase letter");
-else if (RegExp("[A-Z]").test(keypress)) 
-   WScript.Echo("Uppercase letter");
-else if (RegExp("[0-9]").test(keypress)) 
-    WScript.Echo("Digit");
+if (number > 0)                             // automatic coercion to int
+   WScript.Echo("Number is greater than 0");
+else if (number < 0)  
+   WScript.Echo("Number is less than 0");
 else 
-    WScript.Echo("Punctuation, whitespace, or other");
+   WScript.Echo("Number is 0");

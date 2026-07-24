@@ -20,7 +20,7 @@ task :default do
 end
 
 task :header do
-  puts "Environment:      #{Script.ostype} (#{Script.cputype})"
+  puts "Environment:      #{Script.ostype} (#{Script.cputype}) via #{Script.shell_name}"
   puts "Language Target:  #{Script.language_name} (#{Script.path})"
   puts "Language Version: #{Script.version}"
   puts "==============================================================="

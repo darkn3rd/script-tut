@@ -1,74 +1,91 @@
 # Scripting Tutorial: PHP
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.3
+Version 1.4
 
 ## Overview
 
-OVERVIEW
+## Overview
 
-## Getting PHP: MAC OS X
+PHP began in 1995 as **Personal Home Page Tools**, a small set of Perl scripts Rasmus Lerdorf wrote to track visits to his own online résumé. In 1997 it was rewritten in C as PHP/FI 2.0, but it wasn't yet the language people know today.
 
-On *Mac OS X 10.8.5*, a version of PHP comes built it, so you can begin using PHP scripts immediately.
+**PHP 3** (June 1998) is where it actually became a language — Andi Gutmans and Zeev Suraski rewrote the parser from scratch and it was renamed **PHP: Hypertext Preprocessor**, a recursive acronym. **PHP 4** (May 2000) introduced the Zend Engine, and **PHP 5** (July 2004) brought proper object-oriented programming (Zend Engine 2).
 
-## Getting PHP: Windows 7
+A planned **PHP 6**, built around native Unicode support, was abandoned in 2010 after years of struggling with the added complexity; most of its non-Unicode features were folded into the PHP 5.3/5.4 line instead, and the next major release skipped the number entirely to avoid confusion with the abandoned effort.
 
-On Windows NT systems, such as *Windows 7*, you can get PHP from http://windows.php.net/download/.  Download the ZIP file for the binaries.  The process to install PHP can be complex:
+**PHP 7** (December 2015) was the real turning point: a new engine (PHPNG) roughly doubled performance, and the long-deprecated original `mysql` extension was finally removed. **PHP 8** (November 2020) added a JIT compiler, union types, attributes, and the `match` expression; **PHP 8.1** (November 2021) added enums, readonly properties, and fibers. PHP has shipped a new major/minor version every November since 7.0.
 
-* Create a directory where you want PHP to live, such as C:\PHP.  You can do this in command shell: 
-```batch
-MKDIR C:\PHP
-```
-* Download ZIP archive from http://windows.php.net/download/ in your favorite web browser.  On Windows 7, this drops the archive ```php-5.5.13-nts-Win32-VC11-x86.zip``` (assuming we downloaded PHP 5.5.13) into the ```%USERPROFILE%\DOWNLOADS\``` directory.
-```batch
-start http://windows.php.net/downloads/releases/php-5.5.13-nts-Win32-VC11-x86.zip
-```
-* Open the the downloaded archive using Windows Explorer or from Command Shell (assumes PHP 5.5.13): 
-```batch
-RUNDLL32.EXE ZIPFLDR.DLL,RouteTheCall %USERPROFILE%\DOWNLOADS\php-5.5.13-nts-Win32-VC11-x86.zip
-``` 
-* Copy the the contents in this window and paste them into a directory of your choice, such as C:\PHP.  From Command Shell, assuming we created ```C:\PHP```: 
-```batch
-EXPLORER C:\PHP
-```
-* Update the Search Path.  The easiest way is to use the Command Shell. Search for CMD.EXE, and right click on program and select "Run As Administrator", then type (assumes PHP lives in ```C:\PHP```): 
-```batch
-SETX /M PATH "%PATH%;C:\PHP"
-```
-* Close Command Shell windows, as the new search patch will not be picked up in the current command shell.
-```batch
-exit
-````
-* PHP will not work, as it needs the ```MSVCR1110.DLL```, which is the Visual C++ 2012 Update 4 Runtime library (32-bit).  You'll need to install this, which currently (June 2014), can be found at http://www.microsoft.com/en-us/download/details.aspx?id=30679.  Select the 32-bit version or ```VSU_4\vcredist_x86.exe```.  Run the executable follow through the install wizard and license agreement.
-```batch
-start http://www.microsoft.com/en-us/download/details.aspx?id=30679
-```
-* Now everything should be ready, open up a new command shell, and type: ```php -v``` and something should be printed, such as: 
-```
-PHP 5.5.13 (cli) (built: May 28 2014 09:48:23)
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
-```
-* (optional) In order to run scripts in the command shell by simply typing your script's filename, where your script's filename has a ```.php``` extension, you'll need to associate the .php extension with the PHP program.  This can be done on Windows 7 by first opening ```CMD.EXE``` as Administrator (search for ```CMD.EXE```, and right-click, select *Run As Administrator*), and then typing these commands (again assuming PHP lives in ```C:\PHP```).
-```batch
-assoc .php=phpfile
-ftype phpfile="C:\PHP\php.exe" -f "%1" -- %~2
-```
-* (optional) If you are using Git Bash (which has Mingw GNU tools bundled with msysgit from http://msysgit.github.io/) and have followed the step above, you can run PHP scripts in Git Bash as well.  You'll need to create symlink to where PHP lives (again assumes PHP is in ```C:\PHP```), but running this in Git Bash: 
+Along the way, PHP became the dominant language for server-side web scripting, it's the engine behind WordPress, and was foundational to early Facebook and Wikipedia. Its ease of embedding directly in HTML (`<?php ... ?>`) made it an easy on-ramp for web development in the late '90s and 2000s, and that install base is a big part of why it still runs a large share of the web today.
+
+### Famous PHP projects
+
+* **WordPress** — powers a huge share of the web's CMS-driven sites
+* **Wikipedia / MediaWiki** — the wiki engine behind Wikipedia
+* **Facebook** — built in PHP originally; led to HHVM and the Hack language for performance at scale
+* **Slack** — historically ran significant backend portions on PHP/Hack via HHVM
+* **[Drupal](https://www.drupal.org/project/drupal), [Joomla](https://www.joomla.org/), [Magento](https://github.com/magento/magento2)/Adobe Commerce** — major CMS and e-commerce platforms
+* **Etsy, Tumblr** — both PHP-based in their earlier, high-growth years
+* **[Laravel](https://laravel.com/), [Symfony](https://symfony.com/)** — the two dominant modern PHP frameworks
+
+### OPNsense: PHP as system-configuration glue
+
+**[OPNsense](https://opnsense.org/)** (a FreeBSD-based firewall/router, forked from pfSense, which itself traces back to **[m0n0wall](https://m0n0.ch/wall/index.php)**) uses PHP as orchestration glue between a declarative config file and the live system state, not just as a web-app language:
+
+* All system configuration (interfaces, firewall rules, DHCP, DNS, VPN, users) lives in one file, `config.xml`, instead of the usual scattered `/etc` files
+* PHP parses that XML into an in-memory `$config` array, mutates it when the GUI submits a change, and serializes it back on save
+* Applying a change means PHP generates the real daemon config files (DHCP, DNS resolver, packet-filter rules) and shells out to FreeBSD tools (`ifconfig`, `pfctl`, `service`) to reload them
+* Optional features (VPN types, IDS/IPS, routing daemons) ship as PHP plugins that hook into the same config model
+
+## Getting PHP
+
+### macOS: Homebrew
+
 ```bash
-ln -s /c/php/php.exe /usr/bin/php
+brew install php
 ```
-Running PHP scripts in Git Bash will **NOT** require the filename to have the ```.php``` extension, but will need the typical *shebang* line:
+
+### Windows: Chocolatey
+
+```powershell
+# Install Chocolatey
+choco install -y php
+
+# Enable the intl extension in php.ini
+$phpIni = "C:\tools\php85\php.ini"
+(Get-Content $phpIni) -replace '^;extension=intl$', 'extension=intl' | Set-Content $phpIni
+
+# Verify it loaded
+php -m | findstr intl
+```
+
+This assumes that there's a `C:\tools\php85\php.ini`. If that is not the case, you need to create one:
+
+```powershell
+Copy-Item "C:\tools\php85\php.ini-production" "C:\tools\php85\php.ini"
+```
+
+### Windows: UCRT64 (MSYS2)
+
+There's actually no php package within the MSYS2 ecosystem.  You can install with Chocolatey, and then reference it in UCRT64 bash shell environment.
+
+📓 **NOTE**: The Windows native PHP will execute **`cmd.exe`** for `exec()`, `shell_exec()`, or `proc_open()`.  Thus virtual POSIX paths like `/etc/localtime` cannot be supported.
+
 ```bash
-#!/usr/bin/php
-``` 
-If the script has the *shebang* and the ```.php``` extension, then it will run in both Git Bash or command shell.
+echo 'export PATH="$PATH:/c/tools/php85"' >> ~/.bash_profile
+```
 
 ## Testing
 
-* Mac OS X 10.8.5, PHP 5.3.26 (default)
-* Windows NT 6.1 (Windows 7 SP1 64-bit), MSVCR 11.00.51106.1, PHP 5.5.13 (http://windows.php.net/download/)
+* 📀 *__OS X 10.8.5 (Mountain Lion)__*
+  * 💿 PHP 5.3.26 (default)
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 `PHP 8.5.8 (cli) (built: Jul  1 2026 03:46:27) (NTS)`
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 `PHP 8.5.8 (cli) (built: Jul  1 2026 04:03:04) (NTS Visual C++ 2022 x64)`
+* 📀 *__Windows 7 SP1 64-bit__* (`Windows NT 6.1`)
+    * 📦 MSVCR 11.00.51106.1, PHP 5.5.13 (http://windows.php.net/download/)
 
 ## Topics with Details 
 

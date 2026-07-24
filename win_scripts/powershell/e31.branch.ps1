@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # build a menu string to output to user
 $menu = @"
 Select an item from the menu.
@@ -11,11 +11,13 @@ Select an item from the menu.
   6 - Mocha
   7 - Tea
 
-Make your selection
+Make your selection:
 "@
- 
-# get user input 
-$selection = Read-Host $menu
+
+# get user input
+# Read-Host echoes back piped/redirected input - see d00.input.ps1
+Write-Host -NoNewline "$menu "
+$selection = [Console]::In.ReadLine()
 
 # test $selection to matching number using string comparison
 if ($selection -eq "1") {

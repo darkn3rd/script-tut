@@ -1,2 +1,2 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 "Hello"  # output to chain

@@ -7,7 +7,7 @@ ages = merge(ages, {"deb":46, "kate":19});
 // iterate through dictionary, print key/value pairs
 WScript.Echo("The ages are: ")
 for(var name in ages)
-    WScript.Echo("  ages[" + name + "]=" + ages[name]);
+    WScript.Echo(" ages[" + name + "]=" + ages[name]);
 
 // merge() - merges two associative arrays (objects)
 function merge(a, b)

@@ -1,4 +1,5 @@
 #!/usr/bin/env awk -f
+# testbox: requires=posix
 BEGIN {
   # no collection loop in AWK that can be used to extract data from subshell
   #   alternative is to use conditional loop and buffered

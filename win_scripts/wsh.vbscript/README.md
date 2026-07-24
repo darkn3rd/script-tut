@@ -1,8 +1,8 @@
 # Scripting Tutorial: VBScript (WSH)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.4
+Version 1.5
 
 ## Overview
 
@@ -38,8 +38,10 @@ Earlier versions of Windows Script Host 5.6 can be installed on Windows NT 4.x a
 
 These scripts have been testing on the following platforms.
 
-* :dvd: *__Windows 7__* (Windows NT 6.1)
-  * :cd: Windows Scripting Host 5.8 (bunled with operating system)
+* 📀 *__Windows 7 Home__* (`Microsoft Windows NT [Version 6.1]`)
+  * 💿 Windows Scripting Host 5.8 (bundled with operating system)
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * 💿 Windows Scripting Host 10 (bundled with operating system)
 
 ## Tools
 

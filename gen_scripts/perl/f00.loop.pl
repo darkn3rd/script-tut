@@ -1,4 +1,6 @@
 #!/usr/bin/env perl -w
+# testbox: requires=posix
+# testbox: title="subshell (ls) with foreach collection"
 
 # collection loop on list returned by subshell
 foreach $item (split /\s+/, `ls dirtest`) {

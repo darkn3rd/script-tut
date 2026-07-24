@@ -1,4 +1,6 @@
 #!/usr/bin/env groovy
+// testbox: requires=posix
+// testbox: title="subshell (ls -l) with eachLine iterator"
 // iterate through each item in current directory
 //   line represents a string from the shell execution output
 "ls -l dirtest".execute().text.eachLine { line ->

@@ -1,36 +1,42 @@
 # Scripting Tutorial: Python
 
-Version 1.5
+Version 1.6
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
+## Getting Python2
 
-## Getting Python
-
-### Getting Python on Mac
-
-#### Prerequisites
-
-In oder to get the full advantage of Python, you will need to install command line compiler tools. This process can vary significantly on Mac OS X.  MacPorts keeps some good instructions at http://guide.macports.org/#installing.xcode.  For Mac OS X 10.8.5 as of June 2014, you can get latest versions Xcode 5.1.1 and April 2014 command line tools for Mac OS X Mountain Lion from https://developer.apple.com/downloads/.  
-
-This requires you to setup an account.  Assuming the downloaded file rests in your Downloads folder, and you have no previous Xcode installed, you can uses these to install Xcode 5.1.1
+### Windows: Chocolatey
 
 ```bash
-hdiutil mount $HOME/Downloads/xcode_5.1.1.dmg
-sudo cp -R "/Volumes/Xcode/Xcode.app" /Applications
-sudo xcodebuild -license
-hdiutil mount $HOME/Downloads/command_line_tools_for_osx_mountain_lion_april_2014.dmg
-sudo -S installer -verbose -pkg "/Volumes/Command Line Tools (Mountain Lion)/Command Line Tools (Mountain Lion).mpkg" -target /
-hdiutil unmount /Volumes/Xcode
-hdiutil unmount "/Volumes/Command Line Tools (Mountain Lion)"
+# Install Python2
+choco install -y python2
+
+# Make python2 resolve to Python 2
+Copy-Item "C:\Python27\python.exe" "C:\Python27\python2.exe"
+Copy-Item "C:\Python27\pythonw.exe" "C:\Python27\python2w.exe"
+
+# If both Python2 and Python3 are installed, make sure `python` default is Python3
+# Fix Path so that `python.exe` will always get Python3 (assuming Python3 is installed)
+$sysPath = [Environment]::GetEnvironmentVariable("PATH", "Machine") -split ';' `
+  | Where-Object { $_ -ne '' }
+$python2Entries = $sysPath | Where-Object { $_ -like '*Python27*' }
+$otherEntries   = $sysPath | Where-Object { $_ -notlike '*Python27*' }
+$newPath = ($otherEntries + $python2Entries) -join ';'
+[Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
 ```
 
-#### Default
-
-* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
-  * :cd: Python 2.7.2 (bundled with operating system)
-
-
+#### Testing
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 Python 2.7.18
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * **Shell**: PowerShell 5.1.26100.8875
+    * 📦 Python 2.7.18
+  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+    * 📦 Python 2.7.18
+* 📀 *__OS X 10.8.5 (Mountain Lion)__*
+  * 💿 Python 2.7.2 (bundled with operating system)
+* 📀 *__Cent OS 6.5__*
 
 #### Homebrew
 

@@ -1,9 +1,11 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # spin loop as always true, break to exit
 #   skip if no answer is entered
 do {
   # prompt user
-  $answer = Read-Host "Enter your name (quit to Exit)"
+  # Read-Host echoes back piped/redirected input - see d00.input.ps1
+  Write-Host -NoNewline "Enter your name (quit to exit): "
+  $answer = [Console]::In.ReadLine()
   
   # skip loop if nothing entered
   if ($answer -match "^$") { continue }

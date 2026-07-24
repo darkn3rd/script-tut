@@ -1,4 +1,6 @@
 #!/usr/bin/env groovy
+// testbox: requires=posix
+// testbox: title="subshell (ls -l) with for..in collection"
 
 // collection loop where each line is fed into collection
 //   line represents a string from the shell execution output

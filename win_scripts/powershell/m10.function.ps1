@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # create function (subroutine)
 Function Capitalize ($string) {
     $string.ToUpper()               # return fully uppdercase $string

@@ -1,25 +1,9 @@
-' prompt and read 1 character
-wscript.stdout.write "Input a character: "
-keypress = wscript.stdin.read(1)
+' prompt and read response
+wscript.stdout.write "Would you like a toast? [Yes/No]: "
+response = wscript.stdin.readline
 
-' find match and print result
-select case true
-  case match("[a-z]", keypress)
-    wscript.echo "Lowercase letter"
-  case match("[A-Z]", keypress)
-    wscript.echo "Uppercase letter"
-  case match("[0-9]", keypress)
-    wscript.echo "Digit"
-  case else
-    wscript.echo "Punctuation, whitespace, or other"
-end select
-
-' **************************************
-' match (pattern, string) - returns true if pattern found in string
-'   Helper function to enable select case to match a pattern
-' **************************************
-function match(pattern, string)
-  set re = new regexp
-  re.pattern = pattern
-  match = re.test(string)
-end function
+' test response using array-index selection (VBScript has no ternary
+'  operator or usable IIf() in the base engine - IIf() always evaluates
+'  both branches and errors here with a type mismatch). True is -1 in
+'  VBScript, so negate it to get the 0/1 array index.
+wscript.echo Array("How about a muffin?", "That's great!")(-CInt(response = "Yes"))

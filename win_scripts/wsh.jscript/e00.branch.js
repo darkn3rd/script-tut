@@ -1,9 +1,9 @@
-WScript.stdout.write("Input a number: ");
-number = WScript.stdin.readline();
+// prompt and read response
+WScript.stdout.write("Would you like a toast? [Yes/No]: ");
+response = WScript.stdin.readline();
 
-if (number > 0)                             // automatic coercion to int
-   WScript.Echo("Number is greater than 0");
-else if (number < 0)  
-   WScript.Echo("Number is less than 0");
-else 
-   WScript.Echo("Number is 0");
+// test response to a string using if/else construction
+if (response == "Yes")
+  WScript.Echo("That's great!");
+else
+  WScript.Echo("How about a muffin?");

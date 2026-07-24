@@ -12,7 +12,7 @@ SET /A count=1
 :: Enumerate arguments (print them)
 :: NOTE: shift will not work inside FOR loop, so we do this
 
-ECHO The arugments passed are:
+ECHO The arguments passed are:
 
 :LOOP
   :: exit loop if we processed them all

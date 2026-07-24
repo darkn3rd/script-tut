@@ -4,4 +4,4 @@ width = 5 : length = 6
 area = width * length
 ' output results
 wscript.echo "The area of a square (width=" & width & _
-             ", length=" & length & ") is " & area
+             ", length=" & length & ") is " & area & "."

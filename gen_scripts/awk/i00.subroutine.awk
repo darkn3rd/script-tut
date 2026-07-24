@@ -1,4 +1,5 @@
 #!/usr/bin/env awk -f
+# testbox: requires=posix
 
 # create subroutine (function)
 function show_date()

@@ -8,7 +8,9 @@ Function AddNums(args)
 End Function
 
 ' call the function
-result = AddNums(Array(5,2,4,3,6))
+nums = Array(5,2,4,3,6)
+result = AddNums(nums)
 
-WScript.Echo "The result of summation is: " & result & "."
+WScript.Echo "The numbers to be added are " & Join(nums, ", ") & "."
+WScript.Echo "The result of their summation is: " & result & "."
 

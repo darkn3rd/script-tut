@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # create empty hash
 $ages = @{}
 # individually build hash
@@ -9,5 +9,5 @@ $ages["ralph"]=23
 $ages["deb"]=46
 $ages["kate"]=19
 # print out results
-"Keys (names):  " + $ages.keys     # print enumerated list of keys
-"Values (ages): " + $ages.values  # print enumerated list of values
+"Keys (names):  " + ($ages.keys -join ", ")     # print enumerated list of keys
+"Values (ages): " + ($ages.values -join ", ")   # print enumerated list of values
