@@ -21,3 +21,8 @@
 *.json    text eol=lf
 *.rake    text eol=lf
 Rakefile  text eol=lf
+
+# Force CRLF for scripts that only ever run through a native Windows
+# interpreter (cmd.exe's parser wants CRLF) - pinned explicitly so a
+# committer's core.autocrlf setting can't flip these to LF.
+*.cmd     text eol=crlf

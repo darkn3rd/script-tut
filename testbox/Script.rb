@@ -706,11 +706,12 @@ class ScriptBase
             #  (see @@needs_path_prefix_languages) - cmd.exe treats "/" as a
             #  switch prefix (like /c itself), not a path separator, so an
             #  unquoted "./" gets tokenized apart - ".\" is required there.
-            prefix = if @@needs_path_prefix_languages.include?(@@language.to_sym)
-              posix? ? "./" : ".\\"
-            else
-              ""
-            end
+            #  Unconditionally ".\", not posix?-gated: @@needs_path_prefix_languages
+            #  is only ever [:cmd], so this branch is only ever building a
+            #  cmd.exe command line - cmd.exe's own "/" quirk doesn't change
+            #  based on whether the *host* shell (e.g. Msys2ShellScript) has
+            #  POSIX tools available (same posix?-conflation as native_unix?).
+            prefix = @@needs_path_prefix_languages.include?(@@language.to_sym) ? ".\\" : ""
             command = "#{input} #{runner} #{prefix}#{cmd} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
             output = if needs_interactive?(test)
