@@ -848,6 +848,26 @@ class Msys2ShellScript < CommandShellScript
   def self.posix?
     true
   end
+
+  # input_redirect(value) - CommandShellScript's version feeds each line
+  #  through cmd.exe's builtin `echo`, which always emits CRLF. That's
+  #  harmless for a genuine cmd.exe target (its own `set /p` strips the
+  #  \r), but every POSIX-shell `read` here keeps it as trailing data
+  #  (e.g. name becomes "Name\r"), corrupting string comparisons
+  #  (E0/E1), arithmetic (E2), and echoed values (D0) - and can hang a
+  #  read-until-sentinel loop (F2) forever since the sentinel never
+  #  matches. MSYS2 has a real printf(1) on PATH (see class comment
+  #  above), which - unlike the builtin - emits exactly the bytes its
+  #  format string asks for, so driving it with one "%s\n" per line
+  #  produces genuine LF-terminated input instead. Everything stays on
+  #  one cmd.exe command line (repeated %s/args, not an embedded
+  #  newline) since cmd.exe can't parse a literal newline mid-command.
+  def self.input_redirect(value)
+    lines  = value.split("\n")
+    format = "%s\\n" * lines.length
+    args   = lines.map { |line| "\"#{line}\"" }.join(" ")
+    "printf \"#{format}\" #{args} |"
+  end
 end
 
 # =============================================
