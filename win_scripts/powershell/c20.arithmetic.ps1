@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 $radius=3                                  # set radius
 $area=[Math]::pi * [Math]::Pow($radius, 2) # calculate area
 "The area of a circle (radius=$radius) is: $area." # output result

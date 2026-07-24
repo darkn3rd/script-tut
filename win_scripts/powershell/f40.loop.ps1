@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # spin loop as always true, break to exit
 #   skip if no answer is entered
 do {

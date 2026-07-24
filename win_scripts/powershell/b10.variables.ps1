@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # declare variables
 $num    = 5
 $char   = 'a'

@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # Output Multiline Text using here doc
 $phrases = @"
 "The person who moves a mountain begins

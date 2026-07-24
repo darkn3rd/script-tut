@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # prompt user and get input
 # Read-Host echoes back piped/redirected input - see d00.input.ps1
 Write-Host -NoNewline "Input a number: "

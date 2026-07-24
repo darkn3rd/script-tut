@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # get input from user
 # Read-Host echoes back piped/redirected input - see d00.input.ps1
 Write-Host -NoNewline "Would you like a toast? [Yes/No]: "

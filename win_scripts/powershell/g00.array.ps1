@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # create an empty list to force data type to be an array
 $nicknames = @()
 # populate array with each item

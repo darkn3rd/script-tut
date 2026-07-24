@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # declare variables
 Set-Variable -name num    -value 5
 Set-Variable -name char   -value 'a'

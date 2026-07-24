@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # conditional loop with do...while
 do {
   # prompt user

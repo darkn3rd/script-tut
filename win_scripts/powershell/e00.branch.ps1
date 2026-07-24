@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # get input from user
 # Read-Host echoes back whatever it reads from a redirected/piped stdin,
 #  and its automatic prompt+": " doesn't reach captured output the same

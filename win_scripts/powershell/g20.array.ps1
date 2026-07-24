@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # build array using comma operator
 $nicknames = "bob", "ed", "steve", "ralph", "joe", "deb", "kate"
 # print results

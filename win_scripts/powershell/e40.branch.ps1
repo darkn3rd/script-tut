@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # build a menu string to output to user
 $menu = @"
 Select an item from the menu.

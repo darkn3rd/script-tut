@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 $count = 1                    # set initial count
 "The arguments passed are:"
 foreach($arg in $args) {      # collection loop

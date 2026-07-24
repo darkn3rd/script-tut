@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 
 # declare some binding variables
 $pond     = 500 # pond contains some available fish

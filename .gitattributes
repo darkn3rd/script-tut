@@ -10,8 +10,10 @@
 *.tcl     text eol=lf
 *.groovy  text eol=lf
 *.sh      text eol=lf
+*.bash    text eol=lf
 *.ksh     text eol=lf
-*.tcsh    text eol=lf
+*.csh     text eol=lf
+*.ps1     text eol=lf
 
 # Markdown/docs/config read fine with either ending, but keep them LF too
 # for consistency across contributors' machines.

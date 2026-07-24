@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # create the function
 Function Sort-Array ($array) {
     $array | Sort-Object # return list

@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 # create empty hash
 $ages = @{}
 # individually build hash

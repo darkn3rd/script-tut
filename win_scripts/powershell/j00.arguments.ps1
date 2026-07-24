@@ -1,4 +1,4 @@
-#!/usr/bin/env pash
+#!/usr/bin/env pwsh
 $arg_count   = $args.Count                  # get num of real arguments
 $script_name = $MyInvocation.MyCommand.Name # get name of script
 
