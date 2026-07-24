@@ -1,24 +1,26 @@
 # Scripting Tutorial: JScript (WSH)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.4
+Version 1.5
 
 ## Overview
 
-This area covers JScript, Microsoft implementation of JavaScript during the *Browser Wars* days around 1996.  Microsoft JScript is a compatible language to ECMAScript standard, or ECMA-262.  Windows systems with WSH 5.6 installed are compatible [ECMA-262 3rd Edition](http://www.ecma-international.org/publications/files/ECMA-ST-ARCH/ECMA-262,%203rd%20edition,%20December%201999.pdf).  Later editions of WSH, such as WSH 5.8, which is bundled with Windows 7 and above will include new features such as [RFC 4627](http://www.ietf.org/rfc/rfc4627.txt) (JSON) and ES-CP ([ECMA-327](http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-327.pdf)).
+This area covers **JScript**, Microsoft's implementation of JavaScript during the *Browser Wars* days around 1996.
+
+**Microsoft JScript** is a compatible language to **ECMAScript** standard, or **ECMA-262**.  Windows systems with **WSH 5.6** installed are compatible [ECMA-262 3rd Edition](http://www.ecma-international.org/publications/files/ECMA-ST-ARCH/ECMA-262,%203rd%20edition,%20December%201999.pdf).  Later editions of WSH, such as WSH 5.8, which is bundled with **Windows 7** and above will include new features such as [RFC 4627](http://www.ietf.org/rfc/rfc4627.txt) (JSON) and ES-CP ([ECMA-327](http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-327.pdf)).
 
 ### Windows Script Host
 
-JScript, is one language supported by the *Active Scripting* platform (also called *ActiveX Scripting Engine*) embedded into [WSH (Windows Script Host)](http://en.wikipedia.org/wiki/Windows_Script_Host).  This environment provides access to a plethora of object libraries on Windows through a mechanism called *OLE Automation*.  
+**JScript**, is one language supported by the ***Active Scripting*** platform (also called ***ActiveX Scripting Engine***) embedded into [WSH (Windows Script Host)](http://en.wikipedia.org/wiki/Windows_Script_Host).  This environment provides access to a plethora of object libraries on Windows through a mechanism called ***OLE Automation***.  
 
-The WSH environment added desperately needed scripting tools for the Windows environment, both Windows 4 (Windows '95) and Windows NT, where before there was only [*BATCH*]((http://en.wikipedia.org/wiki/Batch_file) and [*Command Shell*](http://en.wikipedia.org/wiki/Batch_file), or inconsistent (non-ubiquitous) usage of third party scripting tools.
+The WSH environment added desperately needed scripting tools for the Windows environment, both in Windows 4 (Windows '95) and Windows NT, where before there was only [**BATCH**](http://en.wikipedia.org/wiki/Batch_file) and [**Command Shell**](http://en.wikipedia.org/wiki/Batch_file), or inconsistent (non-ubiquitous) usage of third party scripting tools.
 
 The WSH environment has been integrated since Windows 2000.  There's an installer for WSH 5.7 for earlier versions of Windows.  The version 5.8 of WSH is integrated into more recent versions of Windows: Windows 7, Windows 8, Windows 2008, Windows 2012.  Unfortunately, WSH 5.8 is not available as an external installer for earlier Windows systems.
 
 ### Active Scripting Environment
 
-Microsoft released modular scripting platform referred to as [*Active Scripting*](http://en.wikipedia.org/wiki/Active_Scripting) in 1996, which can host a variety of scripting languages, such as VBScript and JScript from Microsoft, and [PerlScript](http://docs.activestate.com/activeperl/5.8/Components/Windows/PerlScript.html) from ActiveState.  This [*Active Scripting*](http://en.wikipedia.org/wiki/Active_Scripting) platform could then be embedded into other applications, such as IE (Internet Explorer), IIS (Internet Information Services) ASP (Active Server Pages), and [WSH (Windows Script Host)](http://en.wikipedia.org/wiki/Windows_Script_Host).  IE with the bundled [*Active Scripting*](http://en.wikipedia.org/wiki/Active_Scripting) platform was then embedded in a variety of software that desired to render web pages, such as WMP (Windows Media Player), Outlook, Outlook Express, Messenger, MSN Messenger, Windows Help, Windows Explorer, etc.
+Microsoft released modular scripting platform referred to as [*Active Scripting*](http://wikipedia.org/wiki/Active_Scripting) in 1996, which can host a variety of scripting languages, such as VBScript and JScript from Microsoft, and [PerlScript](http://docs.activestate.com/activeperl/5.8/Components/Windows/PerlScript.html) from ActiveState.  This [**Active Scripting**](http://en.wikipedia.org/wiki/Active_Scripting) platform could then be embedded into other applications, such as IE (Internet Explorer), IIS (Internet Information Services) ASP (Active Server Pages), and [WSH (Windows Script Host)](http://en.wikipedia.org/wiki/Windows_Script_Host).  IE with the bundled [*Active Scripting*](http://en.wikipedia.org/wiki/Active_Scripting) platform was then embedded in a variety of software that desired to render web pages, such as WMP (Windows Media Player), Outlook, Outlook Express, Messenger, MSN Messenger, Windows Help, Windows Explorer, etc.
 
 As many might realize that those programs mentioned above have been known for spreading viruses and malicious software.  The innate ability of *OLE Automation*, or the ability to access numerous object libraries on Windows, from a script is both a rich feature for applications, but also problem when used for nefarious purposes.
 
@@ -32,8 +34,10 @@ The ***Object*** is really an associative array, sometimes called hashes, dictio
 
 ## Testing
 
-* :dvd: *__Windows 7__* (Windows NT 6.1)
-  * :cd: Windows Scripting Host 5.8 (bundled with operating system)
+* 📀 *__Windows 7 Home__* (`Microsoft Windows NT [Version 6.1]`)
+  * 💿 Windows Scripting Host 5.8 (bundled with operating system)
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+  * 💿 Windows Scripting Host 10 (bundled with operating system)
 
 ## Tools
 
