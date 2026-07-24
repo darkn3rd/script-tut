@@ -28,24 +28,95 @@ $script:NeedsPathPrefixLanguages    = @('cmd')
 $script:InteractiveRequiredLanguages = @('cmd')
 
 $script:Command = @{
-    cmd = 'cmd'
-    ps1 = 'powershell'
-    js  = 'cscript'
-    vbs = 'cscript'
+    cmd    = 'cmd'
+    ps1    = 'powershell'
+    js     = 'cscript'
+    vbs    = 'cscript'
+    awk    = 'gawk'
+    groovy = 'groovy'
+    pl     = 'perl'
+    php    = 'php'
+    py     = 'python'
+    rb     = 'ruby'
+    tcl    = 'tclsh'
 }
 
 $script:CommandOptions = @{
-    cmd = '/c'
-    ps1 = '-NoLogo -NoProfile -ExecutionPolicy Bypass -File'
-    js  = '//Nologo'
-    vbs = '//Nologo'
+    cmd    = '/c'
+    ps1    = '-NoLogo -NoProfile -ExecutionPolicy Bypass -File'
+    js     = '//Nologo'
+    vbs    = '//Nologo'
+    awk    = '-f'
+    groovy = ''
+    pl     = ''
+    php    = ''
+    py     = ''
+    rb     = ''
+    tcl    = ''
 }
 
 $script:LanguageName = @{
-    cmd = 'Batch'
-    ps1 = 'PowerShell'
-    js  = 'JScript (WSH)'
-    vbs = 'VBScript (WSH)'
+    cmd    = 'Batch'
+    ps1    = 'PowerShell'
+    js     = 'JScript (WSH)'
+    vbs    = 'VBScript (WSH)'
+    awk    = 'AWK'
+    groovy = 'Groovy'
+    pl     = 'Perl'
+    php    = 'PHP'
+    py     = 'Python'
+    rb     = 'Ruby'
+    tcl    = 'TCL'
+}
+
+# Directories where the extension-derived command isn't the right binary to
+#  invoke - ported from Script.rb's @@command_override. python2/ and
+#  python3/ both use *.py, but need their own interpreter.
+$script:CommandOverride = @{
+    python2 = 'python2'
+    python3 = 'python3'
+}
+
+# Languages with no plain "cmd --version" probe - ported from Script.rb's
+#  @@special_version_langs, plus :tcl (tclsh has no --version flag).
+$script:SpecialVersionLangs = @('cmd', 'ps1', 'js', 'vbs', 'tcl')
+
+# ported from Script.rb's @@version_probe - {0} is replaced with the
+#  resolved command name (see Get-TestBoxCommand), matching Ruby's
+#  "%{cmd} --version" substitution for :py (python2/python3 override).
+$script:VersionProbe = @{
+    awk    = 'gawk --version 2>&1'
+    groovy = 'groovy --version 2>&1'
+    pl     = 'perl --version 2>&1'
+    php    = 'php --version 2>&1'
+    py     = '{0} --version 2>&1'
+    rb     = 'ruby --version 2>&1'
+}
+
+# Get-TestBoxCommand() - resolves to the interpreter binary to invoke,
+#  preferring a directory-specific override (see $script:CommandOverride)
+#  over the extension-derived default - ported from Script.rb's `command`.
+function Get-TestBoxCommand {
+    param([string]$Language)
+    $dirName = Split-Path -Leaf (Get-Location)
+    if ($script:CommandOverride.ContainsKey($dirName)) { return $script:CommandOverride[$dirName] }
+    return $script:Command[$Language]
+}
+
+# ConvertTo-ExtractedVersion(raw, lang) - ported from Script.rb's
+#  extract_version - pulls just the version number/line out of a
+#  language's raw "--version" output.
+function ConvertTo-ExtractedVersion {
+    param([string]$Raw, [string]$Language)
+    switch ($Language) {
+        { $_ -in 'awk', 'php' } { return ($Raw -split "`n")[0].Trim() }
+        'pl' {
+            if ($Raw -match 'v\d\.\d{1,2}\.\d') { return $Matches[0] }
+            return ''
+        }
+        'rb' { return ($Raw -split '\s+')[1] }
+        default { return $Raw.Trim() }
+    }
 }
 
 $script:Summary = @{ Total = 0; Pass = 0; Fail = 0; Skip = 0 }
@@ -165,15 +236,35 @@ function Get-SpecialVersion {
             if ($raw -match 'Windows Script Host Version \S+') { return $Matches[0] }
             return ''
         }
+        'tcl' {
+            return (cmd /c 'echo puts [info patchlevel] | tclsh').Trim()
+        }
         default { return '' }
     }
 }
 
+# Get-TestBoxVersion() - human-readable version string for the language
+#  under test - ported from Script.rb's `version`. Dispatches to
+#  Get-SpecialVersion for languages with no plain "--version" flag (see
+#  $script:SpecialVersionLangs); otherwise probes generically and
+#  extracts the version substring.
+function Get-TestBoxVersion {
+    param([string]$Language)
+    if ($script:SpecialVersionLangs -contains $Language) {
+        return (Get-SpecialVersion -Language $Language).Trim()
+    }
+    $probe = $script:VersionProbe[$Language]
+    if (-not $probe) { return '' }
+    $probe = $probe -f (Get-TestBoxCommand -Language $Language)
+    $raw = cmd /c $probe | Out-String
+    return ConvertTo-ExtractedVersion -Raw $raw -Language $Language
+}
+
 function Write-TestBoxHeader {
     $lang = Get-TestBoxLanguage
-    $cmdName = $script:Command[$lang]
+    $cmdName = Get-TestBoxCommand -Language $lang
     $path = Find-TestBoxExecutable -Command $cmdName
-    $version = Get-SpecialVersion -Language $lang
+    $version = Get-TestBoxVersion -Language $lang
     Write-Host "Environment:      Windows (x64) via psake"
     Write-Host "Language Target:  $($script:LanguageName[$lang]) ($path)"
     Write-Host "Language Version: $version"
@@ -434,7 +525,7 @@ function Invoke-TestBoxCategory {
             $expected = $expected -replace '\$date\$', (Get-Date -Format 'MMMM dd, yyyy')
 
             $prefix = Get-PathPrefix -Language $language
-            $runner = "$($script:Command[$language]) $($script:CommandOptions[$language])"
+            $runner = "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])"
             $command = "$input $runner $prefix$cmd $args $redirect"
 
             if (Test-NeedsInteractive -Test $test -Language $language) {
@@ -470,6 +561,35 @@ function Format-PassFail {
     param([bool]$Passed)
     if ($Passed) { return @{ Text = 'PASS'; Color = 'Green' } }
     return @{ Text = 'FAIL'; Color = 'Red' }
+}
+
+# Write-TestBoxDiff(testCase) - ported from Script.rb's print_diff: prints
+#  nothing on a clean pass. On a pass that only succeeded via tolerance
+#  (e.g. "precision"), both lines print yellow so the raw difference is
+#  still visible. On a real fail, Expected prints green (what it should've
+#  been) and Actual prints red (what it was).
+function Write-TestBoxDiff {
+    param($TestCase)
+    if ($TestCase.TestResult -and -not $TestCase.Diff) { return }
+
+    $expectedText = $TestCase.Expected -replace "`n", '\n'
+    $outputText   = $TestCase.Output -replace "`n", '\n'
+
+    if ($TestCase.TestResult) {
+        Write-Host "         Expected Output: |" -NoNewline
+        Write-Colored $expectedText 'Yellow'
+        Write-Host "|"
+        Write-Host "         Actual Output:   |" -NoNewline
+        Write-Colored $outputText 'Yellow'
+        Write-Host "| (within tolerance)"
+    } else {
+        Write-Host "         Expected Output: |" -NoNewline
+        Write-Colored $expectedText 'Green'
+        Write-Host "|"
+        Write-Host "         Actual Output:   |" -NoNewline
+        Write-Colored $outputText 'Red'
+        Write-Host "|"
+    }
 }
 
 # Write-TestBoxReport(results) - ported from Script.rb's report()
@@ -513,10 +633,7 @@ function Write-TestBoxReport {
                     Write-Host "      - ${implLabel}: [" -NoNewline
                     Write-Colored $tpf.Text $tpf.Color
                     Write-Host "]"
-                    if (-not $tc.TestResult -or $tc.Diff) {
-                        Write-Host "         Expected Output: |$($tc.Expected -replace "`n", '\n')|"
-                        Write-Host "         Actual Output:   |$($tc.Output -replace "`n", '\n')|$(if ($tc.TestResult) { ' (within tolerance)' })"
-                    }
+                    Write-TestBoxDiff -TestCase $tc
                 } else {
                     Write-Host "      - $implLabel ($($entry.Value.Count) testcases):"
                     $count = 1
@@ -525,10 +642,7 @@ function Write-TestBoxReport {
                         Write-Host "        - Test ${count}: [" -NoNewline
                         Write-Colored $tpf.Text $tpf.Color
                         Write-Host "]"
-                        if (-not $tc.TestResult -or $tc.Diff) {
-                            Write-Host "         Expected Output: |$($tc.Expected -replace "`n", '\n')|"
-                            Write-Host "         Actual Output:   |$($tc.Output -replace "`n", '\n')|$(if ($tc.TestResult) { ' (within tolerance)' })"
-                        }
+                        Write-TestBoxDiff -TestCase $tc
                         $count++
                     }
                 }
