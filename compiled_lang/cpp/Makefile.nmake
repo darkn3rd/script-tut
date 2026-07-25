@@ -11,12 +11,14 @@
 # to SOURCES, and its matching bin\a00.output.exe entry to BINARIES.
 
 SOURCES  = a00.output.cpp \
+           c00.arithmetic.cpp c10.arithmetic.cpp c20.arithmetic.cpp c30.arithmetic.cpp \
            f00.loop.cpp f01.loop.cpp f02.loop.cpp f03.loop.cpp \
            f10.loop.cpp f11.loop.cpp f12.loop.cpp f13.loop.cpp \
            f20.loop.cpp f21.loop.cpp \
            f30.loop.cpp f31.loop.cpp f32.loop.cpp \
            f40.loop.cpp f41.loop.cpp f42.loop.cpp
 BINARIES = bin\a00.output.exe \
+           bin\c00.arithmetic.exe bin\c10.arithmetic.exe bin\c20.arithmetic.exe bin\c30.arithmetic.exe \
            bin\f00.loop.exe bin\f01.loop.exe bin\f02.loop.exe bin\f03.loop.exe \
            bin\f10.loop.exe bin\f11.loop.exe bin\f12.loop.exe bin\f13.loop.exe \
            bin\f20.loop.exe bin\f21.loop.exe \
