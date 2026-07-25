@@ -218,10 +218,39 @@ class ScriptBase
   #  @@command/@@compiler) so a leftover binary from a previous `make`
   #  never gets mistaken for the language itself.
   @@known_extensions = (@@command.keys + @@compiler.keys).map(&:to_s)
-  @@language  = Dir.glob('a00.*').map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
+
+  # @@dirname must be captured before the chdir below - it identifies the
+  #  *language* directory (e.g. "python3", used by @@command_override),
+  #  never wherever the harness ends up actually running lessons from.
   @@dirname   = File.basename(Dir.pwd)
-  @@jsonfile   = "../../testbox/expected.json"
-  @@titlesfile = "../../testbox/titles.json"
+
+  # gen_scripts/win_scripts/shell_scripts lesson directories keep their
+  #  actual lesson files - plus dirtest/ and any other fixture a lesson
+  #  needs - in a scripts/ subdirectory; Rakefile/psakefile/README stay
+  #  at the language directory root (see ../README.md's Directory
+  #  Structure section). Changing into it here, once, for the rest of
+  #  the process's lifetime means everything below - @@language
+  #  detection, execute()'s Dir.glob, testbox_tags's file reads, and the
+  #  actual test invocation command - keeps working completely
+  #  unchanged, exactly as if the lessons had never moved: a script
+  #  invoked as a bare filename still finds itself at "." (now
+  #  scripts/), and self-name introspection (Ruby's $0, Python's
+  #  sys.argv[0], a batch lesson's %~nx0, ...) still reports that same
+  #  bare filename, not a "scripts/"-prefixed path - so expected.json's
+  #  $cmd$ substitution (see execute()) needs no per-language handling
+  #  for the move at all.
+  #  compiled_lang/ doesn't use this convention (source stays at the
+  #  root, build output goes to bin/), so it has no scripts/ to change
+  #  into and this is simply a no-op there.
+  Dir.chdir("scripts") if Dir.exist?("scripts")
+
+  @@language  = Dir.glob('a00.*').map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
+  # __dir__-based, not "../../testbox/..." - robust regardless of the
+  #  chdir above, since it resolves relative to this file's own location
+  #  (testbox/) rather than counting directory levels up from whatever
+  #  the current working directory happens to be.
+  @@jsonfile   = File.join(__dir__, "expected.json")
+  @@titlesfile = File.join(__dir__, "titles.json")
 
   # tally of category-level results across a run, printed by print_summary
   @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }

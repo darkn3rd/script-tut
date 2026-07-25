@@ -91,6 +91,33 @@ $script:CommandOverride = @{
     python3 = 'python3'
 }
 
+# Captured once, at module import time, before the Set-Location below -
+#  this identifies the *language* directory (e.g. "python3", used by
+#  $script:CommandOverride), never wherever the harness ends up actually
+#  running lessons from. Unlike Script.rb's @@dirname (a class variable
+#  set once when the class loads), Get-TestBoxCommand below is an
+#  ordinary function called repeatedly through the run - deriving this
+#  from Get-Location fresh on every call would read back "scripts" after
+#  the Set-Location below, not the language name.
+$script:LanguageDirName = Split-Path -Leaf (Get-Location)
+
+# gen_scripts/win_scripts/shell_scripts lesson directories keep their
+#  actual lesson files - plus dirtest/ and any other fixture a lesson
+#  needs - in a scripts/ subdirectory; psakefile.ps1/README stay at the
+#  language directory root (see ../README.md's Directory Structure
+#  section). Changing into it here, once, for the rest of the session
+#  means every Get-ChildItem/Get-Content/invocation below keeps working
+#  completely unchanged, exactly as if the lessons had never moved: a
+#  script invoked as a bare filename still finds itself at "." (now
+#  scripts/), and self-name introspection (PowerShell's
+#  $MyInvocation.MyCommand.Name, a batch lesson's %~nx0, ...) still
+#  reports that same bare filename, not a "scripts\"-prefixed path - so
+#  expected.json's $cmd$ substitution (see Invoke-TestBoxCategory) needs
+#  no per-language handling for the move at all.
+if (Test-Path -PathType Container 'scripts') {
+    Set-Location 'scripts'
+}
+
 # Languages with no plain "cmd --version" probe - ported from Script.rb's
 #  @@special_version_langs, plus :tcl (tclsh has no --version flag).
 $script:SpecialVersionLangs = @('cmd', 'ps1', 'js', 'vbs', 'tcl')
@@ -112,8 +139,7 @@ $script:VersionProbe = @{
 #  over the extension-derived default - ported from Script.rb's `command`.
 function Get-TestBoxCommand {
     param([string]$Language)
-    $dirName = Split-Path -Leaf (Get-Location)
-    if ($script:CommandOverride.ContainsKey($dirName)) { return $script:CommandOverride[$dirName] }
+    if ($script:CommandOverride.ContainsKey($script:LanguageDirName)) { return $script:CommandOverride[$script:LanguageDirName] }
     $cmd = $script:Command[$Language]
     # POSIX PowerShell (pwsh) ships as "pwsh", not "powershell" - the
     #  latter is only the Windows Desktop edition executable name (see
@@ -157,7 +183,12 @@ function Get-TestBoxLanguage {
 
 function Get-TestBoxDataset {
     if (-not $script:Dataset) {
-        $json = Get-Content -Raw '..\..\testbox\expected.json'
+        # $PSScriptRoot-based, not "..\..\testbox\..." - robust regardless
+        #  of the Set-Location above, since it resolves relative to this
+        #  module's own location (testbox\) rather than counting
+        #  directory levels up from wherever the current location
+        #  happens to be.
+        $json = Get-Content -Raw (Join-Path $PSScriptRoot 'expected.json')
         $script:Dataset = ConvertFrom-Json $json
     }
     return $script:Dataset
@@ -165,7 +196,7 @@ function Get-TestBoxDataset {
 
 function Get-TestBoxTitles {
     if (-not $script:Titles) {
-        $path = '..\..\testbox\titles.json'
+        $path = Join-Path $PSScriptRoot 'titles.json'
         if (Test-Path $path) {
             $script:Titles = ConvertFrom-Json (Get-Content -Raw $path)
         } else {
