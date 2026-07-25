@@ -1,26 +1,33 @@
 # =============================================
 # TestBox.psm1 - PowerShell-native reimplementation of Script.rb's test
-# harness, scoped to the four Windows-native lesson suites under
+# harness. Meant to be driven by psake (see testbox.psake.ps1) as a
+# PowerShell-idiomatic sibling to the Ruby/Rake-based testbox.rake, for
+# readers specifically interested in psake. Every lesson directory with
+# a psakefile.ps1 uses this - the four Windows-native suites under
 # win_scripts/ (batch/:cmd, powershell/:ps1, wsh.jscript/:js,
-# wsh.vbscript/:vbs). Meant to be driven by psake (see testbox.psake.ps1)
-# as a PowerShell-idiomatic sibling to the Ruby/Rake-based testbox.rake,
-# for readers specifically interested in psake.
+# wsh.vbscript/:vbs), the interpreted languages under gen_scripts/
+# (:awk/:groovy/:pl/:php/:py/:rb/:tcl), and the five compiled languages
+# under compiled_lang/ (:java/:go/:rs/:cpp/:cs - see $script:Compiler and
+# Confirm-TestBoxCompiled).
 #
-# Of the four, only :ps1 can ever run outside Windows - :cmd needs real
-# cmd.exe and :js/:vbs need cscript, neither of which exists on macOS/
-# Linux regardless of which shell drives them. So unlike Script.rb (which
-# has a full PosixShellScript/CommandShellScript/Msys2ShellScript class
-# hierarchy), this only branches on platform where :ps1 actually needs
-# it: which interpreter binary to invoke (Get-TestBoxCommand), the null
-# device (NullDevice), and how a test's stdin gets fed to the child
-# process (Invoke-ShellOut) - cmd.exe's piping trick doesn't exist on
-# POSIX, so that path writes directly to the child's redirected stdin
-# instead. The two Windows-specific quirks Script.rb discovered for the
-# :cmd language still apply there and are ported as-is:
+# Of the Windows-native four, only :ps1 can ever run outside Windows -
+# :cmd needs real cmd.exe and :js/:vbs need cscript, neither of which
+# exists on macOS/Linux regardless of which shell drives them. So unlike
+# Script.rb (which has a full PosixShellScript/CommandShellScript/
+# Msys2ShellScript class hierarchy), this only branches on platform
+# where it actually needs to: which interpreter/compiler binary to
+# invoke (Get-TestBoxCommand), the null device (NullDevice), and how a
+# test's stdin gets fed to the child process (Invoke-ShellOut) - cmd.exe's
+# piping trick doesn't exist on POSIX, so that path writes directly to
+# the child's redirected stdin instead. The two Windows-specific quirks
+# Script.rb discovered for the :cmd language still apply here and are
+# ported as-is:
 #   - NoDefaultCurrentDirectoryInExePath: cmd.exe's implicit current-
 #     directory search for a bare executable name can be disabled by a
-#     security hardening setting, so :cmd needs an explicit ".\" prefix
-#     (see Get-PathPrefix).
+#     security hardening setting, so :cmd (and every compiled language,
+#     for the same reason - its own build artifact is what's being
+#     resolved that way too) needs an explicit ".\" prefix (see
+#     Get-PathPrefix).
 #   - SET /p inside a GOTO loop can't correctly consume a pre-built
 #     Windows pipe across repeated reads - it just re-reads the first
 #     line forever. Feeding input lines one at a time over a live stdin
@@ -28,8 +35,32 @@
 #     Invoke-InteractiveShellOut).
 # =============================================
 
-# Only :cmd needs either of these - see the module header above.
-$script:NeedsPathPrefixLanguages    = @('cmd')
+# compiler binary for each compiled language (see $script:CompiledLanguages
+#  and Confirm-TestBoxCompiled). Unlike $script:Command (an interpreter
+#  that the test file is handed to as a data argument), these only ever
+#  run once per session, via `make`, to produce the actual thing invoked
+#  per test - ported from Script.rb's @@compiler.
+$script:Compiler = @{
+    java = 'javac'
+    go   = 'go'
+    rs   = 'rustc'
+    cpp  = 'g++'
+    cs   = 'dotnet'
+}
+
+# Languages with no interpreter at all (see $script:Command) - a lesson
+#  file here is only ever handed to `make` (see Confirm-TestBoxCompiled),
+#  and what actually gets invoked per test is the resulting build
+#  artifact (see Get-InvocationName), not the source file itself -
+#  ported from Script.rb's @@compiled_languages.
+$script:CompiledLanguages = @($script:Compiler.Keys)
+
+# :cmd needs this because of NoDefaultCurrentDirectoryInExePath (see the
+#  module header); every compiled language needs it because its own
+#  build artifact lives in a bin/ subdirectory, not right next to the
+#  invocation - see Get-PathPrefix - ported from Script.rb's
+#  @@needs_path_prefix_languages.
+$script:NeedsPathPrefixLanguages    = @('cmd') + $script:CompiledLanguages
 $script:InteractiveRequiredLanguages = @('cmd')
 
 # $IsWindows doesn't exist on Windows PowerShell 5.1 (Desktop edition) -
@@ -81,6 +112,11 @@ $script:LanguageName = @{
     py     = 'Python'
     rb     = 'Ruby'
     tcl    = 'TCL'
+    java   = 'Java'
+    go     = 'Go'
+    rs     = 'Rust'
+    cpp    = 'C++'
+    cs     = 'C#'
 }
 
 # Directories where the extension-derived command isn't the right binary to
@@ -118,6 +154,22 @@ if (Test-Path -PathType Container 'scripts') {
     Set-Location 'scripts'
 }
 
+# compiled_lang/*/src/ is the other lesson-file convention this harness
+#  supports, alongside scripts/ above - but unlike scripts/, it
+#  deliberately does NOT Set-Location there: `make`, the promoted bin/
+#  binaries it builds, and the dirtest/ fixture some of them read all
+#  need the current location to stay at the language directory root
+#  (bin\a00.output is invoked as a relative path *from* there, and a
+#  compiled binary's own working directory follows whoever spawned it,
+#  not wherever its own executable file happens to live - see
+#  compiled_lang/README.md). Only Get-TestBoxLanguage, Invoke-
+#  TestBoxCategory's Get-ChildItem, and Get-TestBoxTags's file reads
+#  need to know where src/ actually is; "." here (scripts/ already
+#  changed into, or a language directory that simply uses neither
+#  convention) means "wherever we already are" - ported from Script.rb's
+#  @@source_subdir.
+$script:SourceSubdir = if (Test-Path -PathType Container 'src') { 'src' } else { '.' }
+
 # Languages with no plain "cmd --version" probe - ported from Script.rb's
 #  @@special_version_langs, plus :tcl (tclsh has no --version flag).
 $script:SpecialVersionLangs = @('cmd', 'ps1', 'js', 'vbs', 'tcl')
@@ -132,6 +184,11 @@ $script:VersionProbe = @{
     php    = 'php --version 2>&1'
     py     = '{0} --version 2>&1'
     rb     = 'ruby --version 2>&1'
+    java   = 'javac -version 2>&1'
+    go     = 'go version 2>&1'
+    rs     = 'rustc --version 2>&1'
+    cpp    = 'g++ --version 2>&1'
+    cs     = 'dotnet --version 2>&1'
 }
 
 # Get-TestBoxCommand() - resolves to the interpreter binary to invoke,
@@ -140,7 +197,15 @@ $script:VersionProbe = @{
 function Get-TestBoxCommand {
     param([string]$Language)
     if ($script:CommandOverride.ContainsKey($script:LanguageDirName)) { return $script:CommandOverride[$script:LanguageDirName] }
+    # $script:Command has no entry for a compiled language - it falls
+    #  through to $script:Compiler, since that's the one thing that
+    #  actually needs to be on PATH to run these lessons at all (see
+    #  Confirm-TestBoxCompiled). Reusing this function for that, rather
+    #  than a separate one, means the same PATH-verification (see
+    #  Confirm-TestBoxCompiled) and header-display logic (see
+    #  Write-TestBoxHeader) covers both cases for free.
     $cmd = $script:Command[$Language]
+    if (-not $cmd) { $cmd = $script:Compiler[$Language] }
     # POSIX PowerShell (pwsh) ships as "pwsh", not "powershell" - the
     #  latter is only the Windows Desktop edition executable name (see
     #  the identical fix in Script.rb's `command`).
@@ -154,7 +219,9 @@ function Get-TestBoxCommand {
 function ConvertTo-ExtractedVersion {
     param([string]$Raw, [string]$Language)
     switch ($Language) {
-        { $_ -in 'awk', 'php' } { return ($Raw -split "`n")[0].Trim() }
+        # cpp: g++ --version's output is multiple lines (version line,
+        #  then copyright/license) - just the first line, same as awk/php.
+        { $_ -in 'awk', 'php', 'cpp' } { return ($Raw -split "`n")[0].Trim() }
         'pl' {
             if ($Raw -match 'v\d\.\d{1,2}\.\d') { return $Matches[0] }
             return ''
@@ -176,8 +243,8 @@ $script:Summary = @{ Total = 0; Pass = 0; Fail = 0; Skip = 0 }
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
 
 function Get-TestBoxLanguage {
-    $a00 = Get-ChildItem -Path . -Filter 'a00.*' | Select-Object -First 1
-    if (-not $a00) { throw "No a00.* file found in $(Get-Location) - wrong directory?" }
+    $a00 = Get-ChildItem -Path $script:SourceSubdir -Filter 'a00.*' | Select-Object -First 1
+    if (-not $a00) { throw "No a00.* file found under $script:SourceSubdir in $(Get-Location) - wrong directory?" }
     return ($a00.Name -split '\.')[-1]
 }
 
@@ -223,8 +290,13 @@ function Get-TestBoxTitle {
 function Get-TestBoxTags {
     param([string]$File)
     $tags = @{}
-    if (-not (Test-Path $File)) { return $tags }
-    $lines = Get-Content -Path $File -TotalCount 5
+    # $script:SourceSubdir-qualified, same reasoning as Get-TestBoxLanguage -
+    #  $File is always a bare filename, and the current location isn't
+    #  necessarily where it actually lives on disk (see
+    #  $script:SourceSubdir's own comment).
+    $qualified = Join-Path $script:SourceSubdir $File
+    if (-not (Test-Path $qualified)) { return $tags }
+    $lines = Get-Content -Path $qualified -TotalCount 5
     foreach ($line in $lines) {
         $matches = [regex]::Matches($line, 'testbox:\s*(\w+)=(?:"([^"]*)"|(\S+))')
         foreach ($m in $matches) {
@@ -256,10 +328,37 @@ function Test-NeedsInteractive {
 
 function Get-PathPrefix {
     param([string]$Language)
-    if ($script:NeedsPathPrefixLanguages -contains $Language) {
-        return '.\'
-    }
-    return ''
+    if ($script:NeedsPathPrefixLanguages -notcontains $Language) { return '' }
+    # A compiled language additionally builds into a bin/ subdirectory
+    #  (see compiled_lang/README.md), so its prefix includes that too -
+    #  ported from Script.rb's execute().
+    $sep = if ($script:IsWindowsHost) { '\' } else { '/' }
+    $subdir = if ($script:CompiledLanguages -contains $Language) { "bin$sep" } else { '' }
+    return ".$sep$subdir"
+}
+
+# Get-BinaryExtension() - the real on-disk extension of the artifact
+#  `make` produces for the current compiled language (see
+#  compiled_lang/*/Makefile) - ported from Script.rb's binary_extension.
+function Get-BinaryExtension {
+    param([string]$Language)
+    if (-not $script:IsWindowsHost) { return '' }
+    # ".bat", not ".cmd": :cmd (Batch) already owns ".cmd" as its own
+    #  lesson source extension - see Script.rb's binary_extension for why
+    #  this matters for language auto-detection.
+    if ($Language -eq 'java') { return '.bat' }
+    return '.exe'
+}
+
+# Get-InvocationName(cmd, language) - what to actually put on the command
+#  line for lesson file $cmd. For an interpreted language this is just
+#  $cmd itself; for a compiled language it's the build artifact's own
+#  name (see Get-BinaryExtension) - ported from Script.rb's
+#  invocation_name.
+function Get-InvocationName {
+    param([string]$Cmd, [string]$Language)
+    if ($script:CompiledLanguages -notcontains $Language) { return $Cmd }
+    return ($Cmd -replace '\.[^.]+$', '') + (Get-BinaryExtension -Language $Language)
 }
 
 function Find-TestBoxExecutable {
@@ -270,6 +369,83 @@ function Find-TestBoxExecutable {
     $found = Get-Command $Command -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($found) { return $found.Source }
     return ''
+}
+
+# Invoke-StreamShellOut(commandStr) - like Invoke-ShellOut, but prints
+#  commandStr's combined output line-by-line as it's produced instead of
+#  capturing it silently until the process exits. Used only for the
+#  one-time `make` build in Confirm-TestBoxCompiled - a compiled
+#  language's full build can take a noticeable moment, and without this
+#  the harness sits in total silence for that whole stretch before the
+#  first test result appears. Returns whether the command exited
+#  successfully - ported from Script.rb's stream_shell_out.
+function Invoke-StreamShellOut {
+    param([string]$CommandStr)
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    if ($script:IsWindowsHost) {
+        $psi.FileName = 'cmd.exe'
+        $psi.Arguments = "/c $CommandStr"
+    } else {
+        $psi.FileName = '/bin/sh'
+        $psi.ArgumentList.Add('-c')
+        $psi.ArgumentList.Add($CommandStr)
+    }
+    $psi.RedirectStandardOutput = $true
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.WorkingDirectory = (Get-Location).Path
+
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+    while ($null -ne ($line = $proc.StandardOutput.ReadLine())) {
+        Write-Host $line
+    }
+    $proc.WaitForExit()
+    return $proc.ExitCode -eq 0
+}
+
+# Confirm-TestBoxCompiled(language) - for a compiled language (see
+#  $script:CompiledLanguages), runs `make` in the lesson directory once
+#  per session, before any test tries to invoke a build artifact that
+#  doesn't exist yet. `make` itself, and the compiler it drives (see
+#  Get-TestBoxCommand), are each verified present and failed loudly and
+#  once if missing - the same "fail once, clearly" reasoning as a
+#  missing interpreter - because a broken build would otherwise surface
+#  as the exact same confusing per-test error on every single test in
+#  the directory - ported from Script.rb's ensure_compiled!.
+$script:CompiledOk = $false
+function Confirm-TestBoxCompiled {
+    param([string]$Language)
+    if ($script:CompiledLanguages -notcontains $Language) { return }
+    if ($script:CompiledOk) { return }
+
+    $cmdName = Get-TestBoxCommand -Language $Language
+    if (-not (Find-TestBoxExecutable -Command $cmdName)) {
+        throw "Cannot find `"$cmdName`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
+    }
+
+    if (-not (Find-TestBoxExecutable -Command 'make')) {
+        throw "Cannot find `"make`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
+    }
+
+    # A second, separate status header from the one Write-TestBoxHeader
+    #  prints - $script:CompiledOk means this only runs once per psake
+    #  invocation (the first test category to run triggers it; every
+    #  later category in the same run skips straight past). `make`
+    #  itself is still incremental across separate invocations, so a
+    #  second run with nothing changed just streams a fast "Nothing to
+    #  be done" instead of silently doing nothing.
+    Write-Host "Compiling $($script:LanguageName[$Language]) lessons (one-time build)..."
+    Write-Host ('=' * 63)
+    $success = Invoke-StreamShellOut -CommandStr 'make 2>&1'
+    Write-Host ('=' * 63)
+
+    if (-not $success) {
+        throw "``make`` failed while building $($script:LanguageDirName)/ lessons (see output above)."
+    }
+
+    $script:CompiledOk = $true
 }
 
 # Get-SpecialVersion(lang) - ported directly from CommandShellScript#special_version
@@ -576,7 +752,16 @@ function Invoke-TestBoxCategory {
     param([string]$Task)
 
     $language = Get-TestBoxLanguage
-    $list = @(Get-ChildItem -Path . -Filter "${Task}?.*" | Sort-Object Name | ForEach-Object { $_.Name })
+    Confirm-TestBoxCompiled -Language $language
+
+    $list = @(Get-ChildItem -Path $script:SourceSubdir -Filter "${Task}?.*" | Sort-Object Name | ForEach-Object { $_.Name })
+    if ($script:CompiledLanguages -contains $language) {
+        # A compiled language's build artifacts live in a separate bin/
+        #  (see $script:SourceSubdir) so this is normally a no-op, but
+        #  stays as a defensive filter against a stray non-source file
+        #  matching the glob - ported from Script.rb's execute().
+        $list = @($list | Where-Object { $_.EndsWith(".$language") })
+    }
 
     $hadPosixOnly = ($list | Where-Object { Test-RequiresPosix $_ }).Count -gt 0
     $list = @($list | Where-Object { -not (Test-RequiresPosix $_) })
@@ -635,12 +820,31 @@ function Invoke-TestBoxCategory {
                 }
             }
 
-            $expected = $expected -replace '\$cmd\$', $cmd
+            # $invokedName is what actually goes on the command line and
+            #  into the $cmd$ substitution below - for an interpreted
+            #  language that's just $cmd itself (the source file, handed
+            #  to $runner as a data argument); for a compiled one it's
+            #  the build artifact's own name (see Get-InvocationName),
+            #  since that - not the source file - is what a lesson's own
+            #  self-name check would report.
+            $invokedName = Get-InvocationName -Cmd $cmd -Language $language
+            $isCompiled = $script:CompiledLanguages -contains $language
+            $prefix = Get-PathPrefix -Language $language
+            # A compiled language's own self-name check would report the
+            #  *whole* invoked path (prefix and all) since nothing in the
+            #  program strips it - unlike a batch lesson, which strips
+            #  any prefix itself (%~nx0), so only compiled languages get
+            #  the prefix folded into the $cmd$ substitution here.
+            $cmdDisplay = if ($isCompiled) { "$prefix$invokedName" } else { $invokedName }
+
+            $expected = $expected -replace '\$cmd\$', $cmdDisplay
             $expected = $expected -replace '\$date\$', (Get-Date -Format 'MMMM dd, yyyy')
 
-            $prefix = Get-PathPrefix -Language $language
-            $runner = "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])"
-            $command = "$input $runner $prefix$cmd $args $redirect"
+            # $runner is blank for a compiled language - the build
+            #  artifact runs itself, unlike an interpreted language's
+            #  test file, which is handed to $runner as a data argument.
+            $runner = if ($isCompiled) { '' } else { "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])" }
+            $command = "$input $runner $prefix$invokedName $args $redirect"
 
             if (Test-NeedsInteractive -Test $test -Language $language) {
                 $output = Invoke-InteractiveShellOut -CommandStr $command -InputLines $inputLines
