@@ -355,6 +355,23 @@ class ScriptBase
     `#{cmd_str}`
   end
 
+  # stream_shell_out(cmd_str) - like shell_out, but prints cmd_str's
+  #  combined output line-by-line as it's produced instead of capturing it
+  #  silently until the process exits. Used only for the one-time `make`
+  #  build in ensure_compiled! - a compiled language's full build can take
+  #  a noticeable moment, and without this the harness sits in total
+  #  silence for that whole stretch before the first test result appears.
+  #  Forces $stdout.sync so lines actually appear as they're read rather
+  #  than sitting in Ruby's own output buffer until the block exits.
+  #  Returns whether the command exited successfully.
+  def self.stream_shell_out(cmd_str)
+    old_sync, $stdout.sync = $stdout.sync, true
+    IO.popen(cmd_str) { |io| io.each_line { |line| print line } }
+    $?.success?
+  ensure
+    $stdout.sync = old_sync
+  end
+
   # needs_interactive?(test) - true only if the test is tagged
   #  "interactive" AND the current language is one known to actually need
   #  the workaround (see @@interactive_required_languages). The tag alone
@@ -762,10 +779,20 @@ class ScriptBase
       exit 1
     end
 
-    output = shell_out("make 2>&1")
-    unless $?.success?
-      STDERR.puts "ERROR: `make` failed while building #{@@dirname}/ lessons:"
-      STDERR.puts output
+    # a second, separate status header from the one testbox.rake's own
+    #  :header task prints - @@compiled_ok means this only runs once per
+    #  `rake` invocation (the first test category to execute triggers it;
+    #  every later category in the same run skips straight past). `make`
+    #  itself is still incremental across separate `rake` runs, so a
+    #  second invocation with nothing changed just streams a fast
+    #  "Nothing to be done" instead of silently doing nothing as before.
+    puts "Compiling #{language_name} lessons (one-time build)..."
+    puts "==============================================================="
+    success = stream_shell_out("make 2>&1")
+    puts "==============================================================="
+
+    unless success
+      STDERR.puts "ERROR: `make` failed while building #{@@dirname}/ lessons (see output above)."
       exit 1
     end
 
