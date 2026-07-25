@@ -733,6 +733,16 @@ class ScriptBase
          "#{yellow('Skip')}=#{@@summary[:skip]}"
   end
 
+  # failed?() - true if any test compared so far in this process failed.
+  #  Checked by the at_exit hook below so `rake` (or any script requiring
+  #  this file) actually exits non-zero on failure - report()/execute()
+  #  only ever record results and print them, they never raise or touch
+  #  the process exit status themselves, so without this a CI job would
+  #  see a green checkmark no matter how many tests failed.
+  def self.failed?
+    @@summary[:fail] > 0
+  end
+
   def self.report(results)
     red      = ->(text) { self.red(text) }
     green    = ->(text) { self.green(text) }
@@ -1293,3 +1303,15 @@ elsif RUBY_PLATFORM =~ /mingw|mswin/i
 else
   PosixShellScript
 end
+
+# Make `rake` (or any script requiring this file) actually fail on a
+#  failed test - by default Ruby exits 0 whenever the process ends
+#  without an uncaught exception, regardless of how many individual
+#  test comparisons came back false, since execute()/report() only ever
+#  record and print results. Without this, a CI job driven by `rake`
+#  would report success no matter what actually failed (see
+#  Script.failed?). Registered here, once, at require-time, rather than
+#  in testbox.rake, so it applies uniformly to `rake` (every task,
+#  default or a single category) without needing to touch any task
+#  definition.
+at_exit { exit 1 if Script.failed? }

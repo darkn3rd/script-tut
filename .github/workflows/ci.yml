@@ -1,0 +1,82 @@
+name: CI
+
+# Runs the shared testbox harness (via `rake`) for every language listed
+# in the matrix below - that list *is* the "which languages are tested
+# in CI" tag: add a language to CI by adding a matrix entry here, drop
+# one by removing it. There's deliberately no separate manifest file to
+# keep in sync with this - the matrix is the single source of truth.
+#
+# `rake` only actually fails this job on a failing test because of the
+# at_exit hook at the bottom of testbox/Script.rb - without it, Ruby
+# exits 0 regardless of how many individual test comparisons came back
+# false, and this workflow would report green no matter what broke.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      # One matrix entry failing shouldn't cancel the others still
+      #  running - each language's result should be visible on its own.
+      fail-fast: false
+      matrix:
+        include:
+          - name: python3
+            dir: gen_scripts/python3
+          - name: ruby
+            dir: gen_scripts/ruby
+          - name: perl
+            dir: gen_scripts/perl
+          - name: bash
+            dir: shell_scripts/bash
+          # :ps1 lessons run fine under POSIX pwsh (Script.rb's `command`
+          #  already handles this - see native_unix?), so this doesn't
+          #  need windows-latest.
+          - name: powershell
+            dir: win_scripts/powershell
+          # Add compiled_lang's cpp/rust/go here once their test suites
+          # are more complete (see compiled_lang/README.md's Status
+          # section). Each will also need its own compiler installed via
+          # an extra step before "Run rake" below - g++/make are already
+          # on ubuntu-latest; Rust needs dtolnay/rust-toolchain (or
+          # rustup directly); Go needs actions/setup-go.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby (for rake, and for the ruby/ lesson itself)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      # bash's c2/c3/k0 lessons shell out to `bc` for floating-point math
+      #  (bash itself has no float support) - installed only if missing,
+      #  since some runner images already carry it and some don't (found
+      #  the hard way testing this workflow locally with `act`, whose
+      #  minimal runner image doesn't).
+      - name: Ensure bc is available
+        if: matrix.name == 'bash'
+        run: command -v bc || (sudo apt-get update -qq && sudo apt-get install -y bc)
+
+      # Likewise for pwsh on the powershell/ job - some runner images
+      #  ship it, some don't; install from Microsoft's own repo if it's
+      #  missing rather than assuming either way.
+      - name: Ensure PowerShell (pwsh) is available
+        if: matrix.name == 'powershell'
+        run: |
+          if ! command -v pwsh > /dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq wget apt-transport-https software-properties-common
+            . /etc/os-release
+            wget -q "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb" -O /tmp/packages-microsoft-prod.deb
+            sudo dpkg -i /tmp/packages-microsoft-prod.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq powershell
+          fi
+
+      - name: Run rake
+        working-directory: ${{ matrix.dir }}
+        run: rake
