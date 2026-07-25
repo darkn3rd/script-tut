@@ -4,7 +4,7 @@
 
 ## Overview
 
-`compiled_lang` holds implementations of the same lessons as `gen_scripts`/`shell_scripts`/`win_scripts`, but for languages that need a build step first: Java, C#, Go, Rust, and C++. Each lesson is still one source file per test (`a00.output.java`, `a00.output.rs`, ...), but before the test harness can run it, a `Makefile` in that directory has to turn it into something runnable.
+The `compiled_lang` holds implementations of the same lessons as `gen_scripts`/`shell_scripts`/`win_scripts`, but for languages that need a build step first: Java, C#, Go, Rust, and C++. Each lesson is still one source file per test (`a00.output.java`, `a00.output.rs`, ...), but before the test harness can run it, a `Makefile` in that directory has to turn it into something runnable.
 
 ## Convention
 
@@ -19,6 +19,51 @@ Java can't produce a real standalone native binary from a single source file, so
 * **Java** - `javac` output is named after the *class* declared inside the file, not the source file, and there's no single-file "compile to a binary" option. Each lesson's class must **not** be `public` (a `public` class's file name is required to match the class name exactly, which would conflict with this project's dotted lesson-file naming) - see `java/a00.output.java` for the pattern. The Makefile compiles the `.class` file into `bin/` too, then generates a launcher in `bin/`, named after the source (a POSIX shell script, or a `.bat` wrapper on Windows), that runs `java -cp . ClassName`.
 
 C# is the other exception, for a different reason: there's no simple, version-independent way to drive `csc` directly for a single file (see `cs/README.md`), so its Makefile generates a minimal, throwaway `.csproj` per lesson and builds it with `dotnet build` instead - a plain console app needs no NuGet/network access to do this. That produces a genuine native apphost on both Windows and real POSIX, so unlike Java, no wrapper script is needed.
+
+## Windows 11 Smart App Control (SAC)
+
+The Smart App Control (SAC) will prevent your compiled application binaries from running.  You can disable SAC with these commands:
+
+* Using **Command Shell** (`cmd.exe`)
+  ```batch
+  :: Add a registry key or modify an existing one
+  reg add ^
+    "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" ^
+    /v VerifiedAndReputablePolicyState ^
+    /t REG_DWORD ^
+    /d 0 ^
+    /f
+
+  :: Refresh the active system Code Integrity policies immediately
+  CiTool.exe -r
+  ```
+* Using **PowerShell**
+  ```powershell
+  # Set or modify a property value inside the registry
+  Set-ItemProperty `
+    -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy" `
+    -Name "VerifiedAndReputablePolicyState" `
+    -Value 0
+
+  # Refresh the active system Code Integrity policies immediately
+  CiTool.exe -r
+  ```
+* MSYS2
+  ```bash
+  # Define path conversion exclusion so MSYS2 does not alter the flags
+  export MSYS2_ARG_CONV_EXCL="*"
+  
+  # Call the native Windows reg tool to modify the policy state to 0 (Off)
+  reg.exe add \
+    "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" \
+    /v VerifiedAndReputablePolicyState \
+    /t REG_DWORD \
+    /d 0 \
+    /f
+
+  # Force Windows Code Integrity to reload policies immediately
+  CiTool.exe -r
+  ```
 
 ## Building and testing
 
