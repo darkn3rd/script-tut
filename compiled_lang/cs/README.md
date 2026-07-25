@@ -10,12 +10,64 @@ C# has the following tools:
 
 ## 💡 Why Was It Created?
 
-Microsoft needed a first-class, modern language for its new .NET runtime: C and C++ offered no memory safety or garbage collection, and licensing/legal friction with Sun over Microsoft's own extended dialect of Java (J++) made a Java dependency untenable long-term.
+Microsoft .NET Framework 1.0 was first released on February 13, 2002. It was created to provide a unified programming model, simplify web and Windows application development, and introduce a managed runtime environment - the Common Language Runtime (CLR) - that solved common software bugs like memory management.
 
-1. **Type Safety + Managed Memory**: C# runs on the Common Language Runtime (CLR), which handles garbage collection and JIT compilation - the same role the JVM plays for Java - eliminating whole categories of manual-memory bugs.
-2. **Rapid, Batteries-Included Development**: one language spans web (ASP.NET Core), desktop (WPF/WinForms/MAUI), games (Unity), and cloud services (Azure Functions), backed by a large standard library and the NuGet ecosystem.
-3. **Cross-Platform Reinvention**: starting with .NET Core and unified in .NET 5+, Microsoft rebuilt the runtime as open-source and cross-platform, ending C#'s Windows-only past.
-4. **Evolving Fast**: modern C# (pattern-matching switches, records, nullable reference types, top-level statements) has closed much of the gap with newer languages while staying backward compatible.
+The .NET Framework was architecturally similar to the Java JDK, in that code is compiled to bytecode rather than being locked to a single machine's native binary format at compile time:
+
+| Architectural Layer | Java Platform (JDK 1.4 era) | .NET 1.0 Platform (2002) |
+| :--- | :--- | :--- |
+| **Virtual Machine** | Java Virtual Machine (JVM) | Common Language Runtime (CLR) |
+| **Intermediate Code** | Java Bytecode (`.class`) | Common Intermediate Language (CIL / MSIL) |
+| **Execution Engine** | Mixed (Interpreter + Just-In-Time) | Strict Just-In-Time (JIT / Pre-JIT Compilation) |
+| **Design Philosophy** | Single language, multi-platform (*"Write Once, Run Anywhere"*) | Multi-language, single-platform (*"Write in any language, run on Windows"*) |
+| **Type System** | Java Type System (unified via `java.lang.Object`) | Common Type System (CTS, unified via `System.Object`) |
+| **Value vs. Reference** | Primitive types cannot have methods or behave as objects | Primitives can be converted to objects cleanly via **Boxing/Unboxing** |
+| **Base Class Library** | Java Development Kit (JDK Standard Library) | .NET Base Class Library (BCL) |
+| **Memory Management** | Generational Garbage Collection (Tracing) | Mark-and-Compact Generational Garbage Collection |
+| **Interoperability** | Java Native Interface (JNI) via native C wrapper layers | Platform Invoke (**P/Invoke**) and native COM Interop wrapper layers |
+| **Component Assembly** | Java Archive (`.jar` files containing zipped bytecode) | Assemblies (`.dll`/`.exe` Portable Executable files containing metadata) |
+| **Security Architecture** | Sandboxed applet execution security framework | Code Access Security (CAS) |
+| **Web System Framework** | Java Servlets / JavaServer Pages (JSP) | ASP.NET Web Forms |
+| **Enterprise Operations** | Enterprise JavaBeans (EJB) | Enterprise Services (`System.EnterpriseServices` via COM+) |
+| **Data Engine Access** | Java Database Connectivity (JDBC) | ADO.NET (disconnected `DataSet` model) |
+
+### Why?
+
+Before .NET, Microsoft had split its own resources across several separate runtimes:
+
+* Visual Basic Runtime (`MSVBVMxx.DLL`)
+* COM (Component Object Model) runtime
+* Microsoft Virtual Machine for Java (MSJVM)
+* Native Win32 C/C++ runtime (`MSVCRT.DLL`)
+* Windows Script Host (WSH) engine
+
+...each with its own frameworks built on top: desktop UI (MFC, ATL, WTL), web (ASP, DNA), data access (DAO, ADO, RDO), components (COM+, MTS), and Visual Basic's own stack (the VB Forms Engine, ActiveX/OCX). MSJVM had its own equivalents too (WFC, J/Direct).
+
+Maintaining all of these was expensive, and innovations in one runtime's framework couldn't be shared with the others - a lot of the same ground got reinvented repeatedly. .NET's answer was a single unifying model: code from different languages compiles to a shared bytecode, CIL (Common Intermediate Language), which runs on one application VM, the CLR, using a JIT compiler. Frameworks - and even individual classes - could finally be shared across languages instead of siloed per-runtime.
+
+.NET originally supported a broader set of languages than just C# and VB.NET:
+
+| Language | Syntax Equivalent | Released | Ended |
+| :--- | :--- | :--- | :--- |
+| **C#** | C++ / Java | 2002 | Active |
+| **Visual Basic .NET** | Classic VB / BASIC | 2002 | Active |
+| **F#** | OCaml / Functional | 2010 | Active |
+| **JScript .NET** | JavaScript | 2002 | 2016 |
+| **Visual J#** | Java | 2002 | 2007 |
+| **IronPython** | Python | 2006 | Active (Community) |
+| **IronRuby** | Ruby | 2010 | 2011 (Community) |
+
+And the classic frameworks each had a direct .NET-era successor:
+
+* **Visual Basic**: the VB Forms Engine → Windows Forms (WinForms); ActiveX/OCX controls → .NET User Controls.
+* **MSJVM / Visual J++**: WFC (Windows Foundation Classes) → Windows Forms; J/Direct → P/Invoke.
+* **Web**: Classic ASP (Active Server Pages) → ASP.NET Web Forms.
+* **Data access**: ADO (ActiveX Data Objects) → ADO.NET.
+* **Enterprise/components**: COM+/MTS → Enterprise Services; DCOM → .NET Remoting.
+
+Because the compiled output was bytecode rather than a native binary, it was feasible to compile on one operating system and run on another, as long as the same libraries (assemblies) were available. Around 2014 this was genuinely usable in practice: the open-source Mono Project let you compile binaries on Mac OS X and run them on Windows 7, and vice versa. The community had built compatible pieces of the stack too - `mod_mono` for ASP.NET on Apache, and ADO.NET providers for MySQL, PostgreSQL (Npgsql), and SQLite.
+
+.NET's purpose was never "write once, run everywhere" the way the JVM's was - it was to unify Microsoft's own fragmented runtimes. Within that original scope, the model has kept evolving; see [Notes](#notes) below for where that evolution led (Native AOT) and why this project's own Makefile uses it.
 
 ## Install
 
