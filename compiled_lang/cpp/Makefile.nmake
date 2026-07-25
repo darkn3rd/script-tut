@@ -10,8 +10,18 @@
 # here are maintained by hand: add each new a00.output.cpp-style lesson
 # to SOURCES, and its matching bin\a00.output.exe entry to BINARIES.
 
-SOURCES  = a00.output.cpp
-BINARIES = bin\a00.output.exe
+SOURCES  = a00.output.cpp \
+           f00.loop.cpp f01.loop.cpp f02.loop.cpp f03.loop.cpp \
+           f10.loop.cpp f11.loop.cpp f12.loop.cpp f13.loop.cpp \
+           f20.loop.cpp f21.loop.cpp \
+           f30.loop.cpp f31.loop.cpp f32.loop.cpp \
+           f40.loop.cpp f41.loop.cpp f42.loop.cpp
+BINARIES = bin\a00.output.exe \
+           bin\f00.loop.exe bin\f01.loop.exe bin\f02.loop.exe bin\f03.loop.exe \
+           bin\f10.loop.exe bin\f11.loop.exe bin\f12.loop.exe bin\f13.loop.exe \
+           bin\f20.loop.exe bin\f21.loop.exe \
+           bin\f30.loop.exe bin\f31.loop.exe bin\f32.loop.exe \
+           bin\f40.loop.exe bin\f41.loop.exe bin\f42.loop.exe
 
 CXX = cl
 CXXFLAGS = /nologo /EHsc /std:c++17 /O2 /W3
