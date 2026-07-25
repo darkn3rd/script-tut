@@ -731,6 +731,41 @@ class ScriptBase
          "#{green('Pass')}=#{@@summary[:pass]}  " +
          "#{red('Fail')}=#{@@summary[:fail]}  " +
          "#{yellow('Skip')}=#{@@summary[:skip]}"
+    write_github_summary
+  end
+
+  # write_github_summary() - appends a Markdown table (language, version,
+  #  pass/fail/skip counts) to $GITHUB_STEP_SUMMARY, GitHub Actions' own
+  #  native "final report" mechanism - no separate JUnit-XML-style file
+  #  or third-party action needed, since this project doesn't otherwise
+  #  produce per-test-case detail. Every matrix job's block is what ends
+  #  up rolled together on the overall workflow run's summary page (GH
+  #  doesn't insert its own separator between jobs there), hence the
+  #  language/version heading up top so multiple jobs' blocks stay
+  #  distinguishable stacked together.
+  #  A no-op outside GitHub Actions - that env var is only ever set by
+  #  the runner itself - so this changes nothing about a normal local
+  #  `rake` run. Appends (never overwrites): other steps in the same job
+  #  may have already written to this same file.
+  def self.write_github_summary
+    path = ENV['GITHUB_STEP_SUMMARY']
+    return if path.to_s.empty?
+
+    # Kept as separate labeled fields rather than one concatenated
+    #  "#{language_name} #{version}" string - some languages' own
+    #  --version output already includes their name (e.g. Python prints
+    #  "Python 3.x.x"), which would otherwise read as "Python Python
+    #  3.x.x".
+    File.open(path, 'a') do |f|
+      f.puts "## #{language_name}"
+      f.puts
+      f.puts "**Version**: #{version}"
+      f.puts
+      f.puts "| Total | ✅ Pass | ❌ Fail | ⏭️ Skip |"
+      f.puts "| :---: | :---: | :---: | :---: |"
+      f.puts "| #{@@summary[:total]} | #{@@summary[:pass]} | #{@@summary[:fail]} | #{@@summary[:skip]} |"
+      f.puts
+    end
   end
 
   # failed?() - true if any test compared so far in this process failed.
