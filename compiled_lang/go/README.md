@@ -49,7 +49,7 @@ rake
 
 ## Notes
 
-`go.mod` declares a minimal module (`scripttut/compiled_lang/go`) so `go build <file>.go` works reliably regardless of the installed Go version's module-mode defaults - none of these lessons have external dependencies, so nothing else should be needed there. Each lesson is `package main` with a `main()` function; the Makefile builds each source file independently (`go build -o a00.output a00.output.go`). Verified working end-to-end with go1.26.5.
+`go.mod` declares a minimal module (`scripttut/compiled_lang/go`) so `go build <file>.go` works reliably regardless of the installed Go version's module-mode defaults - none of these lessons have external dependencies, so nothing else should be needed there. Each lesson is `package main` with a `main()` function; the Makefile builds each source file independently into `target/`, then copies the result into `bin/` (`go build -o target/a00.output src/a00.output.go`) - `go build` compiles straight to a final binary in one step, so this is purely to keep the same `target/`-then-`bin/` shape every language here follows. `go.mod` itself stays at the language directory root rather than moving into `src/` - Go resolves the nearest `go.mod` by walking up from the source file's directory, so it's found there regardless. Verified working end-to-end with go1.26.5.
 
 `go.mod` currently declares `go 1.23`, needed for the `iter` package (range-over-func iterators) and range-over-int, both used by a couple of the loop lessons - bump it further if a future lesson needs something newer.
 

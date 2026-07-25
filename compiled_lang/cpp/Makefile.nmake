@@ -7,17 +7,23 @@
 # NMAKE has no wildcard/glob function the way GNU Make's $(wildcard ...)
 # does, and its macro substitution can't prepend "bin\" to a whole list
 # the way $(addprefix ...) can - so, unlike the GNU Makefile, both lists
-# here are maintained by hand: add each new a00.output.cpp-style lesson
-# to SOURCES, and its matching bin\a00.output.exe entry to BINARIES.
+# here are maintained by hand: add each new src\a00.output.cpp-style
+# lesson to SOURCES, and its matching bin\a00.output.exe entry to
+# BINARIES.
+#
+# cl.exe compiles and links in one invocation, but /Fo and /Fe still let
+# the object file and the final executable land in two different
+# directories - so, like the GNU Makefile, only the final executable
+# ends up in bin\ (see ../README.md's Directory Structure section).
 
-SOURCES  = a00.output.cpp \
-           c00.arithmetic.cpp c10.arithmetic.cpp c20.arithmetic.cpp c30.arithmetic.cpp \
-           e00.branch.cpp e10.branch.cpp e20.branch.cpp e30.branch.cpp e40.branch.cpp e50.branch.cpp e60.branch.cpp \
-           f00.loop.cpp f01.loop.cpp f02.loop.cpp f03.loop.cpp \
-           f10.loop.cpp f11.loop.cpp f12.loop.cpp f13.loop.cpp \
-           f20.loop.cpp f21.loop.cpp \
-           f30.loop.cpp f31.loop.cpp f32.loop.cpp \
-           f40.loop.cpp f41.loop.cpp f42.loop.cpp
+SOURCES  = src\a00.output.cpp \
+           src\c00.arithmetic.cpp src\c10.arithmetic.cpp src\c20.arithmetic.cpp src\c30.arithmetic.cpp \
+           src\e00.branch.cpp src\e10.branch.cpp src\e20.branch.cpp src\e30.branch.cpp src\e40.branch.cpp src\e50.branch.cpp src\e60.branch.cpp \
+           src\f00.loop.cpp src\f01.loop.cpp src\f02.loop.cpp src\f03.loop.cpp \
+           src\f10.loop.cpp src\f11.loop.cpp src\f12.loop.cpp src\f13.loop.cpp \
+           src\f20.loop.cpp src\f21.loop.cpp \
+           src\f30.loop.cpp src\f31.loop.cpp src\f32.loop.cpp \
+           src\f40.loop.cpp src\f41.loop.cpp src\f42.loop.cpp
 BINARIES = bin\a00.output.exe \
            bin\c00.arithmetic.exe bin\c10.arithmetic.exe bin\c20.arithmetic.exe bin\c30.arithmetic.exe \
            bin\e00.branch.exe bin\e10.branch.exe bin\e20.branch.exe bin\e30.branch.exe bin\e40.branch.exe bin\e50.branch.exe bin\e60.branch.exe \
@@ -30,13 +36,17 @@ BINARIES = bin\a00.output.exe \
 CXX = cl
 CXXFLAGS = /nologo /EHsc /std:c++17 /O2 /W3
 
-all: bin $(BINARIES)
+all: bin target $(BINARIES)
 
 bin:
 	if not exist bin mkdir bin
 
-{}.cpp{bin}.exe:
-	$(CXX) $(CXXFLAGS) /Fo:bin\ /Fe:$@ $<
+target:
+	if not exist target mkdir target
+
+{src}.cpp{bin}.exe:
+	$(CXX) $(CXXFLAGS) /Fo:target\ /Fe:$@ $<
 
 clean:
-	-del /q bin\*.exe bin\*.obj 2>nul
+	-del /q bin\*.exe 2>nul
+	-rmdir /s /q target 2>nul

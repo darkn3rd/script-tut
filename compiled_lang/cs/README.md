@@ -84,6 +84,12 @@ dotnet --list-sdks
 
 If `dotnet --version` fails with something like "no SDKs were found" even though `dotnet` itself exists, only the runtime is installed - you need the SDK specifically.
 
+These lessons build with Native AOT (see [Notes](#notes)), which needs a native linker on top of the SDK - the same one cpp/ needs:
+
+* **macOS**: `xcode-select --install` (you very likely already have this).
+* **Linux**: `apt install clang` (or your distro's equivalent) - `gcc` also works.
+* **Windows**: the MSVC Build Tools - see [cpp/README.md](../cpp/README.md#install)'s "Building with MSVC" section for how to get them.
+
 ## Building and Running
 
 ### Makefile
@@ -106,7 +112,9 @@ rake
 
 There's no simple, version-independent way to invoke the compiler directly for a single file: a bare `csc` needs either a hand-built list of every BCL reference assembly it needs (fragile - roughly 240 files, and the exact list depends on the installed SDK's version) or Mono as a separate dependency (whose own compiled `.exe` still needs a wrapper to run on real POSIX, or `mono` prefixed by hand). Both were dead ends in practice.
 
-Instead, the Makefile generates a minimal, throwaway `.csproj` for each lesson and builds it with `dotnet build`. A plain console app has zero external package dependencies, so this needs no NuGet/network access - `dotnet build` resolves everything from the installed SDK alone - and it produces a genuine native apphost, not a "needs a host to run it" managed exe, so (unlike the Mono path) no wrapper script is needed on Windows *or* real POSIX. This is the one language here that needs a project file rather than a truly bare single-file compile, but it's generated automatically - you'll never see or touch it.
+Instead, the Makefile generates a minimal, throwaway `.csproj` for each lesson (into `target/` - you'll never see or touch it) and publishes it with `dotnet publish` and **Native AOT** (`<PublishAot>true</PublishAot>`) - ahead-of-time compilation straight to native machine code, the same general idea as `g++`/`rustc`. A plain console app has zero external package dependencies, so this needs no NuGet/network access.
+
+This wasn't the first thing tried. A plain `dotnet build` also produces a "native apphost" - but that apphost is a small stub, not an actually self-contained binary: it looks for a same-named `.dll` (plus `.runtimeconfig.json`/`.deps.json`) sitting right next to itself and fails immediately ("The application to execute does not exist: ...") without them. Native AOT is what actually gets `bin/` down to one genuinely standalone executable per lesson, matching the other four languages here - the tradeoff is the native-linker requirement noted under [Install](#install), and that AOT compiles for one specific OS+architecture at a time rather than "any CPU" (the Makefile autodetects the current machine's Runtime Identifier via `dotnet --info` - see the Makefile itself).
 
 ## Visual Studio Extensions
 
@@ -139,25 +147,25 @@ Open your settings file in VS Code (Cmd + Shift + P -> Preferences: Open User Se
 
 ### Visual Studio Debugging
 
-To debug a compiled lesson binary directly with C# Dev Kit's debugger, add a `.vscode/launch.json`:
+C# Dev Kit's own debugger (`coreclr`) attaches to a managed process - it doesn't apply here, since a Native AOT binary (see [Notes](#notes)) has no managed runtime for it to attach to. To step through a lesson binary in `bin/`, use a native debugger instead, same as [cpp/README.md](../cpp/README.md#visual-studio-debugging)'s [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb):
 
 ```json
 {
   "version": "0.2.0",
   "configurations": [
     {
-      "name": ".NET: Debug Lesson",
-      "type": "coreclr",
+      "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/bin/a00.output.dll",
-      "cwd": "${workspaceFolder}",
-      "console": "internalConsole"
+      "name": "Debug C# Lesson",
+      "program": "${workspaceFolder}/bin/a00.output",
+      "args": [],
+      "cwd": "${workspaceFolder}"
     }
   ]
 }
 ```
 
-Swap `a00.output.dll` for whichever lesson's built `.dll` (in `bin/`, alongside the native apphost) you want to step through.
+Swap `bin/a00.output` for whichever lesson binary you want to step through (build it first with `make`). You'll be stepping through native/disassembly rather than C# source line-by-line - useful for confirming AOT actually did what you expect, less useful as an everyday C# debugger.
 
 ## Further Reading
 

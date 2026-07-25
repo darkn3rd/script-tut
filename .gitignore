@@ -2,9 +2,12 @@
 '~$script_tracker.xlsx'
 .vagrant
 
-# compiled_lang/*/bin/ holds build output only (see
-# compiled_lang/README.md) - `make clean` in the language directory
-# empties it too. .gitkeep keeps the otherwise-empty directory itself
-# tracked.
+# compiled_lang/*/bin/ holds the final, promoted build output; target/
+# holds intermediate build artifacts (obj files, generated project
+# files, ...) on the way there (see compiled_lang/README.md) - `make
+# clean` in the language directory empties both. .gitkeep keeps each
+# otherwise-empty directory itself tracked.
 compiled_lang/*/bin/*
 !compiled_lang/*/bin/.gitkeep
+compiled_lang/*/target/*
+!compiled_lang/*/target/.gitkeep

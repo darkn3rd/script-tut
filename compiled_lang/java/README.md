@@ -70,7 +70,7 @@ class A00Output {
 }
 ```
 
-The Makefile compiles this into `bin/` (`javac -d bin a00.output.java` -> `bin/A00Output.class`), then generates a launcher at `bin/a00.output` (or `bin/a00.output.bat` on Windows) that runs `java -cp . A00Output` - that launcher, not the `.class` file, is what the test harness actually invokes. It finds the class name by grepping the source for the first `class Name` declaration, so keep to one top-level class per lesson file.
+The Makefile compiles this into `target/` (`javac -d target src/a00.output.java` -> `target/A00Output.class`), then generates a launcher at `bin/a00.output` (or `bin/a00.output.bat` on Windows) that runs `java -cp <path-to-target> A00Output` - that launcher, not the `.class` file, is what the test harness actually invokes. It finds the class name by grepping the source for the first `class Name` declaration, so keep to one top-level class per lesson file.
 
 ## Visual Studio Extensions
 

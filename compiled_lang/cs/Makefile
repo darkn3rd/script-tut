@@ -1,4 +1,4 @@
-# Builds every a00.output.cs-style lesson in this directory into
+# Builds every src/a00.output.cs-style lesson in this directory into
 # bin/a00.output.exe on Windows, or bin/a00.output on real POSIX -
 # see ../README.md for the convention this follows and why.
 #
@@ -8,12 +8,30 @@
 # dependency, and its own compiled .exe still isn't directly runnable on
 # real POSIX without a wrapper). Instead, each lesson gets its own
 # minimal, throwaway .csproj generated on the fly, built with `dotnet
-# build`. A plain console app has zero external package dependencies, so
-# this needs no NuGet access - `dotnet build` resolves everything from
-# the installed SDK alone - and it produces a genuine native apphost
-# (correct on Windows *and* real POSIX), not a "needs a host to run it"
-# managed exe, so no wrapper script is needed on either platform (unlike
-# java/Makefile, which has no such option at all).
+# publish -r <RID>` and Native AOT (<PublishAot>true</PublishAot>).
+#
+# A plain `dotnet build` apphost is *not* actually self-contained - it's
+# a small native stub that looks for a same-named .dll (plus
+# .runtimeconfig.json/.deps.json) sitting right next to itself, and
+# fails immediately without them, unlike every other language here.
+# Native AOT fixes that properly: it ahead-of-time compiles straight to
+# native machine code, so bin/ ends up with one genuinely standalone
+# executable per lesson, same as g++/go/rustc produce - no bundled
+# runtime needed at all (unlike a traditional
+# <PublishSingleFile>+<SelfContained> publish, which bundles the entire
+# .NET runtime into every binary, ~70MB+ each). The tradeoff: AOT needs
+# a native linker on top of the SDK - clang/gcc on POSIX (already
+# required for cpp/, and present via Xcode Command Line Tools on macOS)
+# or the MSVC Build Tools on Windows (already required for cpp/'s own
+# MSVC path - see cpp/README.md) - and, since it compiles for one
+# specific platform+arch rather than "any CPU", needs the current
+# machine's Runtime Identifier (RID) autodetected below.
+#
+# Everything `dotnet publish` produces - the generated .csproj, obj/,
+# and (on macOS) a .dSYM debug-symbol bundle or (elsewhere) a .pdb -
+# lands in target/; only the final native executable gets promoted into
+# bin/, so bin/ holds nothing but runnable executables (see
+# ../README.md's Directory Structure section).
 
 include ../common.mk
 
@@ -25,9 +43,13 @@ endif
 
 # e.g. "10.0.302" -> "10.0", used as the generated <TargetFramework>.
 DOTNET_TFM := $(shell dotnet --version | cut -d. -f1,2)
+# e.g. "osx-x64", "linux-x64", "win-x64" - Native AOT has no "any CPU"
+#  output, so this has to match whatever machine `make` actually runs
+#  on, same as `dotnet --info` itself reports.
+DOTNET_RID := $(shell dotnet --info | grep 'RID:' | awk '{print $$NF}')
 
-SRC := $(wildcard *.cs)
-BIN := $(addprefix bin/,$(SRC:.cs=$(OUTEXT)))
+SRC := $(wildcard src/*.cs)
+BIN := $(addprefix bin/,$(notdir $(SRC:.cs=$(OUTEXT))))
 
 .PHONY: all clean
 all: $(BIN)
@@ -35,10 +57,16 @@ all: $(BIN)
 bin:
 	-@mkdir bin
 
-bin/%$(OUTEXT): %.cs | bin
-	@printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net$(DOTNET_TFM)</TargetFramework>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>disable</Nullable>\n    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n    <AssemblyName>$*</AssemblyName>\n    <BaseIntermediateOutputPath>obj/$*/</BaseIntermediateOutputPath>\n  </PropertyGroup>\n  <ItemGroup>\n    <Compile Include="../$*.cs" />\n  </ItemGroup>\n</Project>\n' > bin/$*.csproj
-	dotnet build bin/$*.csproj -o bin --nologo -v quiet
+target:
+	-@mkdir target
+
+bin/%$(OUTEXT): src/%.cs | bin target
+	@printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net$(DOTNET_TFM)</TargetFramework>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>disable</Nullable>\n    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n    <AssemblyName>$*</AssemblyName>\n    <PublishAot>true</PublishAot>\n    <InvariantGlobalization>true</InvariantGlobalization>\n    <BaseIntermediateOutputPath>obj/$*/</BaseIntermediateOutputPath>\n  </PropertyGroup>\n  <ItemGroup>\n    <Compile Include="../src/$*.cs" />\n  </ItemGroup>\n</Project>\n' > target/$*.csproj
+	dotnet publish target/$*.csproj -r $(DOTNET_RID) -o target --nologo -v quiet
+	cp target/$*$(OUTEXT) $@
 
 clean:
-	rm -f $(BIN) bin/*.exe bin/*.dll bin/*.pdb bin/*.deps.json bin/*.runtimeconfig.json bin/*.csproj
-	rm -rf bin/obj
+	rm -f $(BIN)
+	rm -rf target
+	@mkdir -p target
+	@touch target/.gitkeep

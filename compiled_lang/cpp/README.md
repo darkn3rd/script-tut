@@ -76,7 +76,7 @@ Unlike the GNU Makefile, NMAKE has no wildcard/glob function - `Makefile.nmake`'
 
 ## Notes
 
-Compiled with `-std=c++17 -O2 -Wall`. Each lesson is a single translation unit (`g++ a00.output.cpp -o a00.output`) - no build system beyond the Makefile itself.
+Compiled with `-std=c++17 -O2 -Wall`. Each lesson is a single translation unit, built in two steps rather than g++'s usual one-shot compile+link, so there's a real object file to put in `target/`: `g++ -c src/a00.output.cpp -o target/a00.output.o`, then `g++ target/a00.output.o -o bin/a00.output` - no build system beyond the Makefile itself.
 
 ## Visual Studio Extensions
 

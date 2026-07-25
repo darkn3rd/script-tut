@@ -239,12 +239,26 @@ class ScriptBase
   #  bare filename, not a "scripts/"-prefixed path - so expected.json's
   #  $cmd$ substitution (see execute()) needs no per-language handling
   #  for the move at all.
-  #  compiled_lang/ doesn't use this convention (source stays at the
-  #  root, build output goes to bin/), so it has no scripts/ to change
-  #  into and this is simply a no-op there.
+  #  compiled_lang/ doesn't use this convention (see @@source_subdir
+  #  below instead), so it has no scripts/ to change into and this is
+  #  simply a no-op there.
   Dir.chdir("scripts") if Dir.exist?("scripts")
 
-  @@language  = Dir.glob('a00.*').map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
+  # compiled_lang/*/src/ is the other lesson-file convention this
+  #  harness supports, alongside scripts/ above - but unlike scripts/,
+  #  it deliberately does NOT chdir there: `make`, the promoted bin/
+  #  binaries it builds, and the dirtest/ fixture some of them read all
+  #  need CWD to stay at the language directory root (bin/a00.output is
+  #  invoked as a relative path *from* there, and a compiled binary's
+  #  own working directory follows whoever spawned it, not wherever its
+  #  own executable file happens to live - see compiled_lang/README.md).
+  #  Only @@language detection, find_implementations, and
+  #  testbox_tags's file reads need to know where src/ actually is;
+  #  "." here (scripts/ already chdir'd into, or a language dir that
+  #  simply uses neither convention) means "wherever we already are."
+  @@source_subdir = Dir.exist?("src") ? "src" : "."
+
+  @@language  = Dir.glob(File.join(@@source_subdir, 'a00.*')).map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
   # __dir__-based, not "../../testbox/..." - robust regardless of the
   #  chdir above, since it resolves relative to this file's own location
   #  (testbox/) rather than counting directory levels up from whatever
@@ -373,6 +387,16 @@ class ScriptBase
     #  auto-detection (both are "a00.output.cmd"). cmd.exe treats ".bat"
     #  as an equally native batch-script extension, so this loses nothing.
     @@language.to_sym == :java ? ".bat" : ".exe"
+  end
+
+  # find_implementations(task) - locates every lesson file for `task`
+  #  (e.g. "a0" -> ["a00.output.rs"]) wherever this language's source
+  #  actually lives (see @@source_subdir) - bare filenames, exactly like
+  #  the plain `Dir.glob("#{task}?.*")` testbox.rake used to call
+  #  directly before both lesson-file conventions it now has to support
+  #  (scripts/ and src/) existed.
+  def self.find_implementations(task)
+    Dir.glob(File.join(@@source_subdir, "#{task}?.*")).map { |f| File.basename(f) }
   end
 
   # shell_out(cmd_str) - runs cmd_str the same way the harness runs a
@@ -588,11 +612,14 @@ class ScriptBase
   #  separate manifest that can drift out of sync.
   def self.testbox_tags(file)
     tags = {}
+    # @@source_subdir-qualified, same reasoning as find_implementations -
+    #  `file` is always a bare filename, and CWD isn't necessarily where
+    #  it actually lives on disk (see @@source_subdir's own comment).
     # Explicit UTF-8 (with BOM-stripping) so a lesson file's encoding
     #  doesn't depend on the shell's locale - some lesson files carry a
     #  UTF-8 BOM, which isn't valid text under the "C"/US-ASCII locale
     #  Ruby otherwise defaults to.
-    File.foreach(file, encoding: "bom|utf-8").first(5).each do |line|
+    File.foreach(File.join(@@source_subdir, file), encoding: "bom|utf-8").first(5).each do |line|
       line.scan(/testbox:\s*(\w+)=(?:"([^"]*)"|(\S+))/) do |key, quoted, bare|
         tags[key] = quoted || bare
       end

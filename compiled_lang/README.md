@@ -6,19 +6,26 @@
 
 The `compiled_lang` holds implementations of the same lessons as `gen_scripts`/`shell_scripts`/`win_scripts`, but for languages that need a build step first: Java, C#, Go, Rust, and C++. Each lesson is still one source file per test (`a00.output.java`, `a00.output.rs`, ...), but before the test harness can run it, a `Makefile` in that directory has to turn it into something runnable.
 
-## Convention
+## Directory Structure
 
-Every language directory here follows the same shape:
+Every language directory here follows the same three-way split:
 
-* `Makefile` - builds every lesson source file in the directory into a runnable artifact under `bin/`, named after the source file **minus its language extension**. `a00.output.rs` becomes `bin/a00.output` on macOS/Linux, or `bin/a00.output.exe` on Windows. `bin/` is gitignored (only `bin/.gitkeep` is tracked, so the directory itself exists on a fresh checkout) - `make clean` empties it back out.
+* `src/` - every lesson's source file (`a00.output.rs`, `f00.loop.rs`, ...) - the only thing you'd actually edit.
+* `target/` - everything the build generates *except* the final runnable thing: object files, a generated project file (C#'s throwaway `.csproj`), compiled classes (Java's `.class`), debug symbols, and so on. Nothing here is meant to be run directly or committed.
+* `bin/` - the final, runnable artifact for each lesson, named after its source file **minus the language extension** (`a00.output.rs` -> `bin/a00.output` on macOS/Linux, `bin/a00.output.exe` on Windows) - this is what the test harness (and you, by hand) actually invokes. For four of the five languages this is a single self-contained executable; Java's is a tiny launcher script (see below), since Java has no such option at all.
+
+Plus, at the language directory root (not moved into any of the above):
+
+* `Makefile` - builds `src/*` into `target/`, then promotes the final artifact into `bin/`. `make clean` empties both `target/` and `bin/` back out. Both are gitignored (only their `.gitkeep` is tracked, so the directories themselves exist on a fresh checkout).
 * `common.mk` (one level up, shared by all five) - figures out whether the build is targeting Windows or real POSIX, since that decides both the output extension and, for some languages, how the runnable artifact is actually shaped (see below).
 * `Rakefile` - a one-liner that imports the shared [testbox](../testbox/README.md) harness, exactly like every other lesson directory.
+* `dirtest/` - the fixture directory the Collection Loop (F0) lesson reads. This one's deliberately *not* under `src/` or `bin/`: the harness never changes directory before running a lesson (`make`, the promoted `bin/` binaries, and this fixture all need to stay reachable from the language directory root - see `testbox/Script.rb`'s `@@source_subdir`), so a lesson's own bare `"dirtest"` reference already resolves correctly right where it's always been.
 
-Java can't produce a real standalone native binary from a single source file, so its Makefile generates a small launcher instead, under the same naming convention:
+Java and C# each need something extra beyond a plain compile-and-promote, for different reasons:
 
-* **Java** - `javac` output is named after the *class* declared inside the file, not the source file, and there's no single-file "compile to a binary" option. Each lesson's class must **not** be `public` (a `public` class's file name is required to match the class name exactly, which would conflict with this project's dotted lesson-file naming) - see `java/a00.output.java` for the pattern. The Makefile compiles the `.class` file into `bin/` too, then generates a launcher in `bin/`, named after the source (a POSIX shell script, or a `.bat` wrapper on Windows), that runs `java -cp . ClassName`.
+* **Java** - `javac` output is named after the *class* declared inside the file, not the source file, and there's no single-file "compile to a binary" option. Each lesson's class must **not** be `public` (a `public` class's file name is required to match the class name exactly, which would conflict with this project's dotted lesson-file naming) - see `java/src/a00.output.java` for the pattern. The Makefile compiles the `.class` file into `target/`, then generates a launcher in `bin/` (a POSIX shell script, or a `.bat` wrapper on Windows) that runs `java -cp <path-to-target> ClassName`.
 
-C# is the other exception, for a different reason: there's no simple, version-independent way to drive `csc` directly for a single file (see `cs/README.md`), so its Makefile generates a minimal, throwaway `.csproj` per lesson and builds it with `dotnet build` instead - a plain console app needs no NuGet/network access to do this. That produces a genuine native apphost on both Windows and real POSIX, so unlike Java, no wrapper script is needed.
+* **C#** - there's no simple, version-independent way to drive `csc` directly for a single file (see `cs/README.md`), so its Makefile generates a minimal, throwaway `.csproj` per lesson into `target/` and publishes it with `dotnet publish` and Native AOT (ahead-of-time compilation straight to native machine code) - a plain console app needs no NuGet/network access to do this. Unlike a plain `dotnet build` apphost (a small stub that needs a same-named `.dll` sitting next to it to actually run), AOT output is a genuinely standalone native executable, same as the other four languages - the tradeoff is that it also needs a native linker (clang/gcc, or MSVC's Build Tools on Windows) on top of the SDK.
 
 ## Windows 11 Smart App Control (SAC)
 
@@ -97,4 +104,4 @@ Every one of them needs [GNU Make](https://www.gnu.org/software/make/) on PATH:
 
 All five languages have been built and run end-to-end through `rake` (compiler/SDK installed, `make` builds it, the harness runs and passes).
 
-`a00` ("Hello"), `h00` ("Assign by Key"), and `h10` ("Assign by List and Appending") exist per language so far - everything else shows as SKIP, same as any other lesson directory with an implementation still missing for a given category.
+Implemented so far, per language: `a00` (Standard Output), `c0`-`c3` (Arithmetic), `e0`-`e6` (Branching), `f0`-`f4` (Looping - several implementations each, showing off each language's own loop constructs), `h00`/`h10` (Associative Arrays). Everything else shows as SKIP, same as any other lesson directory with an implementation still missing for a given category.

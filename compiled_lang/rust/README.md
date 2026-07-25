@@ -100,7 +100,7 @@ rake
 
 ## Notes
 
-Each lesson is compiled standalone with `rustc` directly (`rustc -O -o a00.output a00.output.rs`) - no Cargo project/`Cargo.toml` needed, since these are single-file lessons with no external crates. `rustc` derives a default crate name from the output file name and rejects the dots in these lesson names (`a00.output` isn't a valid crate name) - the Makefile works around this with `--crate-name`, substituting underscores for dots; you won't need to think about this unless you're compiling a lesson by hand outside the Makefile.
+Each lesson is compiled standalone with `rustc` directly (`rustc -O -o target/a00.output src/a00.output.rs`) - no Cargo project/`Cargo.toml` needed, since these are single-file lessons with no external crates. `rustc` derives a default crate name from the output file name and rejects the dots in these lesson names (`a00.output` isn't a valid crate name) - the Makefile works around this with `--crate-name`, substituting underscores for dots; you won't need to think about this unless you're compiling a lesson by hand outside the Makefile. `rustc` compiles straight to a final binary in one step (there's no separate object file the way g++ produces one), so the Makefile just builds directly into `target/` and copies the result into `bin/`, purely to keep the same `target/`-then-`bin/` shape every language here follows.
 
 ## Visual Studio Extensions
 
