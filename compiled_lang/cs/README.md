@@ -67,7 +67,14 @@ And the classic frameworks each had a direct .NET-era successor:
 
 Because the compiled output was bytecode rather than a native binary, it was feasible to compile on one operating system and run on another, as long as the same libraries (assemblies) were available. Around 2014 this was genuinely usable in practice: the open-source Mono Project let you compile binaries on Mac OS X and run them on Windows 7, and vice versa. The community had built compatible pieces of the stack too - `mod_mono` for ASP.NET on Apache, and ADO.NET providers for MySQL, PostgreSQL (Npgsql), and SQLite.
 
-.NET's purpose was never "write once, run everywhere" the way the JVM's was - it was to unify Microsoft's own fragmented runtimes. Within that original scope, the model has kept evolving; see [Notes](#notes) below for where that evolution led (Native AOT) and why this project's own Makefile uses it.
+.NET's purpose was never "write once, run everywhere" the way the JVM's was - it was to unify Microsoft's own fragmented runtimes. Within that original scope, though, the model itself kept evolving. Since .NET Core's 2016 rewrite, Microsoft has split "how do I ship this" into roughly four distinct options, each a genuine point in a real tradeoff space:
+
+1. **Framework-dependent** - small, needs the runtime installed on the target machine (the default `dotnet build`).
+2. **Self-contained** - bundles the entire runtime, no install needed, but ~70MB+ per app.
+3. **Self-contained, single-file** - the same thing, packed into one file instead of a folder.
+4. **Native AOT** - ahead-of-time compiled straight to real machine code, no bundled runtime at all.
+
+Native AOT, introduced with .NET 7 (2022), trades away JIT-time flexibility to get there - no runtime reflection, no dynamic code generation, and one build per OS+architecture instead of "any CPU." It's Microsoft's answer to the Go and Rust story: a genuinely standalone binary, just arrived at from the opposite direction (compiling everything down, rather than never having bundled a JIT-needing runtime in the first place). See [Notes](#notes) below for why this project's own Makefile uses it.
 
 ## Install
 
