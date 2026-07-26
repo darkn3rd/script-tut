@@ -48,7 +48,15 @@ rake
 
 ### Building with MSVC (`cl`/NMAKE)
 
-If you have the [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) installed (the "Desktop development with C++" or `Microsoft.VisualStudio.Workload.VCTools` workload), `Makefile.nmake` builds the same lesson with `cl` via NMAKE instead of GNU Make + `g++`.
+If you have the [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) installed (the "Desktop development with C++" or `Microsoft.VisualStudio.Workload.VCTools` workload), `Makefile.nmake` builds the same lesson with `cl` via NMAKE instead of GNU Make + `g++`. Windows also needs this same workload for C#'s Native AOT builds (see [cs/README.md](../cs/README.md#notes)), even if you never touch `cl`/NMAKE directly here.
+
+**Windows: Chocolatey**
+
+```powershell
+choco install -y visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
+This installs just the Build Tools (compiler/linker only, no IDE) with the C++ workload pre-selected, equivalent to picking "Desktop development with C++" in the graphical installer. Swap `visualstudio2022buildtools` for `visualstudio2022community`/`-professional`/`-enterprise` if you'd rather install the full IDE.
 
 `cl`/`nmake` aren't on `PATH` in a plain shell - you need the MSVC environment set up first. Either open a **"Developer Command Prompt for VS 2022"** / **"Developer PowerShell for VS 2022"** from the Start menu, or set it up in a regular session yourself:
 

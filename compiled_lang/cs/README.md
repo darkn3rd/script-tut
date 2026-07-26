@@ -147,7 +147,7 @@ These lessons build with Native AOT (see [Notes](#notes)), which needs a native 
 
 * **macOS**: `xcode-select --install` (you very likely already have this).
 * **Linux**: `apt install clang` (or your distro's equivalent) - `gcc` also works.
-* **Windows**: the MSVC Build Tools - see [cpp/README.md](../cpp/README.md#install)'s "Building with MSVC" section for how to get them.
+* **Windows**: the MSVC Build Tools - see [cpp/README.md](../cpp/README.md#building-with-msvc-clnmake)'s "Building with MSVC" section for how to get them (including a Chocolatey one-liner).
 
 ## Building and Running
 
@@ -171,9 +171,25 @@ rake
 
 There's no simple, version-independent way to invoke the compiler directly for a single file: a bare `csc` needs either a hand-built list of every BCL reference assembly it needs (fragile - roughly 240 files, and the exact list depends on the installed SDK's version) or Mono as a separate dependency (whose own compiled `.exe` still needs a wrapper to run on real POSIX, or `mono` prefixed by hand). Both were dead ends in practice.
 
-Instead, the Makefile generates a minimal, throwaway `.csproj` for each lesson (into `target/` - you'll never see or touch it) and publishes it with `dotnet publish` and **Native AOT** (`<PublishAot>true</PublishAot>`) - ahead-of-time compilation straight to native machine code, the same general idea as `g++`/`rustc`. A plain console app has zero external package dependencies, so this needs no NuGet/network access.
+Instead, the Makefile generates a minimal, throwaway `.csproj` for each lesson (into `target/` - you'll never see or touch it) and publishes it with `dotnet publish` and **Native AOT** (`<PublishAot>true</PublishAot>`) - ahead-of-time compilation straight to native machine code, the same general idea as `g++`/`rustc`. A plain console app has zero external package dependencies of its own, but AOT still needs to fetch the compiler toolchain itself (`Microsoft.DotNet.ILCompiler`, `Microsoft.NET.ILLink.Tasks`, and the matching runtime packs) from NuGet the first time - see the troubleshooting note below if that fails.
 
 This wasn't the first thing tried. A plain `dotnet build` also produces a "native apphost" - but that apphost is a small stub, not an actually self-contained binary: it looks for a same-named `.dll` (plus `.runtimeconfig.json`/`.deps.json`) sitting right next to itself and fails immediately ("The application to execute does not exist: ...") without them. Native AOT is what actually gets `bin/` down to one genuinely standalone executable per lesson, matching the other four languages here - the tradeoff is the native-linker requirement noted under [Install](#install), and that AOT compiles for one specific OS+architecture at a time rather than "any CPU" (the Makefile autodetects the current machine's Runtime Identifier via `dotnet --info` - see the Makefile itself).
+
+### Troubleshooting
+
+**`error NU1100: Unable to resolve 'Microsoft.DotNet.ILCompiler ...'`** (and similar for `Microsoft.NET.ILLink.Tasks`/runtime packs) - any OS: `dotnet nuget list source` reports "No sources found" - a fresh SDK install normally registers `nuget.org` by default, but if yours didn't (or it was removed), AOT has nowhere to fetch its own compiler toolchain from on first use. Fix by registering it yourself:
+
+```bash
+dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+```
+
+**`'vswhere.exe' is not recognized...` / `MSB3073` during the link step** - Windows only: AOT's final link step shells out to `vswhere.exe` to locate the MSVC linker, same as the native C++ toolchain (see [cpp/README.md](../cpp/README.md#building-with-msvc-clnmake)). This doesn't come up on macOS/Linux - `clang`/`gcc` sit directly on `PATH` once installed, with no separate activation step. On Windows, if you're not running from a Developer Command Prompt/Developer PowerShell for VS, add the VS Installer directory to `PATH` instead:
+
+```powershell
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Program Files (x86)\Microsoft Visual Studio\Installer", "User")
+```
+
+(open a new terminal afterward for it to take effect).
 
 ## Visual Studio Extensions
 

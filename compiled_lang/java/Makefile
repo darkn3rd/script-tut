@@ -44,9 +44,9 @@ bin/%$(WRAPEXT): src/%.java | bin target
 	javac -d target $<
 	class=$$(grep -oE '(^|[^A-Za-z0-9_])class[[:space:]]+[A-Za-z_][A-Za-z0-9_]*' $< | head -1 | sed -E 's/.*class[[:space:]]+//'); \
 	if [ "$(ON_WINDOWS)" = "1" ]; then \
-	  printf '@echo off\r\njava -cp "%%~dp0..\\target" %s %%*\r\n' "$$class" > $@; \
+	  printf '@echo off\r\njava -Dinvoked.as="%%~0" -cp "%%~dp0../target" %s %%*\r\n' "$$class" > $@; \
 	else \
-	  printf '#!/bin/sh\nexec java -cp "$$(dirname "$$0")/../target" %s "$$@"\n' "$$class" > $@; \
+	  printf '#!/bin/sh\nexec java -Dinvoked.as="$$0" -cp "$$(dirname "$$0")/../target" %s "$$@"\n' "$$class" > $@; \
 	  chmod +x $@; \
 	fi
 
