@@ -98,7 +98,11 @@ gsudo {
 
 #### Install Linux
 
-TBD
+You can install the default distribution with the following:
+
+```powershell
+gsudo wsl --install
+```
 
 #### Install a Container Service
 
@@ -119,47 +123,61 @@ Install a container service:
 
 ### macOS Prerequisites
 
-#### Colima
+#### Install Docker Compatible Daemon
 
-**[Colima](https://colima.run/)** 
+Act needs a Docker-compatible daemon to execute workflow steps.
 
-```bash
-brew install colima docker
-colima start
-```
+* **[Colima](https://colima.run/)**
+  ```bash
+  # Install docker client and lightweight VM
+  brew install colima docker
+  # Start VM
+  colima start
+  ```
+* **[Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/)**
+  ```bash
+  # Install Docker Desktop (uses HyperKit for VM)
+  brew install --cask docker
+  ```
+* [Podman Desktop](https://podman-desktop.io/)
+  ```bash
+  # Install Podman Desktop
+  brew install --cask podman-desktop
+  ```
+* [Rancher Desktop](https://rancherdesktop.io/)
+  ```bash
+  # Install Rancher Desktop
+  brew install --cask rancher
+  ```
 
 ## Getting Act
 
-### Windows 11 Home: Chocolatey
+### Windows 11 Home
 
-```powershell
-choco install act-cli
-```
-
-### Windows 11 Home: WinGet
-
-```powershell
-winget install nektos.act
-```
+* Install using Chocolatey
+  ```powershell
+  choco install act-cli
+  ```
+* Install using WinGet
+  ```powershell
+  winget install nektos.act
+  ```
 
 ### macOS: Homebrew
 
 ```bash
 brew install act
 ```
+
 ## Running it locally
 
-You can run the exact same workflow on your own machine with [`act`](https://github.com/nektos/act), which replays the YAML against real containers instead of guessing what CI would do:
-
-`act` needs a Docker-compatible daemon. If you don't already have Docker Desktop, [colima](https://github.com/abiosoft/colima) is a lighter, CLI-only alternative that works as a drop-in:
-
 ```bash
-brew install colima docker
-colima start
+docker pull catthehacker/ubuntu:act-latest
+act -W .github\workflows\ci.yml --pull=false
 ```
 
-Then, from the repo root:
 
+You can run the exact same workflow on your own machine with [`act`](https://github.com/nektos/act), which replays the YAML against real containers instead of guessing what CI would do.
 ```bash
 # Run every language in the matrix
 act push -W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-daemon-socket -
