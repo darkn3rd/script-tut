@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
-# Output Multiline Text bash here string
-cat << END
-"The person who moves a mountain begins
+# Output Multiline Text - a literal multi-line single-quoted string
+#  passed directly as printf's argument (see a21.output.sh for the
+#  alternate heredoc technique).
+printf '%s\n' '"The person who moves a mountain begins
  by carrying away small stones."
 
    - Confucious
@@ -26,5 +27,4 @@ cat << END
  no greater poverty than ignorance"
 
    - Ali bin Abu-Talib
-
-END
+'

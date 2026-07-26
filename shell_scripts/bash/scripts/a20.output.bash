@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Output Multiline Text bash here string
+# Output Multiline Text bash here string (see a21.output.bash for the
+#  alternate true-heredoc technique)
 cat <<< '"The person who moves a mountain begins
  by carrying away small stones."
 

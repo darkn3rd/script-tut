@@ -1,6 +1,8 @@
 #!/usr/bin/env gawk -f
 BEGIN {
-  # build a menu string to output to user
+  # build a menu string piece by piece via repeated concatenation - see
+  #  e40.branch.gawk for the alternate technique of a single "\"-continued
+  #  printf spanning multiple physical lines.
   menu = "Select an item from the menu.\n"
   menu = menu "\n  1 - Coffee"
   menu = menu "\n  2 - Espresso"

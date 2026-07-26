@@ -1,7 +1,8 @@
-#!/usr/bin/env ksh
-# Output Multiline Text bash here string (see a21.output.ksh for the
-#  alternate true-heredoc technique)
-cat <<< '"The person who moves a mountain begins
+#!/usr/bin/env perl -w
+# Output Multiline Text - heredoc (see a20.output.pl for a plain
+#  multi-line quoted string, a22.output.pl for concatenation).
+print <<'END';
+"The person who moves a mountain begins
  by carrying away small stones."
 
    - Confucious
@@ -26,4 +27,5 @@ cat <<< '"The person who moves a mountain begins
  no greater poverty than ignorance"
 
    - Ali bin Abu-Talib
-'
+
+END

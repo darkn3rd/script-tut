@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
-// Output Multiline Text using trible-quote
+// Output Multiline Text using trible-quote (see a22.output.groovy for
+//  the alternate "+"-concatenation technique)
 println """\
 "The person who moves a mountain begins
  by carrying away small stones."

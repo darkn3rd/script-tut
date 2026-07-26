@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Output Multiline Text using trible-quote
+# Output Multiline Text using trible-quote (see a22.output.py for the
+#  alternate adjacent-string-concatenation technique)
 print("""\
 "The person who moves a mountain begins
  by carrying away small stones."
