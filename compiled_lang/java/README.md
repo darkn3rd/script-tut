@@ -20,7 +20,7 @@ Sun wanted a language that ran identically across the wildly different embedded 
 
 ## Install
 
-Any recent JDK - what's used here was [Amazon Corretto](https://aws.amazon.com/corretto/) 17, but any JDK 11+ works.
+Any recent JDK - what's used here was [Amazon Corretto](https://aws.amazon.com/corretto/) 17, but any JDK 15+ works (a20/b30 use text blocks, `"""`, a standard - non-preview - feature only since Java 15).
 
 * **Windows (MSYS2)**: `pacman -S mingw-w64-ucrt-x86_64-openjdk`, or install any JDK distribution directly and add its `bin` to PATH.
 * **macOS**: `brew install openjdk`.

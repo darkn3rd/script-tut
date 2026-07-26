@@ -8,7 +8,7 @@
 # dependency, and its own compiled .exe still isn't directly runnable on
 # real POSIX without a wrapper). Instead, each lesson gets its own
 # minimal, throwaway .csproj generated on the fly, built with `dotnet
-# publish -r <RID>` and Native AOT (<PublishAot>true</PublishAot>).
+# publish` and Native AOT (<PublishAot>true</PublishAot>).
 #
 # A plain `dotnet build` apphost is *not* actually self-contained - it's
 # a small native stub that looks for a same-named .dll (plus
@@ -25,7 +25,9 @@
 # or the MSVC Build Tools on Windows (already required for cpp/'s own
 # MSVC path - see cpp/README.md) - and, since it compiles for one
 # specific platform+arch rather than "any CPU", needs the current
-# machine's Runtime Identifier (RID) autodetected below.
+# machine's Runtime Identifier (RID) - the generated .csproj below
+# sources that from MSBuild's own $(NETCoreSdkRuntimeIdentifier)
+# property rather than Make shelling out for it.
 #
 # Everything `dotnet publish` produces - the generated .csproj, obj/,
 # and (on macOS) a .dSYM debug-symbol bundle or (elsewhere) a .pdb -
@@ -42,11 +44,14 @@ else
 endif
 
 # e.g. "10.0.302" -> "10.0", used as the generated <TargetFramework>.
-DOTNET_TFM := $(shell dotnet --version | cut -d. -f1,2)
-# e.g. "osx-x64", "linux-x64", "win-x64" - Native AOT has no "any CPU"
-#  output, so this has to match whatever machine `make` actually runs
-#  on, same as `dotnet --info` itself reports.
-DOTNET_RID := $(shell dotnet --info | grep 'RID:' | awk '{print $$NF}')
+# Pure Make text functions, not `cut`: GNU Make's own shell isn't
+#  guaranteed to be a POSIX one (e.g. it falls back to cmd.exe, with no
+#  cut/grep/awk builtins, when invoked from a PowerShell session with
+#  no MSYS2 usr/bin on PATH) - this works under any shell Make picks.
+DOTNET_VERSION := $(shell dotnet --version)
+empty :=
+space := $(empty) $(empty)
+DOTNET_TFM := $(subst $(space),.,$(wordlist 1,2,$(subst ., ,$(DOTNET_VERSION))))
 
 SRC := $(wildcard src/*.cs)
 BIN := $(addprefix bin/,$(notdir $(SRC:.cs=$(OUTEXT))))
@@ -61,12 +66,12 @@ target:
 	-@mkdir target
 
 bin/%$(OUTEXT): src/%.cs | bin target
-	@printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net$(DOTNET_TFM)</TargetFramework>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>disable</Nullable>\n    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n    <AssemblyName>$*</AssemblyName>\n    <PublishAot>true</PublishAot>\n    <InvariantGlobalization>true</InvariantGlobalization>\n    <BaseIntermediateOutputPath>obj/$*/</BaseIntermediateOutputPath>\n  </PropertyGroup>\n  <ItemGroup>\n    <Compile Include="../src/$*.cs" />\n  </ItemGroup>\n</Project>\n' > target/$*.csproj
-	dotnet publish target/$*.csproj -r $(DOTNET_RID) -o target --nologo -v quiet
-	cp target/$*$(OUTEXT) $@
+	ruby gen_csproj.rb $(DOTNET_TFM) $* target/$*.csproj
+	dotnet publish target/$*.csproj -o target --nologo -v quiet
+	@ruby -e "require 'fileutils';FileUtils.cp('target/$*$(OUTEXT)', '$@')"
 
+# See ../java/Makefile's clean: for why this shells out to Ruby instead
+#  of rm/del - it's already a hard requirement for this whole project,
+#  and doesn't care what shell launched it.
 clean:
-	rm -f $(BIN)
-	rm -rf target
-	@mkdir -p target
-	@touch target/.gitkeep
+	ruby -e "require 'fileutils';File.delete(*Dir.glob('bin/*')) rescue nil;FileUtils.rm_rf('target');FileUtils.mkdir_p('target');FileUtils.touch('target/.gitkeep')"

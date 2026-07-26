@@ -53,6 +53,10 @@ jobs:
             dir: compiled_lang/go
           - name: rust
             dir: compiled_lang/rust
+          - name: java
+            dir: compiled_lang/java
+          - name: cs
+            dir: compiled_lang/cs
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -107,6 +111,35 @@ jobs:
       - name: Set up Rust
         if: matrix.name == 'rust'
         uses: dtolnay/rust-toolchain@stable
+
+      # 17, not the README's stated "11+" floor: a20/b30 use text
+      #  blocks (`"""`), a standard (non-preview) feature only since
+      #  Java 15 - matching Corretto 17, what compiled_lang/java's own
+      #  README says these lessons were actually built and tested
+      #  against.
+      - name: Set up Java
+        if: matrix.name == 'java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+
+      # cs/'s Makefile builds every lesson with Native AOT (see its own
+      #  header comment), which needs a native linker on top of the
+      #  SDK - clang is ubuntu's documented option (see cs/README.md's
+      #  Install section), same role g++ plays for cpp/ above.
+      - name: Ensure clang is available
+        if: matrix.name == 'cs'
+        run: command -v clang || (sudo apt-get update -qq && sudo apt-get install -y clang)
+
+      # cs/README.md documents .NET 10 throughout (dotnet-install.sh
+      #  --channel 10, dotnet-sdk-10.0, ...) - matching that here keeps
+      #  CI on the same SDK line these lessons are documented against.
+      - name: Set up .NET SDK
+        if: matrix.name == 'cs'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
       - name: Run rake
         working-directory: ${{ matrix.dir }}
