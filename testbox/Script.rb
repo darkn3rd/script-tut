@@ -929,12 +929,18 @@ class ScriptBase
           taskdata.each do |test|
             test_result, redirect, expected, args, redirect, input = false, "", "", "", "", ""
             input_lines = nil
+            # .dup - expected.gsub! below (for $cmd$/$date$) must not
+            #  mutate the actual string cached in @@dataset itself, or
+            #  the *next* implementation of a multi-implementation
+            #  category (e.g. o20 and o21 both under "o2") would see an
+            #  already-substituted leftover from whichever ran first
+            #  instead of a fresh "$cmd$" to replace.
             if test.has_key?("err")
               redirect = "2>&1"
-              expected = test['err']
+              expected = test['err'].dup
             else
               redirect = "2> #{null_device}"
-              expected = test['out']
+              expected = test['out'].dup
             end
 
             if test.has_key?("arg")
@@ -998,7 +1004,24 @@ class ScriptBase
             expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
             expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
 
-            command = "#{input} #{runner} #{prefix}#{invoked_name} #{args} #{redirect}"
+            # gawk consumes any "-xxx" trailing argument as its own
+            #  option unless "--" tells it argument parsing is done -
+            #  it's the only language here invoked via a runner flag
+            #  (":awk => \"-f\"" in @@option) that has this problem,
+            #  since otherwise a lesson's own "-c"-style argument never
+            #  reaches its ARGV at all. gawk also has no argv[0]
+            #  equivalent of its own (ARGV[0] is always "gawk", never
+            #  the script file) - a "-v invoked_as=..." variable stands
+            #  in for it here, the same idea as compiled_lang java's
+            #  Makefile-injected system property (see java/Makefile).
+            if @@language.to_sym == :awk
+              interpreter_line = "#{command} -v invoked_as=#{invoked_name} #{@@option[@@language.to_sym]}"
+              arg_separator = "--"
+            else
+              interpreter_line = runner
+              arg_separator = ""
+            end
+            command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
             output = if needs_interactive?(test)
               interactive_shell_out(command, input_lines)

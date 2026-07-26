@@ -40,5 +40,8 @@
   "l0": "Returning an Exit Status Code",
   "m0": "Return an Integer",
   "m1": "Return a String",
-  "m2": "Return an Array"
+  "m2": "Return an Array",
+  "o0": "Command-Line Flags",
+  "o1": "Multiple Command-Line Flags",
+  "o2": "Long-Form and Short-Form Flags with Values"
 }

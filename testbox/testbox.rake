@@ -22,6 +22,7 @@ task :default do
   Rake::Task["parameters"].invoke
   Rake::Task["exit"].invoke
   Rake::Task["function"].invoke
+  Rake::Task["flags"].invoke
   Script.print_summary
 end
 
@@ -491,6 +492,38 @@ end
 
 desc 'Returning an Array'
 task :m2 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Command-Line Flags'
+task :flags do
+  Rake::Task["header"].invoke
+  Rake::Task["o0"].invoke
+  Rake::Task["o1"].invoke
+  Rake::Task["o2"].invoke
+end
+
+desc 'Single Command-Line Flag'
+task :o0 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Multiple Command-Line Flags'
+task :o1 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Long-Form and Short-Form Flags with Values'
+task :o2 do |t|
   Rake::Task["header"].invoke
   list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)

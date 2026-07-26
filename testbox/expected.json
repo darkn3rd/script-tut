@@ -67,5 +67,26 @@
        ],
   "m0": [{ "out": "The numbers to be added are 5, 2, 4, 3, 6.\nThe result of their summation is: 20.\n"}],
   "m1": [{ "out": "The current string is: \"ibm\".\nThe capitalized string is: \"IBM\".\n"}],
-  "m2": [{ "out": "Current names are: bob, ed, steve, ralph, joe, deb, kate\nSorted names are: bob, deb, ed, joe, kate, ralph, steve\n"}]
+  "m2": [{ "out": "Current names are: bob, ed, steve, ralph, joe, deb, kate\nSorted names are: bob, deb, ed, joe, kate, ralph, steve\n"}],
+  "o0": [{ "arg": "",   "err": "\nUsage: $cmd$ [-c|-e|-l|-k|-p|-m|-t] [-h|-?]\n\n  -c  Coffee\n  -e  Espresso\n  -l  Latte\n  -k  Machiato\n  -p  Capucino\n  -m  Mocha\n  -t  Tea\n  -h  Display this help message\n  -?  Display this help message\n\n" },
+         { "arg": "-h", "out": "\nUsage: $cmd$ [-c|-e|-l|-k|-p|-m|-t] [-h|-?]\n\n  -c  Coffee\n  -e  Espresso\n  -l  Latte\n  -k  Machiato\n  -p  Capucino\n  -m  Mocha\n  -t  Tea\n  -h  Display this help message\n  -?  Display this help message\n\n" },
+         { "arg": "-?", "out": "\nUsage: $cmd$ [-c|-e|-l|-k|-p|-m|-t] [-h|-?]\n\n  -c  Coffee\n  -e  Espresso\n  -l  Latte\n  -k  Machiato\n  -p  Capucino\n  -m  Mocha\n  -t  Tea\n  -h  Display this help message\n  -?  Display this help message\n\n" },
+         { "arg": "-c", "out": "You ordered a Coffee.\n"},
+         { "arg": "-e", "out": "You ordered an Espresso.\n"},
+         { "arg": "-l", "out": "You ordered a Latte.\n"},
+         { "arg": "-k", "out": "You ordered a Machiato.\n"},
+         { "arg": "-p", "out": "You ordered a Capucino.\n"},
+         { "arg": "-m", "out": "You ordered a Mocha.\n"},
+         { "arg": "-t", "out": "You ordered a Tea.\n"}
+       ],
+  "o1": [{ "arg": "",   "err": "\nUsage: $cmd$ [-c] [-e] [-l] [-k] [-p] [-m] [-t] [-h|-?]\n\n  -c  Coffee\n  -e  Espresso\n  -l  Latte\n  -k  Machiato\n  -p  Capucino\n  -m  Mocha\n  -t  Tea\n  -h  Display this help message\n  -?  Display this help message\n\n" },
+         { "arg": "-h", "out": "\nUsage: $cmd$ [-c] [-e] [-l] [-k] [-p] [-m] [-t] [-h|-?]\n\n  -c  Coffee\n  -e  Espresso\n  -l  Latte\n  -k  Machiato\n  -p  Capucino\n  -m  Mocha\n  -t  Tea\n  -h  Display this help message\n  -?  Display this help message\n\n" },
+         { "arg": "-c -t", "out": "\nYou ordered: \n* coffee\n* tea\n"},
+         { "arg": "-c -e -l -k -p -m -t", "out": "\nYou ordered: \n* coffee\n* espresso\n* latte\n* macchiato\n* capucino\n* mocha\n* tea\n"}
+       ],
+  "o2": [{ "arg": "",   "err": "\nUsage: $cmd$ [--coffee|-c N] [--espresso|-e N] [--latte|-l N] [--macchiato|-k N] [--capucino|-p N] [--mocha|-m N] [--tea|-t N] [--help|-h|-?]\n\n  --coffee,    -c N  Coffee\n  --espresso,  -e N  Espresso\n  --latte,     -l N  Latte\n  --macchiato, -k N  Machiato\n  --capucino,  -p N  Capucino\n  --mocha,     -m N  Mocha\n  --tea,       -t N  Tea\n  --help,      -h    Display this help message\n  -?                 Display this help message\n\n" },
+         { "arg": "-h", "out": "\nUsage: $cmd$ [--coffee|-c N] [--espresso|-e N] [--latte|-l N] [--macchiato|-k N] [--capucino|-p N] [--mocha|-m N] [--tea|-t N] [--help|-h|-?]\n\n  --coffee,    -c N  Coffee\n  --espresso,  -e N  Espresso\n  --latte,     -l N  Latte\n  --macchiato, -k N  Machiato\n  --capucino,  -p N  Capucino\n  --mocha,     -m N  Mocha\n  --tea,       -t N  Tea\n  --help,      -h    Display this help message\n  -?                 Display this help message\n\n" },
+         { "arg": "--coffee 3 -t 1 --mocha 1", "out": "\nYou ordered: \n* 3 coffees\n* 1 tea\n* 1 mocha\n"},
+         { "arg": "-c 1 --tea 2", "out": "\nYou ordered: \n* 1 coffee\n* 2 teas\n"}
+       ]
 }
