@@ -1,18 +1,22 @@
 # Continuous Integration (CI)
 
-[../.github/workflows/ci.yml](../.github/workflows/ci.yml) runs the shared [testbox](../testbox/README.md) harness (`rake`) for a fixed set of languages on every push/PR - currently `python3`, `ruby`, `perl`, `bash`, and `powershell`. That matrix list *is* the "which languages are tested in CI" tag: there's no separate manifest file, adding or dropping a language means editing that one list directly. `rake` only actually fails the job on a real test failure because of the `at_exit` hook at the bottom of `testbox/Script.rb` - without it, Ruby exits 0 regardless of how many test comparisons came back false.
+This area covers Continious Integration scripts in general.
+
+Currently GHA (GitHub Actions) is used to run tests. GHA will use a matrix, a list of langauges, to use the test harness (`rake` and `Script.rb`) to run the tests for a given language.  
+
+The GHA script is configured in `script-tut/.github/workflows/ci.yml`.
 
 ## Setup for Act
 
 ### Windows 11: Elevated Privileges
 
-In order to run elevated privileges without ambiguity in the instructions, install gsudo.  Any command that requires elevated privileges will be prepended by gsudo. Use Chocolatey or Winget in a termianl with elevated privileges. 
+In order to run elevated privileges without ambiguity in the instructions, install gsudo.  Any command that requires elevated privileges will be prepended by gsudo. Use Chocolatey or Winget in a terminal with elevated privileges. 
 
-* Instasll with Chocolatey
+* Install with **Chocolatey**
   ```powershell
   choco install -y gsudo
   ```
-* Install using Winget
+* Install using **Winget**
   ```powershell
   winget install gerardog.gsudo
   ```
@@ -96,7 +100,7 @@ gsudo {
 }
 ```
 
-#### Install Linux
+#### Install WSL Ubuntu Linux
 
 You can install the default distribution with the following:
 
@@ -171,43 +175,31 @@ brew install act
 
 ## Running it locally
 
+You can run act locally with the follwoing commands:
+
 ```bash
 docker pull catthehacker/ubuntu:act-latest
-act -W .github\workflows\ci.yml --pull=false
+act -W .github/workflows/ci.yml --pull=false
 ```
 
-
-You can run the exact same workflow on your own machine with [`act`](https://github.com/nektos/act), which replays the YAML against real containers instead of guessing what CI would do.
-```bash
-# Run every language in the matrix
-act push -W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-daemon-socket -
-
-# Run just one (handy while iterating on a single language)
-act push -W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-daemon-socket - --matrix name:python3
-```
-
-Notes on those flags, in case something looks off:
-
-* `-P ubuntu-latest=catthehacker/ubuntu:act-latest` picks `act`'s "Medium" runner image non-interactively (its first-run prompt otherwise hangs waiting for input). This image is a much smaller approximation of the real GitHub-hosted runner - it's what actually caught that `bash`'s and `powershell`'s jobs needed explicit `bc`/`pwsh` install steps, since the real runner apparently already has both but this local image doesn't.
-* `--container-daemon-socket -` works around a known `act` + colima incompatibility (mounting the Docker socket into the job container fails under colima's setup) - not needed if you're using Docker Desktop instead.
-* If you see `error getting credentials - err: exec: "docker-credential-desktop": executable file not found`, your `~/.docker/config.json` has a stale `"credsStore": "desktop"` entry from a previous Docker Desktop install - remove that line (colima doesn't need a credential helper for pulling public images).
-* Running the *entire* matrix at once may print `Job failed` for every job even when only one genuinely failed - `act` has a known quirk where a failing sibling job's status leaks into the summary line of others in the same run. Trust each job's own `Summary: Total=... Fail=...` line (and re-run that one job alone with `--matrix name:...` to confirm) over the top-level `🏁` line when the two disagree.
-
+> **NOTE**: Act will do a force pull for every test in the matrix, which not only wasteful for small code tests, but can run into rate limiting from Docker Hub. 
 
 ## Further Reading 
 
+* GitHub Actions
+  * [Act](https://nektosact.com/) ([repo](https://github.com/nektos/act)) - Run GitHub Actions locally 🚀
+  * [GitHub Actions Documentation](https://docs.github.com/en/actions)
 * WSL
   * [How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (Docs)
-
 * Package Managers
-  * [Mise](https://mise.en.dev/) and [Mise Git Repo](https://github.com/jdx/mise)
-  * [Nix](https://nixos.org/)
+  * [Mise](https://mise.en.dev/) ([repo](https://github.com/jdx/mise))
+  * [Nix](https://nixos.org/) ([repo](https://github.com/NixOS/nix))
 * Container Runtimes
-  * [Colima](https://colima.run/) and [Colima Git Repo](https://github.com/abiosoft/colima)
-  * [containerd](https://containerd.io/) and [containerd git repo](https://github.com/containerd/containerd) - container runtime
+  * [Colima](https://colima.run/) ([repo](https://github.com/abiosoft/colima))
+  * [containerd](https://containerd.io/) ([repo](https://github.com/containerd/containerd)) - container runtime
   * [Incus](https://linuxcontainers.org/incus/) - container and VM runtime alternative to LXD
 * Virtual Machine Launcher
-  * [Lima](https://lima-vm.io/) and [Lima Git Repo](https://github.com/lima-vm/lima)
+  * [Lima](https://lima-vm.io/) ([repo](https://github.com/lima-vm/lima))
 * Others
   * [Finch](https://runfinch.com/)
   * [BuildKit Git Repo](https://github.com/moby/buildkit)
