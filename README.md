@@ -128,37 +128,4 @@ This section is under development, and may be put into another advance scripting
 
 ## Continuous Integration (CI)
 
-[.github/workflows/ci.yml](.github/workflows/ci.yml) runs the shared [testbox](testbox/README.md) harness (`rake`) for a fixed set of languages on every push/PR - currently `python3`, `ruby`, `perl`, `bash`, and `powershell`. That matrix list *is* the "which languages are tested in CI" tag: there's no separate manifest file, adding or dropping a language means editing that one list directly. `rake` only actually fails the job on a real test failure because of the `at_exit` hook at the bottom of `testbox/Script.rb` - without it, Ruby exits 0 regardless of how many test comparisons came back false.
-
-### Running it locally
-
-You can run the exact same workflow on your own machine with [`act`](https://github.com/nektos/act), which replays the YAML against real containers instead of guessing what CI would do:
-
-```bash
-# macOS
-brew install act
-```
-
-`act` needs a Docker-compatible daemon. If you don't already have Docker Desktop, [colima](https://github.com/abiosoft/colima) is a lighter, CLI-only alternative that works as a drop-in:
-
-```bash
-brew install colima docker
-colima start
-```
-
-Then, from the repo root:
-
-```bash
-# Run every language in the matrix
-act push -W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-daemon-socket -
-
-# Run just one (handy while iterating on a single language)
-act push -W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-daemon-socket - --matrix name:python3
-```
-
-Notes on those flags, in case something looks off:
-
-* `-P ubuntu-latest=catthehacker/ubuntu:act-latest` picks `act`'s "Medium" runner image non-interactively (its first-run prompt otherwise hangs waiting for input). This image is a much smaller approximation of the real GitHub-hosted runner - it's what actually caught that `bash`'s and `powershell`'s jobs needed explicit `bc`/`pwsh` install steps, since the real runner apparently already has both but this local image doesn't.
-* `--container-daemon-socket -` works around a known `act` + colima incompatibility (mounting the Docker socket into the job container fails under colima's setup) - not needed if you're using Docker Desktop instead.
-* If you see `error getting credentials - err: exec: "docker-credential-desktop": executable file not found`, your `~/.docker/config.json` has a stale `"credsStore": "desktop"` entry from a previous Docker Desktop install - remove that line (colima doesn't need a credential helper for pulling public images).
-* Running the *entire* matrix at once may print `Job failed` for every job even when only one genuinely failed - `act` has a known quirk where a failing sibling job's status leaks into the summary line of others in the same run. Trust each job's own `Summary: Total=... Fail=...` line (and re-run that one job alone with `--matrix name:...` to confirm) over the top-level `🏁` line when the two disagree.
+See [cibox/README.md](cibox/README.md) for what runs in CI and how to run the same workflow locally with `act`.
