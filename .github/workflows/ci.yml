@@ -62,7 +62,7 @@ jobs:
         run: command -v bc || (sudo apt-get update -qq && sudo apt-get install -y bc)
 
       - name: Ensure Switch.pm is available
-        if: matrix.name == 'bash'
+        if: matrix.name == 'perl'
         run: perl -MSwitch -e 1 2>/dev/null || (sudo apt-get update -qq && sudo apt-get install -y libswitch-perl)
 
       # Likewise for pwsh on the powershell/ job - some runner images
