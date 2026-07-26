@@ -32,6 +32,14 @@ jobs:
             dir: gen_scripts/perl
           - name: bash
             dir: shell_scripts/bash
+          # Script.rb's `command` runs posix/ specifically under dash,
+          #  not plain "sh" (which ubuntu-latest's default /bin/sh
+          #  symlink already points at, but relying on that symlink
+          #  rather than naming dash directly is exactly the
+          #  "bashisms" risk shell_scripts/posix/README.md warns
+          #  about) - see the native_unix? gate in Script.rb.
+          - name: posix
+            dir: shell_scripts/posix
           # :ps1 lessons run fine under POSIX pwsh (Script.rb's `command`
           #  already handles this - see native_unix?), so this doesn't
           #  need windows-latest.
@@ -60,8 +68,12 @@ jobs:
       #  the hard way testing this workflow locally with `act`, whose
       #  minimal runner image doesn't).
       - name: Ensure bc is available
-        if: matrix.name == 'bash'
+        if: matrix.name == 'bash' || matrix.name == 'posix'
         run: command -v bc || (sudo apt-get update -qq && sudo apt-get install -y bc)
+
+      - name: Ensure dash is available
+        if: matrix.name == 'posix'
+        run: command -v dash || (sudo apt-get update -qq && sudo apt-get install -y dash)
 
       - name: Ensure Switch.pm is available
         if: matrix.name == 'perl'

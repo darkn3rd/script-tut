@@ -1,8 +1,8 @@
 # Scripting Tutorial: Shell (POSIX Shell)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.3
+Version 1.4
 
 ## Overview
 
@@ -10,19 +10,39 @@ Version 1.3
 
 The POSIX shell evolved from the original Bourne Shell, inved by Stephen Bourne, was released in UNIX Version 7 in 1977.  Bourne shell added scripting capabilities, and replaced the limited Thompson shell ```sh``` in earlier versions of Unix.
 
-Newer shell environments extended the capabilities of Bourne shell and were released as drop in replacements for Bourne Shell.  Some of these are Bourne Again Shell (bash), Korn Shell (ksh), and Z Shell (zsh).  Almquist Shell (ash) and later Debian Almquist Shell (dash) maintain strict compabitity toward Bourne shell and are popular in low-memory situations.
+Newer shell environments extended the capabilities of Bourne shell and were released as drop in replacements for Bourne Shell.  Some of these are Bourne Again Shell (`bash`), Korn Shell (`ksh`), and Z Shell (`zsh`).  Almquist Shell (`ash`) and later Debian Almquist Shell (`dash`) maintain strict compabitity toward Bourne shell and are popular in low-memory situations.
 
 ### POSIX Shell
 
-The basic Bourne shell scripting language has been updated by the POSIX (Portable Operating System Interfacee) standard, specifically  IEEE P1003.2.  This standard incorporated some features that were available in existing Korn Shell and Bourne Again Shell at the time.  Shells conforming to this specification when ran as ```sh``` are thus said to be POSIX Shell.
+The basic Bourne shell scripting language has been updated by the POSIX (Portable Operating System Interfacee) standard, specifically  IEEE P1003.2.  This standard incorporated some features that were available in existing Korn Shell and Bourne Again Shell at the time.  Shells conforming to this specification when ran as `sh` are thus said to be POSIX Shell.
 
-Many flavors of Unix released versions of ```sh``` that conformed to the shell, and in the open source community, shell environments that supported Bourne shell were updated to support the standard as well.  
+Many flavors of Unix released versions of `sh` that conformed to the shell, and in the open source community, shell environments that supported Bourne shell were updated to support the standard as well.
 
-## Getting POSIX Shell on Mac OS X
+## Getting POSIX Shell on Mac OS X (macOS)
 
-On Mac OS X 10.8.5, the best source of POSIX Shell is with the included ksh '93u.  You would have to make sure that ```/bin/sh``` is actually ```ksh```, and not the default.
+For macOS (previously called Mac OS X), the best source of POSIX Shell would be to have `ksh '93u`. You would be to have the `sh` binary that links to `ksh` in your PATH before `/bin`.  Your scripts with a shebang line of `#!/usr/bin/env sh` will run the script in strict POSIX mode.
 
-The current default of ```/bin/sh``` is really GNU bash 3.2.48.  When ```sh``` is used, GNU bash does try its best to run in a POSIX mode, but may suffer from what is called *bashisms*, or in other words using bash features accidently when it should be using strict POSIX shell behavior.  For this reason, ksh would yield better results to achieve a real POSIX shell environment.
+The default `/bin/sh` is really **GNU bash 3.2**. When `sh` mode is used, GNU bash does try its best to run in a POSIX mode, but may suffer from what is called *bashisms*, or in other words using bash features accidently when it should be using strict POSIX shell behavior.  For this reason, `ksh` would yield better results to achieve a real POSIX shell environment.
+
+Another alternative would be use `dash` to execute strict POSIX shell scripts, e.g. `dash my_posix_script.sh`
+
+Whatever strategy you use, you can get these shells with Homebrew using the following:
+
+```bash
+brew install ksh        # ksh93 1.0.10
+brew install dash-shell # dash 0.5.13.5 
+brew install bash       # bash 5.3.12
+```
+
+## Getting POSIX Shell on Windows 11
+
+You can install POSIX environments like **[MSYS2](https://www.msys2.org/)** or **[Cygwin](https://www.cygwin.com/)**.
+
+You can use Chocolatey to install **[MSYS2](https://www.msys2.org/)**
+
+```bash
+choco install msys2
+```
 
 ## Testing
 

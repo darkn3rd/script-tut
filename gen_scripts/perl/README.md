@@ -36,7 +36,9 @@ Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
 choco install -y strawberryperl
 ```
 
-### Windows: UCRT64 (MSYS2)
+### Windows: MSYS2
+
+#### Getting MSYS2
 
 **[MSYS2](https://www.msys2.org/)** is a software building and distribution platform for Windows that provides a Unix-like environment (including a Bash shell and the [pacman package manager](https://www.msys2.org/docs/package-management/) from Arch Linux). It allows you to compile, install, and run native Windows software using tools like GCC, MinGW-w64, and CMake. 
 
@@ -44,36 +46,32 @@ choco install -y strawberryperl
 
 If you have **[Chocolatey](https://chocolatey.org)** setup, you can install MSYS2 with `choco install msys2`.
 
-Once you launch the shell, you can install perl using either UCRT64 environment or classic MINGW64 environment.
+#### Perl in MSYS2
+
+Perl is bundled with MSYS2, so no further installation is required.  If for some reason Perl is not installed, you can install it with:
 
 ```bash
-# UCRT64 Environment (Recommended)
-pacman -S mingw-w64-ucrt-x86_64-perl
-# MSYS2 Runtime
-pacman -S msys2-runtime perl
+pacman -S perl
 ```
 
-Unfortunately the UCRT64 perl binary will be blocked in Windows 11 due to [Smart App Control](https://support.microsoft.com/en-US/Windows/Security/Threat-Malware-Protection/smart-app-control-has-blocked-part-of-this-app).  You can run through the steps below to unblock it. 
+> **IMPORTANT**: Do not install the UCRT (Universal C Runtime) Perl, as this is not compatible with a POSIX environment, as it uses CRLF.
 
+If you run into problems, you can use `ldd` to check for compatibility.  The POSIX compatible binaries will link to `msys-2.0.dll`, while Windows binaries link to `win32u.dll`.  Here's how you can check:
 
-```Powershell
-# 1. Initialize the developer signature profile
-$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=MSYS2-LocalDev" -CertStoreLocation "Cert:\CurrentUser\My"
-Move-Item -Path $cert.PSPath -Destination "Cert:\CurrentUser\Root"
+```bash
+# Check default Perl
+ldd  /c/tools/msys64/usr/bin/perl | grep -E 'msys|win32' | sed 's/^[[:space:]]*//'
+# msys-2.0.dll => /usr/bin/msys-2.0.dll (0x180040000)
 
-# 2. Target the main binary
-$TargetExe = "C:\tools\msys64\ucrt64\bin\perl.exe"
-Set-AuthenticodeSignature -FilePath $TargetExe -Certificate $cert
+# Check UCRT64 Perl
+ldd  /c/tools/msys64/ucrt64/bin/perl | grep -E 'msys|win32' | sed 's/^[[:space:]]*//'
+# win32u.dll => /c/Windows/System32/win32u.dll (0x7ff875590000)
+```
 
-# 3. Locate and sign all Perl internal engine dependencies (.dll files)
-$PerlDlls = Get-ChildItem -Path "C:\tools\msys64\ucrt64\bin\" -Filter "*perl*.dll"
-foreach ($dll in $PerlDlls) {
-    Write-Host "Signing dependency: $($dll.FullName)"
-    Set-AuthenticodeSignature -FilePath $dll.FullName -Certificate $cert
-}
+If you have Windows binary in your PATH (on that is linked to `win32u.dll`), either remove it from the PATH or uninstall it. For example, here's how you can uninstall UCRT64 Perl. 
 
-# 4. Global Verification Summary
-Get-AuthenticodeSignature -FilePath $TargetExe
+```bash
+pacman -R mingw-w64-ucrt-x86_64-perl
 ```
 
 ## Perl Modules (CPAN)

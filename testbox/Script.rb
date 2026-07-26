@@ -334,6 +334,20 @@ class ScriptBase
     #  the real (and likely only) binary - see native_unix?'s comment.
     cmd = "pwsh" if cmd == "powershell" && native_unix?
 
+    # dash, not plain "sh": /bin/sh is whatever it happens to be
+    #  symlinked to, which is frequently bash running in its own
+    #  posix-ish sh-emulation mode rather than a real strict-POSIX
+    #  shell - precisely the "bashisms" risk shell_scripts/posix/
+    #  README.md warns about. Gated on native_unix?, not posix?, for
+    #  the same reason as the pwsh override above: Msys2ShellScript is
+    #  posix? true, but "sh" there is subject to its own separate,
+    #  already-documented tracked-alias quirks (see the mksh/env note
+    #  elsewhere in this file) and dash isn't guaranteed to be
+    #  installed on every dev machine - this is specifically about
+    #  making a genuine POSIX host (e.g. CI) test real POSIX
+    #  compliance, not about changing local Windows/MSYS2 behavior.
+    cmd = "dash" if @@dirname == "posix" && cmd == "sh" && native_unix?
+
     unless @@verified_commands.include?(cmd)
       if find_executable(cmd).to_s.empty?
         STDERR.puts "ERROR: Cannot find \"#{cmd}\" on PATH (needed to run #{@@dirname}/ lessons). " \
