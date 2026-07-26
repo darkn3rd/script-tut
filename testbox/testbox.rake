@@ -534,7 +534,25 @@ end
 desc 'Environment Variables'
 task :environment do
   Rake::Task["header"].invoke
+  Rake::Task["n0"].invoke
+  Rake::Task["n1"].invoke
   Rake::Task["n2"].invoke
+end
+
+desc 'Enumerating Variables'
+task :n0 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Enumerating Paths'
+task :n1 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
 end
 
 desc 'Setting Environment Variables'

@@ -14,7 +14,7 @@ Import-Module (Join-Path $PSScriptRoot 'TestBox.psm1') -Force
 
 # A task named "Default" is not allowed to have its own action in psake -
 #  it must be -Depends only - so the summary gets its own trailing task.
-Task Default -Depends Output, Variables, Arithmetic, Input, Branch, Looping, Arrays, Associative, Subroutine, Arguments, Parameters, Exit, Function, Flags, Summary
+Task Default -Depends Output, Variables, Arithmetic, Input, Branch, Looping, Arrays, Associative, Subroutine, Arguments, Parameters, Exit, Function, Flags, Environment, Summary
 
 Task Summary {
     Show-TestBoxSummary
@@ -124,3 +124,8 @@ Task Flags -Depends O0, O1, O2
 Task O0 -Depends Header { Invoke-TestBoxTask -Task 'o0' }
 Task O1 -Depends Header { Invoke-TestBoxTask -Task 'o1' }
 Task O2 -Depends Header { Invoke-TestBoxTask -Task 'o2' }
+
+# ================================================================
+Task Environment -Depends N2
+
+Task N2 -Depends Header { Invoke-TestBoxTask -Task 'n2' }

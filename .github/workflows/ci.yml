@@ -37,12 +37,14 @@ jobs:
           #  need windows-latest.
           - name: powershell
             dir: win_scripts/powershell
-          # Add compiled_lang's cpp/rust/go here once their test suites
-          # are more complete (see compiled_lang/README.md's Status
-          # section). Each will also need its own compiler installed via
-          # an extra step before "Run rake" below - g++/make are already
-          # on ubuntu-latest; Rust needs dtolnay/rust-toolchain (or
-          # rustup directly); Go needs actions/setup-go.
+          # g++/make are already on ubuntu-latest, so cpp needs no extra
+          #  setup step below - only go and rust do.
+          - name: cpp
+            dir: compiled_lang/cpp
+          - name: go
+            dir: compiled_lang/go
+          - name: rust
+            dir: compiled_lang/rust
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -80,6 +82,19 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y -qq powershell
           fi
+
+      # go.mod pins `go 1.23` (f03 needs its range-over-func iterators,
+      #  added in 1.23) - setup-go's version resolution honors that as a
+      #  floor, so this just needs to be at least that recent.
+      - name: Set up Go
+        if: matrix.name == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Set up Rust
+        if: matrix.name == 'rust'
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Run rake
         working-directory: ${{ matrix.dir }}

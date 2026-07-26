@@ -44,5 +44,7 @@
   "o0": "Command-Line Flags",
   "o1": "Multiple Command-Line Flags",
   "o2": "Long-Form and Short-Form Flags with Values",
+  "n0": "Enumerating Variables",
+  "n1": "Enumerating Paths",
   "n2": "Setting Environment Variables"
 }

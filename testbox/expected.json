@@ -89,5 +89,15 @@
          { "arg": "--coffee 3 -t 1 --mocha 1", "out": "\nYou ordered: \n* 3 coffees\n* 1 tea\n* 1 mocha\n"},
          { "arg": "-c 1 --tea 2", "out": "\nYou ordered: \n* 1 coffee\n* 2 teas\n"}
        ],
-  "n2": [{ "arg": "Coffee:1 Espresso:2 Latte:1 Mocha:2", "env": {"MY_ORDERS": "Coffee:1,Espresso:2,Latte:1,Mocha:2"} }]
+  "n2": [{ "arg": "Coffee:1 Espresso:2 Latte:1 Mocha:2", "env": {"MY_ORDERS": "Coffee:1,Espresso:2,Latte:1,Mocha:2"} }],
+  "n0": [{ "match": {
+             "posix":   ["USER=", "HOME=", "TMPDIR=", "HOSTNAME="],
+             "windows": ["USERNAME=", "USERPROFILE=", "TEMP=", "COMPUTERNAME="]
+           }
+         }],
+  "n1": [{ "match": {
+             "posix":   ["/usr/bin", "/bin"],
+             "windows": ["Windows", "System32"]
+           }
+         }]
 }

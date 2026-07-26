@@ -784,6 +784,27 @@ class ScriptBase
     str.split("\n").sort.join("\n")
   end
 
+  # match_expected?(match_spec, output) - true if output contains every
+  #  substring from at least one os_type group in match_spec (see n00/n10 -
+  #  "enumerating variables"/"enumerating paths" - can't do an exact-match
+  #  comparison since the actual env vars/PATH entries are host-specific,
+  #  but can check that a known set of substrings is present). Which
+  #  group actually applies isn't decided by the Ruby-side OS/shell class -
+  #  a native Windows interpreter (Python, Ruby, PowerShell, ...) sees a
+  #  raw "C:\...;..." PATH, while an msys-runtime-linked one (bash, sh,
+  #  Git-for-Windows perl, gawk, ...) sees it POSIX-translated
+  #  ("/usr/bin:...") even on the same Windows machine - confirmed
+  #  empirically, not assumed. Trying every group and accepting whichever
+  #  one is fully satisfied sidesteps needing to know that distinction
+  #  ahead of time. Case-insensitive since Windows paths/values are
+  #  case-insensitive by nature (e.g. "system32" vs "System32").
+  def self.match_expected?(match_spec, output)
+    haystack = output.downcase
+    match_spec.values.any? do |substrings|
+      substrings.all? { |s| haystack.include?(s.downcase) }
+    end
+  end
+
   def self.colorize(text, color_code)
     "#{color_code}#{text}\033[0m"
   end
@@ -1011,6 +1032,13 @@ class ScriptBase
             #  env_shell_out below reads stdout itself via Open3 to know
             #  when the lesson has reached that blocked read.
             is_env_test = test.has_key?("env")
+            # A "match" test (see n00/n10 - "enumerating variables"/
+            #  "enumerating paths") captures stdout exactly like a normal
+            #  "out" test, but is verified via match_expected? instead of
+            #  a straight string comparison (see below) - the actual
+            #  values are host-specific, so an exact expected string
+            #  can't exist at all.
+            is_match_test = test.has_key?("match")
             # .dup - expected.gsub! below (for $cmd$/$date$) must not
             #  mutate the actual string cached in @@dataset itself, or
             #  the *next* implementation of a multi-implementation
@@ -1019,6 +1047,9 @@ class ScriptBase
             #  instead of a fresh "$cmd$" to replace.
             if is_env_test
               expected = test['env']
+            elsif is_match_test
+              redirect = "2> #{null_device}"
+              expected = test['match']
             elsif test.has_key?("err")
               redirect = "2>&1"
               expected = test['err'].dup
@@ -1085,7 +1116,7 @@ class ScriptBase
             #  prefix themselves (see win_scripts/batch/j00.arguments.cmd's
             #  %~nx0), so only compiled languages get prefix folded in
             #  here.
-            unless is_env_test
+            unless is_env_test || is_match_test
               expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
               expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
             end
@@ -1121,6 +1152,8 @@ class ScriptBase
 
             if is_env_test
               test_result = expected == output
+            elsif is_match_test
+              test_result = match_expected?(expected, output)
             elsif test.has_key?("precision")
               digits = test["precision"]
               test_result = truncate_precision(expected, digits) ==
@@ -1148,8 +1181,12 @@ class ScriptBase
               "output"   => output,
               "expected" => expected,
               "test_result" => test_result,
-              # raw strings differ even when test_result passed via tolerance
-              "diff" => expected != output,
+              # raw strings differ even when test_result passed via tolerance.
+              #  A "match" test's expected/output aren't even the same type
+              #  (Hash of candidate substrings vs. the actual captured
+              #  string) - "differs" there just means "failed", not "passed
+              #  via tolerance", so show detail on failure only.
+              "diff" => is_match_test ? !test_result : (expected != output),
               # this implementation's "title=" tag, if any (see
               #  implementation_title) - lets report() show which
               #  technique a multi-implementation category's result

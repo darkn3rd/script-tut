@@ -658,6 +658,86 @@ function Invoke-InteractiveShellOut {
     return ($output.ToString() -replace "`r`n", "`n")
 }
 
+# $script:DumpEnvFile - the file a lesson dumps its own environment to
+#  (see Invoke-EnvShellOut) - a fixed, well-known name in the current
+#  directory, same convention every language's n20.setvars.* lesson
+#  follows - ported from Script.rb's DUMP_ENV_FILE.
+$script:DumpEnvFile = 'dump_env.out'
+
+# Invoke-EnvShellOut(commandStr, expectedEnv) - like Invoke-ShellOut, but
+#  for a lesson that dumps its own environment to $script:DumpEnvFile and
+#  then blocks on stdin (see n20.setvars.* - "MY_ORDERS set, Hit Return
+#  to continue") instead of writing anything comparable to stdout/stderr.
+#
+#  Inspecting a lesson's *live* process environment from the outside
+#  isn't reliably possible on either side of this harness - see
+#  Script.rb's env_shell_out for what was tried (/proc, ps, Get-Process)
+#  and ruled out. Dumping to a file the lesson itself controls sidesteps
+#  all of that: reading it is plain file I/O, no OS-specific process
+#  introspection needed anywhere.
+#
+#  Starts commandStr, waits for its prompt line (by which point
+#  $script:DumpEnvFile is guaranteed to already exist) using the same
+#  ReadAsync+Task.Wait(timeout) pattern as Invoke-InteractiveShellOut - a
+#  single ReadLineAsync stands in for that function's read loop here,
+#  since only one line (the prompt, discarded - just used for
+#  synchronization) is ever needed - then reads the dump file directly,
+#  and writes a newline to unblock the lesson, which deletes
+#  $script:DumpEnvFile itself as part of its own exit. Returns a
+#  PSCustomObject of {key = actual_value} for every key ExpectedEnv asked
+#  about - Test-EnvMatches compares this against ExpectedEnv itself.
+function Invoke-EnvShellOut {
+    param([string]$CommandStr, $ExpectedEnv, [int]$TimeoutSeconds = 15)
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    if ($script:IsWindowsHost) {
+        $psi.FileName = 'cmd.exe'
+        $psi.Arguments = "/c $CommandStr"
+    } else {
+        $psi.FileName = '/bin/sh'
+        $psi.ArgumentList.Add('-c')
+        $psi.ArgumentList.Add($CommandStr)
+    }
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.WorkingDirectory = (Get-Location).Path
+
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+
+    $readTask = $proc.StandardOutput.ReadLineAsync()
+    if (-not $readTask.Wait([TimeSpan]::FromSeconds($TimeoutSeconds)) -and -not $proc.HasExited) {
+        & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+    }
+
+    $dump = if (Test-Path $script:DumpEnvFile) { Get-Content -Raw $script:DumpEnvFile } else { '' }
+    $actualEnv = [ordered]@{}
+    foreach ($key in $ExpectedEnv.PSObject.Properties.Name) {
+        if ($dump -match "(?m)^$([regex]::Escape($key))=(.*)$") {
+            $actualEnv[$key] = $Matches[1].Trim()
+        } else {
+            $actualEnv[$key] = $null
+        }
+    }
+
+    try {
+        $proc.StandardInput.WriteLine()
+        $proc.StandardInput.Flush()
+    } catch {}
+    try { $proc.StandardInput.Close() } catch {}
+
+    # Drain to EOF (mirrors Invoke-ShellOut/Invoke-InteractiveShellOut's
+    #  own drain-then-exit pattern) so the child never blocks trying to
+    #  write more output into an unread pipe before it can actually exit.
+    try { [void]$proc.StandardOutput.ReadToEnd() } catch {}
+    if (-not $proc.HasExited) { $proc.WaitForExit(2000) | Out-Null }
+
+    return [PSCustomObject]$actualEnv
+}
+
 # --- tolerance/normalization helpers - ported 1:1 from Script.rb ---
 
 function ConvertTo-TruncatedPrecision {
@@ -736,6 +816,23 @@ function Test-OutputMatches {
     }
 }
 
+# Test-EnvMatches(expected, output) - plain equality between an env
+#  test's expected {var = value} object and the {var = actual_value}
+#  object Invoke-EnvShellOut produced - ported from Script.rb's plain
+#  Hash `expected == output` comparison for an env test. A PSCustomObject
+#  has no built-in structural equality operator (unlike Ruby's Hash), so
+#  this compares key-for-key instead.
+function Test-EnvMatches {
+    param($Expected, $Output)
+    $expectedKeys = @($Expected.PSObject.Properties.Name)
+    $outputKeys = @($Output.PSObject.Properties.Name)
+    if (@(Compare-Object $expectedKeys $outputKeys).Count -gt 0) { return $false }
+    foreach ($key in $expectedKeys) {
+        if ($Expected.$key -ne $Output.$key) { return $false }
+    }
+    return $true
+}
+
 # input_redirect(value) - ported 1:1 from CommandShellScript#input_redirect.
 #  Windows-only: on POSIX, Invoke-TestBoxCategory feeds $test.in straight
 #  to Invoke-ShellOut's -StdinText instead of building piped command text
@@ -800,7 +897,18 @@ function Invoke-TestBoxCategory {
             $inputLines = $null
             $stdinText = $null
 
-            if ($test.PSObject.Properties['err']) {
+            # An "env" test (see n20.setvars.* - "MY_ORDERS set, Hit
+            #  Return to continue") doesn't write anything comparable to
+            #  stdout/stderr at all - it exports environment variables
+            #  and blocks on stdin, so there's nothing to redirect here;
+            #  Invoke-EnvShellOut below reads stdout itself to know when
+            #  the lesson has reached that blocked read - ported from
+            #  Script.rb's execute().
+            $isEnvTest = $null -ne $test.PSObject.Properties['env']
+
+            if ($isEnvTest) {
+                $expected = $test.env
+            } elseif ($test.PSObject.Properties['err']) {
                 $redirect = '2>&1'
                 $expected = $test.err
             } else {
@@ -837,8 +945,13 @@ function Invoke-TestBoxCategory {
             #  the prefix folded into the $cmd$ substitution here.
             $cmdDisplay = if ($isCompiled) { "$prefix$invokedName" } else { $invokedName }
 
-            $expected = $expected -replace '\$cmd\$', $cmdDisplay
-            $expected = $expected -replace '\$date\$', (Get-Date -Format 'MMMM dd, yyyy')
+            # An env test's expected value is a {var = value} object, not
+            #  a string carrying a literal "$cmd$"/"$date$" placeholder -
+            #  ported from Script.rb's execute() (see is_env_test there).
+            if (-not $isEnvTest) {
+                $expected = $expected -replace '\$cmd\$', $cmdDisplay
+                $expected = $expected -replace '\$date\$', (Get-Date -Format 'MMMM dd, yyyy')
+            }
 
             # $runner is blank for a compiled language - the build
             #  artifact runs itself, unlike an interpreted language's
@@ -846,20 +959,32 @@ function Invoke-TestBoxCategory {
             $runner = if ($isCompiled) { '' } else { "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])" }
             $command = "$input $runner $prefix$invokedName $args $redirect"
 
-            if (Test-NeedsInteractive -Test $test -Language $language) {
+            if ($isEnvTest) {
+                $output = Invoke-EnvShellOut -CommandStr $command -ExpectedEnv $expected
+            } elseif (Test-NeedsInteractive -Test $test -Language $language) {
                 $output = Invoke-InteractiveShellOut -CommandStr $command -InputLines $inputLines
             } else {
                 $output = Invoke-ShellOut -CommandStr $command -StdinText $stdinText
             }
 
-            $testResult = Test-OutputMatches -Test $test -Expected $expected -Output $output
+            if ($isEnvTest) {
+                $testResult = Test-EnvMatches -Expected $expected -Output $output
+            } else {
+                $testResult = Test-OutputMatches -Test $test -Expected $expected -Output $output
+            }
 
             $result.Results[$key] += [PSCustomObject]@{
                 Command    = $command
                 Output     = $output
                 Expected   = $expected
                 TestResult = $testResult
-                Diff       = $expected -ne $output
+                # raw values differ even when test_result passed via
+                #  tolerance - not applicable to an env test (no
+                #  tolerance types apply there), so its diff is exactly
+                #  the inverse of its (already-exact) TestResult, rather
+                #  than the PSCustomObject reference-inequality "-ne"
+                #  below would otherwise (wrongly) always report.
+                Diff       = if ($isEnvTest) { -not $testResult } else { $expected -ne $output }
                 Title      = Get-ImplementationTitle -File $cmd
             }
 
@@ -881,6 +1006,17 @@ function Format-PassFail {
     return @{ Text = 'FAIL'; Color = 'Red' }
 }
 
+# ConvertTo-DisplayableText(value) - ported from Script.rb's report()'s
+#  displayable lambda. An env test's expected/output are a PSCustomObject
+#  of {var = value} (see Invoke-EnvShellOut), not a string of captured
+#  stdout/stderr like every other test type - stringify either shape the
+#  same way here rather than assuming "-replace" is always meaningful.
+function ConvertTo-DisplayableText {
+    param($Value)
+    if ($Value -is [string]) { return ($Value -replace "`n", '\n') }
+    return ($Value | ConvertTo-Json -Compress)
+}
+
 # Write-TestBoxDiff(testCase) - ported from Script.rb's print_diff: prints
 #  nothing on a clean pass. On a pass that only succeeded via tolerance
 #  (e.g. "precision"), both lines print yellow so the raw difference is
@@ -890,8 +1026,8 @@ function Write-TestBoxDiff {
     param($TestCase)
     if ($TestCase.TestResult -and -not $TestCase.Diff) { return }
 
-    $expectedText = $TestCase.Expected -replace "`n", '\n'
-    $outputText   = $TestCase.Output -replace "`n", '\n'
+    $expectedText = ConvertTo-DisplayableText $TestCase.Expected
+    $outputText   = ConvertTo-DisplayableText $TestCase.Output
 
     if ($TestCase.TestResult) {
         Write-Host "         Expected Output: |" -NoNewline
