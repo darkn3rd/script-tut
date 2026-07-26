@@ -88,5 +88,6 @@
          { "arg": "-h", "out": "\nUsage: $cmd$ [--coffee|-c N] [--espresso|-e N] [--latte|-l N] [--macchiato|-k N] [--capucino|-p N] [--mocha|-m N] [--tea|-t N] [--help|-h|-?]\n\n  --coffee,    -c N  Coffee\n  --espresso,  -e N  Espresso\n  --latte,     -l N  Latte\n  --macchiato, -k N  Machiato\n  --capucino,  -p N  Capucino\n  --mocha,     -m N  Mocha\n  --tea,       -t N  Tea\n  --help,      -h    Display this help message\n  -?                 Display this help message\n\n" },
          { "arg": "--coffee 3 -t 1 --mocha 1", "out": "\nYou ordered: \n* 3 coffees\n* 1 tea\n* 1 mocha\n"},
          { "arg": "-c 1 --tea 2", "out": "\nYou ordered: \n* 1 coffee\n* 2 teas\n"}
-       ]
+       ],
+  "n2": [{ "arg": "Coffee:1 Espresso:2 Latte:1 Mocha:2", "env": {"MY_ORDERS": "Coffee:1,Espresso:2,Latte:1,Mocha:2"} }]
 }

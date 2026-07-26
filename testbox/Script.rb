@@ -498,6 +498,75 @@ class ScriptBase
     output.gsub("\r\n", "\n")
   end
 
+  # DUMP_ENV_FILE - the file a lesson dumps its own environment to (see
+  #  env_shell_out) - a fixed, well-known name in the current directory,
+  #  same convention every language's n20.setvars.* lesson follows.
+  DUMP_ENV_FILE = "dump_env.out"
+
+  # env_shell_out(cmd_str, expected_env) - like shell_out, but for a
+  #  lesson that dumps its own environment to DUMP_ENV_FILE and then
+  #  blocks on stdin (see n20.setvars.* - "MY_ORDERS set, Hit Return to
+  #  continue") instead of writing anything comparable to stdout/stderr.
+  #
+  #  Earlier attempts here tried inspecting the lesson's *live* process
+  #  environment from the outside (via /proc, `ps`, or PowerShell) while
+  #  it sat blocked - abandoned after confirming empirically that none
+  #  of it actually works: this project's real test environment (MSYS2
+  #  on Windows) makes every process Ruby spawns invisible to its own
+  #  /proc emulation regardless of spawning method, and Windows has no
+  #  built-in way to read an arbitrary external process's live
+  #  environment at all (Get-Process's .StartInfo is only ever populated
+  #  for a process .NET itself started, not one merely looked up by
+  #  PID). Dumping to a file the lesson itself controls sidesteps all of
+  #  that - reading it is plain file I/O, no OS-specific process
+  #  introspection needed anywhere.
+  #
+  #  Launches cmd_str in the background, waits for its prompt line (by
+  #  which point DUMP_ENV_FILE has already been written), reads it
+  #  directly, then writes a newline to unblock the lesson - which
+  #  deletes DUMP_ENV_FILE itself as part of its own exit. Returns a
+  #  hash of {key => actual_value} for every key expected_env asked
+  #  about - report() compares this against expected_env itself.
+  def self.env_shell_out(cmd_str, expected_env, timeout_seconds: 15)
+    require 'open3'
+    actual_env = {}
+
+    Open3.popen3(cmd_str) do |stdin, stdout, _stderr, wait_thr|
+      watchdog = Thread.new do
+        sleep timeout_seconds
+        `taskkill /F /T /PID #{wait_thr.pid}` if wait_thr.alive?
+      rescue StandardError
+      end
+
+      begin
+        # Wait for the lesson's own prompt line, so DUMP_ENV_FILE is
+        #  guaranteed to already exist by the time we read it - not a
+        #  fixed sleep, which would be either too slow on a fast machine
+        #  or flaky on a slow/loaded one.
+        stdout.readline rescue nil
+
+        dump = File.exist?(DUMP_ENV_FILE) ? File.read(DUMP_ENV_FILE) : ""
+        expected_env.each_key do |key|
+          actual_env[key] = dump[/^#{Regexp.escape(key)}=(.*)$/, 1]&.strip
+        end
+
+        stdin.puts
+        stdin.flush
+      ensure
+        watchdog.kill
+        watchdog.join
+      end
+
+      stdin.close rescue nil
+      begin
+        loop { stdout.readpartial(4096) }
+      rescue EOFError, IOError, SystemCallError
+      end
+    end
+
+    actual_env
+  end
+
   # version() - human-readable version string for the language under test.
   #  Dispatches to special_version for languages that aren't a plain
   #  "interpreter --version" (see @@special_version_langs); otherwise
@@ -787,14 +856,20 @@ class ScriptBase
     # print expected/actual for a testcase: always on FAIL, and also on a
     #  PASS that only succeeded via tolerance (e.g. "precision"), so the
     #  raw difference is still visible.
+    # An "env" test's expected/output are a Hash of {var => value} (see
+    #  env_shell_out), not a string of captured stdout/stderr like every
+    #  other test type - stringify either shape the same way here rather
+    #  than assuming .gsub is always available.
+    displayable = ->(value) { value.is_a?(String) ? value.gsub(/\n/, "\\n") : value.inspect }
+
     print_diff = ->(testcase) {
       return unless !testcase["test_result"] || testcase["diff"]
       if testcase["test_result"]
-        puts "         Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "         Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+        puts "         Expected Output: |#{yellow[displayable[testcase["expected"]]]}|"
+        puts "         Actual Output:   |#{yellow[displayable[testcase["output"]]]}| (within tolerance)"
       else
-        puts "         Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "         Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+        puts "         Expected Output: |#{green[displayable[testcase["expected"]]]}|"
+        puts "         Actual Output:   |#{red[displayable[testcase["output"]]]}|"
       end
     }
 
@@ -929,13 +1004,22 @@ class ScriptBase
           taskdata.each do |test|
             test_result, redirect, expected, args, redirect, input = false, "", "", "", "", ""
             input_lines = nil
+            # An "env" test (see n20.setvars.* - "MY_ORDERS set, Hit
+            #  Return to continue") doesn't write anything comparable to
+            #  stdout/stderr at all - it exports environment variables
+            #  and blocks on stdin, so there's nothing to redirect here;
+            #  env_shell_out below reads stdout itself via Open3 to know
+            #  when the lesson has reached that blocked read.
+            is_env_test = test.has_key?("env")
             # .dup - expected.gsub! below (for $cmd$/$date$) must not
             #  mutate the actual string cached in @@dataset itself, or
             #  the *next* implementation of a multi-implementation
             #  category (e.g. o20 and o21 both under "o2") would see an
             #  already-substituted leftover from whichever ran first
             #  instead of a fresh "$cmd$" to replace.
-            if test.has_key?("err")
+            if is_env_test
+              expected = test['env']
+            elsif test.has_key?("err")
               redirect = "2>&1"
               expected = test['err'].dup
             else
@@ -1001,8 +1085,10 @@ class ScriptBase
             #  prefix themselves (see win_scripts/batch/j00.arguments.cmd's
             #  %~nx0), so only compiled languages get prefix folded in
             #  here.
-            expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
-            expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
+            unless is_env_test
+              expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
+              expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
+            end
 
             # gawk consumes any "-xxx" trailing argument as its own
             #  option unless "--" tells it argument parsing is done -
@@ -1023,7 +1109,9 @@ class ScriptBase
             end
             command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
-            output = if needs_interactive?(test)
+            output = if is_env_test
+              env_shell_out(command, expected)
+            elsif needs_interactive?(test)
               interactive_shell_out(command, input_lines)
             else
               shell_out(command)
@@ -1031,7 +1119,9 @@ class ScriptBase
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
-            if test.has_key?("precision")
+            if is_env_test
+              test_result = expected == output
+            elsif test.has_key?("precision")
               digits = test["precision"]
               test_result = truncate_precision(expected, digits) ==
                             truncate_precision(output, digits)

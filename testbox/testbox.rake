@@ -23,6 +23,7 @@ task :default do
   Rake::Task["exit"].invoke
   Rake::Task["function"].invoke
   Rake::Task["flags"].invoke
+  Rake::Task["environment"].invoke
   Script.print_summary
 end
 
@@ -524,6 +525,20 @@ end
 
 desc 'Long-Form and Short-Form Flags with Values'
 task :o2 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Environment Variables'
+task :environment do
+  Rake::Task["header"].invoke
+  Rake::Task["n2"].invoke
+end
+
+desc 'Setting Environment Variables'
+task :n2 do |t|
   Rake::Task["header"].invoke
   list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
