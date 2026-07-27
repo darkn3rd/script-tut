@@ -23,6 +23,29 @@ Google engineers were frustrated with slow build times across huge C++ codebases
 * **macOS**: `brew install go`, or the official installer.
 * **Linux**: your distro's package, or the official installer.
 
+### Windows: MSYS2
+
+There are native packages for go lang:
+
+```bash
+#  install latest go lang
+pacman -S mingw-w64-ucrt-x86_64-go
+
+# configure shell startup
+cat >> ~/.bashrc <<'EOF'
+
+# MSYS2 UCRT64 Go
+export GOROOT=/ucrt64/lib/go
+export PATH="$GOROOT/bin:$HOME/go/bin:$PATH"
+EOF
+
+# update current environment
+source ~/.bashrc
+
+# install go imports
+go install golang.org/x/tools/cmd/goimports@latest
+```
+
 ### Verify Installation
 
 ```bash
