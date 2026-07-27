@@ -34,6 +34,24 @@ brew install dash-shell # dash 0.5.13.5
 brew install bash       # bash 5.3.12
 ```
 
+### GNU getopt (required for o21.longform.sh)
+
+macOS ships the old one-true-getopt as `/usr/bin/getopt`, which silently ignores `-o`/`--long` and doesn't support long options at all - it just echoes its arguments back unparsed. The o21 lesson needs GNU getopt (from `util-linux`) for `--long` option parsing:
+
+```bash
+brew install gnu-getopt
+```
+
+Homebrew installs this keg-only (to avoid clobbering the system `getopt`), so it won't be on `PATH` as `getopt` by default. Put it ahead of the system path before running the tutorial's tests:
+
+```bash
+export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"   # Intel Homebrew prefix
+# or, on Apple Silicon:
+export PATH="/opt/homebrew/opt/gnu-getopt/bin:$PATH"
+```
+
+Without this, `getopt` resolves to the BSD version, `PARSED` ends up garbage, and o21 silently falls through to its usage/error path on every real option.
+
 ## Getting POSIX Shell on Windows 11
 
 You can install POSIX environments like **[MSYS2](https://www.msys2.org/)** or **[Cygwin](https://www.cygwin.com/)**.

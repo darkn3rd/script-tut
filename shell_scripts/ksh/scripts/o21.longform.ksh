@@ -29,8 +29,12 @@ EOF
 PARSED=$(getopt -o 'c:e:l:k:p:m:t:h' --long 'coffee:,espresso:,latte:,macchiato:,capucino:,mocha:,tea:,help' -n "$(basename "$0")" -- "$@") || { usage >&2; exit 1; }
 eval set -- "$PARSED"
 
-names=()
-counts=()
+# plain "arr=()" makes ksh declare a compound variable (typeset -C)
+#  instead of an indexed array - "${#arr[@]}" then reports 1, not 0, so
+#  the empty-args case below misfires. "typeset -a" forces a real,
+#  empty indexed array.
+typeset -a names=()
+typeset -a counts=()
 
 while true; do
   case "$1" in

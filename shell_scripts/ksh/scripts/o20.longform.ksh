@@ -22,8 +22,12 @@ Usage: $(basename "$0") [--coffee|-c N] [--espresso|-e N] [--latte|-l N] [--macc
 EOF
 }
 
-names=()
-counts=()
+# plain "arr=()" makes ksh declare a compound variable (typeset -C)
+#  instead of an indexed array - "${#arr[@]}" then reports 1, not 0, so
+#  the empty-args case below misfires. "typeset -a" forces a real,
+#  empty indexed array.
+typeset -a names=()
+typeset -a counts=()
 
 while [ $# -gt 0 ]; do
   case "$1" in

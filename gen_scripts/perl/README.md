@@ -1,39 +1,88 @@
 # Scripting Tutorial: Perl
 
-Version 1.1
+Version 1.2
 
 © Joaquin Menchaca, 2014-2026
 
+## Overview
+
+Perl is a high-level, general-purpose, interpreted programming language originally developed by Larry Wall in 1987
+
+Key Characteristics
+
+* **Text Processing Power**: Renowned for its unmatched built-in regular expression (regex) engine, making it a premier tool for log analysis, data extraction, and report generation.
+* **The "Glue Language"**: Widely used for system administration, scripting, and connecting disparate software systems or databases together.
+* **TMTOWTDI Philosophy**: Operates on the core principle: "There's more than one way to do it," giving developers massive stylistic freedom.
+* **CPAN Ecosystem**: Backed by the Comprehensive Perl Archive Network, a massive, mature repository containing tens of thousands of open-source modules.
+
+### Why was Perl Made? 
+
+Perl was created in 1987 by Larry Wall to solve a practical problem: he needed to generate complex, automated text reports on a Unix system, but found existing tools too limited or frustrating.
+
+At the time, Wall was working as a system administrator and linguist. He felt trapped between two extremes in the Unix ecosystem:
+
+* **Too low-level**: Languages like C were powerful, but required long compilation times and verbose code just to handle simple text.
+* **Too limited**: High-level scripting tools like `awk`, `sed`, and shell scripts were great for small tasks, but became brittle, unreadable, and hard to maintain when scaled up to handle complex data manipulation.
+
+### The Solution: A "Glue Language"
+
+Wall built Perl to explicitly bridge the gap between C and shell scripting. His goal was to merge the absolute best features of `awk`, `sed`, and C into a single, unified tool.
+
+Because it excelled at scanning arbitrary files, finding patterns via regular expressions, and printing data, it earned the backronym "***Practical Extraction and Report Language***". It became known as the "Swiss army chainsaw" of the internet because it could easily "glue" incompatible systems and data structures together.
+
 ## Getting Perl
+
+### macOS: System Perl
+
+**macOS** (previously **Mac OS X**) is bundled with **Perl 5** (`/usr/bin/perl`).  **Tahoe** (macOS 26.5) comes with Perl 5.34.1.  
+
+Installing Perl Modules **[CPAN](https://www.cpan.org/)** (Comprehensive Perl Archive Network) using system Perl will require `sudo` access. You can install the Switch module with the following:
+
+```bash
+sudo cpan -f Switch
+```
 
 ### macOS: HomeBrew
 
-**[Homebrew](https://brew.sh/)** is a command-line package manager for **macOS** that simplifies software installation by letting you download, update, and manage applications and tools using quick, automated commands.
+You can use **[Homebrew](https://brew.sh/)** to install the latest version of Perl.  As of July, 2026, this is Perl 5.43.2.
 
 ```bash
-# Install Homebrew on macOS
-script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
-/bin/bash -c "$(curl -fsSL "$script_url")"
-
 # Install Perl
 brew install perl
+
+# Put Homebrew's perl first on PATH, now and in future shells
+# Add this line to your shell profile, e.g. .zshrc, .bashrc
+export PATH="$(brew --prefix)/opt/perl/bin:$PATH"
+```
+
+**OPTIONAL**: You can optionally manage modules locally across different versions of Perl with the following below.  Otherwise, your modules will be destroyed with each upgrade of Perl. 
+
+```bash
+PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+```
+
+Install **[App::cpanminus](https://metacpan.org/pod/App::cpanminus)** and the Switch Module with the following:
+
+```bash
+# Bootstrap cpanm - no sudo needed, this installs into Homebrew's own perl
+cpan App::cpanminus
+
+# Install Switch Module
+cpanm Switch
 ```
 
 ### Windows: Chocolatey
 
 **[Chocolatey](https://chocolatey.org)** is a command-line package manager for Windows, built on top of the NuGet infrastructure, that lets you install, update, and manage software using simple, automated commands instead of clicking through setup wizards.
 
-```powershell
-# Install Chocolatey on Windows 11
-Set-ExecutionPolicy Bypass -Scope Process -Force
-[System.Net.ServicePointManager]::SecurityProtocol = 
-    [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-$WebClient = New-Object System.Net.WebClient
-$ScriptUrl = 'https://community.chocolatey.org/install.ps1'
-Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
+You can use **[Chocolatey](https://chocolatey.org)** to install **[Strawberry Perl](https://strawberryperl.com/)**.  This distribution of Perl comes bundled with CPANminus and required compiler tools. 
 
+```powershell
 # Install Perl
 choco install -y strawberryperl
+# Install Switch module
+cpanm Switch
 ```
 
 ### Windows: MSYS2
@@ -54,7 +103,7 @@ Perl is bundled with MSYS2, so no further installation is required.  If for some
 pacman -S perl
 ```
 
-> **IMPORTANT**: Do not install the UCRT (Universal C Runtime) Perl, as this is not compatible with a POSIX environment, as it uses CRLF.
+> **IMPORTANT**: Do not install the UCRT (Universal C Runtime) Perl ([`mingw-w64-ucrt-x86_64-perl`](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-perl)), as this is not compatible with a POSIX environment, as it uses CRLF.
 
 If you run into problems, you can use `ldd` to check for compatibility.  The POSIX compatible binaries will link to `msys-2.0.dll`, while Windows binaries link to `win32u.dll`.  Here's how you can check:
 
@@ -68,64 +117,58 @@ ldd  /c/tools/msys64/ucrt64/bin/perl | grep -E 'msys|win32' | sed 's/^[[:space:]
 # win32u.dll => /c/Windows/System32/win32u.dll (0x7ff875590000)
 ```
 
-If you have Windows binary in your PATH (on that is linked to `win32u.dll`), either remove it from the PATH or uninstall it. For example, here's how you can uninstall UCRT64 Perl. 
+If you have Windows binary in your PATH (on that is linked to `win32u.dll`), either remove it from the PATH or uninstall it. For example, here's how you can uninstall UCRT64 Perl  ([`mingw-w64-ucrt-x86_64-perl`](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-perl)). 
 
 ```bash
+# remove incompatible windows-only perl
 pacman -R mingw-w64-ucrt-x86_64-perl
 ```
 
-## Perl Modules (CPAN)
+#### CPANminus in MSYS
 
-One lesson ([e41.branch.pl](scripts/e41.branch.pl)) needs a module beyond Perl's core - **[CPAN](https://www.cpan.org/)** (Comprehensive Perl Archive Network) is Perl's package repository. `cpan` (bundled with every Perl) and `cpanm`/**[App::cpanminus](https://metacpan.org/pod/App::cpanminus)** (a separate, modern, dependency-light client) are the two ways to install from it - prefer `cpanm` where you can get it.
-
-### macOS: Homebrew Perl
-
-If `perl` resolves to macOS's own **system** Perl (`/usr/bin/perl`) rather than Homebrew's, installing modules needs `sudo` - the system Perl's library directories are root-owned. That's why `sudo cpan -f Switch` was necessary. Switching to the Homebrew Perl from [Getting Perl](#macos-homebrew) sidesteps this, since it's entirely user-owned:
+Install **[App::cpanminus](https://metacpan.org/pod/App::cpanminus)** and the Switch perl module: 
 
 ```bash
-# Put Homebrew's perl first on PATH, now and in future shells
-export PATH="$(brew --prefix)/opt/perl/bin:$PATH"
-echo "export PATH=\"$(brew --prefix)/opt/perl/bin:\$PATH\"" >> ~/.zshrc
-
-# Bootstrap cpanm - no sudo needed, this installs into Homebrew's own perl
-cpan App::cpanminus
-
-# local::lib keeps everything cpanm installs afterward in a per-user
-#  directory instead of writing into Homebrew's perl tree directly -
-#  eval'ing its output wires up PATH/PERL5LIB for it
-eval "$(perl -Mlocal::lib)"
-echo 'eval "$(perl -Mlocal::lib)"' >> ~/.zshrc
-```
-
-Then install a module directly, no `sudo`:
-
-```bash
+# Base MSYS build system required for any modules that need compilers
+pacman -S --needed base-devel
+# Install APP::cpanminus
+pacman -S mingw-w64-x86_64-cpanminus
+# Install Switch module using cpanminus
 cpanm Switch
 ```
 
-### Windows
-
-Both Perl distributions under [Getting Perl](#getting-perl) are already entirely user-owned installs, so none of the `sudo`/`local::lib` dance above is needed here - `cpanm` just writes straight into them. (`local::lib`'s shell-activation output is also POSIX-shell syntax - `eval "$(perl -Mlocal::lib)"` doesn't translate cleanly to PowerShell or cmd.exe, which is one more reason to skip it on Windows entirely.)
-
-* **Strawberry Perl** already bundles `cpanm` - just run `cpanm Switch`.
-* **MSYS2 (UCRT64)** doesn't bundle `cpanm`, but Strawberry's copy of it can be run directly against UCRT64's `perl` (no need to actually use Strawberry's perl for anything else):
-  ```bash
-  perl /c/Strawberry/perl/bin/cpanm Switch
-  ```
-
 ### Linux
 
-Distro-packaged Perl is typically root-owned, same as macOS's system Perl above - the same pattern applies:
+Perl will be oftened bundled with the Linux distro and it is owned by root, requiring sudo to install modules. You can manage your Perl modules in your local user account with the following:
 
 ```bash
-cpan App::cpanminus
+PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+# add to your shell profile, .profile, .zprofile, .bash_profile
 eval "$(perl -Mlocal::lib)"
-echo 'eval "$(perl -Mlocal::lib)"' >> ~/.bashrc
+
+# install cpanminus
+cpan App::cpanminus
+
+# install Switch
+cpanm Switch
 ```
+
+### Other
+
+On other environments, if there's no clear way to install CPANminus, you can use the online install script. 
+
+```bash
+# Install CPANMinus
+curl -L https://cpanmin.us | /usr/bin/perl - App::cpanminus
+# Install Switch
+cpanm Switch
+```
+
 
 ## Testing
 * 📀 *__macOS 26.5 (Tahoe)__*
-  * 📦 `perl v5.34.1 built for darwin-thread-multi-2level`
+  * 📦 `perl v5.34.1 built for darwin-thread-multi-2level` (System)
+  * 📦 `perl v5.42.2 built for darwin-thread-multi-2level` (Homebrew)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
   * **Shell**: PowerShell 5.1.26100.8875
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`

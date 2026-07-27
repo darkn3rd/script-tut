@@ -96,6 +96,9 @@ This covers notes regarding each section.
    * output variables using string interpolation
      * demonstrate using `%` operator
      * demonstrate using `format()` method
+   * output variables using explicit format specifiers
+     * demonstrate using `format()` method (no f-strings in Python 2)
+   * output multi-line text stored in a variable using `"""`
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
@@ -110,9 +113,15 @@ This covers notes regarding each section.
    * test a number range
    * test a number for menu selection
    * multi-way test on a number for menu selection
-     * **OMITTED**: *Python does not have a mechanism for this*
+     * **OMITTED**: *Python 2 has no `switch`/`match` statement (that's
+       Python 3.10+), so there is no pure implementation of this lesson*
+     * **ALTERNATIVE** `e41`: a `dict` keyed by value stands in for the
+       multiway branch, the same idiom used by Perl for the same reason
    * multi-way test on single character with pattern matching
-     * **OMITTED**: *Python does not have a mechanism for this*
+     * **OMITTED**: *Same limitation as above - no pure implementation*
+     * **ALTERNATIVE** `e51`: a list of `(pattern, result)` pairs tested
+       in order stands in for the multiway branch, since dict keys can't
+       be regexes
    * test on single character with pattern matching
      * **NOTE** Utilized `python re.match(patter, string)` to simulate `=~`
      * **ALTERNATIVE** Using built-in Pythion `isdigit()`, `isupper()`, and `islower()`

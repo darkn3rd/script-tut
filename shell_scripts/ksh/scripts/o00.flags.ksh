@@ -17,7 +17,12 @@ Usage: $(basename "$0") [-c|-e|-l|-k|-p|-m|-t] [-h|-?]
 EOF
 }
 
-while getopts "celkpmth?" opt; do
+# leading ":" puts getopts in silent-error mode - without it, ksh's
+#  getopts treats "-?" as a request for its own built-in auto-generated
+#  usage message and exits right there, never returning control to this
+#  loop's case statement (bash/dash just set opt='?' and let the script
+#  handle it, which is what the h|\?) case below relies on)
+while getopts ":celkpmth?" opt; do
   case $opt in
     c) echo "You ordered a Coffee."; exit 0 ;;
     e) echo "You ordered an Espresso."; exit 0 ;;
