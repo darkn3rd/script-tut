@@ -126,6 +126,8 @@ Task O1 -Depends Header { Invoke-TestBoxTask -Task 'o1' }
 Task O2 -Depends Header { Invoke-TestBoxTask -Task 'o2' }
 
 # ================================================================
-Task Environment -Depends N2
+Task Environment -Depends N0, N1, N2
 
+Task N0 -Depends Header { Invoke-TestBoxTask -Task 'n0' }
+Task N1 -Depends Header { Invoke-TestBoxTask -Task 'n1' }
 Task N2 -Depends Header { Invoke-TestBoxTask -Task 'n2' }

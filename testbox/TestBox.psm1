@@ -816,6 +816,34 @@ function Test-OutputMatches {
     }
 }
 
+# Test-MatchExpected(matchSpec, output) - true if output contains every
+#  substring from at least one os-type group in matchSpec (see n00/n10 -
+#  "enumerating variables"/"enumerating paths" - can't do an exact-match
+#  comparison since the actual env vars/PATH entries are host-specific,
+#  but can check that a known set of substrings is present) - ported
+#  from Script.rb's match_expected?. Which group actually applies isn't
+#  decided ahead of time (e.g. a native Windows interpreter sees a raw
+#  "C:\...;..." PATH, while an msys-runtime-linked one sees it POSIX-
+#  translated even on the same machine) - trying every group and
+#  accepting whichever one is fully satisfied sidesteps needing to know
+#  that distinction in advance. Case-insensitive, same reasoning as
+#  Script.rb's version (Windows paths/values are case-insensitive).
+function Test-MatchExpected {
+    param($MatchSpec, [string]$Output)
+    $haystack = $Output.ToLowerInvariant()
+    foreach ($prop in $MatchSpec.PSObject.Properties) {
+        $allFound = $true
+        foreach ($substring in $prop.Value) {
+            if (-not $haystack.Contains($substring.ToLowerInvariant())) {
+                $allFound = $false
+                break
+            }
+        }
+        if ($allFound) { return $true }
+    }
+    return $false
+}
+
 # Test-EnvMatches(expected, output) - plain equality between an env
 #  test's expected {var = value} object and the {var = actual_value}
 #  object Invoke-EnvShellOut produced - ported from Script.rb's plain
@@ -905,9 +933,19 @@ function Invoke-TestBoxCategory {
             #  the lesson has reached that blocked read - ported from
             #  Script.rb's execute().
             $isEnvTest = $null -ne $test.PSObject.Properties['env']
+            # A "match" test (see n00/n10) captures stdout exactly like a
+            #  normal "out" test, but is verified via Test-MatchExpected
+            #  instead of a straight string comparison (see below) - the
+            #  actual values are host-specific, so an exact expected
+            #  string can't exist at all. Ported from Script.rb's
+            #  execute() (see is_match_test there).
+            $isMatchTest = $null -ne $test.PSObject.Properties['match']
 
             if ($isEnvTest) {
                 $expected = $test.env
+            } elseif ($isMatchTest) {
+                $redirect = "2> $($script:NullDevice)"
+                $expected = $test.match
             } elseif ($test.PSObject.Properties['err']) {
                 $redirect = '2>&1'
                 $expected = $test.err
@@ -945,10 +983,11 @@ function Invoke-TestBoxCategory {
             #  the prefix folded into the $cmd$ substitution here.
             $cmdDisplay = if ($isCompiled) { "$prefix$invokedName" } else { $invokedName }
 
-            # An env test's expected value is a {var = value} object, not
-            #  a string carrying a literal "$cmd$"/"$date$" placeholder -
-            #  ported from Script.rb's execute() (see is_env_test there).
-            if (-not $isEnvTest) {
+            # An env/match test's expected value is an object, not a
+            #  string carrying a literal "$cmd$"/"$date$" placeholder -
+            #  ported from Script.rb's execute() (see is_env_test/
+            #  is_match_test there).
+            if (-not $isEnvTest -and -not $isMatchTest) {
                 $expected = $expected -replace '\$cmd\$', $cmdDisplay
                 $expected = $expected -replace '\$date\$', (Get-Date -Format 'MMMM dd, yyyy')
             }
@@ -969,6 +1008,8 @@ function Invoke-TestBoxCategory {
 
             if ($isEnvTest) {
                 $testResult = Test-EnvMatches -Expected $expected -Output $output
+            } elseif ($isMatchTest) {
+                $testResult = Test-MatchExpected -MatchSpec $expected -Output $output
             } else {
                 $testResult = Test-OutputMatches -Test $test -Expected $expected -Output $output
             }
@@ -979,12 +1020,12 @@ function Invoke-TestBoxCategory {
                 Expected   = $expected
                 TestResult = $testResult
                 # raw values differ even when test_result passed via
-                #  tolerance - not applicable to an env test (no
+                #  tolerance - not applicable to an env/match test (no
                 #  tolerance types apply there), so its diff is exactly
                 #  the inverse of its (already-exact) TestResult, rather
                 #  than the PSCustomObject reference-inequality "-ne"
                 #  below would otherwise (wrongly) always report.
-                Diff       = if ($isEnvTest) { -not $testResult } else { $expected -ne $output }
+                Diff       = if ($isEnvTest -or $isMatchTest) { -not $testResult } else { $expected -ne $output }
                 Title      = Get-ImplementationTitle -File $cmd
             }
 
