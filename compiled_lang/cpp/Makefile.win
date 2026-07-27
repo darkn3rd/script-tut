@@ -1,0 +1,50 @@
+# PowerShell/cmd.exe-native counterpart to ./Makefile - see
+# ../java/Makefile.win for the full rationale. Use it explicitly with
+# `make -f Makefile.win`. The default ./Makefile stays untouched and
+# POSIX-only.
+#
+# cpp's own build step (g++, both compiling and linking) is a single
+# external command with no shell-specific syntax needed at all each
+# time, and unlike go/rust it never shells out to rm/cp at all either
+# (g++ links straight into bin/, no separate promotion step) - so only
+# `clean:` needs a cmd.exe-native replacement here.
+#
+# SHELL is pinned to cmd.exe for every target in this file (safe here,
+# unlike ./Makefile: this whole file is Windows-only).
+
+SHELL := cmd.exe
+
+EXE := .exe
+
+CXX := g++
+CXXFLAGS := -std=c++17 -O2 -Wall -static-libgcc -static-libstdc++
+
+SRC := $(wildcard src/*.cpp)
+BIN := $(addprefix bin/,$(notdir $(SRC:.cpp=$(EXE))))
+
+.PHONY: all clean
+all: $(BIN)
+
+# Without this, GNU Make treats target/%.o as a disposable intermediate
+#  of the target/%.o -> bin/%$(EXE) chain below and silently deletes
+#  each one right after linking - defeating the point of keeping build
+#  objects in target/ at all.
+.SECONDARY:
+
+bin:
+	-mkdir bin
+
+target:
+	-mkdir target
+
+target/%.o: src/%.cpp | target
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+bin/%$(EXE): target/%.o | bin
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+clean:
+	-del /Q /F $(subst /,\,$(BIN)) >NUL 2>&1
+	-rmdir /S /Q target >NUL 2>&1
+	-mkdir target
+	-type nul >target\.gitkeep
