@@ -84,6 +84,12 @@ This covers notes regarding each section.
    * output variables using string interpolation
      * demonstrate using `%` operator
      * demonstrate using `format()` method
+   * output variables using formatting
+     * demonstrate using f-strings (formatted string literals) with
+       explicit format specifiers, distinct from the `%` operator and
+       `format()` method above
+   * store multi-line text in a variable using a triple-quoted string,
+     then print it
 3. Arithmetic
    * show basic integer arithmetic
    * show basic boolean evaluation
@@ -98,9 +104,12 @@ This covers notes regarding each section.
    * test a number range
    * test a number for menu selection
    * multi-way test on a number for menu selection
-     * **OMITTED**: *Python does not have a mechanism for this*
+     * **NOTE** Uses the `match`/`case` statement (Python 3.10+); prior to
+       3.10 Python had no multiway branch mechanism
    * multi-way test on single character with pattern matching
-     * **OMITTED**: *Python does not have a mechanism for this*
+     * **NOTE** Uses `match`/`case` (Python 3.10+) with guard clauses
+       (`case c if re.match(...)`) to emulate pattern matching, since
+       `match`/`case` patterns themselves don't support regex/glob
    * test on single character with pattern matching
      * **NOTE** Utilized `python re.match(patter, string)` to simulate `=~`
      * **ALTERNATIVE** Using built-in Pythion `isdigit()`, `isupper()`, and `islower()`
