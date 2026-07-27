@@ -4,22 +4,27 @@
 
 ## Overview
 
-The `compiled_lang` holds implementations of the same lessons as `gen_scripts`/`shell_scripts`/`win_scripts`, but for languages that need a build step first: Java, C#, Go, Rust, and C++. Each lesson is still one source file per test (`a00.output.java`, `a00.output.rs`, ...), but before the test harness can run it, a `Makefile` in that directory has to turn it into something runnable.
+In DevOps roles<sup>†</sup>, in addition to scripting languages, compiled tools and services using langauges like Go or Rust have been growing in increasing popularity.  For this reason, I wanted to expand the tutorial library to include compiled languages.  The same general structure details in `lessons.yaml` will be followed as well.  To compile these tools to executable binaries, you can use a GNU Make automation to compile the binaries, and afterward clean up any of the compiled artifacts.
 
-## Directory Structure
+> † **DevOps roles** icnlude system engineer, operations engineer, devops engineer, site reliability enginer, platform engineer, etc. 
 
-Every language directory here follows the same three-way split:
+### Directory Structure
 
-* `src/` - every lesson's source file (`a00.output.rs`, `f00.loop.rs`, ...) - the only thing you'd actually edit.
-* `target/` - everything the build generates *except* the final runnable thing: object files, a generated project file (C#'s throwaway `.csproj`), compiled classes (Java's `.class`), debug symbols, and so on. Nothing here is meant to be run directly or committed.
-* `bin/` - the final, runnable artifact for each lesson, named after its source file **minus the language extension** (`a00.output.rs` -> `bin/a00.output` on macOS/Linux, `bin/a00.output.exe` on Windows) - this is what the test harness (and you, by hand) actually invokes. For four of the five languages this is a single self-contained executable; Java's is a tiny launcher script (see below), since Java has no such option at all.
+Each langauge area will have the following directories:
 
-Plus, at the language directory root (not moved into any of the above):
+* **`src/`** - the source code 
+* **`target`/** - build artifacts that are generated
+* **`bin`** - a final executable artifact for each lesson, which will be the an executable binary or a wrapper script that executes the binary.
 
-* `Makefile` - builds `src/*` into `target/`, then promotes the final artifact into `bin/`. `make clean` empties both `target/` and `bin/` back out. Both are gitignored (only their `.gitkeep` is tracked, so the directories themselves exist on a fresh checkout).
-* `common.mk` (one level up, shared by all five) - figures out whether the build is targeting Windows or real POSIX, since that decides both the output extension and, for some languages, how the runnable artifact is actually shaped (see below).
-* `Rakefile` - a one-liner that imports the shared [testbox](../testbox/README.md) harness, exactly like every other lesson directory.
-* `dirtest/` - the fixture directory the Collection Loop (F0) lesson reads. This one's deliberately *not* under `src/` or `bin/`: the harness never changes directory before running a lesson (`make`, the promoted `bin/` binaries, and this fixture all need to stay reachable from the language directory root - see `testbox/Script.rb`'s `@@source_subdir`), so a lesson's own bare `"dirtest"` reference already resolves correctly right where it's always been.
+The following will also be included:
+
+* **`Makefile`** - the script that will build the artifacts in a POSIX environment, such as bash or zsh running on MSYS2, CygWin, macOS, Linux environments.
+* **`Makefile.win`** - a script that will build the artifacts on a Windows system in Powershell. 
+* **`Rakefile`** - using the ruby test harness to test every lesson
+* **`psakefile.ps1`** - uses a powershell baed test harness to test every lesson
+* **`dirtest/`** - the fixture directory needed for some lessons
+
+### Bytecode Challenges
 
 Java and C# each need something extra beyond a plain compile-and-promote, for different reasons:
 
@@ -55,7 +60,7 @@ The Smart App Control (SAC) will prevent your compiled application binaries from
   # Refresh the active system Code Integrity policies immediately
   CiTool.exe -r
   ```
-* MSYS2
+* Using a POSIX shell (`sh`, `dash`, `bash`, `zsh`) in MSYS2 
   ```bash
   # Define path conversion exclusion so MSYS2 does not alter the flags
   export MSYS2_ARG_CONV_EXCL="*"
@@ -74,34 +79,170 @@ The Smart App Control (SAC) will prevent your compiled application binaries from
 
 ## Building and testing
 
-You don't need to run `make` yourself to run the tests - `rake` does it automatically (once per run, and it fails loudly with a clear message if the compiler or `make` itself isn't on PATH, or if the build fails, rather than leaving you to puzzle out the same "not recognized" error on every single test). Just run `rake` in the language directory you want, same as any other lesson suite.
+You don't need to run `make` yourself to run the tests, as `rake` or `Invoke-psake` does it automatically (once per run, and it fails loudly with a clear message if the compiler or `make` itself isn't on PATH, or if the build fails, rather than leaving you to puzzle out the same "not recognized" error on every single test). Just run `rake` in the language directory you want, same as any other lesson suite.
+
+
+### Running by Hand
 
 To build and run a single lesson by hand, e.g. to poke at it outside the test harness:
 
 ```bash
-cd compiled_lang/rust
+# navigate to language directory
+MY_LANGUAGE="rust"
+cd $MY_LANGUAGE
+
+# build binaries
 make
-./bin/a00.output          # or .\bin\a00.output.exe on Windows
+
+# run a single test 
+./bin/a00.output
+
+# cleanup
+make clean
 ```
+
+### Running all the Tests
+
+You can run the tests using either the Rake or Psake test harness.
+
+* Powershell (pwsh)
+    ```bash
+  MY_LANGUAGE="cs"
+  cd $MY_LANGUAGE
+  
+  # build and run all tests 
+  Invoke-psake -quiet
+
+  # clean up all build artifacts
+  make clean
+  ```
+* POSIX (`sh`, `bash`, `zsh`, `dash`) or PowerShell (pwsh)
+  ```bash
+  MY_LANGUAGE="java"
+  cd $MY_LANGUAGE
+  
+  # build and run all tests 
+  rake
+
+  # clean up all build artifacts
+  make clean
+  ```
+
 
 ## Setup
 
 See each language's own README for what to install:
 
-* [Java](java/README.md)
+* [C++](cpp/README.md)
 * [C#](cs/README.md)
 * [Go](go/README.md)
+* [Java](java/README.md)
 * [Rust](rust/README.md)
-* [C++](cpp/README.md)
 
-Every one of them needs [GNU Make](https://www.gnu.org/software/make/) on PATH:
+### Getting GNU Make
 
-* **Windows (MSYS2)**: `pacman -S make`
-* **macOS**: `xcode-select --install`, or `brew install make`
-* **Linux**: usually already installed; otherwise your distro's package manager (`apt install make`, `dnf install make`, ...)
+Every langauge area will need [GNU Make](https://www.gnu.org/software/make/) on PATH to run the tests.
 
-## Status
+* **MSYS2 (Windows)**
+  ```bash
+  pacman -S make
+  ```
+* **Windows: Chocolatey**
+  ```pwsh
+  choco install -y make
+  ```
+* **macOS: Homebrew**
+  ```bash
+  brew install make
+  ```
+* **macOS: XCode**
+  ```bash
+  xcode-select --install
+  ```  
+* Debian/Ubuntu Linux Distros
+  ```bash
+  apt install make
+  ```
+* RHEL/Fedora Linxu Distros
+  ```bash
+  dnf install make
+  ```
 
-All five languages have been built and run end-to-end through `rake` (compiler/SDK installed, `make` builds it, the harness runs and passes).
+## Package Managers
 
-Implemented so far, per language: `a0`-`a2` (Output), `b0`/`b1`/`b3` (Variables - `b2`, String Formatting, still missing), `c0`-`c3` (Arithmetic), `d0` (Line Input - `d1`, Character Input, still missing), `e0`-`e6` (Branching), `f0`-`f4` (Looping - several implementations each, showing off each language's own loop constructs; Go has one fewer variant of `f3` and `f4` than the other four languages), `g0`-`g2` (Arrays), `h0`/`h1` (Associative Arrays), `i0`-`i2` (Subroutines), `j0`-`j2` (Arguments), `k0`/`k1` (Parameters), `l0` (Exit), `m0`-`m2` (Functions). Still missing across all five languages: `n0`-`n2` (Environment Variables) and `o0`-`o2` (Command-Line Flags). Everything else shows as SKIP, same as any other lesson directory with an implementation still missing for a given category.
+Package managers automate installing, updating, and configuring software and system utilities via the command line, handling all background dependencies automatically.
+
+## Windows 11: Chocolatey
+
+Chocolatey is a command-line package manager for Windows that automates software management. It downloads and updates applications directly from the Chocolatey Community Repository, eliminating the need to manually click through setup wizards or visit vendor websites.
+
+```pwsh
+# Install Chocolatey on Windows 11
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = `
+  [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+$WebClient = New-Object System.Net.WebClient
+$ScriptUrl = 'https://community.chocolatey.org/install.ps1'
+Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
+```
+
+You can install the language requirements on Windows with the following command.
+```pwsh
+# Install all general scripting language
+choco install -y choco.config
+```
+
+## macOS: Homebrew
+
+Homebrew is the primary package manager for macOS. It automates the installation, updating, and configuration of command-line tools, languages, and desktop applications that Apple doesn't include by default, installing everything cleanly into its own isolated directory.
+
+```bash
+# Install Homebrew
+script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+/bin/bash -c "$(curl -fsSL "$script_url")"
+
+# Install all general scripting languages and OpenJDK
+brew bundle --verbose
+```
+
+## Version Managers
+
+Version managers isolate tool runtimes, letting you switch between multiple versions of the same language (e.g., Java 11 vs. 17) on a single machine to prevent project conflicts.
+
+### SDKMan 
+
+**[SDKMAN!](https://sdkman.io/)** is a dedicated version manager for the JVM ecosystem. It simplifies installing, isolating, and switching between parallel versions of the JDK, Maven, Gradle, and Groovy.
+
+* General POSIX 
+  ```bash
+  # Install SDKMan using online script
+  curl -s "https://sdkman.io" | bash
+  
+  # Add the following to your shell profile e.g. ~/.profile or ~/.zshrc
+  source "$HOME/.sdkman/bin/sdkman-init.sh"
+  ```
+* macOS + Homebrew
+  ```bash
+  # Install SDKMan using Homebrew
+  brew tap sdkman/tap
+  brew trust --formula sdkman/tap/sdkman-cli
+  brew install sdkman-cli
+
+  # Add the following to your shell profile e.g. ~/.profile or ~/.zshrc
+  export SDKMAN_DIR=$(brew --prefix sdkman-cli)/libexec
+  [[ -s "${SDKMAN_DIR}/bin/sdkman-init.sh" ]] && source "${SDKMAN_DIR}/bin/sdkman-init.sh"
+  ```
+
+### ASDF
+
+**[ASDF](https://asdf-vm.com/)** is a universal version manager. Using an extensible plugin system, it replaces language-specific managers (like nvm, pyenv, and rbenv) to control all your tools via a single interface and a local .tool-versions file.
+
+* Debian/Ubuntu Linux
+  ```bash
+  sudo apt install curl git
+  git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
+  ```
+* macOS + Homebrew
+  ```bash
+  brew install asdf
+  ```

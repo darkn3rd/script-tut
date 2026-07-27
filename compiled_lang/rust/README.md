@@ -175,6 +175,13 @@ To enable F5 step-by-step debugging in VS Code on macOS:
 }
 ```
 
+## Testing
+
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * ⚙️ rustc 1.97.1
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+
+
 ## Further Reading
 
 * [Rust 101 — Everything you need to know about Rust](https://medium.com/codex/rust-101-everything-you-need-to-know-about-rust-f3dd0ae99f4c) by Nishant Aanjaney Jalan on Feb 25, 2023

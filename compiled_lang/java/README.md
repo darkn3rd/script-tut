@@ -69,7 +69,30 @@ You can use [**Homebrew**](https://brew.sh/) to install, for example: [Amazon Co
 
 ```bash
 brew tap homebrew/cask-versions
-brew instasll --cask corretto17
+brew install --cask corretto@17
+# add this to startup profile, ~/.zprofile or ~/.bashrc
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+```
+
+### SDKMAN!
+
+On macOS and Linux with **[SDKMAN!](https://sdkman.io/)** install, you can use this to install Java JDK.  Below is an example of installing [Amazon Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html).
+
+```bash
+# Install OpenJDK
+sdk install java 17.0.19-amzn
+sdk default java 17.0.19-amzn
+```
+
+### ASDF
+
+On macOS and Linux, you can use ASDF to install a Java JDK. Below is an example of installing [Amazon Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html).
+
+```bash
+# Install Java
+asdf plugin add java https://github.com/halcyon/asdf-java.git
+asdf install java corretto-17.0.19.10.1
+asdf global java corretto-17.0.19.10.1
 ```
 
 
@@ -170,6 +193,13 @@ To enable step-by-step debugging of a compiled lesson class in VS Code, add a `.
 ```
 
 Swap `mainClass` for whichever lesson's class name you want to step through (see [Writing a Lesson](#writing-a-lesson) above for how a source file maps to a class name).
+
+## Testing
+
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * ⚙️ javac 17.0.20
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+
 
 ## Further Reading
 

@@ -1,0 +1,111 @@
+part_1:
+  description: >-
+    This covers the basics of input/output, logic flow, variables, and
+    data structures (arrays, associative arrays).
+  output:
+    title: Output
+    lessons:
+      A00: Standard Output
+      A10: Standard Error
+      A20: Here Document (Multiline Output)
+  variables:
+    title: Variables
+    lessons:
+      B00: String Concatenation
+      B10: Variable Interpolation
+      B20: Formatting
+      B30: Here String (Multiline String)
+  arithmetic:
+    title: Arithmetic
+    lessons:
+      C00: Basic Arithmetic
+      C10: Boolean Logic
+      C20: Exponential
+      C30: Math Function
+  input:
+    title: Input
+    lessons:
+      D00: Reading a Line
+      D10: Reading a Single Character
+  branching:
+    title: Branching
+    lessons:
+      E00: Branch on String
+      E10: Ternary
+      E20: Branch on Number Range
+      E30: Branch on Number
+      E40: Multiway Branch on Number
+      E50: Multiway Branch on String Pattern
+      E60: Branch on String Pattern
+  looping:
+    title: Looping
+    lessons:
+      F00: Collection Loop
+      F10: Count Loop
+      F20: Conditional Loop
+      F30: Spin Loop
+      F40: Skipping
+  arrays:
+    title: Arrays
+    lessons:
+      G00: Assign by Index and Length
+      G10: Assign by List and Enumeration by Item
+      G20: Assign by List and Enumeration by Index
+  associative_arrays:
+    title: Associative Arrays
+    lessons:
+      H00: Assign by Key
+      H10: Assign by List and Appending
+
+part_2:
+  description: >-
+    This covers sub-routines and functions, passing values (parameters),
+    and retrieving data. This also covers parsing command line arguments.
+  sub_routines:
+    title: Sub-Routines
+    lessons:
+      I00: Creation and Calling
+      I10: Global Variable (Scope)
+      I20: Local Variable (Scope)
+  arguments_from_command_line:
+    title: Arguments from the Command Line
+    lessons:
+      J00: Usage Statement (Script Name and Arg Count) # NOTE: source README lists this and "Enumerate Arguments in Order" both as [J00]
+      J00_enumerate_order: Enumerate Arguments in Order
+      J10: Enumerate Arguments in Reverse Order
+  parameters:
+    title: Parameters
+    lessons:
+      K00: Pass a Single Parameters
+      K10: Pass Variable Number of Parameters
+  exit:
+    title: Exit
+    lessons:
+      L00: Returning an Exit Status Code
+  functions:
+    title: Functions
+    lessons:
+      M00: Return an Integer
+      M10: Return a String
+      M20: Return an Array
+
+part_3:
+  description: >-
+    This section is under development, and may be put into another advance
+    scripting section. As such, material is being developed for it. Areas
+    important for basic system administration chores will be configuring
+    environment variables, and having more advance command line argument
+    processing with options and flags.
+  environment_variables:
+    title: Environment Variables
+    lessons:
+      N00: Enumerating Variables
+      N10: Enumerating Paths
+      N20: Augmenting Variables
+      N30: Exporting Variables
+  options:
+    title: Options
+    lessons:
+      O00: Flags
+      O10: Options
+      O20: Long Form

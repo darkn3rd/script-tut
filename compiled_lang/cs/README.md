@@ -251,6 +251,12 @@ C# Dev Kit's own debugger (`coreclr`) attaches to a managed process - it doesn't
 
 Swap `bin/a00.output` for whichever lesson binary you want to step through (build it first with `make`). You'll be stepping through native/disassembly rather than C# source line-by-line - useful for confirming AOT actually did what you expect, less useful as an everyday C# debugger.
 
+## Testing
+
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * 📦 dotnet 10.0.302
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+
 ## Further Reading
 
 * [C# documentation](https://learn.microsoft.com/en-us/dotnet/csharp/) — official Microsoft Learn hub for the language.

@@ -143,6 +143,13 @@ To enable step-by-step debugging of a compiled lesson binary in VS Code:
 
 Swap `bin/a00.output` for whichever lesson binary you want to step through (build it first with `make`).
 
+## Testing
+
+* 📀 *__macOS 26.5 (Tahoe)__*
+  * ⚙️ go version go1.26.4
+* 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
+
+
 ## Further Reading
 
 * [go.dev/doc](https://go.dev/doc/) — official documentation, including the language spec and Effective Go.
