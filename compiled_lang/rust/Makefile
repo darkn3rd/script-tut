@@ -39,10 +39,10 @@ target/%$(EXE): src/%.rs | target
 	rustc -O --crate-name $(subst .,_,$*) -o $@ $<
 
 bin/%$(EXE): target/%$(EXE) | bin
-	@ruby -e "require 'fileutils';FileUtils.cp('$<', '$@')"
+	@cp $< $@
 
-# See ../java/Makefile's clean: for why this shells out to Ruby instead
-#  of rm/del - it's already a hard requirement for this whole project,
-#  and doesn't care what shell launched it.
 clean:
-	ruby -e "require 'fileutils';File.delete(*Dir.glob('bin/*')) rescue nil;FileUtils.rm_rf('target');FileUtils.mkdir_p('target');FileUtils.touch('target/.gitkeep')"
+	rm -f $(BIN)
+	rm -rf target
+	@mkdir -p target
+	@touch target/.gitkeep

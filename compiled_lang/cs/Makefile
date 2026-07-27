@@ -66,12 +66,12 @@ target:
 	-@mkdir target
 
 bin/%$(OUTEXT): src/%.cs | bin target
-	ruby gen_csproj.rb $(DOTNET_TFM) $* target/$*.csproj
+	@printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net$(DOTNET_TFM)</TargetFramework>\n    <RuntimeIdentifier>$$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>disable</Nullable>\n    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>\n    <AssemblyName>$*</AssemblyName>\n    <PublishAot>true</PublishAot>\n    <InvariantGlobalization>true</InvariantGlobalization>\n  </PropertyGroup>\n  <ItemGroup>\n    <Compile Include="../src/$*.cs" />\n  </ItemGroup>\n</Project>\n' > target/$*.csproj
 	dotnet publish target/$*.csproj -o target --nologo -v quiet
-	@ruby -e "require 'fileutils';FileUtils.cp('target/$*$(OUTEXT)', '$@')"
+	@cp target/$*$(OUTEXT) $@
 
-# See ../java/Makefile's clean: for why this shells out to Ruby instead
-#  of rm/del - it's already a hard requirement for this whole project,
-#  and doesn't care what shell launched it.
 clean:
-	ruby -e "require 'fileutils';File.delete(*Dir.glob('bin/*')) rescue nil;FileUtils.rm_rf('target');FileUtils.mkdir_p('target');FileUtils.touch('target/.gitkeep')"
+	rm -f $(BIN)
+	rm -rf target
+	@mkdir -p target
+	@touch target/.gitkeep

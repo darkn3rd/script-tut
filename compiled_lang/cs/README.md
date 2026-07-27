@@ -128,8 +128,17 @@ You will want to install the SDK to get the compiler:
 
 ### Windows (MSYS2)
 
+MSYS2 does not provide first-party packages for a full .NET SDK.  You can point MSYS2 to the `dotnet` environment.
+
 ```bash
-pacman -S mingw-w64-ucrt-x86_64-dotnet-sdk
+cat >> ~/.bashrc <<'EOF'
+
+# .NET SDK
+export DOTNET_ROOT='/c/Program Files/dotnet'
+export PATH="$DOTNET_ROOT:$PATH"
+EOF
+
+source ~/.bashrc
 ```
 
 ### Verify Installation

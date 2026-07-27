@@ -50,7 +50,7 @@ choco install -y corretto17jdk
 
 ### Windows 11: MSYS2
 
-In MSYS2, you can popint to your Java installation using a method like this:
+MSYS2 does not provide first-party packages for a full OpenJDK/JDK.  You can point to your existing Java installation using this method:
 
 ```bash
 cat >> ~/.bashrc <<'EOF'
