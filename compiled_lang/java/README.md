@@ -31,6 +31,48 @@ Any recent JDK - what's used here was [Amazon Corretto](https://aws.amazon.com/c
   sdk install java 17.0.16-amzn
   ```
 
+## Getting Java JDK
+
+There a few offerings of Java JDK:
+
+* [Amazon Corretto](https://aws.amazon.com/corretto/) OpenJDK
+* [Zulu](https://www.azul.com/downloads/?package=jdk#zulu) OpenJDK
+* [Termurin](https://adoptium.net/) OpenJDK
+* [Oracle Java JDK](https://www.oracle.com/java/technologies/downloads/)
+
+### Windows 11: Chocolatey
+
+You can use [**Chocolatey**](https://chocolatey.org/) to install, for example: [Amazon Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
+
+```powershell
+choco install -y corretto17jdk
+```
+
+### Windows 11: MSYS2
+
+In MSYS2, you can popint to your Java installation using a method like this:
+
+```bash
+cat >> ~/.bashrc <<'EOF'
+
+# Amazon Corretto JDK 17
+export JAVA_HOME='/c/Program Files/Amazon Corretto/jdk17.0.19_10'
+export PATH="$JAVA_HOME/bin:$PATH"
+EOF
+
+source ~/.bashrc
+```
+
+### macOS: Homebrew
+
+You can use [**Homebrew**](https://brew.sh/) to install, for example: [Amazon Corretto 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
+
+```bash
+brew tap homebrew/cask-versions
+brew instasll --cask corretto17
+```
+
+
 ### Verify Installation
 
 Confirm `javac` and `java` are both on PATH:
