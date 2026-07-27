@@ -65,6 +65,13 @@ You can install **Rust** binaries with the following:
 
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-rust
+cat >> ~/.bashrc <<'EOF'
+
+# Rust Cargo tools
+export PATH="$HOME/.cargo/bin:$PATH"
+EOF
+
+source ~/.bashrc
 ```
 
 You can install the **rustup** version manager with:

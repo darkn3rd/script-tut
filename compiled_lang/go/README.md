@@ -19,9 +19,19 @@ Google engineers were frustrated with slow build times across huge C++ codebases
 
 ## Install
 
-* **Windows (MSYS2)**: `pacman -S mingw-w64-ucrt-x86_64-go`, or the [official installer](https://go.dev/dl/).
-* **macOS**: `brew install go`, or the official installer.
-* **Linux**: your distro's package, or the official installer.
+You can use the [official installer](https://go.dev/dl/) the installers, or usage one of these package managers below.
+
+### macOS: Homebrew
+
+```bash
+brew install go
+```
+
+### Windows: Chocolatey
+
+```pwsh
+choco install -y go
+```
 
 ### Windows: MSYS2
 
