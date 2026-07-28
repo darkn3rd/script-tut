@@ -74,6 +74,14 @@ pacman -S mingw-w64-ucrt-x86_64-ruby
 pacman -S mingw-w64-x86_64-ruby
 ```
 
+### Windows: Cygwin
+
+```bash
+apt-cyg install ruby rubygems
+```
+
+
+
 ## Testing
 
 * 📀 *__macOS 26.5 (Tahoe)__*
