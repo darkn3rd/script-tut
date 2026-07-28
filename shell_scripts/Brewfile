@@ -1,3 +1,5 @@
 brew 'ksh'
 brew 'bash'
 brew 'tcsh'
+brew 'dash-shell'
+brew 'gnu-getopt'

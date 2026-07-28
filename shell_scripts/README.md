@@ -15,7 +15,7 @@ Under the hood, is the Cygwin `cgwin1.dll` library that translates  POSIX (Porta
 You can install this with Chocolatey
 
 ```pwsh
-choco install -y cygwin
+gsudo choco install -y cygwin
 ```
 
 ### ⚙️ MSYS2
@@ -29,13 +29,33 @@ For a few scenarios, where there is no direct equivelent in Windows, like `fork(
 You can install this with Chocolatey:
 
 ```pwsh
-choco install -y msys2
+gsudo choco install -y msys2
 ```
 
 ### 🐧 WSL1 (Windows Subsystem for Linux, Version 1)
 
-WSLv1 uses a real Linux kernel
+WSL1 is a Microsoft-developed compatibility layer that allows running native Linux binary executables directly on Windows without a virtual machine. It utilizes a translation layer to convert Linux system calls into Windows NT kernel calls on the fly, enabling the use of unmodified Linux distributions and binaries.
 
+> NOTE: You need to first enable Windows features like `Microsoft-Windows-Subsystem-Linux`. See [Enable WSL Features](/./cibox/README.md#enable-wsl-features).
+
+Here's an example of how you can install Ubuntu 26.04 as WSLv1:
+
+```pwsh
+# Find Distros Online
+wsl --list --online
+
+MY_DISTRO_SELCTION="Ubuntu-26.04"
+MY_INSTALL_NAME="Ubuntu26-WSL1"
+
+# Install WSLv1 vrsion of Ubuntu
+wsl --install $MY_DISTRO_SELCTION --name $MY_INSTALL_NAME --version 1
+
+# Check Installed Versions
+wsl --list --verbose
+
+# Launch Target Distro
+wsl -d $MY_INSTALL_NAME
+```
 
 ### Cygwin vs MSYS
 
@@ -60,6 +80,8 @@ Each language directory (`bash/`, `csh/`, `ksh/`, `posix/`) follows the same sha
 
 `rake` changes into `scripts/` before running anything, so a lesson can be invoked as a bare filename and any self-name introspection it does (`$0`, ...) still reports just that bare filename - moving the lesson files here doesn't change what any lesson actually outputs.
 
+## Installing Package Managers
+
 ## Windows 11
 
 ```powershell
@@ -70,9 +92,6 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 $WebClient = New-Object System.Net.WebClient
 $ScriptUrl = 'https://community.chocolatey.org/install.ps1'
 Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
-
-# Install MSYS2 environment
-choco install -y choco.config
 ```
 
 ## macOS
@@ -81,9 +100,6 @@ choco install -y choco.config
 # Install Homebrew
 script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 /bin/bash -c "$(curl -fsSL "$script_url")"
-
-# Install latest shell versions
-brew bundle --verbose
 ```
 
 ## Elevated Privileges
@@ -118,6 +134,46 @@ alias sudo='/c/tools/gsudo/Current/gsudo.exe'
 ```
 
 > IMPORTANT: Running **gsudo** in MinTTY (`mintty.exe`) will cause MinTTY to freeze.  Only use this in Command Prompt (`cmd.exe`), Windows Terminal (`wt.exe`), PowerShell (`powershell.exe`), or PowerShell 7 (`pwsh.exe`) 
+
+## Package Manifiests
+
+There are some package manifests that you can use to install all the packages needed for this area.
+
+### Windows 11: Chocolately
+
+You can install the package manifest (`choco.config`) with the following command below:
+
+```pwsh
+gsudo choco install -y choco.config
+```
+
+### Windows 11: MSYS2
+
+Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
+
+```bash
+pacman -Syu --noconfirm
+for PKG in $(cat msys2_pkgs.txt); do pacman -Sy --noconfirm $PKG; done
+```
+
+### Windows 11: Cygwin
+
+Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
+
+```bash
+apt-cyg update
+for PKG in $(cat cygwin_pkgs.txt); do apt-cyg install $PKG; done
+```
+
+### macOS: Homebrew
+
+You can install the package manifest (`Brewfile`) with the following command below:
+
+```bash
+brew bundle --verbose
+```
+
+
 
 ## Cygwin Package Managers
 
