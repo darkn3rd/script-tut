@@ -137,6 +137,27 @@ pacman -S mingw-w64-x86_64-cpanminus
 cpanm Switch
 ```
 
+#### Perl in Cygwin
+
+```bash
+apt-cyg install perl
+```
+
+#### CPANminus in Cygwin
+
+```bash
+# Install Development Tools
+apt-cyg install gcc-core gcc-g++ make automake autoconf libtool binutils pkg-config git patch
+
+# Install CPAN for local user 
+PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+eval "$(perl -Mlocal::lib)"
+
+# Install CPANminus and Swtich.pm
+cpan App::cpanminus
+cpanm Switch
+```
+
 ### Linux
 
 Perl will be oftened bundled with the Linux distro and it is owned by root, requiring sudo to install modules. You can manage your Perl modules in your local user account with the following:

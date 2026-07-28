@@ -1,3 +1,12 @@
+// setenv (POSIX) is hidden by Cygwin's (and glibc's) <cstdlib> under
+//  -std=c++17's strict-ANSI mode unless a feature-test macro opts back
+//  in (confirmed directly on Cygwin - see the same issue and fix in
+//  n00.getvars.cpp). Must precede every include, since whichever header
+//  first transitively pulls in <stdlib.h> locks in the guard.
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>

@@ -80,6 +80,13 @@ You can install the **rustup** version manager with:
 pacman -S mingw-w64-ucrt-x86_64-rustup
 ```
 
+### Windows: Cygwin
+
+```bash
+apt-cyg install rust
+```
+
+
 ### Verify Installation
 
 ```bash
