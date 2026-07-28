@@ -61,7 +61,7 @@
 class ScriptBase
   # command name
   @@command = {
-    :awk    => "gawk",
+    :awk    => "awk",
     :groovy => "groovy",
     :pl     => "perl",
     :php    => "php",
@@ -106,7 +106,7 @@ class ScriptBase
   # (see extract_version) rather than a shell pipeline, so it needs no
   # external tool support at all.
   @@version_probe = {
-    :awk    => "gawk --version 2>&1",
+    :awk    => "awk --version 2>&1",
     :groovy => "groovy --version 2>&1",
     :pl     => "perl --version 2>&1",
     :php    => "php --version 2>&1",
