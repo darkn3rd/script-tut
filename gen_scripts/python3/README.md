@@ -62,13 +62,15 @@ pacman -S mingw-w64-ucrt-x86_64-python
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 Python3.14.6
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-  * **Shell**: PowerShell 5.1.26100.8875
+  * 🐚 PowerShell 5.1.26100.8875
     * 📦 Python 3.14.3
-  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+  * 🐚 Command Shell (C:\Windows\System32\cmd.exe)
     * 📦 Python 3.14.3
-  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+  * 🐚 MSYS2 UCRT64 20260611.0.0 bash
     * 📦 Python 3.14.6
-
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 Python 3.12.12
+    
 ## Notes
 
 This covers notes regarding each section.

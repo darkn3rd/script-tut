@@ -74,18 +74,27 @@ pacman -S mingw-w64-ucrt-x86_64-ruby
 pacman -S mingw-w64-x86_64-ruby
 ```
 
+### Windows: Cygwin
+
+```bash
+apt-cyg install ruby rubygems
+```
+
+
+
 ## Testing
 
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 ruby 4.0.5 (2026-05-20 revision 64336ffd0e) +PRISM [x86_64-darwin23]
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-  * **Shell**: PowerShell 5.1.26100.8875
+  * 🐚 PowerShell 5.1.26100.8875
     * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
-  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+  * 🐚: Command Shell (C:\Windows\System32\cmd.exe)
     * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
-  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+  * 🐚 MSYS2 UCRT64 20260611.0.0 bash
     * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]
-
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 ruby 4.0.6 (2026-07-14 revision 03b6d3f889) +PRISM [x86_64-cygwin]
 
 ## Notes 
 

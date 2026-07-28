@@ -1,0 +1,5 @@
+perl
+mingw-w64-ucrt-x86_64-python
+mingw-w64-ucrt-x86_64-ruby
+mingw-w64-ucrt-x86_64-tcl
+gawk

@@ -1,3 +1,16 @@
+// gethostname()/getlogin() are POSIX.1-2001 XSI extensions - hidden by
+//  Cygwin's (and glibc's) <unistd.h> under -std=c++17's strict-ANSI mode
+//  unless a feature-test macro opts back in (confirmed directly on
+//  Cygwin; MSYS2/MinGW never hits this path at all - see currentUser()
+//  below). Must come before ANY include, not just <unistd.h> itself:
+//  <filesystem> below already pulls in <unistd.h> transitively, and its
+//  include guard would otherwise lock out the declaration before this
+//  macro ever took effect (confirmed directly - defining it immediately
+//  above the local #include <unistd.h> was not sufficient).
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>

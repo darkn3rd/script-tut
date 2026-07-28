@@ -82,8 +82,10 @@ echo 'export PATH="$PATH:/c/tools/php85"' >> ~/.bash_profile
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 `PHP 8.5.8 (cli) (built: Jul  1 2026 03:46:27) (NTS)`
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-  * **Shell**: PowerShell 5.1.26100.8875
-    * 📦 `PHP 8.5.8 (cli) (built: Jul  1 2026 04:03:04) (NTS Visual C++ 2022 x64)`
+  * 🐚 PowerShell 5.1.26100.8875
+    * 📦 PHP 8.5.8 (cli) (built: Jul  1 2026 04:03:04) (NTS Visual C++ 2022 x64)
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 PHP 8.1.28 (cli) (built: Dec 22 2025 15:47:43) (NTS)
 * 📀 *__Windows 7 SP1 64-bit__* (`Windows NT 6.1`)
     * 📦 MSVCR 11.00.51106.1, PHP 5.5.13 (http://windows.php.net/download/)
 

@@ -1,0 +1,6 @@
+ruby
+rubygems
+python312
+php
+tcl
+perl

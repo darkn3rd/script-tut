@@ -1,0 +1,11 @@
+gcc-core
+gcc-g++ 
+make
+automake
+autoconf
+libtool
+binutils
+pkg-config
+git
+patch
+rust

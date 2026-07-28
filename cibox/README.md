@@ -32,7 +32,7 @@ gsudo config CacheMode Auto
 
 ### Windows 11 Home Prerequisites
 
-#### Install WSL2
+#### Enable WSL Features
 
 For Windows 11 Home, you need to install a WSL2 environment, which is a light-weight virtual machine running Linux.  You can run the following below in either Command Shell or PowerShell.  This will require a reboot to take effect. 
 

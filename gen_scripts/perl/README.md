@@ -137,6 +137,27 @@ pacman -S mingw-w64-x86_64-cpanminus
 cpanm Switch
 ```
 
+#### Perl in Cygwin
+
+```bash
+apt-cyg install perl
+```
+
+#### CPANminus in Cygwin
+
+```bash
+# Install Development Tools
+apt-cyg install gcc-core gcc-g++ make automake autoconf libtool binutils pkg-config git patch
+
+# Install CPAN for local user 
+PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+eval "$(perl -Mlocal::lib)"
+
+# Install CPANminus and Swtich.pm
+cpan App::cpanminus
+cpanm Switch
+```
+
 ### Linux
 
 Perl will be oftened bundled with the Linux distro and it is owned by root, requiring sudo to install modules. You can manage your Perl modules in your local user account with the following:
@@ -170,9 +191,11 @@ cpanm Switch
   * 📦 `perl v5.34.1 built for darwin-thread-multi-2level` (System)
   * 📦 `perl v5.42.2 built for darwin-thread-multi-2level` (Homebrew)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-  * **Shell**: PowerShell 5.1.26100.8875
+  * 🐚 PowerShell 5.1.26100.8875
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`
-  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+  * 🐚 Command Shell (C:\Windows\System32\cmd.exe)
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`
-  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+  * 🐚 MSYS2 UCRT64 20260611.0.0 bash
     * 📦 UCRT64 Perl - `perl v5.42.2 built for MSWin32-x64-multi-thread`
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 `perl v5.44.0 built for x86_64-cygwin-threads-multi`
