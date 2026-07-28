@@ -1,2 +1,2 @@
-brew 'dotnet'
+cask 'dotnet-sdk'
 brew 'powershell'

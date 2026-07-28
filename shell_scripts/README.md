@@ -173,8 +173,6 @@ You can install the package manifest (`Brewfile`) with the following command bel
 brew bundle --verbose
 ```
 
-
-
 ## Cygwin Package Managers
 
 * Current Package Manager Tools

@@ -8,20 +8,22 @@ The GHA script is configured in `script-tut/.github/workflows/ci.yml`.
 
 ## Setup for Act
 
-### Windows 11: Elevated Privileges
+You can use [Act](https://github.com/nektos/act) to run tests locally on Windows, macOS, or Linux.  For non-linux systems, they will need a Linux VM to run a container runtime, and they will need docker client tools. 
 
-In order to run elevated privileges without ambiguity in the instructions, install gsudo.  Any command that requires elevated privileges will be prepended by gsudo. Use Chocolatey or Winget in a terminal with elevated privileges. 
+### Windows 11: Elevated Privileges with gsudo
 
-* Install with **Chocolatey**
+In order to run elevated privileges without ambiguity in the instructions, install gsudo.  Any command that requires elevated privileges will be prepended by gsudo. Use **[Chocolatey](https://chocolatey.org/)** or **[Winget](https://learn.microsoft.com/windows/package-manager/)** in a terminal with elevated privileges. 
+
+* Install with **[Chocolatey](https://chocolatey.org/)**
   ```powershell
   choco install -y gsudo
   ```
-* Install using **Winget**
+* Install using **[Winget](https://learn.microsoft.com/windows/package-manager/)**
   ```powershell
   winget install gerardog.gsudo
   ```
 
-After you can enabled caching, so you don't have to elevate privileges for every command.  Not this is considered a security risk. 
+After you can enable caching, so you don't have to elevate privileges for every command.  Not this is considered a security risk. 
 
 ```powershell
 # set cache on in current session
@@ -32,7 +34,9 @@ gsudo config CacheMode Auto
 
 ### Windows 11 Home Prerequisites
 
-#### Enable WSL Features
+For Act, you need to have a Linux VM to run a container runtime.  You can get this with WSL2 on Windows Home.  Windows Professional can use Hyper-V.
+
+#### Enable WSL2 Features
 
 For Windows 11 Home, you need to install a WSL2 environment, which is a light-weight virtual machine running Linux.  You can run the following below in either Command Shell or PowerShell.  This will require a reboot to take effect. 
 

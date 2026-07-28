@@ -1,6 +1,12 @@
-brew 'ksh'
+# Popular Shells
 brew 'bash'
-brew 'tcsh'
-brew 'zsh'
-brew 'dash-shell'
+brew 'zsh'   
+
+# Tools
 brew 'gnu-getopt'
+brew 'bc'
+
+# Legacy Shells
+brew 'dash-shell'. # bourne shell compatible
+brew 'ksh'         # ksh93
+brew 'tcsh'.       

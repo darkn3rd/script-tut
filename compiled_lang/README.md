@@ -128,7 +128,6 @@ You can run the tests using either the Rake or Psake test harness.
   make clean
   ```
 
-
 ## Setup
 
 See each language's own README for what to install:
@@ -246,3 +245,42 @@ Version managers isolate tool runtimes, letting you switch between multiple vers
   ```bash
   brew install asdf
   ```
+
+## Package Manifiests
+
+There are some package manifests that you can use to install all the packages needed for this area.
+
+### Windows 11: Chocolately
+
+You can install the package manifest (`choco.config`) with the following command below:
+
+```pwsh
+gsudo choco install -y choco.config
+```
+
+### Windows 11: MSYS2
+
+Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
+
+```bash
+pacman -Syu --noconfirm
+for PKG in $(cat msys2_pkgs.txt); do pacman -Sy --noconfirm $PKG; done
+```
+
+### Windows 11: Cygwin
+
+Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
+
+```bash
+apt-cyg update
+for PKG in $(cat cygwin_pkgs.txt); do apt-cyg install $PKG; done
+```
+
+### macOS: Homebrew
+
+You can install the package manifest (`Brewfile`) with the following command below:
+
+```bash
+brew bundle --verbose
+```
+
