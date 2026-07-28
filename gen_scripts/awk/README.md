@@ -63,6 +63,8 @@ AWK scripts have the ability to do pre-processing and post-processing before and
     * 📦 GNU Awk 5.3.2, API 4.0, (GNU MPFR 4.0.2, GNU MP 6.1.2)
   * 🐚 MSYS2 UCRT64 20260611.0.0 - bash 5.1.4
     * 📦 GNU Awk 5.4.1, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
 * 📀 Windows 7 (32-bit)

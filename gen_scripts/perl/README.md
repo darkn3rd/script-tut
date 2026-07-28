@@ -191,9 +191,11 @@ cpanm Switch
   * 📦 `perl v5.34.1 built for darwin-thread-multi-2level` (System)
   * 📦 `perl v5.42.2 built for darwin-thread-multi-2level` (Homebrew)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-  * **Shell**: PowerShell 5.1.26100.8875
+  * 🐚 PowerShell 5.1.26100.8875
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`
-  * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
+  * 🐚 Command Shell (C:\Windows\System32\cmd.exe)
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`
-  * **Shell**: MSYS2 UCRT64 20260611.0.0 bash
+  * 🐚 MSYS2 UCRT64 20260611.0.0 bash
     * 📦 UCRT64 Perl - `perl v5.42.2 built for MSWin32-x64-multi-thread`
+  * 🐚 Cygwin 3.6.10-1
+    * 📦 `perl v5.44.0 built for x86_64-cygwin-threads-multi`
