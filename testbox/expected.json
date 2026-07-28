@@ -46,7 +46,7 @@
   "f3": [{ "in" : "Name\nquit", "out": "Enter your name (quit to exit): Hello Name!\nEnter your name (quit to exit): "}],
   "f4": [{ "in" : "Name\nquit", "out": "Enter your name (quit to exit): Hello Name!\nEnter your name (quit to exit): "}],
   "g0": [{ "out": "The total nicknames are: 7\nThe nicknames are: bob, ed, steve, ralph, joe, deb, kate\n"}],
-  "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n"}],
+  "g1": [{ "out": "The names are: \n  bob\n  ed\n  steve\n  ralph\n  joe\n  deb\n  kate\n", "unordered_lines": true}],
   "g2": [{ "out": "The names are: \n nicknames[0]=bob\n nicknames[1]=ed\n nicknames[2]=steve\n nicknames[3]=ralph\n nicknames[4]=joe\n nicknames[5]=deb\n nicknames[6]=kate\n"}],
   "h0": [{ "out": "Keys (names):  bob, ed, steve, ralph, deb, kate\nValues (ages): 34, 58, 32, 23, 46, 19\n", "unordered_csv": true}],
   "h1": [{ "out": "The ages are: \n ages[bob]=34\n ages[ed]=58\n ages[steve]=32\n ages[ralph]=23\n ages[deb]=46\n ages[kate]=19\n", "unordered_lines": true}],

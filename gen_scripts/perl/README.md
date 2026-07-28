@@ -165,7 +165,7 @@ Perl will be oftened bundled with the Linux distro and it is owned by root, requ
 ```bash
 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
 # add to your shell profile, .profile, .zprofile, .bash_profile
-eval "$(perl -Mlocal::lib)"
+eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
 
 # install cpanminus
 cpan App::cpanminus

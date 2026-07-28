@@ -568,8 +568,16 @@ class ScriptBase
           actual_env[key] = dump[/^#{Regexp.escape(key)}=(.*)$/, 1]&.strip
         end
 
-        stdin.puts
-        stdin.flush
+        # A lesson that dies before reaching its own "getline < -" (e.g.
+        #  gawk-only syntax run under a plain awk) has already closed its
+        #  stdin by this point - writing to it raises EPIPE, which should
+        #  surface as this test's own FAIL (via the empty actual_env
+        #  populated above), not an unhandled crash of the whole rake run.
+        begin
+          stdin.puts
+          stdin.flush
+        rescue Errno::EPIPE
+        end
       ensure
         watchdog.kill
         watchdog.join
