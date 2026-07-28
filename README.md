@@ -31,6 +31,7 @@ These are the languages supported.
   * :shell: C Shell (csh) †
   * :shell: Korn Shell (ksh) †
   * :shell: Shell, POSIX (sh) †
+  * :shell: Z Shell (zsh) †
 * **Windows Languages**:
   * :scroll: Command Shell (BATCH)
   * :scroll: JScript (WSH)

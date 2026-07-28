@@ -4,7 +4,7 @@ These languages cover Unix/Linux shell scripting languages.
 
 ## Directory Structure
 
-Each language directory (`bash/`, `csh/`, `ksh/`, `posix/`) follows the same shape:
+Each language directory (`bash/`, `csh/`, `ksh/`, `posix/`, `zsh/`) follows the same shape:
 
 * `scripts/` - every lesson file (`a00.output.bash`, `f00.loop.bash`, ...) plus `dirtest/`, the fixture directory the F0 (Collection Loop) lesson reads. This is what actually changes between languages.
 * `Rakefile` - a one-liner that imports the shared [testbox](../testbox/README.md) harness, same as every other lesson directory in this project.

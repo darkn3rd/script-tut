@@ -72,6 +72,7 @@ class ScriptBase
     :csh    => "tcsh",
     :sh     => "sh",
     :ksh    => "ksh",
+    :zsh    => "zsh",
     :js     => "cscript",
     :vbs    => "cscript",
     :ps1    => "powershell",
@@ -91,6 +92,7 @@ class ScriptBase
     :csh    => "",
     :sh     => "",
     :ksh    => "",
+    :zsh    => "",
     :js     => "//Nologo",
     :vbs    => "//Nologo",
     :ps1    => '-NoLogo -NoProfile -ExecutionPolicy Bypass -File',
@@ -113,6 +115,7 @@ class ScriptBase
     :bash   => "bash --version 2>&1",
     :csh    => "csh --version 2>&1",
     :ksh    => "ksh --version 2>&1",
+    :zsh    => "zsh --version 2>&1",
     :java   => "javac -version 2>&1",
     :go     => "go version 2>&1",
     :rs     => "rustc --version 2>&1",
@@ -138,6 +141,7 @@ class ScriptBase
     :csh    => "C-Shell",
     :sh     => "POSIX Shell",
     :ksh    => "Korn Shell",
+    :zsh    => "Z Shell",
     :js     => "JScript (WSH)",
     :vbs    => "VBScript (WSH)",
     :ps1    => "PowerShell",
@@ -602,7 +606,7 @@ class ScriptBase
   #  behaves identically regardless of which shell captured `raw`.
   def self.extract_version(raw, lang)
     case lang
-    when :awk, :php, :bash, :cpp
+    when :awk, :php, :bash, :zsh, :cpp
       raw.lines.first.to_s.strip
     when :pl
       raw[/v\d\.\d{1,2}\.\d/].to_s

@@ -78,7 +78,8 @@ The directory structure of this repository will include these directories:
 │   ├── bash
 │   ├── csh
 │   ├── ksh
-│   └── posix
+│   ├── posix
+│   └── zsh
 ├── supporing_docs
 ├── testbox
 └── win_scripts
