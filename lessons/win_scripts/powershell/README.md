@@ -6,55 +6,92 @@ Version 1.5
 
 ## Overview
 
-Powershell is Microsoft's new platform for scripting and automating Windows system.  It's an environment that runs on top of the .NET platform, and has access to the wealth of .NET libraries.  There's a built-in mechanism to access OLE libraries as well, so in that sense it can easily replace the limited WSH (Windows Script Host) environment that hosted JScript and VBScript amongst other languages for scripting chores.
+Powershell is Microsoft's new platform for scripting and automating Windows system.  It's an environment that runs on top of the **.NET platform**, and has access to the wealth of .NET libraries.  There's a built-in mechanism to access OLE libraries as well, so in that sense it can easily replace the limited **WSH** (**Windows Script Host**) environment that hosted **JScript** and **VBScript** amongst other languages for scripting chores.
 
-Powershell 1.0 and Powershell 2.0 are supported on Windows as early as Windows NT 5.1 (Windows XP) and Windows NT 5.2 (Windows 2003).  
+### PowerShell Versions
 
-PowerShell 3.0 is supported on Windows NT 6.1 (Windows 7, Windows Server 2008 R2) and later.  
 
-PowerShell 4.0 is supported on Windows NT 6.2 (Windows 8 and Windows 2012) and Windows NT 6.1 with SP1 for their perspective releases. 
+| Edition | PowerShell Version | Release Year | Native OS / Companion               | Kernel | Underlying .NET Engine | Type   |
+| :--------------------- | :------ | :--- | :-------------------------------------- | :----- | :--------------------- | :----  |
+| **Windows PowerShell** | **1.0** | 2006 | Windows XP SP2<br>Windows Server 2003   | NT 5.2 | .NET Framework 2.0     | Legacy |
+|                        | **2.0** | 2009 | Windows 7 <br>Windows Server 2008 R2    | NT 6.1 | .NET Framework 2.0 / 3.5 | Legacy |
+|                        | **3.0** | 2012 | Windows 8 <br>Windows Server 2012       | 6.2<sup>1</sup> | .NET Framework 4.0 | Legacy |
+|                        | **4.0** | 2013 | Windows 8.1<br>Windows Server 2012 R2   | 6.3<sup>1</sup> | .NET Framework 4.5 | Legacy |
+|                        | **5.0** | 2015 | Windows 10 (1507)                       |  10<sup>2</sup> | .NET Framework 4.5.2 | Legacy |
+|                        | **5.1** | 2016 | Windows 10 (1607), Windows 11 (All)<br>Windows Server 2016 / 2019 / 2022 / 2025 | 10<sup>2</sup> | .NET Framework 4.6+ | Legacy |
+| **PowerShell Core**    | **6.0** | 2018 | Cross-platform | - | .NET Core 2.0 | Modern (EOL)  |
+|                        | **7.0** | 2020 | Cross-platform | - | .NET Core 3.1 | Modern (EOL)  |
+|                        | **7.2** | 2021 | Cross-platform | - | .NET 6.0 | Modern (EOL) |
+|                        | **7.4** | 2023 | Cross-platform | - | .NET 8.0 | Modern (LTS) |
+|                        | **7.5** | 2025 | Cross-platform | - | .NET 9.0 | Modern |
+|                        | **7.6** | 2026 | Cross-platform | - | .NET 10.0 | Modern (LTS) |
 
-Future versions obviously will follow this pattern, and thus you'll need to get the latest Windows for the latest PowerShell.  
+**NOTES**
+1. Microsoft removed using NT in internal version names.  As earlier DOS-based Windows operating systems were discontinued, there should be no more confusion between older Windows that runs on top of DOS, and Windows that run on the Windows NT kernel.
+2. For marketing reasons, Microsoft changed the internal version to match the customer facing name of **Windows 10**.  With **Windows 11**, the internal version was left 10 to avoid breaking older installers. 
 
-Officially, Powershell does not support earlier versions of Windows, such Windows NT 5.0 (Windows 2000) (yes...there have been hacks), and so WSH and the traditional command shell (BATCH) may be the only options from Microsoft, but then those systems are EOL (End-of-Life) by Microsoft, and so most in the community may not care.
+### Pash (deprecated)
 
-Amongst the operating system from Microsoft, various interfaces, such as installing Features and Roles on Windows releases differ, and thus, there is limited consistent interfaces amongst different versions of Windows.  Thus scripts may need to check for the operating system and use the appropriate available APIs if the scripts need to run on different versions of Windows.  
+Before the release of PowerShell Core, there was an Open Source reimplementation of Windows PowerShell for [Mono](http://www.mono-project.com/) dotnet implemenation.
 
-As many may have experienced, this was a similar problem with earlier versions of Windows and popular tools at the time, as the tools differed in availability, licensing, and command line switches.  Such is the problem today with PowerShell as it was before with other tools in the past.
+* Pash (2019): https://github.com/Pash-Project/Pash
 
-## Getting PowerShell on Windows 7
+## Getting PowerShell
 
-PowerShell 2.0 comes bundled in Windows 7 in both 64-bit and 32-bit versions.  This program will run using the CLR Virtual Machine from the .NET 2.0 framework.  The default framework can be overridden or changed.
+Powershell 7.x requires the dotnet CLR Runtime to operate as it is compiled bytecode.  There are two methods to install Powershell (`pwsh`):
 
-By default, PowerShell will not execute scripts unless you change the Execution Policy, which is simply a key stored in the registry.  You have to run ```Set-ExecutionPolicy RemoteSigned``` in PowerShell to modify this setting.  This will need to be done in both 32-bit and 64-bit versions to avoid any weirdness, as PowerShell scripts could get executed in either 32-bit or 64-bit modes.
+* **Self-Contained Packages**: Installs a completely independent copy of PowerShell that embeds its own private, isolated version of the modern .NET runtime directly inside the application folder (`$PSHOME`). This means you can run the newest versions of PowerShell immediately without manually updating or installing any external .NET frameworks on your machine.
 
-Any administrative chores will likely require escalated privileges.  To run PowerShell with these privileges, you will need to do the following:
+* **Framework-Dependent Packages**: Installs PowerShell as a global app managed directly by an existing .NET SDK on your system using the `dotnet tool install --global PowerShell` command. This method drastically minimizes the installation download size, but it will fail or crash if you do not have the matching global version of the modern .NET runtime pre-installed on the host machine.
 
-1. Type PowerShell in the Start menu's Run field.
-2. For either *Windows PowerShell* (64-bit) or *Windows PowerShell (x86)* (32-bit), you need to right-click on the program.
-3. Select *Run As Administrator*.
-4. In the dialog titled *User Account Control* that appears, click *Yes*. 
+These instructions will cover the self-container package.
+
+### Windows 11: Chocolatey
+
+PowerShell 5.1 (`powershell.exe`) is bundled into Windows 11.  You can get the latest PowerShell 7.x (`pwsh.exe`) with **Chocolatey**.
+
+```pwsh
+# Install PowerShell 7.x (pwsh.exe)
+gsudo choco install -y powershell-core
+```
+
+### macOS: HomeBrew
+
+You can install the latest PowerShell 7.x (`pwsh`) with **Homebrew**.
+
+```bash
+# Install PowerShell 7.x (pwsh)
+brew install powershell
+```
+
+### Ubuntu 22.04 Jammy Jellyfish
+
+You can install the latest PowerShell 7.x (`pwsh`) using Microsoft's Debian repository. 
+
+```bash
+# Configure Microsoft Third-Party Debian Repository
+# Debian Package (packages-microsoft-prod.deb) installs:
+# * Remote Package Repo Config: /etc/apt/sources.list.d/microsoft-prod.list
+# * Package Trusted Signing Key: /etc/apt/trusted.gpg.d/microsoft-prod.gpg
+wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \
+  -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+
+# Add Microsoft packages list
+sudo apt-get update
+
+# Install PowerShell 7.x (pwsh)
+sudo apt-get install -y powershell
+```
 
 ## Getting PowerShell on Mac OS X, Linux, and Unix
 
 There is an open source equivalent to PowerShell called Pash.  The prerequisite for this is an installation of Mono, as Mono provides the virtual machine (JIT compiler) and library support to run .NET applications.
 
-* Pash: https://github.com/Pash-Project/Pash
 * Mono: http://www.mono-project.com/
 
-## Getting PowerShell 7
 
-### Ubuntu 22.04 Jammy Jellyfish
-
-```
-wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \
-  -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-rm packages-microsoft-prod.deb
-sudo apt-get update
-sudo apt-get install -y powershell
-
-```
 
 ## Testing
 
@@ -187,3 +224,4 @@ This covers notes regarding each section.
 ## Further Reading
 
 * [Install PowerShell 7 on Ubuntu](https://learn.microsoft.com/powershell/scripting/install/install-ubuntu?view=powershell-7.6)
+* [Understanding The Way Windows Versions Its Operating Systems](https://learn.microsoft.com/answers/questions/5521945/understanding-the-way-windows-versions-its-operati)

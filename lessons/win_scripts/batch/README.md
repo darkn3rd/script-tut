@@ -1,8 +1,8 @@
 # Scripting Tutorial: BATCH (Command Shell)
 
-© Joaquin Menchaca, 2014
+© Joaquin Menchaca, 2014-2026
 
-Version 1.1
+Version 1.2
 
 ## Overview
 
@@ -11,6 +11,31 @@ This covers the Windows Command Shell, sometimes referred to as BATCH due to the
 ## History
 
 The *BATCH* environment has existed since 1981 with the releases of [MS-DOS](http://en.wikipedia.org/wiki/MS-DOS), [IBM PC-DOS](http://en.wikipedia.org/wiki/IBM_PC_DOS), and [DR-DOS (Digital Research DOS)](http://en.wikipedia.org/wiki/DR-DOS). Different versions of [Windows 4.x](http://en.wikipedia.org/wiki/Windows_9x) were bundled with [MS-DOS](http://en.wikipedia.org/wiki/MS-DOS), and thus by nature included the the *BATCH* environment.
+
+| OS Lineage            | Version        | Release Year | Distribution Bundle Status | Core Language, Shell, and Batch Extensions |
+| :-------------------- | :-------------: | :-----------: | :--------------------------- | :--- |
+| **PC DOS (IBM)**      | **1.0 - 3.3**  | 1981 - 1987  | OEM | Primitive base `COMMAND.COM` architecture and utilities: `MODE`, `FDISK`, `XCOPY`, and `DEBUG`<br>Available as standalone OS, or bundled with **OS/2 1.x** (16-bit PM) that ran PC-DOS code in an internal compatibility box (emulator). |
+| **DR DOS (Digital Research)**<sup>1</sup> | **5.0** | 1990        | Retail | Introduced `ViewMAX` GUI. Advanced memory loading freed base RAM blocks for heavy batch structures. |
+| **MS-DOS (Microsoft)** | **5.0**        | 1991         | Retail | `QBasic`, `EDIT` text editor, `DOSKEY` command-line macros. |
+| **DR DOS**<sup>1</sup> | **6.0**        | 1991         | Retail | Integrated `TaskMAX` task switcher. Bundled `SuperStor` file compression hooks directly at the prompt. |
+| **PC DOS**            | **5.0**  | 1992 - 1994  | **OS/2 2.x** | Bundled with **OS/2 2.x** (32-bit Core) that runs PC DOS in crash-proof MVDM virtual machines. |
+| **Novell DOS**<sup>1</sup>        | **7.0**        | 1993         | Retail | Preemptive multitasking (`TASKMGR`), networking tools (`SCRIPT`), conditional execution syntax, and recursive `XDIR`. |
+| **MS-DOS**            | **6.0 / 6.22** | 1993 - 1994  | Retail | Added the `CHOICE` command for custom user menus and conditional processing. |
+| **PC DOS**            | **6.1 - 6.3**  | 1993 - 1994  | Retail | Independent fork splitting from Microsoft. Replaced standard text-parsing utilities with proprietary IBM equivalents. |
+| **MS-DOS**            | **7.0**<sup>2</sup>        | 1995         | **Windows 95** (4.0) | **32-bit Pipeline Swapping:** Native Long File Names (LFN) and `START` execution thread management commands. |
+| **PC DOS**            | **7.0**        | 1995         | Retail | Bundled the structural **REXX language interpreter**, stepping completely past primitive batch loop rules. |
+| **MS-DOS**            | **7.1**<sup>2</sup>        | 1996         | **Windows 95 OSR2** (4.0)<br>**Windows 98** / **98 SE** (4.1) | **FAT32** file structure and LBA storage layout parsing. |
+| **OpenDOS (Caldera)**<sup>1</sup> | **7.01**       | 1997         | OSS | Features advanced **4DOS** out-of-the-box as the highly customizable default system shell interpreter. |
+| **DR-DOS (Caldera)**<sup>1</sup>  | **7.02 / 7.03**| 1998 - 1999  | Retail | Commercial cleanup of OpenDOS. Retained advanced **4DOS** macro syntax engine parsing. |
+| **PC DOS**            | **2000**       | 1998         | Retail | Final physical retail version of IBM PC DOS. Resolved hard structural date handling and Y2K batch logic. |
+| **MS-DOS**            | **8.0**<sup>2</sup>        | 2000         | **Windows ME** (4.9) | Restricted real-mode hook intercepts. Blocked traditional `AUTOEXEC.BAT` parsing to shorten desktop boot cycles. |
+| **FreeDOS**           | **1.0**        | 2006         | OSS | Bundles **`FreeCOM`** as the default shell, adding native line editing, history logs, and tab completion. |
+| **FreeDOS**           | **1.1 - 1.3**  | 2012 - 2022  | OSS | Package managers (`FDIMPLES`), HTML-based **`FDHELP`** reference documentation tool. |
+| **FreeDOS**           | **1.4**        | 2025         | OSS | Modern `FreeCOM` shell string patches, native 7-Zip file compression layout logic. |
+
+**NOTES**:
+1. **Novell DOS** and **OpenDOS** are part of the same DR DOS family. 
+2. These **MS-DOS** versions were not available separately and were bundled with Microsoft Windows.
 
 A new environment, called *Command Shell*, was introduced with the with [IBM OS/2](http://en.wikipedia.org/wiki/OS/2), and later with [Microsoft Windows NT](http://en.wikipedia.org/wiki/Windows_NT).  Future versions of [Windows NT](http://en.wikipedia.org/wiki/Windows_NT), marketed as Windows XP, Windows 7, Windows 8, and so forth, continue to carry the *Command Shell*.
 
