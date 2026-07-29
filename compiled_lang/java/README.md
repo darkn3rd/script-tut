@@ -48,7 +48,7 @@ You can use [**Chocolatey**](https://chocolatey.org/) to install, for example: [
 choco install -y corretto17jdk
 ```
 
-### Windows 11: MSYS2
+### MSYS2 (Windows 11)
 
 MSYS2 does not provide first-party packages for a full OpenJDK/JDK.  You can point to your existing Java installation using this method:
 
@@ -72,7 +72,33 @@ brew tap homebrew/cask-versions
 brew install --cask corretto@17
 # add this to startup profile, ~/.zprofile or ~/.bashrc
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+
 ```
+
+### Ubuntu 22.04 Jammy Jellyfish
+
+```bash
+KEYRING="/usr/share/keyrings/corretto-keyring.gpg"
+wget -O - https://apt.corretto.aws/corretto.key \
+  | sudo gpg --dearmor -o $KEYRING
+echo "deb [signed-by=$KEYRING] https://apt.corretto.aws stable main" \
+  | sudo tee /etc/apt/sources.list.d/corretto.list
+sudo apt update && sudo apt install -y java-17-amazon-corretto-jdk
+
+# add this to startup profile: ~/.zshrc or ~/.bashrc
+export JAVA_HOME=$(readlink -f /usr/bin/java | sed 's|/bin/java||')
+
+```
+
+If you need to manage multiple Java versions, you can configure the desired ones with:
+
+```bash
+sudo update-alternatives --config java
+sudo update-alternatives --config javac
+```
+
+export JAVA_HOME=$(readlink -f /usr/bin/javac | sed 's|/bin/javac||')
+
 
 ### SDKMAN!
 
@@ -205,3 +231,5 @@ Swap `mainClass` for whichever lesson's class name you want to step through (see
 
 * [dev.java](https://dev.java/) — Oracle's official Java learning/documentation portal.
 * [Oracle Java Documentation](https://docs.oracle.com/en/java/) — the full JDK/JLS reference set.
+* [Amazon Corretto 17 Installation Instructions for Debian-Based, RPM-Based and Alpine Linux Distributions](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/generic-linux-install.html)
+* [New update channels for Amazon Corretto releases](https://aws.amazon.com/blogs/opensource/new-update-channels-for-amazon-corretto-releases/)

@@ -59,7 +59,7 @@ Version managers isolate tool runtimes, letting you switch between multiple vers
 * General POSIX 
   ```bash
   # Install SDKMan using online script
-  curl -s "https://sdkman.io" | bash
+  curl -s "https://get.sdkman.io" | bash
   
   # Add the following to your shell profile e.g. ~/.profile or ~/.zshrc
   source "$HOME/.sdkman/bin/sdkman-init.sh"

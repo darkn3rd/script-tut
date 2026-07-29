@@ -77,13 +77,18 @@ $script:Command = @{
     ps1    = 'powershell'
     js     = 'cscript'
     vbs    = 'cscript'
-    awk    = 'gawk'
+    awk    = 'awk'
     groovy = 'groovy'
     pl     = 'perl'
     php    = 'php'
     py     = 'python'
     rb     = 'ruby'
     tcl    = 'tclsh'
+    bash   = 'bash'
+    csh    = 'tcsh'
+    sh     = 'sh'
+    ksh    = 'ksh'
+    zsh    = 'zsh'
 }
 
 $script:CommandOptions = @{
@@ -98,6 +103,11 @@ $script:CommandOptions = @{
     py     = ''
     rb     = ''
     tcl    = ''
+    bash   = ''
+    csh    = ''
+    sh     = ''
+    ksh    = ''
+    zsh    = ''
 }
 
 $script:LanguageName = @{
@@ -112,6 +122,11 @@ $script:LanguageName = @{
     py     = 'Python'
     rb     = 'Ruby'
     tcl    = 'TCL'
+    bash   = 'Bourne Again Shell'
+    csh    = 'C-Shell'
+    sh     = 'POSIX Shell'
+    ksh    = 'Korn Shell'
+    zsh    = 'Z Shell'
     java   = 'Java'
     go     = 'Go'
     rs     = 'Rust'
@@ -171,19 +186,27 @@ if (Test-Path -PathType Container 'scripts') {
 $script:SourceSubdir = if (Test-Path -PathType Container 'src') { 'src' } else { '.' }
 
 # Languages with no plain "cmd --version" probe - ported from Script.rb's
-#  @@special_version_langs, plus :tcl (tclsh has no --version flag).
-$script:SpecialVersionLangs = @('cmd', 'ps1', 'js', 'vbs', 'tcl')
+#  @@special_version_langs, plus :tcl (tclsh has no --version flag). :sh
+#  joins this list because it's resolved dynamically (see
+#  Get-TestBoxCommand's dash preference) rather than through a static
+#  $script:VersionProbe entry - same reasoning as Script.rb's
+#  PosixShellScript#special_version :sh case.
+$script:SpecialVersionLangs = @('cmd', 'ps1', 'js', 'vbs', 'tcl', 'sh')
 
 # ported from Script.rb's @@version_probe - {0} is replaced with the
 #  resolved command name (see Get-TestBoxCommand), matching Ruby's
 #  "%{cmd} --version" substitution for :py (python2/python3 override).
 $script:VersionProbe = @{
-    awk    = 'gawk --version 2>&1'
+    awk    = 'awk --version 2>&1'
     groovy = 'groovy --version 2>&1'
     pl     = 'perl --version 2>&1'
     php    = 'php --version 2>&1'
     py     = '{0} --version 2>&1'
     rb     = 'ruby --version 2>&1'
+    bash   = 'bash --version 2>&1'
+    csh    = 'csh --version 2>&1'
+    ksh    = 'ksh --version 2>&1'
+    zsh    = 'zsh --version 2>&1'
     java   = 'javac -version 2>&1'
     go     = 'go version 2>&1'
     rs     = 'rustc --version 2>&1'
@@ -210,6 +233,18 @@ function Get-TestBoxCommand {
     #  latter is only the Windows Desktop edition executable name (see
     #  the identical fix in Script.rb's `command`).
     if ($cmd -eq 'powershell' -and -not $script:IsWindowsHost) { return 'pwsh' }
+    # shell_scripts/posix's lessons target genuine POSIX shell semantics,
+    #  not whatever a distro's /bin/sh happens to be symlinked to - dash
+    #  is a strict POSIX implementation, so prefer it explicitly when
+    #  it's on PATH, falling back to plain "sh" otherwise. Unlike Script.rb
+    #  (which just invokes "sh" and relies on the OS's own symlink), this
+    #  makes the choice deterministic rather than incidental. Windows has
+    #  no dash/sh convention of its own - untested there; if this lesson
+    #  set is ever run under psake on Windows, dash/sh would need to be
+    #  put on PATH manually (e.g. via WSL or Git for Windows's own sh).
+    if ($cmd -eq 'sh' -and -not $script:IsWindowsHost -and (Find-TestBoxExecutable -Command 'dash')) {
+        return 'dash'
+    }
     return $cmd
 }
 
@@ -220,8 +255,9 @@ function ConvertTo-ExtractedVersion {
     param([string]$Raw, [string]$Language)
     switch ($Language) {
         # cpp: g++ --version's output is multiple lines (version line,
-        #  then copyright/license) - just the first line, same as awk/php.
-        { $_ -in 'awk', 'php', 'cpp' } { return ($Raw -split "`n")[0].Trim() }
+        #  then copyright/license) - just the first line, same as awk/php/
+        #  bash/zsh (see Script.rb's identical extract_version case).
+        { $_ -in 'awk', 'php', 'cpp', 'bash', 'zsh' } { return ($Raw -split "`n")[0].Trim() }
         'pl' {
             if ($Raw -match 'v\d\.\d{1,2}\.\d') { return $Matches[0] }
             return ''
@@ -474,6 +510,18 @@ function Get-SpecialVersion {
             }
             return (sh -c "echo 'puts [info patchlevel];exit 0' | tclsh").Trim()
         }
+        'sh' {
+            # dash (and most minimal POSIX shells) has no --version flag
+            #  at all - "unknown" here is the expected, common case, not
+            #  a failure, matching Script.rb's PosixShellScript#special_version
+            #  :sh case. Queries whatever Get-TestBoxCommand actually
+            #  resolved to (dash or sh), not a hardcoded "sh", so the
+            #  label reflects the real interpreter running the lessons.
+            $cmd = Get-TestBoxCommand -Language 'sh'
+            $raw = (& $cmd --version 2>$null | Select-Object -First 1)
+            if ($raw) { return "Shell (sh) = $raw" }
+            return 'Shell (sh) = unknown'
+        }
         default { return '' }
     }
 }
@@ -581,9 +629,18 @@ function Invoke-ShellOut {
     $proc.StartInfo = $psi
     [void]$proc.Start()
     if ($StdinText) {
-        $proc.StandardInput.Write($StdinText)
-        if (-not $StdinText.EndsWith("`n")) { $proc.StandardInput.Write("`n") }
-        $proc.StandardInput.Close()
+        # A missing/misbehaving interpreter (e.g. csh not on PATH) can
+        #  make the child exit before ever reading stdin - writing to its
+        #  already-closed pipe then throws IOException ("Broken pipe").
+        #  That should surface as this one test's own FAIL (via empty
+        #  stdout below), not an unhandled crash of the whole psake run -
+        #  same reasoning as Script.rb's env_shell_out EPIPE rescue.
+        try {
+            $proc.StandardInput.Write($StdinText)
+            if (-not $StdinText.EndsWith("`n")) { $proc.StandardInput.Write("`n") }
+            $proc.StandardInput.Close()
+        } catch [System.IO.IOException] {
+        }
     }
     $stdout = $proc.StandardOutput.ReadToEnd()
     $proc.WaitForExit()
@@ -1158,6 +1215,16 @@ function Show-TestBoxSummary {
     Write-Colored "Fail=$($script:Summary.Fail)  " 'Red'
     Write-Colored "Skip=$($script:Summary.Skip)" 'Yellow'
     Write-Host ""
+}
+
+# Test-TestBoxFailed() - true if any category run so far this session had
+#  a lesson FAIL - ported from Script.rb's Script.failed?. The Summary
+#  task (see testbox.psake.ps1) throws on this so a failing run actually
+#  fails the psake build ($psake.build_success), not just prints red text -
+#  Rake gets the equivalent behavior via Script.rb's own
+#  `at_exit { exit 1 if Script.failed? }`.
+function Test-TestBoxFailed {
+    return $script:Summary.Fail -gt 0
 }
 
 Export-ModuleMember -Function * -Variable *

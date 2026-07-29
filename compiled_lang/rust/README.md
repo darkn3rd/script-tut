@@ -59,7 +59,7 @@ rustup toolchain link system "$(brew --prefix rust)"
 choco install -y rust
 ```
 
-### Windows: MSYS2 (UCRT64)
+### MSYS2 (Windows 11)
 
 You can install **Rust** binaries with the following:
 
@@ -80,12 +80,25 @@ You can install the **rustup** version manager with:
 pacman -S mingw-w64-ucrt-x86_64-rustup
 ```
 
-### Windows: Cygwin
+### Cygwin (Windows 11)
 
 ```bash
 apt-cyg install rust
 ```
 
+### Ubuntu 22.04 Jammy Jellyfish: Rustup
+
+```bash
+sudo apt install -y \
+  curl \
+  build-essential \
+  gcc \
+  make
+
+# Install Using Rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
 
 ### Verify Installation
 
@@ -187,7 +200,8 @@ To enable F5 step-by-step debugging in VS Code on macOS:
 * 📀 *__macOS 26.5 (Tahoe)__*
   * ⚙️ rustc 1.97.1
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
-
+* 📀 Pop!_OS 22.04 (Ubuntu 22.04)
+  * ⚙️ rustc 1.97.1 (8bab26f4f 2026-07-14)
 
 ## Further Reading
 

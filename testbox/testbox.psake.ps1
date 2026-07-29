@@ -18,6 +18,9 @@ Task Default -Depends Output, Variables, Arithmetic, Input, Branch, Looping, Arr
 
 Task Summary {
     Show-TestBoxSummary
+    if (Test-TestBoxFailed) {
+        throw "One or more lessons failed - see FAIL entries above."
+    }
 }
 
 Task Header {

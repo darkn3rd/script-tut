@@ -126,7 +126,7 @@ You will want to install the SDK to get the compiler:
   winget install Microsoft.DotNet.SDK.10
   ```
 
-### Windows (MSYS2)
+### MSYS2 (Windows)
 
 MSYS2 does not provide first-party packages for a full .NET SDK.  You can point MSYS2 to the `dotnet` environment.
 
@@ -139,6 +139,25 @@ export PATH="$DOTNET_ROOT:$PATH"
 EOF
 
 source ~/.bashrc
+```
+
+### Ubuntu 22.04 Jammy Jellyfish
+
+```bash
+sudo apt update && apt install -y \
+  ca-certificates \
+  libc6 \
+  libgcc-s1 \
+  libgssapi-krb5-2 \
+  libicu70 \
+  libssl3 \
+  libstdc++6 \
+  tzdata \
+  zlib1g
+
+sudo add-apt-repository ppa:dotnet/backports
+sudo apt update && \
+  sudo apt install -y dotnet-sdk-10.0
 ```
 
 ### Verify Installation
@@ -262,3 +281,6 @@ Swap `bin/a00.output` for whichever lesson binary you want to step through (buil
 * [C# documentation](https://learn.microsoft.com/en-us/dotnet/csharp/) — official Microsoft Learn hub for the language.
 * [.NET documentation](https://learn.microsoft.com/en-us/dotnet/) — the runtime, SDK, and standard library C# builds on.
 * [Chocolatey vs Winget: Modern Windows Package Management for System Engineers](https://www.flowdevs.io/blog/post/chocolatey-vs-winget-modern-windows-package-management-for-system-engineers)
+
+* [Install .NET SDK or .NET Runtime on Ubuntu](https://learn.microsoft.com/dotnet/core/install/linux-ubuntu-install?tabs=dotnet10&pivots=os-linux-ubuntu-2204)
+* [.NET CLI overview](https://learn.microsoft.com/dotnet/core/tools/)

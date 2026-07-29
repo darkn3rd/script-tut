@@ -42,6 +42,20 @@ There is an open source equivalent to PowerShell called Pash.  The prerequisite 
 * Pash: https://github.com/Pash-Project/Pash
 * Mono: http://www.mono-project.com/
 
+## Getting PowerShell 7
+
+### Ubuntu 22.04 Jammy Jellyfish
+
+```
+wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \
+  -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+
+```
+
 ## Testing
 
 * 📀 *__Windows 7 Home__* (`Microsoft Windows NT [Version 6.1]`)
@@ -170,3 +184,6 @@ This covers notes regarding each section.
     * demonstrate function that returns an array
 
 
+## Further Reading
+
+* [Install PowerShell 7 on Ubuntu](https://learn.microsoft.com/powershell/scripting/install/install-ubuntu?view=powershell-7.6)

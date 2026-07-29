@@ -33,7 +33,7 @@ brew install go
 choco install -y go
 ```
 
-### Windows: MSYS2
+### MSYS (Windows)
 
 There are native packages for go lang:
 
@@ -51,6 +51,21 @@ EOF
 
 # update current environment
 source ~/.bashrc
+
+# install go imports
+go install golang.org/x/tools/cmd/goimports@latest
+```
+
+### Ubuntu 22.04 Jammy Jellyfish
+
+```bash
+sudo add-apt-repository ppa:longsleep/golang-backports
+sudo apt update
+sudo apt install golang-go
+
+# shell profile example; add to ~/.bashrc, ~/.zshrc
+export GOPATH=$(go env GOPATH)
+export PATH=$GOPATH/bin:$PATH
 
 # install go imports
 go install golang.org/x/tools/cmd/goimports@latest
