@@ -214,6 +214,12 @@ $script:VersionProbe = @{
     cs     = 'dotnet --version 2>&1'
 }
 
+# commands already confirmed present on PATH this run (see
+#  Get-TestBoxCommand) - a HashSet so a missing interpreter/compiler fails
+#  loudly exactly once, not on every single test that would otherwise try
+#  and fail to invoke it - ported from Script.rb's @@verified_commands.
+$script:VerifiedCommands = New-Object System.Collections.Generic.HashSet[string]
+
 # Get-TestBoxCommand() - resolves to the interpreter binary to invoke,
 #  preferring a directory-specific override (see $script:CommandOverride)
 #  over the extension-derived default - ported from Script.rb's `command`.
@@ -224,26 +230,33 @@ function Get-TestBoxCommand {
     #  through to $script:Compiler, since that's the one thing that
     #  actually needs to be on PATH to run these lessons at all (see
     #  Confirm-TestBoxCompiled). Reusing this function for that, rather
-    #  than a separate one, means the same PATH-verification (see
-    #  Confirm-TestBoxCompiled) and header-display logic (see
-    #  Write-TestBoxHeader) covers both cases for free.
+    #  than a separate one, means the same PATH-verification and
+    #  header-display logic (see Write-TestBoxHeader) covers both cases
+    #  for free.
     $cmd = $script:Command[$Language]
     if (-not $cmd) { $cmd = $script:Compiler[$Language] }
     # POSIX PowerShell (pwsh) ships as "pwsh", not "powershell" - the
     #  latter is only the Windows Desktop edition executable name (see
     #  the identical fix in Script.rb's `command`).
-    if ($cmd -eq 'powershell' -and -not $script:IsWindowsHost) { return 'pwsh' }
+    if ($cmd -eq 'powershell' -and -not $script:IsWindowsHost) { $cmd = 'pwsh' }
     # shell_scripts/posix's lessons target genuine POSIX shell semantics,
     #  not whatever a distro's /bin/sh happens to be symlinked to - dash
     #  is a strict POSIX implementation, so prefer it explicitly when
-    #  it's on PATH, falling back to plain "sh" otherwise. Unlike Script.rb
-    #  (which just invokes "sh" and relies on the OS's own symlink), this
-    #  makes the choice deterministic rather than incidental. Windows has
-    #  no dash/sh convention of its own - untested there; if this lesson
-    #  set is ever run under psake on Windows, dash/sh would need to be
-    #  put on PATH manually (e.g. via WSL or Git for Windows's own sh).
+    #  it's on PATH, falling back to plain "sh" otherwise - Script.rb now
+    #  has this identical preference in its own `command` method.
     if ($cmd -eq 'sh' -and -not $script:IsWindowsHost -and (Find-TestBoxExecutable -Command 'dash')) {
-        return 'dash'
+        $cmd = 'dash'
+    }
+    # Fail once, loudly, and stop - ported from Script.rb's `command`. A
+    #  missing interpreter/compiler would otherwise silently run every
+    #  single lesson through a shell that immediately errors ("zsh: not
+    #  found"), surfacing as a wall of confusing empty-output FAILs
+    #  instead of one clear diagnostic naming the actual missing binary.
+    if (-not $script:VerifiedCommands.Contains($cmd)) {
+        if (-not (Find-TestBoxExecutable -Command $cmd)) {
+            throw "Cannot find `"$cmd`" on PATH (needed to run $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
+        }
+        [void]$script:VerifiedCommands.Add($cmd)
     }
     return $cmd
 }

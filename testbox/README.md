@@ -8,7 +8,7 @@ Testbox is a shared test harness for testing the language lessons against a set 
 
 The test harness (`Script.rb` for Rake, `TestBox.psm1` for psake) will run each languag's implmentation of the lession, catpure the final output, and compare it to the expected result, and then generate a a summary report. 
 
-Each language directory just supplies a thin `Rakefile` or `psakefile.ps1` that imports the shared harness, so the comparison logic, tolerance rules (precision, unordered output, etc.), and pass/fail/skip reporting live in one place rather than being duplicated per language. Running `rake` or `.\psake.cmd` in any lesson directory drives this harness against that directory's scripts and prints a PASS/FAIL/SKIP report with a summary tally.
+Each language directory just supplies a thin `Rakefile` or `psakefile.ps1` that imports the shared harness, so the comparison logic, tolerance rules (precision, unordered output, etc.), and pass/fail/skip reporting live in one place rather than being duplicated per language. Running `rake` in any lesson directory drives the Rake harness against that directory's scripts; running `Invoke-psake` (from `pwsh`, cross-platform) drives the psake harness the same way. Both print a PASS/FAIL/SKIP report with a summary tally.
 
 ## Requirements
 
