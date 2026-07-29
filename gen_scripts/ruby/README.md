@@ -38,6 +38,19 @@ script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 brew install ruby
 ```
 
+### Ubuntu: rbenv
+
+You must install and setup `rbenv`, see [gen_scripts/README.md](../README.md#rbenv-ruby-version-management)
+
+```bash
+# update ruby listings 
+pushd ~/.rbenv/plugins/ruby-build  && git pull && popd
+
+# install ruby
+rbenv install 4.0.6
+rbenv global 4.0.6
+```
+
 ### Windows: Chocolatey
 
 **[Chocolatey](https://chocolatey.org)** is a command-line package manager for Windows, built on top of the NuGet infrastructure, that lets you install, update, and manage software using simple, automated commands instead of clicking through setup wizards.
@@ -86,6 +99,8 @@ apt-cyg install ruby rubygems
 
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 ruby 4.0.5 (2026-05-20 revision 64336ffd0e) +PRISM [x86_64-darwin23]
+* 📀 Pop!_OS 22.04 (Ubuntu 22.04)
+  * 📦 ruby 4.0.6 (2026-07-14 revision 03b6d3f889) +PRISM [x86_64-linux]
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
   * 🐚 PowerShell 5.1.26100.8875
     * 📦 ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x64-mingw-ucrt]

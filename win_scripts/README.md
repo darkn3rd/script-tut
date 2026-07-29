@@ -2,15 +2,19 @@
 
 This area covers scripting languages used on Windows operating systems.
 
+* 🖥️ [Command Shell (BATCH)](./batch/README.md) - classic command shell environments whose origins come from DOS
+* ⚡ [PowerShell](./powershell/README.md) - offical shell environemnt supported by Microsoft and is cross-platform to non-Windows
+* 🌐 [Widnows Script Host: JScript](./wsh.jscript/README.md) - Active Scripting langauge based on JavaScript
+* 📝 [Windows Script Host: VBScript](./wsh.vbscript/README.md) - Active Scripting language based on VisualBasic
+
 ## Directory Structure
 
-Each language directory (`batch/`, `powershell/`, `wsh.jscript/`, `wsh.vbscript/`) follows the same shape:
+Each language directory will have the following items
 
-* `scripts/` - every lesson file (`a00.output.cmd`, `f00.loop.ps1`, ...) plus `dirtest/`, the fixture directory the F0 (Collection Loop) lesson reads. This is what actually changes between languages.
-* `Rakefile` / `psakefile.ps1` + `psake.cmd` - one-liners that import the shared [testbox](../testbox/README.md) harness, same as every other lesson directory in this project.
-* `README.md` - install instructions for that specific language.
-
-`rake`/`psake` change into `scripts/` before running anything, so a lesson can be invoked as a bare filename and any self-name introspection it does (`$MyInvocation.MyCommand.Name`, `%~nx0`, `WScript.ScriptName`, ...) still reports just that bare filename - moving the lesson files here doesn't change what any lesson actually outputs.
+* **`scripts/`** - the source code files
+* **`Rakefile`** - test script taht is luanched through Rake based test harness with: `rake`
+* **`psakefile.ps1`** - test script that is launched through Psake based test harness with: `Invoke-psake -Quiet`
+* **`README.md`** - information about the specific language
 
 ## Windows 11
 
@@ -19,7 +23,7 @@ As these languages are bundled with the operating system, no further installatio
 If you would like to get the latest powershell (`pwsh`)
 
 ```powershell
-choco install -y choco.config
+gsudo choco install -y choco.config
 ```
 
 ## macOS

@@ -190,6 +190,8 @@ cpanm Switch
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 `perl v5.34.1 built for darwin-thread-multi-2level` (System)
   * 📦 `perl v5.42.2 built for darwin-thread-multi-2level` (Homebrew)
+* 📀 *__Pop!_OS 22.04 (Ubuntu 22.04)__*
+  * 📦 `perl v5.34.0 built built for x86_64-linux-gnu-thread-multi` (System)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
   * 🐚 PowerShell 5.1.26100.8875
     * 📦 Strawberry Perl - `perl v5.42.0 built for MSWin32-x64-multi-thread`

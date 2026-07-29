@@ -1,0 +1,37 @@
+
+# tools/libraries for rbenv/pyenv
+autoconf
+bison
+build-essential
+curl
+git
+libbz2-dev
+libdb-dev
+libffi-dev
+libgdbm6
+libgdbm-dev
+liblzma-dev
+libncurses5-dev
+libncursesw5-dev
+libreadline6-dev
+libreadline-dev
+libsqlite3-dev
+libssl-dev
+libxml2-dev
+libxmlsec1-dev
+libyaml-dev
+llvm
+make
+tk-dev
+wget
+xz-utils
+zlib1g-dev
+
+# version managers
+rbenv
+
+# languages
+gawk
+php
+tcl
+

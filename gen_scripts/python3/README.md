@@ -21,6 +21,21 @@ On Windows 11, you can get Python from [Python Download](https://www.python.org/
 brew install python
 ```
 
+### Ubuntu 22.04: pyenv
+
+You must install and setup `pyenv`, see [gen_scripts/README.md](../README.md#pyenv-python-version-management)
+
+```bash
+# update python listings
+pyenv update
+# install Python3
+pyenv install 3.14.6
+pyenv install 2.7.18 # optional
+# set global python
+# python=3.10.4, python2=2.7.18, python=3.10.4
+pyenv global 3.10.4 2.7.18
+```  
+
 ### Windows: Chocolatey
 
 **[Chocolatey](https://chocolatey.org)** is a command-line package manager for Windows, built on top of the [NuGet](https://www.nuget.org/) infrastructure, that lets you install, update, and manage software using simple, automated commands instead of clicking through setup wizards.
@@ -60,7 +75,9 @@ pacman -S mingw-w64-ucrt-x86_64-python
 
 ## Testing
 * 📀 *__macOS 26.5 (Tahoe)__*
-  * 📦 Python3.14.6
+  * 📦 Python 3.14.6
+* 📀 Pop!_OS 22.04 (Ubuntu 22.04)
+  * 📦 Python 3.10.12 (pyenv)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
   * 🐚 PowerShell 5.1.26100.8875
     * 📦 Python 3.14.3

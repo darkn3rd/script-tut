@@ -23,18 +23,22 @@ GNU Awk is continues to be updated.  Gawk 3.1.5 added the ability to get the siz
 
 These scripts will work with GNU Awk (`gawk`) 4.0 or greater.  Earlier versions of GNU Awk, SVR4 Awk (`nawk`), or BSD flavors of Awk will not pass for all tests.
 
-### Unix and Linux
+### Linux 
 
-Today, AWK is found on many Linux systems.  For UNIX systems or systems claiming to have POSIX compatibility, would likely have `awk` as apart of that tool set for compliance toward [IEEE Std 1003.1, 2013 Edition](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html).
+In general, Linux will have some form of awk to meet POSIX compatibility, would likely have `awk` as apart of that tool set for compliance toward [IEEE Std 1003.1, 2013 Edition](http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html).
 
-Thus, with any UNIX or Linux system, you can expect `awk` to be available.
+#### Ubuntu 22.04
+
+```bash
+sudo apt install gawk
+```
 
 ### Windows
 
 You can get GNU Awk 5.x with the following:
 
 ```powershell
-choco install -y gawk
+gsudo choco install -y gawk
 ```
 
 ### macOS
@@ -66,7 +70,10 @@ AWK scripts have the ability to do pre-processing and post-processing before and
   * 🐚 Cygwin 3.6.10-1
     * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
 * 📀 *__macOS 26.5 (Tahoe)__*
-  * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0)
+  * 📦 GNU Awk 5.4.0, API 4.1, PMA Avon 8-g1, (GNU MPFR 4.2.2, GNU MP 6.3.0) 
+* 📀 Pop!_OS 22.04 (Ubuntu 22.04)
+  * 📦 GNU Awk 5.1.0, API: 3.0 (GNU MPFR 4.1.0, GNU MP 6.2.1)
+  
 * 📀 Windows 7 (32-bit)
   * 📦 Gawk 3.0.4 (msysgit 1.9.2-preview20140411)
     * 🪲 `length(array)` does not work.

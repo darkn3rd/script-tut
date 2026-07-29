@@ -8,9 +8,9 @@ Windows does not come shell scripting environment, but you can get this with eit
 
 ### 🌐 Cygwin
 
-Cygwin is a compatibility layer and a ocllection of tools that provide a full POSIX emulation layer to run Linux applications natively on Windows. This allows developers to compile and run many Unix-based applications and use stanard POSIX command line tools (like bash, grep, awk) directly in Windows.
+**[Cygwin](https://www.cygwin.com/)** is a compatibility layer and a ocllection of tools that provide a full **POSIX** emulation layer to run Linux applications natively on Windows. This allows developers to compile and run many Unix-based applications and use stanard **POSIX** (**Portable Operating System Interface**) command line tools (like `sh`, `grep`, `awk`) directly in Windows.
 
-Under the hood, is the Cygwin `cgwin1.dll` library that translates  POSIX (Portable Operating System Interface) system calls from Linux/Unix applications into structions that the Windows operating system can understand.
+Under the hood, is the [Cygwin](https://www.cygwin.com/) `cygwin1.dll` library that translates **POSIX** system calls from Linux/Unix applications into structions that the Windows operating system can understand.
 
 You can install this with Chocolatey
 
@@ -20,7 +20,7 @@ gsudo choco install -y cygwin
 
 ### ⚙️ MSYS2
 
-MSYS2 is a software building and management platform for Windows that provides a Unix-likee environment, and command-line shell (Bash), and a Arch Linux pacman package manager. It lets developers install toolchains and build native Windows software like GCC, CMake, and Python. 
+**[MSYS2](https://www.msys2.org/)** is a software building and management platform for Windows that provides a Unix-likee environment, and command-line shell (`bash`), and a Arch Linux `pacman` package manager. It lets developers install toolchains and build native Windows software like `gcc`, `cmake`, and `python`. 
 
 Instead of translating Unix system calls at runtime, the MinGW compilers configure the software to use direct antive Windows APIs from the start. The result is that programs will run as pure native Windows appplications.
 
@@ -127,7 +127,7 @@ gsudo config CacheMode Auto
 gsudo config CacheDuration "00:15:00"
 ```
 
-You can integrate gusdo with Cygwin or MSYS2
+You can integrate gusdo with Cygwin or [MSYS2](https://www.msys2.org/)
 
 ```bash
 alias sudo='/c/tools/gsudo/Current/gsudo.exe'
@@ -147,7 +147,7 @@ You can install the package manifest (`choco.config`) with the following command
 gsudo choco install -y choco.config
 ```
 
-### Windows 11: MSYS2
+### MSYS2 (Windows 11)
 
 Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
 
@@ -156,7 +156,7 @@ pacman -Syu --noconfirm
 for PKG in $(cat msys2_pkgs.txt); do pacman -Sy --noconfirm $PKG; done
 ```
 
-### Windows 11: Cygwin
+### Cygwin (Windows 11)
 
 Once **[MSYS2](https://www.msys2.org/)** is installed, you can install the package manifests using this.
 
@@ -219,13 +219,13 @@ Here are some examplpes of using these installs:
 
 As MinTTY (`mintty.exe`) will crash if gsudo is launched, you can launch MSYS2 or Cygwin directly from Windows Terminal (`wt.exe`):
 
-For Cygwin, you can run this. 
+For **[Cygwin](https://www.cygwin.com/)**, you can run this. 
 
 ```pwsh
 & "C:\cygwin64\bin\bash.exe" --login -i
 ```
 
-For MSYS2, you can run this, depending on desired environment: 
+For [MSYS2](https://www.msys2.org/), you can run this, depending on desired environment: 
 
 * UCRT64 (recommended default for mondern C++):
   ```pwsh
@@ -244,23 +244,25 @@ For MSYS2, you can run this, depending on desired environment:
 
 Microsoft introduced symbolic links in NTFS 3.1 at the release of Windows Vista (WinNT 6.0) in 2006. This will require elevated privileges to create NTFS symbolic links.
 
-Both Cygwin and MSYS2 will not use this by default and have alternative methods for `ln -s`: 
+Both **[Cygwin](https://www.cygwin.com/)** and MSYS2 will not use this by default and have alternative methods for `ln -s`: 
 
-* Cygwin creates magic files that reference the target location.
-* MSYS2 makes a deep copy (default), but can also be configured to use the magic file like Cygwin. 
+* **[Cygwin](https://www.cygwin.com/)** creates magic files that reference the target location.
+* **[MSYS2](https://www.msys2.org/)** makes a deep copy (default), but can also be configured to use the magic file like Cygwin. 
 
 You can use native NTFS symbolic links by this environment variable:
 
-* Cygwin
+* **[Cygwin](https://www.cygwin.com/)**
   ```bash
   export CYGWIN="winsymlinks:nativestrict"
   ```
-* MSYS2
+* **[MSYS2](https://www.msys2.org/)**
   ```bash
   export MSYS=winsymlinks:nativestrict
   ```
 
 Because NTFS symbolic links require elevated privileges, you will need to run the terminal application in Administrator mode, or use a tool like `gsudo`.  Here's an example of you linking your repos directory to the same directory name but in your Windows user profile.
+
+> **IMPORTANT**: This will freeze if you launched either [Cygwin](https://www.cygwin.com/) or [MSYS2](https://www.msys2.org/) the default MinTTY.exe. Launch Cyginw or [MSYS2](https://www.msys2.org/) using Windows Terminal, PowerShell, or Command Shell. 
 
 ```bash
 # Translate to C:\Users\$USER\repos

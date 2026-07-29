@@ -8,9 +8,11 @@ Version 1.6
 
 ### Windows: Chocolatey
 
+Chocolatey and gusdo must already be install before running these. See [gen_scripts/README.md](../README.md#windows-11-chocolatey)
+
 ```bash
 # Install Python2
-choco install -y python2
+gsudo choco install -y python2
 
 # Make python2 resolve to Python 2
 Copy-Item "C:\Python27\python.exe" "C:\Python27\python2.exe"
@@ -26,16 +28,62 @@ $newPath = ($otherEntries + $python2Entries) -join ';'
 [Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
 ```
 
+### Ubuntu 22.04: pyenv
+
+```bash
+sudo apt update && sudo apt install -y \
+  build-essential \
+  curl \
+  git \
+  libbz2-dev \
+  libffi-dev \
+  liblzma-dev \
+  libncursesw5-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  libssl-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  llvm \
+  make \
+  tk-dev \
+  wget \
+  xz-utils \
+  zlib1g-dev
+
+# Install Pyenv
+curl https://pyenv.run | bash
+
+# Profile Setup Example - ~/.bashrc, ~/.zshrc
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'command -v pyenv >/dev/null || export PATH="$PATH:$PYENV_ROOT/bin"' >> ~/.bashrc
+echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+source ~/.bashrc
+
+# update python listings
+pyenv update
+# install Python3
+pyenv install 2.7.18
+pyenv install 3.10.4 # optional
+# python=3.10.4, python2=2.7.18, python=3.10.4
+pyenv global 3.10.4 2.7.18
+```  
+
+
+
 #### Testing
 * 📀 *__macOS 26.5 (Tahoe)__*
-  * 📦 Python 2.7.18
+  * 📦 Python 2.7.18 (pyenv)
+* 📀 Pop!_OS 22.04 (Ubuntu 22.04)
+  * 📦 Python 2.7.18 (pyenv)
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
   * **Shell**: PowerShell 5.1.26100.8875
-    * 📦 Python 2.7.18
+    * 📦 Python 2.7.18 (Chocolatey)
   * **Shell**: Command Shell (C:\Windows\System32\cmd.exe)
-    * 📦 Python 2.7.18
+    * 📦 Python 2.7.18 (Chocolatey)
+
 * 📀 *__OS X 10.8.5 (Mountain Lion)__*
-  * 💿 Python 2.7.2 (bundled with operating system)
+  * 💿 Python 2.7.2 (system)
 * 📀 *__Cent OS 6.5__*
 
 #### Homebrew

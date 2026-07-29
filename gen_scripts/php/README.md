@@ -6,8 +6,6 @@ Version 1.4
 
 ## Overview
 
-## Overview
-
 PHP began in 1995 as **Personal Home Page Tools**, a small set of Perl scripts Rasmus Lerdorf wrote to track visits to his own online résumé. In 1997 it was rewritten in C as PHP/FI 2.0, but it wasn't yet the language people know today.
 
 **PHP 3** (June 1998) is where it actually became a language — Andi Gutmans and Zeev Suraski rewrote the parser from scratch and it was renamed **PHP: Hypertext Preprocessor**, a recursive acronym. **PHP 4** (May 2000) introduced the Zend Engine, and **PHP 5** (July 2004) brought proper object-oriented programming (Zend Engine 2).
@@ -45,11 +43,17 @@ Along the way, PHP became the dominant language for server-side web scripting, i
 brew install php
 ```
 
+### Ubuntu 22.04
+
+```bash
+sudo apt install php
+```
+
 ### Windows: Chocolatey
 
-```powershell
+```pwsh
 # Install Chocolatey
-choco install -y php
+gsudo choco install -y php
 
 # Enable the intl extension in php.ini
 $phpIni = "C:\tools\php85\php.ini"
@@ -61,7 +65,7 @@ php -m | findstr intl
 
 This assumes that there's a `C:\tools\php85\php.ini`. If that is not the case, you need to create one:
 
-```powershell
+```pwsh
 Copy-Item "C:\tools\php85\php.ini-production" "C:\tools\php85\php.ini"
 ```
 
@@ -77,8 +81,6 @@ echo 'export PATH="$PATH:/c/tools/php85"' >> ~/.bash_profile
 
 ## Testing
 
-* 📀 *__OS X 10.8.5 (Mountain Lion)__*
-  * 💿 PHP 5.3.26 (default)
 * 📀 *__macOS 26.5 (Tahoe)__*
   * 📦 `PHP 8.5.8 (cli) (built: Jul  1 2026 03:46:27) (NTS)`
 * 📀 *__Windows 11 Home__* (`Microsoft Windows NT [Version 10.0.26200.8875]`)
@@ -86,6 +88,11 @@ echo 'export PATH="$PATH:/c/tools/php85"' >> ~/.bash_profile
     * 📦 PHP 8.5.8 (cli) (built: Jul  1 2026 04:03:04) (NTS Visual C++ 2022 x64)
   * 🐚 Cygwin 3.6.10-1
     * 📦 PHP 8.1.28 (cli) (built: Dec 22 2025 15:47:43) (NTS)
+* 📀 *__Pop!_OS 22.04 (Ubuntu 22.04)__*
+  * 📦 PHP 8.1.2-1ubuntu2.25 (cli) (built: Jul 16 2026 18:32:33) (NTS) (System)
+
+* 📀 *__OS X 10.8.5 (Mountain Lion)__*
+  * 💿 PHP 5.3.26 (default)
 * 📀 *__Windows 7 SP1 64-bit__* (`Windows NT 6.1`)
     * 📦 MSVCR 11.00.51106.1, PHP 5.5.13 (http://windows.php.net/download/)
 
