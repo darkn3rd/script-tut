@@ -57,39 +57,40 @@ The directory structure of this repository will include these directories:
 
 ```
 .
-├── compiled_lang
-│   ├── cpp
-│   ├── cs
-│   ├── go
-│   ├── java
-│   └── rust
 ├── configbox
-├── gen_scripts
-│   ├── awk
-│   ├── groovy
-│   ├── perl
-│   ├── php
-│   ├── python2
-│   ├── python3
-│   ├── ruby
-│   └── tcl
+├── lessons
+│   ├── compiled_lang
+│   │   ├── cpp
+│   │   ├── cs
+│   │   ├── go
+│   │   ├── java
+│   │   └── rust
+│   ├── gen_scripts
+│   │   ├── awk
+│   │   ├── groovy
+│   │   ├── perl
+│   │   ├── php
+│   │   ├── python2
+│   │   ├── python3
+│   │   ├── ruby
+│   │   └── tcl
+│   ├── shell_scripts
+│   │   ├── bash
+│   │   ├── csh
+│   │   ├── ksh
+│   │   ├── posix
+│   │   └── zsh
+│   └── win_scripts
+│       ├── batch
+│       ├── powershell
+│       ├── wsh.jscript
+│       └── wsh.vbscript
 ├── scriptbox
-├── shell_scripts
-│   ├── bash
-│   ├── csh
-│   ├── ksh
-│   ├── posix
-│   └── zsh
 ├── supporing_docs
-├── testbox
-└── win_scripts
-    ├── batch
-    ├── powershell
-    ├── wsh.jscript
-    └── wsh.vbscript
+└── testbox
 ```
 
-`compiled_lang` follows the same `Rakefile`-imports-testbox convention as everywhere else, but needs a compiler and `make` too - see [compiled_lang/README.md](../compiled_lang/README.md).
+`lessons/compiled_lang` follows the same `Rakefile`-imports-testbox convention as everywhere else, but needs a compiler and `make` too - see [compiled_lang/README.md](../lessons/compiled_lang/README.md).
 
 ## Running Tests
 
@@ -101,13 +102,13 @@ The table below shows what is supported.
 
 | Directory | Rake | Psake |
 |-----------|------|-------|
-| `compiled_lang`            | `cmd.exe`, **PowerShell**, **MSYS2**  | — |
-| `gen_scripts`              | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
-| `shell_scripts`            | **MSYS2** or other bash shell only    | — |
-| `win_scripts/batch`        | `cmd.exe`, **PowerShell**             | `cmd.exe`, **PowerShell** |
-| `win_scripts/powershell`   | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
-| `win_scripts/wsh.jscript`  | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
-| `win_scripts/wsh.vbscript` | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `lessons/compiled_lang`            | `cmd.exe`, **PowerShell**, **MSYS2**  | — |
+| `lessons/gen_scripts`              | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `lessons/shell_scripts`            | **MSYS2** or other bash shell only    | — |
+| `lessons/win_scripts/batch`        | `cmd.exe`, **PowerShell**             | `cmd.exe`, **PowerShell** |
+| `lessons/win_scripts/powershell`   | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `lessons/win_scripts/wsh.jscript`  | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
+| `lessons/win_scripts/wsh.vbscript` | `cmd.exe`, **PowerShell**, **MSYS2**  | `cmd.exe`, **PowerShell** |
 
 ### macOS
 
@@ -115,13 +116,13 @@ On macOS, you can run `rake` using a POSIX Shell, such as `bash` or `zsh` or und
 
 | Directory | Rake | Psake |
 |-----------|------|-------|
-| `compiled_lang`            | POSIX shell, `pwsh` | — |
-| `gen_scripts`              | POSIX shell, `pwsh` | `pwsh` |
-| `shell_scripts`            | POSIX shell, `pwsh` | — |
-| `win_scripts/batch`        | — |  — |
-| `win_scripts/powershell`   | POSIX shell, `pwsh` |  `pwsh` |
-| `win_scripts/wsh.jscript`  | — | — |
-| `win_scripts/wsh.vbscript` | — | — |
+| `lessons/compiled_lang`            | POSIX shell, `pwsh` | — |
+| `lessons/gen_scripts`              | POSIX shell, `pwsh` | `pwsh` |
+| `lessons/shell_scripts`            | POSIX shell, `pwsh` | — |
+| `lessons/win_scripts/batch`        | — |  — |
+| `lessons/win_scripts/powershell`   | POSIX shell, `pwsh` |  `pwsh` |
+| `lessons/win_scripts/wsh.jscript`  | — | — |
+| `lessons/win_scripts/wsh.vbscript` | — | — |
 
 ## Language Test Structure
 
@@ -191,7 +192,7 @@ This system will perform the following features:
 
 * 📀 macOS "Tahoe" 26.5
 * 📀 Windows 11 Home `[WinNT 10.0.26200.8875]`
-  * 📦 **[MSYS2](https://www.msys2.org/)** for `shell_scripts`
+  * 📦 **[MSYS2](https://www.msys2.org/)** for `lessons/shell_scripts`
   
 ## Research
 
@@ -241,7 +242,7 @@ This system will perform the following features:
      * **booleans** when converted to strings varies across languages: `1`, `true`, or `True`.
      * **associate array** (also hash, map, object): ordering of keys where order is not guaranteed. Groovy recalls the order at  which items are inserted
 * 2026-07-24
-   * Added `compiled_lang` for languages needing a build step first: **Java**, **C#**, **Go**, **Rust**, **C++**. Each directory gets a `Makefile` (GNU Make) that `rake` runs automatically before testing - see [compiled_lang/README.md](../compiled_lang/README.md).
+   * Added `compiled_lang` for languages needing a build step first: **Java**, **C#**, **Go**, **Rust**, **C++**. Each directory gets a `Makefile` (GNU Make) that `rake` runs automatically before testing - see [compiled_lang/README.md](../lessons/compiled_lang/README.md).
    * Test harness now supports compiled languages generically: verifies the compiler (and `make`) are on PATH before building, invokes the build artifact (not the source file) per test, and fails once with a clear message rather than a wall of confusing per-test errors if the build is broken.
    * Java has no single-file "compile to a real binary" option, so its Makefile generates a small launcher (POSIX shell script, or `.bat` on Windows) under the same naming convention instead.
    * Only `a00` exists per compiled language so far; Java, Rust, and C++ verified end-to-end through `rake`, Go and C# are unverified (no toolchain available to test with).
@@ -250,6 +251,8 @@ This system will perform the following features:
    * Added `compiled_lang/cpp/Makefile.nmake`, an NMAKE + MSVC (`cl`) alternative to the GNU Makefile, verified end-to-end with a real Build Tools install. `nmake`/`make` peacefully coexist since NMAKE needs an explicit `/f Makefile.nmake` (its own default filename search would otherwise collide with the GNU one).
    * `bin/` build output made shell-agnostic: `mkdir -p bin` (POSIX-only flag) replaced with a plain `mkdir bin` across all five Makefiles, since GNU Make falls back to `cmd.exe` as the recipe shell when `sh.exe` isn't reachable (e.g. a plain PowerShell + `vcvars64.bat` session), and `cmd.exe`'s builtin `mkdir` doesn't understand `-p`.
    * C# now verified too: after `csc` (bare, Roslyn's bundled `csc.dll`, and a global `dotnet tool` all turned out to be dead ends - see `cs/README.md`), switched to generating a minimal per-lesson `.csproj` and building it with `dotnet build`, which needs no NuGet/network access for a plain console app and produces a genuine native apphost on both Windows and real POSIX (no wrapper needed, unlike Java). `@@compiler[:cs]` changed from `"csc"` to `"dotnet"` accordingly.
+* 2026-07-29
+   * Moved `compiled_lang`, `gen_scripts`, `shell_scripts`, and `win_scripts` under a new `lessons/` parent directory, so the repo root separates the lesson content itself from the tooling directories (`testbox`, `scriptbox`, `configbox`) that operate on it. `testbox` did not move, so every language's `Rakefile`/`psakefile.ps1` (relative-path imports back to `testbox/`) needed one extra `../`/`..\` level; `common.mk` and the `Makefile`/`Makefile.win`/`Makefile.nmake` relationships within `compiled_lang` are untouched since that whole subtree moved together as a unit.
 
 ### Test Build Tools
 

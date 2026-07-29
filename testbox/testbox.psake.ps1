@@ -1,8 +1,8 @@
 # =============================================
 # testbox.psake.ps1 - shared psake task definitions, mirroring
-# testbox.rake's structure task-for-task. Each win_scripts/<lang>/
+# testbox.rake's structure task-for-task. Each lessons/win_scripts/<lang>/
 # psakefile.ps1 dot-sources this file, the same way each language's
-# Rakefile does `import("../../testbox/testbox.rake")`.
+# Rakefile does `import("../../../testbox/testbox.rake")`.
 #
 # Every leaf task (A0, A1, ... M2) depends on Header, matching
 # testbox.rake's pattern of invoking the header task at the start of

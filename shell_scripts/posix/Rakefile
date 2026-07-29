@@ -1,5 +1,0 @@
-# Pulls in the shared task definitions
-# Run from this directory:
-#   rake
-#   rake F0
-import("../../testbox/testbox.rake")

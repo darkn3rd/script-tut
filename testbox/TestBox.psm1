@@ -4,10 +4,10 @@
 # PowerShell-idiomatic sibling to the Ruby/Rake-based testbox.rake, for
 # readers specifically interested in psake. Every lesson directory with
 # a psakefile.ps1 uses this - the four Windows-native suites under
-# win_scripts/ (batch/:cmd, powershell/:ps1, wsh.jscript/:js,
-# wsh.vbscript/:vbs), the interpreted languages under gen_scripts/
+# lessons/win_scripts/ (batch/:cmd, powershell/:ps1, wsh.jscript/:js,
+# wsh.vbscript/:vbs), the interpreted languages under lessons/gen_scripts/
 # (:awk/:groovy/:pl/:php/:py/:rb/:tcl), and the five compiled languages
-# under compiled_lang/ (:java/:go/:rs/:cpp/:cs - see $script:Compiler and
+# under lessons/compiled_lang/ (:java/:go/:rs/:cpp/:cs - see $script:Compiler and
 # Confirm-TestBoxCompiled).
 #
 # Of the Windows-native four, only :ps1 can ever run outside Windows -
@@ -152,7 +152,8 @@ $script:CommandOverride = @{
 #  the Set-Location below, not the language name.
 $script:LanguageDirName = Split-Path -Leaf (Get-Location)
 
-# gen_scripts/win_scripts/shell_scripts lesson directories keep their
+# lessons/gen_scripts, lessons/win_scripts, lessons/shell_scripts lesson
+#  directories keep their
 #  actual lesson files - plus dirtest/ and any other fixture a lesson
 #  needs - in a scripts/ subdirectory; psakefile.ps1/README stay at the
 #  language directory root (see ../README.md's Directory Structure
@@ -169,7 +170,7 @@ if (Test-Path -PathType Container 'scripts') {
     Set-Location 'scripts'
 }
 
-# compiled_lang/*/src/ is the other lesson-file convention this harness
+# lessons/compiled_lang/*/src/ is the other lesson-file convention this harness
 #  supports, alongside scripts/ above - but unlike scripts/, it
 #  deliberately does NOT Set-Location there: `make`, the promoted bin/
 #  binaries it builds, and the dirtest/ fixture some of them read all
@@ -177,7 +178,7 @@ if (Test-Path -PathType Container 'scripts') {
 #  (bin\a00.output is invoked as a relative path *from* there, and a
 #  compiled binary's own working directory follows whoever spawned it,
 #  not wherever its own executable file happens to live - see
-#  compiled_lang/README.md). Only Get-TestBoxLanguage, Invoke-
+#  lessons/compiled_lang/README.md). Only Get-TestBoxLanguage, Invoke-
 #  TestBoxCategory's Get-ChildItem, and Get-TestBoxTags's file reads
 #  need to know where src/ actually is; "." here (scripts/ already
 #  changed into, or a language directory that simply uses neither
@@ -239,7 +240,7 @@ function Get-TestBoxCommand {
     #  latter is only the Windows Desktop edition executable name (see
     #  the identical fix in Script.rb's `command`).
     if ($cmd -eq 'powershell' -and -not $script:IsWindowsHost) { $cmd = 'pwsh' }
-    # shell_scripts/posix's lessons target genuine POSIX shell semantics,
+    # lessons/shell_scripts/posix's lessons target genuine POSIX shell semantics,
     #  not whatever a distro's /bin/sh happens to be symlinked to - dash
     #  is a strict POSIX implementation, so prefer it explicitly when
     #  it's on PATH, falling back to plain "sh" otherwise - Script.rb now
@@ -379,7 +380,7 @@ function Get-PathPrefix {
     param([string]$Language)
     if ($script:NeedsPathPrefixLanguages -notcontains $Language) { return '' }
     # A compiled language additionally builds into a bin/ subdirectory
-    #  (see compiled_lang/README.md), so its prefix includes that too -
+    #  (see lessons/compiled_lang/README.md), so its prefix includes that too -
     #  ported from Script.rb's execute().
     $sep = if ($script:IsWindowsHost) { '\' } else { '/' }
     $subdir = if ($script:CompiledLanguages -contains $Language) { "bin$sep" } else { '' }
@@ -388,7 +389,7 @@ function Get-PathPrefix {
 
 # Get-BinaryExtension() - the real on-disk extension of the artifact
 #  `make` produces for the current compiled language (see
-#  compiled_lang/*/Makefile) - ported from Script.rb's binary_extension.
+#  lessons/compiled_lang/*/Makefile) - ported from Script.rb's binary_extension.
 function Get-BinaryExtension {
     param([string]$Language)
     if (-not $script:IsWindowsHost) { return '' }

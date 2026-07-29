@@ -25,38 +25,38 @@ jobs:
       matrix:
         include:
           - name: python3
-            dir: gen_scripts/python3
+            dir: lessons/gen_scripts/python3
           - name: ruby
-            dir: gen_scripts/ruby
+            dir: lessons/gen_scripts/ruby
           - name: perl
-            dir: gen_scripts/perl
+            dir: lessons/gen_scripts/perl
           - name: bash
-            dir: shell_scripts/bash
+            dir: lessons/shell_scripts/bash
           # Script.rb's `command` runs posix/ specifically under dash,
           #  not plain "sh" (which ubuntu-latest's default /bin/sh
           #  symlink already points at, but relying on that symlink
           #  rather than naming dash directly is exactly the
-          #  "bashisms" risk shell_scripts/posix/README.md warns
+          #  "bashisms" risk lessons/shell_scripts/posix/README.md warns
           #  about) - see the native_unix? gate in Script.rb.
           - name: posix
-            dir: shell_scripts/posix
+            dir: lessons/shell_scripts/posix
           # :ps1 lessons run fine under POSIX pwsh (Script.rb's `command`
           #  already handles this - see native_unix?), so this doesn't
           #  need windows-latest.
           - name: powershell
-            dir: win_scripts/powershell
+            dir: lessons/win_scripts/powershell
           # g++/make are already on ubuntu-latest, so cpp needs no extra
           #  setup step below - only go and rust do.
           - name: cpp
-            dir: compiled_lang/cpp
+            dir: lessons/compiled_lang/cpp
           - name: go
-            dir: compiled_lang/go
+            dir: lessons/compiled_lang/go
           - name: rust
-            dir: compiled_lang/rust
+            dir: lessons/compiled_lang/rust
           - name: java
-            dir: compiled_lang/java
+            dir: lessons/compiled_lang/java
           - name: cs
-            dir: compiled_lang/cs
+            dir: lessons/compiled_lang/cs
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
 
       # 17, not the README's stated "11+" floor: a20/b30 use text
       #  blocks (`"""`), a standard (non-preview) feature only since
-      #  Java 15 - matching Corretto 17, what compiled_lang/java's own
+      #  Java 15 - matching Corretto 17, what lessons/compiled_lang/java's own
       #  README says these lessons were actually built and tested
       #  against.
       - name: Set up Java

@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-require '../../testbox/Script'  # include Script.rb
+require '../../../testbox/Script'  # include Script.rb
 
 # Every task below finds its implementations via Script.find_implementations
 #  (a thin Dir.glob wrapper), not a bare Dir.glob("#{task}?.*") - this

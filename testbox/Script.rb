@@ -228,7 +228,8 @@ class ScriptBase
   #  never wherever the harness ends up actually running lessons from.
   @@dirname   = File.basename(Dir.pwd)
 
-  # gen_scripts/win_scripts/shell_scripts lesson directories keep their
+  # lessons/gen_scripts, lessons/win_scripts, lessons/shell_scripts lesson
+  #  directories keep their
   #  actual lesson files - plus dirtest/ and any other fixture a lesson
   #  needs - in a scripts/ subdirectory; Rakefile/psakefile/README stay
   #  at the language directory root (see ../README.md's Directory
@@ -243,19 +244,19 @@ class ScriptBase
   #  bare filename, not a "scripts/"-prefixed path - so expected.json's
   #  $cmd$ substitution (see execute()) needs no per-language handling
   #  for the move at all.
-  #  compiled_lang/ doesn't use this convention (see @@source_subdir
-  #  below instead), so it has no scripts/ to change into and this is
-  #  simply a no-op there.
+  #  lessons/compiled_lang/ doesn't use this convention (see
+  #  @@source_subdir below instead), so it has no scripts/ to change into
+  #  and this is simply a no-op there.
   Dir.chdir("scripts") if Dir.exist?("scripts")
 
-  # compiled_lang/*/src/ is the other lesson-file convention this
+  # lessons/compiled_lang/*/src/ is the other lesson-file convention this
   #  harness supports, alongside scripts/ above - but unlike scripts/,
   #  it deliberately does NOT chdir there: `make`, the promoted bin/
   #  binaries it builds, and the dirtest/ fixture some of them read all
   #  need CWD to stay at the language directory root (bin/a00.output is
   #  invoked as a relative path *from* there, and a compiled binary's
   #  own working directory follows whoever spawned it, not wherever its
-  #  own executable file happens to live - see compiled_lang/README.md).
+  #  own executable file happens to live - see lessons/compiled_lang/README.md).
   #  Only @@language detection, find_implementations, and
   #  testbox_tags's file reads need to know where src/ actually is;
   #  "." here (scripts/ already chdir'd into, or a language dir that
@@ -341,7 +342,7 @@ class ScriptBase
     # dash, not plain "sh": /bin/sh is whatever it happens to be
     #  symlinked to, which is frequently bash running in its own
     #  posix-ish sh-emulation mode rather than a real strict-POSIX
-    #  shell - precisely the "bashisms" risk shell_scripts/posix/
+    #  shell - precisely the "bashisms" risk lessons/shell_scripts/posix/
     #  README.md warns about. Gated on native_unix?, not posix?, for
     #  the same reason as the pwsh override above: Msys2ShellScript is
     #  posix? true, but "sh" there is subject to its own separate,
@@ -380,7 +381,7 @@ class ScriptBase
   #  language, `cmd` is the *source* file (e.g. "a00.output.rs") - what
   #  actually needs to run is the build artifact make produced from it,
   #  named after the source minus its language extension (see
-  #  compiled_lang/README.md's naming convention) plus whatever this
+  #  lessons/compiled_lang/README.md's naming convention) plus whatever this
   #  platform's runnable extension is (see binary_extension).
   def self.invocation_name(cmd)
     return cmd unless @@compiled_languages.include?(@@language.to_sym)
@@ -389,11 +390,11 @@ class ScriptBase
 
   # binary_extension() - the real on-disk extension of the artifact
   #  `make` produces for the current compiled language (see
-  #  compiled_lang/*/Makefile). Every compiled language here builds a
+  #  lessons/compiled_lang/*/Makefile). Every compiled language here builds a
   #  native "*.exe" on a cmd.exe-backed environment except Java, which
   #  has no standalone-binary story - its Makefile instead generates a
   #  "*.cmd" launcher wrapping `java -cp . ClassName` (see
-  #  compiled_lang/java/Makefile). On real POSIX (native_unix?), every
+  #  lessons/compiled_lang/java/Makefile). On real POSIX (native_unix?), every
   #  language's Makefile produces an extension-less, executable-bit file
   #  (a native binary, or - for Java - a "#!/bin/sh" launcher script), so
   #  there's nothing to append.
@@ -1123,7 +1124,7 @@ class ScriptBase
             #  including under Msys2ShellScript, which is posix? true
             #  but still Windows underneath - see native_unix?'s comment).
             #  A compiled language additionally builds into a bin/
-            #  subdirectory (see compiled_lang/README.md), so its prefix
+            #  subdirectory (see lessons/compiled_lang/README.md), so its prefix
             #  includes that too.
             is_compiled = @@compiled_languages.include?(@@language.to_sym)
             if @@needs_path_prefix_languages.include?(@@language.to_sym)
@@ -1139,7 +1140,7 @@ class ScriptBase
             #  check would report the *whole* invoked path (prefix and
             #  all) since nothing in the program strips it - unlike
             #  batch's j00-style lessons, which explicitly strip any
-            #  prefix themselves (see win_scripts/batch/j00.arguments.cmd's
+            #  prefix themselves (see lessons/win_scripts/batch/j00.arguments.cmd's
             #  %~nx0), so only compiled languages get prefix folded in
             #  here.
             unless is_env_test || is_match_test
@@ -1155,7 +1156,7 @@ class ScriptBase
             #  reaches its ARGV at all. gawk also has no argv[0]
             #  equivalent of its own (ARGV[0] is always "gawk", never
             #  the script file) - a "-v invoked_as=..." variable stands
-            #  in for it here, the same idea as compiled_lang java's
+            #  in for it here, the same idea as lessons/compiled_lang/java's
             #  Makefile-injected system property (see java/Makefile).
             if @@language.to_sym == :awk
               interpreter_line = "#{command} -v invoked_as=#{invoked_name} #{@@option[@@language.to_sym]}"
