@@ -1,5 +1,5 @@
-# Pulls in the shared task definitions - mirrors how each Rakefile does
-# `import("../../testbox/testbox.rake")`. Run from this directory, e.g.:
-#   Invoke-psake .\psakefile.ps1
-#   Invoke-psake .\psakefile.ps1 -taskList F0
-. (Join-Path $PSScriptRoot '..\..\testbox\testbox.psake.ps1')
+# Pulls in the shared task definitions
+# Run from this directory:
+#   Invoke-psake -Quiet
+#   Invoke-psake -taskList F0 -Quiet
+. "$PSScriptRoot\..\..\testbox\testbox.psake.ps1"
