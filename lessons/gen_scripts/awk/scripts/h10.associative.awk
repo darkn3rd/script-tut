@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # string with key:value pairs
   some_ages = "bob:34 ed:58 steve:32 ralph:23"

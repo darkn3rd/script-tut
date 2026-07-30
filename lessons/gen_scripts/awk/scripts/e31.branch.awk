@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # build a menu string piece by piece via repeated concatenation - see
   #  e30.branch.awk for the alternate technique of a single "\"-continued

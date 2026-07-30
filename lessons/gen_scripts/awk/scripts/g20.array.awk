@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # build array
   # Note: awk doesn't have mechanism to build array in one line

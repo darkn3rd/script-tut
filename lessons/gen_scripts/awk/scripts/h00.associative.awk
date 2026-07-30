@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # individually build array, tracking insertion order in a parallel
   #  array too since awk's "for (key in array)" iteration order is

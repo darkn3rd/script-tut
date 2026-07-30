@@ -65,6 +65,10 @@ Additionally, alternatives, such as WSH or PowerShell, are overly complex for si
   * 🐚 PowerShell 5.1.26100.8875 (DotNet 4.0.30319.42000)
   * 🐚 Command Shell (cmd.exe)
 
+## Tools
+
+* `run` - shell script for git bash/MSYS2/Cygwin used to run a BATCH lesson via a real `cmd.exe` (bash can't execute a `.cmd` file directly - see the script's own comments for the `//c` and `cygpath -w` gotchas this works around)
+
 ## Lessons
 
 This is a subset of lessons for Batch (Command Shell):

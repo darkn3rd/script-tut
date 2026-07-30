@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # conditional loop with while construction
 my $answer="";
 while ($answer ne "quit") {

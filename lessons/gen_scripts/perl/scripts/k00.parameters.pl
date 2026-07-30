@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # create subroutine with one parameter
 sub celsius {
   my $fahrenheit = $_[0]; # retreive single parameter

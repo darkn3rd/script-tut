@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 # create the subroutine (function)
 function celsius(fahrenheit)
 {

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # create function that returns a string scalar
 sub capitalize {
   return uc($_[0]);             # return capitalized string

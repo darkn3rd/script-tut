@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # count loop using general loop construct
   for ( count = 10; count > 0; count-- )

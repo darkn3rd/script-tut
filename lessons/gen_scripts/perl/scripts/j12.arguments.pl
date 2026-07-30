@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # illustrative variables
 my $last  = $#ARGV; # get index of last element
 my $first = 0;      # set index of first element

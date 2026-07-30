@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # count style loop using while
 my $count=10;                   # initialize counter
 while ($count > 0) {

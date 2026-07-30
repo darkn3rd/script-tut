@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # utility variables
 my $count     = 1;  # initialize counter
 

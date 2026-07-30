@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # testbox: requires=posix
 # testbox: title="subshell (ls) with foreach collection"
 

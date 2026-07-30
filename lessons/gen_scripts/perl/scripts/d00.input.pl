@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 print "Enter your name: "; # print prompt
 my $name=<>;               # acquire string input including newline
 chomp $name;               # strip newline

@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 BEGIN {
   # build a menu string piece by piece via repeated concatenation - see
   #  e40.branch.gawk for the alternate technique of a single "\"-continued

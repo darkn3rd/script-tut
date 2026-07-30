@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 use POSIX qw(strftime);  # library to get us strftime
 
 # create subroutine

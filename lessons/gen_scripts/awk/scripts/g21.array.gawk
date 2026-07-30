@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 BEGIN {
   # build array
   # Note: awk doesn't have mechanism to build array in one line

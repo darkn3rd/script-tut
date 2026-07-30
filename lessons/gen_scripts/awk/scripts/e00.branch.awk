@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # get input from user
   printf "Would you like a toast? [Yes/No]: " # print prompt without newline

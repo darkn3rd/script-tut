@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # conditional loop with do...while construct
   while ( answer != "quit" ) {

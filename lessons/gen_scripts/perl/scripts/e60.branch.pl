@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 print "Input a character: "; $keypress=getc(STDIN);
 
 if ($keypress =~ /[[:lower:]]/) {

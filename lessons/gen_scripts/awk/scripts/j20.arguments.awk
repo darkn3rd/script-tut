@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # illustrative variables
   ARG_COUNT   = ARGC - 1;  # get num of arguments

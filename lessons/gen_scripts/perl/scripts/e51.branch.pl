@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 use v5.12.4;
 
 print "Input a character: "; my $keypress=getc(STDIN);

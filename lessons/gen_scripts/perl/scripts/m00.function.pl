@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # create function that returns an integer
 sub addNums {
    my @numbers = @_;   # retreive variable parameters

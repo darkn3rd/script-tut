@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # create subroutine with variable parameters
 sub addNums {
    my @numbers = @_;   # retreive variable parameters

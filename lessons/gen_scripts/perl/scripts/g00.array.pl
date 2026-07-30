@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 my @nicknames;          # declare list for good form
 
 # insert one by one into list

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # conditional loop with do...until construction
 do {
   print "Enter your name (quit to Exit): ";

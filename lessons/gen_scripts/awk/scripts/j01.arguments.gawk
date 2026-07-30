@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 BEGIN {
   # acquire num of args
   ARG_COUNT = ARGC - 1;   # get num of arguments

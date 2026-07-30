@@ -1,2 +1,3 @@
 #!/bin/sh
+# Run Scripts with PowerShell 5.1 from Cygwin or MSYS2
 powershell "$@" 

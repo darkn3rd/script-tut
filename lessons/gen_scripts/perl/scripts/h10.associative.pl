@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 use strict;
 # declare and initialize hash some some elements
 my %ages=(bob=>34, ed=>58, steve=>32, ralph=>23);

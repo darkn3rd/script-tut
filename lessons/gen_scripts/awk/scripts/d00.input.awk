@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN { 
   printf "Enter your name: "  # print prompt without newline
   getline name             # grab input

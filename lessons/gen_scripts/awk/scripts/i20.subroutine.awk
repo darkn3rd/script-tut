@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 
 # create subroutine called fish
 #  NOTE: parameters unused, as they are only declared to get locality of

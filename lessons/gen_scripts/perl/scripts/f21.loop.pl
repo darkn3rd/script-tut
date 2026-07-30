@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # conditional loop until construction
 my $answer="";
 until ($answer eq "quit") {
