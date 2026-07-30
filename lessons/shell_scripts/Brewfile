@@ -7,6 +7,6 @@ brew 'gnu-getopt'
 brew 'bc'
 
 # Legacy Shells
-brew 'dash-shell'. # bourne shell compatible
-brew 'ksh'         # ksh93
-brew 'tcsh'.       
+brew 'dash-shell' # bourne shell compatible
+brew 'ksh'        # ksh93
+brew 'tcsh'
