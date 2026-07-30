@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 BEGIN {
   split("Capucino Coffee Espresso Latte Machiato Mocha Tea", keys, " ")
   for (i in keys) drinks[keys[i]] = 0

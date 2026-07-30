@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Output Multiline Text - a literal multi-line single-quoted string
 #  passed directly as print's argument (see a21.output.pl for the
 #  heredoc technique, a22.output.pl for concatenation).

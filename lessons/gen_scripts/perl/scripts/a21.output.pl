@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Output Multiline Text - heredoc (see a20.output.pl for a plain
 #  multi-line quoted string, a22.output.pl for concatenation).
 print <<'END';

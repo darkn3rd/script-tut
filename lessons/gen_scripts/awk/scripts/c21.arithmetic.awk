@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
  # default CONVFMT (%.6g) truncates floats to 6 significant digits when
  # they're stringified for concatenation (as "..." area "." below does);

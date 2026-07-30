@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 # Enumerate a fixed set of well-known environment variables, printing
 #  "NAME=value" for each. USER, TMPDIR, and HOSTNAME aren't reliably set
 #  as actual environment entries on every POSIX host - fall back to each

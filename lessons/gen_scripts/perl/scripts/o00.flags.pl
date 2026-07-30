@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 use Getopt::Std;
 
 my $usage = <<END;

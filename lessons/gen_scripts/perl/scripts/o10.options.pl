@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Getopt::Std's %opts hash doesn't preserve the order flags were given
 #  in (see o00.flags.pl for that approach) - a plain @ARGV loop is used
 #  here instead, since the order they were ordered in matters.

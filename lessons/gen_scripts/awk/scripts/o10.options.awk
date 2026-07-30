@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 # awk has no getopts and ARGV[0] is always the interpreter's own name
 #  ("gawk"), never the script file - "invoked_as" is supplied by the
 #  test harness itself via "-v invoked_as=..." (see testbox/Script.rb)

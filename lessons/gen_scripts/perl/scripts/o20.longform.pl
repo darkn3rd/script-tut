@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Getopt::Long can't easily be told "collect flags in the order they
 #  were given, allowing repeats" - it fills one fixed destination per
 #  flag - so this is parsed by hand instead, matching the technique

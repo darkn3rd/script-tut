@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Output Multiline Text - "."-joined chain of single-line strings (see
 #  a20.output.pl/a21.output.pl for techniques using one literal token).
 print '"The person who moves a mountain begins' . "\n" .

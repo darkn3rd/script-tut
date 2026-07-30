@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 # awk has no heredoc/triple-quote syntax - adjacent string literals
 #  concatenate automatically, so a "\"-continued chain of them (one
 #  print statement spanning multiple physical lines) is the closest

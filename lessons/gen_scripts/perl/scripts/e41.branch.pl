@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Switch.pm - a source-filter module providing Perl6-style switch/case -
 #  isn't core anymore and needs installing yourself (see ../README.md's
 #  "Perl Modules (CPAN)" section). It's shown here for how a genuine

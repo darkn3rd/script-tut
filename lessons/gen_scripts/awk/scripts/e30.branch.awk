@@ -1,4 +1,4 @@
-#!/usr/bin/env awk -f
+#!/usr/bin/env -S awk -f
 BEGIN {
   # a "\"-continued chain of adjacent string literals, assigned to one
   #  variable in a single statement - the same multi-line technique as

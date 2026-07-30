@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 my $menu = <<'END';
 Select an item from the menu.
 

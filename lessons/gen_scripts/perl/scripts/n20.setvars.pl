@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 my %drinks = (
   Capucino => 0,
   Coffee   => 0,

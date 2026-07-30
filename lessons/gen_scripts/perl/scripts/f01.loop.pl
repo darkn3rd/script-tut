@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # testbox: title="opendir/readdir with foreach collection"
 
 # collection loop on list returned by Perl's own directory-reading

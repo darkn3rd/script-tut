@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # declare package globals (no "my", so visible to every sub in this file)
 our $pond     = 500; # pond contains some available fish
 our $captured = 0;   # captured represents fish captured

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # store multi-line text via a heredoc, instead of per-line concatenation
 my $phrases = <<'EOT';
 "The person who moves a mountain begins

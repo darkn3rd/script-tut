@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env -S perl -w
 # Enumerate a fixed set of well-known environment variables, printing
 #  "NAME=value" for each. USER, TMPDIR, and HOSTNAME aren't reliably set
 #  as actual environment entries on every POSIX host - fall back to a
