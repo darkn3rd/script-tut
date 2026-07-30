@@ -1,0 +1,50 @@
+# PowerShell/cmd.exe-native counterpart to ./Makefile - see java/Makefile.win
+# for the full rationale (short version: printf/rm/cp aren't real
+# executables outside a POSIX-ish shell, confirmed directly, so this
+# reimplements the same per-lesson .csproj generation using only cmd.exe
+# builtins and PowerShell, both always present on Windows). Use it
+# explicitly with `make -f Makefile.win`. The default ./Makefile stays
+# untouched and POSIX-only.
+#
+# SHELL is pinned to cmd.exe for every target in this file (safe here,
+# unlike ./Makefile: this whole file is Windows-only).
+
+SHELL := cmd.exe
+
+OUTEXT := .exe
+
+# e.g. "10.0.302" -> "10.0", used as the generated <TargetFramework>.
+DOTNET_VERSION := $(shell dotnet --version)
+empty :=
+space := $(empty) $(empty)
+DOTNET_TFM := $(subst $(space),.,$(wordlist 1,2,$(subst ., ,$(DOTNET_VERSION))))
+
+SRC := $(wildcard src/*.cs)
+BIN := $(addprefix bin/,$(notdir $(SRC:.cs=$(OUTEXT))))
+
+.PHONY: all clean
+all: $(BIN)
+
+bin:
+	-mkdir bin
+
+target:
+	-mkdir target
+
+# See java/Makefile.win's build recipe comment for the two things
+#  confirmed necessary by direct testing: literal quotes are built via
+#  [char]34 (cmd.exe's own quote-parsing of the whole -Command argument
+#  doesn't understand "nesting" and silently drops ones it wasn't
+#  expecting), and "$(NETCoreSdkRuntimeIdentifier)" is written as
+#  "$$(...)" so *Make* leaves it as a literal "$(...)" for MSBuild to
+#  evaluate later, rather than substituting it (as empty) itself.
+bin/%$(OUTEXT): src/%.cs | bin target
+	powershell -NoProfile -Command "$$q = [char]34; $$nl = [char]13 + [char]10; $$lines = ('<Project Sdk=' + $$q + 'Microsoft.NET.Sdk' + $$q + '>'), '  <PropertyGroup>', '    <OutputType>Exe</OutputType>', '    <TargetFramework>net$(DOTNET_TFM)</TargetFramework>', '    <RuntimeIdentifier>$$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>', '    <ImplicitUsings>disable</ImplicitUsings>', '    <Nullable>disable</Nullable>', '    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>', '    <AssemblyName>$*</AssemblyName>', '    <PublishAot>true</PublishAot>', '    <InvariantGlobalization>true</InvariantGlobalization>', '  </PropertyGroup>', '  <ItemGroup>', ('    <Compile Include=' + $$q + '../src/$*.cs' + $$q + ' />'), '  </ItemGroup>', '</Project>'; Set-Content -NoNewline -Path 'target/$*.csproj' -Value (($$lines -join $$nl) + $$nl)"
+	dotnet publish target/$*.csproj -o target --nologo -v quiet
+	copy target\$*$(OUTEXT) $(subst /,\,$@)
+
+clean:
+	-del /Q /F $(subst /,\,$(BIN)) >NUL 2>&1
+	-rmdir /S /Q target >NUL 2>&1
+	-mkdir target
+	-type nul >target\.gitkeep

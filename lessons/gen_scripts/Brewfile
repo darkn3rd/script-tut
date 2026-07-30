@@ -1,0 +1,7 @@
+brew 'gawk'    # GNU Awk
+brew 'groovy'  # Requires JDK
+brew 'perl'
+brew 'php'
+brew 'python3'
+brew 'ruby'
+brew 'tcl-tk'

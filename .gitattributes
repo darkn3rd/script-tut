@@ -15,12 +15,28 @@
 *.csh     text eol=lf
 *.ps1     text eol=lf
 
+# GNU Make recipe lines run through sh.exe even on Windows here (see
+# lessons/compiled_lang/common.mk) - a stray \r in one is the same class
+# of bug as a stray \r before a shebang above.
+Makefile  text eol=lf
+*.mk      text eol=lf
+
 # Markdown/docs/config read fine with either ending, but keep them LF too
 # for consistency across contributors' machines.
 *.md      text eol=lf
 *.json    text eol=lf
 *.rake    text eol=lf
 Rakefile  text eol=lf
+
+# lessons/compiled_lang/ source files - no shebang/direct-execution concern
+# (they're always run through their own compiler, never a shell), but
+# kept LF for the same "consistency across contributors' machines"
+# reasoning as markdown/json above.
+*.java    text eol=lf
+*.cs      text eol=lf
+*.go      text eol=lf
+*.rs      text eol=lf
+*.cpp     text eol=lf
 
 # Force CRLF for scripts that only ever run through a native Windows
 # interpreter (cmd.exe's parser wants CRLF) - pinned explicitly so a

@@ -1,0 +1,25 @@
+#!/bin/sh
+# Runs a BATCH lesson (.cmd) via a real cmd.exe from git-bash/MSYS2/Cygwin.
+# bash can't exec a .cmd file directly (it's not a PE binary or a script
+#  with a shebang it understands), so this shells out explicitly instead.
+#
+# //c, not /c: MSYS2's automatic argument conversion mistakes a lone "/c"
+#  for a POSIX drive-letter path and mangles it into "C:\", which drops
+#  cmd.exe into an interactive session instead of running the command
+#  (confirmed directly) - doubling the slash is the same escape hatch
+#  already used for cscript //Nologo in ../wsh.jscript/run and
+#  ../wsh.vbscript/run.
+#
+# Always resolved to an absolute path via cygpath -w (not a bare/relative
+#  filename) - Windows' NoDefaultCurrentDirectoryInExePath security
+#  setting refuses to resolve a bare filename as *the program to run*
+#  from the current directory (confirmed directly: "a00.output.cmd" by
+#  itself fails, ".\a00.output.cmd" works) - cygpath -w only converts
+#  something that already looks like a path, so a bare filename is made
+#  absolute first.
+script="$1"; shift
+case "$script" in
+  /*) ;;
+  *) script="$(pwd)/$script" ;;
+esac
+cmd //c "$(cygpath -w "$script")" "$@"

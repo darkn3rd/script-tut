@@ -1,0 +1,3 @@
+brew 'act'     # run GitHub Actions locally
+brew 'colima'  # lightweight container runtime
+brew 'docker'  # docker client tools

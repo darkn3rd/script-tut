@@ -1,3 +1,14 @@
 .DS_Store
 '~$script_tracker.xlsx'
 .vagrant
+
+# lessons/compiled_lang/*/bin/ holds the final, promoted build output;
+# target/ holds intermediate build artifacts (obj files, generated
+# project files, ...) on the way there (see
+# lessons/compiled_lang/README.md) - `make clean` in the language
+# directory empties both. .gitkeep keeps each otherwise-empty directory
+# itself tracked.
+lessons/compiled_lang/*/bin/*
+!lessons/compiled_lang/*/bin/.gitkeep
+lessons/compiled_lang/*/target/*
+!lessons/compiled_lang/*/target/.gitkeep

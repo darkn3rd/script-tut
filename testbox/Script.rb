@@ -61,7 +61,7 @@
 class ScriptBase
   # command name
   @@command = {
-    :awk    => "gawk",
+    :awk    => "awk",
     :groovy => "groovy",
     :pl     => "perl",
     :php    => "php",
@@ -72,6 +72,7 @@ class ScriptBase
     :csh    => "tcsh",
     :sh     => "sh",
     :ksh    => "ksh",
+    :zsh    => "zsh",
     :js     => "cscript",
     :vbs    => "cscript",
     :ps1    => "powershell",
@@ -91,6 +92,7 @@ class ScriptBase
     :csh    => "",
     :sh     => "",
     :ksh    => "",
+    :zsh    => "",
     :js     => "//Nologo",
     :vbs    => "//Nologo",
     :ps1    => '-NoLogo -NoProfile -ExecutionPolicy Bypass -File',
@@ -104,7 +106,7 @@ class ScriptBase
   # (see extract_version) rather than a shell pipeline, so it needs no
   # external tool support at all.
   @@version_probe = {
-    :awk    => "gawk --version 2>&1",
+    :awk    => "awk --version 2>&1",
     :groovy => "groovy --version 2>&1",
     :pl     => "perl --version 2>&1",
     :php    => "php --version 2>&1",
@@ -113,6 +115,12 @@ class ScriptBase
     :bash   => "bash --version 2>&1",
     :csh    => "csh --version 2>&1",
     :ksh    => "ksh --version 2>&1",
+    :zsh    => "zsh --version 2>&1",
+    :java   => "javac -version 2>&1",
+    :go     => "go version 2>&1",
+    :rs     => "rustc --version 2>&1",
+    :cpp    => "g++ --version 2>&1",
+    :cs     => "dotnet --version 2>&1",
   }
 
   # Languages whose version can't be had from a simple "cmd --version"
@@ -133,11 +141,41 @@ class ScriptBase
     :csh    => "C-Shell",
     :sh     => "POSIX Shell",
     :ksh    => "Korn Shell",
+    :zsh    => "Z Shell",
     :js     => "JScript (WSH)",
     :vbs    => "VBScript (WSH)",
     :ps1    => "PowerShell",
-    :cmd    => "Batch"
+    :cmd    => "Batch",
+    :java   => "Java",
+    :go     => "Go",
+    :rs     => "Rust",
+    :cpp    => "C++",
+    :cs     => "C#",
   }
+
+  # compiler binary for each compiled language - see @@compiled_languages
+  # and ensure_compiled!. Unlike @@command (an interpreter that the test
+  #  file is handed to as a data argument), these only ever run once per
+  #  test session, via `make`, to produce the actual thing invoked per
+  #  test (see invocation_name).
+  @@compiler = {
+    :java => "javac",
+    :go   => "go",
+    :rs   => "rustc",
+    :cpp  => "g++",
+    # Not "csc": a bare csc needs either a hand-built ~240-file BCL
+    #  reference list (fragile) or Mono (an extra dependency, plus its
+    #  compiled .exe needs a wrapper to run on real POSIX). cs/Makefile
+    #  instead generates a minimal throwaway .csproj per lesson and
+    #  builds it with `dotnet build` - see that Makefile's own comment.
+    :cs   => "dotnet",
+  }
+
+  # Languages with no interpreter at all (see @@command) - a lesson file
+  #  here is only ever handed to `make` (see ensure_compiled!), and what
+  #  actually gets invoked per test is the resulting build artifact (see
+  #  invocation_name), not the source file itself.
+  @@compiled_languages = @@compiler.keys
 
   # Some languages have multiple, incompatible major versions that share a
   # file extension (e.g. python2/ and python3/ both use *.py). When the
@@ -162,24 +200,76 @@ class ScriptBase
   @@interactive_required_languages = [:cmd]
 
   # Languages that need an explicit relative-path prefix (e.g. ".\file" on
-  #  Windows) rather than a bare filename when invoked. NoDefaultCurrentDirectoryInExePath
-  #  (a Windows security hardening setting - see execute) only disables
-  #  the implicit current-directory search used to resolve *the program
-  #  to execute*. That only matters for batch/:cmd, where the test file
-  #  itself is what's being resolved that way (cmd /c <file>). Every
-  #  other language passes the test file as a data argument to an
+  #  Windows, "./file" on real POSIX) rather than a bare filename when
+  #  invoked. NoDefaultCurrentDirectoryInExePath (a Windows security
+  #  hardening setting - see execute) only disables the implicit
+  #  current-directory search used to resolve *the program to execute*.
+  #  That only matters for :cmd and the compiled languages, where the
+  #  test artifact itself is what's being resolved that way (cmd /c
+  #  <file>, or a compiled binary run directly). Every interpreted
+  #  language passes the test file as a data argument to an
   #  already-resolved interpreter (e.g. "ruby file.rb") - never affected
   #  by that restriction - so prefixing it there was never necessary, and
   #  it leaks into any script that prints its own invocation name/path
   #  (e.g. Ruby's $0, Python's sys.argv[0]).
-  @@needs_path_prefix_languages = [:cmd]
+  @@needs_path_prefix_languages = [:cmd] + @@compiled_languages
 
   @@ostype    = RUBY_PLATFORM.split('-')[1].scan(/[a-z]+/)
   @@cputype   = RUBY_PLATFORM.split('-')[0]
-  @@language  = Dir.glob('a00.*')[0].split('.')[-1]
+  # A compiled language's build artifacts (a00.output.exe, a00.output.cmd,
+  #  ...) sit right next to a00's source file and match this same glob -
+  #  restrict to extensions actually recognized as a source language (see
+  #  @@command/@@compiler) so a leftover binary from a previous `make`
+  #  never gets mistaken for the language itself.
+  @@known_extensions = (@@command.keys + @@compiler.keys).map(&:to_s)
+
+  # @@dirname must be captured before the chdir below - it identifies the
+  #  *language* directory (e.g. "python3", used by @@command_override),
+  #  never wherever the harness ends up actually running lessons from.
   @@dirname   = File.basename(Dir.pwd)
-  @@jsonfile   = "../../testbox/expected.json"
-  @@titlesfile = "../../testbox/titles.json"
+
+  # lessons/gen_scripts, lessons/win_scripts, lessons/shell_scripts lesson
+  #  directories keep their
+  #  actual lesson files - plus dirtest/ and any other fixture a lesson
+  #  needs - in a scripts/ subdirectory; Rakefile/psakefile/README stay
+  #  at the language directory root (see ../README.md's Directory
+  #  Structure section). Changing into it here, once, for the rest of
+  #  the process's lifetime means everything below - @@language
+  #  detection, execute()'s Dir.glob, testbox_tags's file reads, and the
+  #  actual test invocation command - keeps working completely
+  #  unchanged, exactly as if the lessons had never moved: a script
+  #  invoked as a bare filename still finds itself at "." (now
+  #  scripts/), and self-name introspection (Ruby's $0, Python's
+  #  sys.argv[0], a batch lesson's %~nx0, ...) still reports that same
+  #  bare filename, not a "scripts/"-prefixed path - so expected.json's
+  #  $cmd$ substitution (see execute()) needs no per-language handling
+  #  for the move at all.
+  #  lessons/compiled_lang/ doesn't use this convention (see
+  #  @@source_subdir below instead), so it has no scripts/ to change into
+  #  and this is simply a no-op there.
+  Dir.chdir("scripts") if Dir.exist?("scripts")
+
+  # lessons/compiled_lang/*/src/ is the other lesson-file convention this
+  #  harness supports, alongside scripts/ above - but unlike scripts/,
+  #  it deliberately does NOT chdir there: `make`, the promoted bin/
+  #  binaries it builds, and the dirtest/ fixture some of them read all
+  #  need CWD to stay at the language directory root (bin/a00.output is
+  #  invoked as a relative path *from* there, and a compiled binary's
+  #  own working directory follows whoever spawned it, not wherever its
+  #  own executable file happens to live - see lessons/compiled_lang/README.md).
+  #  Only @@language detection, find_implementations, and
+  #  testbox_tags's file reads need to know where src/ actually is;
+  #  "." here (scripts/ already chdir'd into, or a language dir that
+  #  simply uses neither convention) means "wherever we already are."
+  @@source_subdir = Dir.exist?("src") ? "src" : "."
+
+  @@language  = Dir.glob(File.join(@@source_subdir, 'a00.*')).map { |f| f.split('.')[-1] }.find { |ext| @@known_extensions.include?(ext) }
+  # __dir__-based, not "../../testbox/..." - robust regardless of the
+  #  chdir above, since it resolves relative to this file's own location
+  #  (testbox/) rather than counting directory levels up from whatever
+  #  the current working directory happens to be.
+  @@jsonfile   = File.join(__dir__, "expected.json")
+  @@titlesfile = File.join(__dir__, "titles.json")
 
   # tally of category-level results across a run, printed by print_summary
   @@summary = { :total => 0, :pass => 0, :fail => 0, :skip => 0 }
@@ -234,13 +324,34 @@ class ScriptBase
   #  native_unix?) - so fail once, loudly, and stop, rather than a wall of
   #  near-identical per-test failures.
   def self.command
-    cmd = @@command_override[@@dirname] || @@command[@@language.to_sym]
+    # @@command has no entry for a compiled language (see
+    #  @@compiled_languages) - it falls through to @@compiler, since
+    #  that's the one thing that actually needs to be on PATH to run
+    #  these lessons at all (see ensure_compiled!). Reusing `command`
+    #  for this, rather than a separate method, means the same
+    #  PATH-verification and header-display logic below covers both
+    #  cases for free.
+    cmd = @@command_override[@@dirname] || @@command[@@language.to_sym] || @@compiler[@@language.to_sym]
     # PowerShell's POSIX package (installed as `pwsh`) never provides a
     #  `powershell` binary - that name is only the Windows Desktop edition
     #  executable. Gated on native_unix?, not posix?: Msys2ShellScript is
     #  posix? true but is still Windows underneath, where "powershell" is
     #  the real (and likely only) binary - see native_unix?'s comment.
     cmd = "pwsh" if cmd == "powershell" && native_unix?
+
+    # dash, not plain "sh": /bin/sh is whatever it happens to be
+    #  symlinked to, which is frequently bash running in its own
+    #  posix-ish sh-emulation mode rather than a real strict-POSIX
+    #  shell - precisely the "bashisms" risk lessons/shell_scripts/posix/
+    #  README.md warns about. Gated on native_unix?, not posix?, for
+    #  the same reason as the pwsh override above: Msys2ShellScript is
+    #  posix? true, but "sh" there is subject to its own separate,
+    #  already-documented tracked-alias quirks (see the mksh/env note
+    #  elsewhere in this file) and dash isn't guaranteed to be
+    #  installed on every dev machine - this is specifically about
+    #  making a genuine POSIX host (e.g. CI) test real POSIX
+    #  compliance, not about changing local Windows/MSYS2 behavior.
+    cmd = "dash" if @@dirname == "posix" && cmd == "sh" && native_unix?
 
     unless @@verified_commands.include?(cmd)
       if find_executable(cmd).to_s.empty?
@@ -254,8 +365,57 @@ class ScriptBase
     cmd
   end
 
+  # runner() - the interpreter (+ options) that a test file gets handed to
+  #  as a data argument, e.g. "ruby ". A compiled language has no such
+  #  thing - the build artifact (see invocation_name) runs itself - so
+  #  this is deliberately blank rather than "javac "/"g++ ", which would
+  #  otherwise get prepended to every test's command line.
   def self.runner
+    return "" if @@compiled_languages.include?(@@language.to_sym)
     "#{command} #{@@option[@@language.to_sym]}"
+  end
+
+  # invocation_name(cmd) - what to actually put on the command line for
+  #  lesson file `cmd`. For an interpreted language this is just `cmd`
+  #  itself (handed to runner as a data argument). For a compiled
+  #  language, `cmd` is the *source* file (e.g. "a00.output.rs") - what
+  #  actually needs to run is the build artifact make produced from it,
+  #  named after the source minus its language extension (see
+  #  lessons/compiled_lang/README.md's naming convention) plus whatever this
+  #  platform's runnable extension is (see binary_extension).
+  def self.invocation_name(cmd)
+    return cmd unless @@compiled_languages.include?(@@language.to_sym)
+    "#{cmd.sub(/\.[^.]+\z/, "")}#{binary_extension}"
+  end
+
+  # binary_extension() - the real on-disk extension of the artifact
+  #  `make` produces for the current compiled language (see
+  #  lessons/compiled_lang/*/Makefile). Every compiled language here builds a
+  #  native "*.exe" on a cmd.exe-backed environment except Java, which
+  #  has no standalone-binary story - its Makefile instead generates a
+  #  "*.cmd" launcher wrapping `java -cp . ClassName` (see
+  #  lessons/compiled_lang/java/Makefile). On real POSIX (native_unix?), every
+  #  language's Makefile produces an extension-less, executable-bit file
+  #  (a native binary, or - for Java - a "#!/bin/sh" launcher script), so
+  #  there's nothing to append.
+  def self.binary_extension
+    return "" if native_unix?
+    # ".bat", not ".cmd": :cmd (Batch) already owns ".cmd" as its own
+    #  lesson source extension - reusing it here made a Java wrapper
+    #  indistinguishable from an actual Batch lesson file to @@language
+    #  auto-detection (both are "a00.output.cmd"). cmd.exe treats ".bat"
+    #  as an equally native batch-script extension, so this loses nothing.
+    @@language.to_sym == :java ? ".bat" : ".exe"
+  end
+
+  # find_implementations(task) - locates every lesson file for `task`
+  #  (e.g. "a0" -> ["a00.output.rs"]) wherever this language's source
+  #  actually lives (see @@source_subdir) - bare filenames, exactly like
+  #  the plain `Dir.glob("#{task}?.*")` testbox.rake used to call
+  #  directly before both lesson-file conventions it now has to support
+  #  (scripts/ and src/) existed.
+  def self.find_implementations(task)
+    Dir.glob(File.join(@@source_subdir, "#{task}?.*")).map { |f| File.basename(f) }
   end
 
   # shell_out(cmd_str) - runs cmd_str the same way the harness runs a
@@ -265,6 +425,23 @@ class ScriptBase
   #  without changing this default.
   def self.shell_out(cmd_str)
     `#{cmd_str}`
+  end
+
+  # stream_shell_out(cmd_str) - like shell_out, but prints cmd_str's
+  #  combined output line-by-line as it's produced instead of capturing it
+  #  silently until the process exits. Used only for the one-time `make`
+  #  build in ensure_compiled! - a compiled language's full build can take
+  #  a noticeable moment, and without this the harness sits in total
+  #  silence for that whole stretch before the first test result appears.
+  #  Forces $stdout.sync so lines actually appear as they're read rather
+  #  than sitting in Ruby's own output buffer until the block exits.
+  #  Returns whether the command exited successfully.
+  def self.stream_shell_out(cmd_str)
+    old_sync, $stdout.sync = $stdout.sync, true
+    IO.popen(cmd_str) { |io| io.each_line { |line| print line } }
+    $?.success?
+  ensure
+    $stdout.sync = old_sync
   end
 
   # needs_interactive?(test) - true only if the test is tagged
@@ -340,6 +517,83 @@ class ScriptBase
     output.gsub("\r\n", "\n")
   end
 
+  # DUMP_ENV_FILE - the file a lesson dumps its own environment to (see
+  #  env_shell_out) - a fixed, well-known name in the current directory,
+  #  same convention every language's n20.setvars.* lesson follows.
+  DUMP_ENV_FILE = "dump_env.out"
+
+  # env_shell_out(cmd_str, expected_env) - like shell_out, but for a
+  #  lesson that dumps its own environment to DUMP_ENV_FILE and then
+  #  blocks on stdin (see n20.setvars.* - "MY_ORDERS set, Hit Return to
+  #  continue") instead of writing anything comparable to stdout/stderr.
+  #
+  #  Earlier attempts here tried inspecting the lesson's *live* process
+  #  environment from the outside (via /proc, `ps`, or PowerShell) while
+  #  it sat blocked - abandoned after confirming empirically that none
+  #  of it actually works: this project's real test environment (MSYS2
+  #  on Windows) makes every process Ruby spawns invisible to its own
+  #  /proc emulation regardless of spawning method, and Windows has no
+  #  built-in way to read an arbitrary external process's live
+  #  environment at all (Get-Process's .StartInfo is only ever populated
+  #  for a process .NET itself started, not one merely looked up by
+  #  PID). Dumping to a file the lesson itself controls sidesteps all of
+  #  that - reading it is plain file I/O, no OS-specific process
+  #  introspection needed anywhere.
+  #
+  #  Launches cmd_str in the background, waits for its prompt line (by
+  #  which point DUMP_ENV_FILE has already been written), reads it
+  #  directly, then writes a newline to unblock the lesson - which
+  #  deletes DUMP_ENV_FILE itself as part of its own exit. Returns a
+  #  hash of {key => actual_value} for every key expected_env asked
+  #  about - report() compares this against expected_env itself.
+  def self.env_shell_out(cmd_str, expected_env, timeout_seconds: 15)
+    require 'open3'
+    actual_env = {}
+
+    Open3.popen3(cmd_str) do |stdin, stdout, _stderr, wait_thr|
+      watchdog = Thread.new do
+        sleep timeout_seconds
+        `taskkill /F /T /PID #{wait_thr.pid}` if wait_thr.alive?
+      rescue StandardError
+      end
+
+      begin
+        # Wait for the lesson's own prompt line, so DUMP_ENV_FILE is
+        #  guaranteed to already exist by the time we read it - not a
+        #  fixed sleep, which would be either too slow on a fast machine
+        #  or flaky on a slow/loaded one.
+        stdout.readline rescue nil
+
+        dump = File.exist?(DUMP_ENV_FILE) ? File.read(DUMP_ENV_FILE) : ""
+        expected_env.each_key do |key|
+          actual_env[key] = dump[/^#{Regexp.escape(key)}=(.*)$/, 1]&.strip
+        end
+
+        # A lesson that dies before reaching its own "getline < -" (e.g.
+        #  gawk-only syntax run under a plain awk) has already closed its
+        #  stdin by this point - writing to it raises EPIPE, which should
+        #  surface as this test's own FAIL (via the empty actual_env
+        #  populated above), not an unhandled crash of the whole rake run.
+        begin
+          stdin.puts
+          stdin.flush
+        rescue Errno::EPIPE
+        end
+      ensure
+        watchdog.kill
+        watchdog.join
+      end
+
+      stdin.close rescue nil
+      begin
+        loop { stdout.readpartial(4096) }
+      rescue EOFError, IOError, SystemCallError
+      end
+    end
+
+    actual_env
+  end
+
   # version() - human-readable version string for the language under test.
   #  Dispatches to special_version for languages that aren't a plain
   #  "interpreter --version" (see @@special_version_langs); otherwise
@@ -361,7 +615,7 @@ class ScriptBase
   #  behaves identically regardless of which shell captured `raw`.
   def self.extract_version(raw, lang)
     case lang
-    when :awk, :php, :bash
+    when :awk, :php, :bash, :zsh, :cpp
       raw.lines.first.to_s.strip
     when :pl
       raw[/v\d\.\d{1,2}\.\d/].to_s
@@ -454,11 +708,14 @@ class ScriptBase
   #  separate manifest that can drift out of sync.
   def self.testbox_tags(file)
     tags = {}
+    # @@source_subdir-qualified, same reasoning as find_implementations -
+    #  `file` is always a bare filename, and CWD isn't necessarily where
+    #  it actually lives on disk (see @@source_subdir's own comment).
     # Explicit UTF-8 (with BOM-stripping) so a lesson file's encoding
     #  doesn't depend on the shell's locale - some lesson files carry a
     #  UTF-8 BOM, which isn't valid text under the "C"/US-ASCII locale
     #  Ruby otherwise defaults to.
-    File.foreach(file, encoding: "bom|utf-8").first(5).each do |line|
+    File.foreach(File.join(@@source_subdir, file), encoding: "bom|utf-8").first(5).each do |line|
       line.scan(/testbox:\s*(\w+)=(?:"([^"]*)"|(\S+))/) do |key, quoted, bare|
         tags[key] = quoted || bare
       end
@@ -554,6 +811,27 @@ class ScriptBase
     str.split("\n").sort.join("\n")
   end
 
+  # match_expected?(match_spec, output) - true if output contains every
+  #  substring from at least one os_type group in match_spec (see n00/n10 -
+  #  "enumerating variables"/"enumerating paths" - can't do an exact-match
+  #  comparison since the actual env vars/PATH entries are host-specific,
+  #  but can check that a known set of substrings is present). Which
+  #  group actually applies isn't decided by the Ruby-side OS/shell class -
+  #  a native Windows interpreter (Python, Ruby, PowerShell, ...) sees a
+  #  raw "C:\...;..." PATH, while an msys-runtime-linked one (bash, sh,
+  #  Git-for-Windows perl, gawk, ...) sees it POSIX-translated
+  #  ("/usr/bin:...") even on the same Windows machine - confirmed
+  #  empirically, not assumed. Trying every group and accepting whichever
+  #  one is fully satisfied sidesteps needing to know that distinction
+  #  ahead of time. Case-insensitive since Windows paths/values are
+  #  case-insensitive by nature (e.g. "system32" vs "System32").
+  def self.match_expected?(match_spec, output)
+    haystack = output.downcase
+    match_spec.values.any? do |substrings|
+      substrings.all? { |s| haystack.include?(s.downcase) }
+    end
+  end
+
   def self.colorize(text, color_code)
     "#{color_code}#{text}\033[0m"
   end
@@ -570,6 +848,51 @@ class ScriptBase
          "#{green('Pass')}=#{@@summary[:pass]}  " +
          "#{red('Fail')}=#{@@summary[:fail]}  " +
          "#{yellow('Skip')}=#{@@summary[:skip]}"
+    write_github_summary
+  end
+
+  # write_github_summary() - appends a Markdown table (language, version,
+  #  pass/fail/skip counts) to $GITHUB_STEP_SUMMARY, GitHub Actions' own
+  #  native "final report" mechanism - no separate JUnit-XML-style file
+  #  or third-party action needed, since this project doesn't otherwise
+  #  produce per-test-case detail. Every matrix job's block is what ends
+  #  up rolled together on the overall workflow run's summary page (GH
+  #  doesn't insert its own separator between jobs there), hence the
+  #  language/version heading up top so multiple jobs' blocks stay
+  #  distinguishable stacked together.
+  #  A no-op outside GitHub Actions - that env var is only ever set by
+  #  the runner itself - so this changes nothing about a normal local
+  #  `rake` run. Appends (never overwrites): other steps in the same job
+  #  may have already written to this same file.
+  def self.write_github_summary
+    path = ENV['GITHUB_STEP_SUMMARY']
+    return if path.to_s.empty?
+
+    # Kept as separate labeled fields rather than one concatenated
+    #  "#{language_name} #{version}" string - some languages' own
+    #  --version output already includes their name (e.g. Python prints
+    #  "Python 3.x.x"), which would otherwise read as "Python Python
+    #  3.x.x".
+    File.open(path, 'a') do |f|
+      f.puts "## #{language_name}"
+      f.puts
+      f.puts "**Version**: #{version}"
+      f.puts
+      f.puts "| Total | ✅ Pass | ❌ Fail | ⏭️ Skip |"
+      f.puts "| :---: | :---: | :---: | :---: |"
+      f.puts "| #{@@summary[:total]} | #{@@summary[:pass]} | #{@@summary[:fail]} | #{@@summary[:skip]} |"
+      f.puts
+    end
+  end
+
+  # failed?() - true if any test compared so far in this process failed.
+  #  Checked by the at_exit hook below so `rake` (or any script requiring
+  #  this file) actually exits non-zero on failure - report()/execute()
+  #  only ever record results and print them, they never raise or touch
+  #  the process exit status themselves, so without this a CI job would
+  #  see a green checkmark no matter how many tests failed.
+  def self.failed?
+    @@summary[:fail] > 0
   end
 
   def self.report(results)
@@ -581,14 +904,20 @@ class ScriptBase
     # print expected/actual for a testcase: always on FAIL, and also on a
     #  PASS that only succeeded via tolerance (e.g. "precision"), so the
     #  raw difference is still visible.
+    # An "env" test's expected/output are a Hash of {var => value} (see
+    #  env_shell_out), not a string of captured stdout/stderr like every
+    #  other test type - stringify either shape the same way here rather
+    #  than assuming .gsub is always available.
+    displayable = ->(value) { value.is_a?(String) ? value.gsub(/\n/, "\\n") : value.inspect }
+
     print_diff = ->(testcase) {
       return unless !testcase["test_result"] || testcase["diff"]
       if testcase["test_result"]
-        puts "         Expected Output: |#{yellow[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "         Actual Output:   |#{yellow[testcase["output"].gsub(/\n/, "\\n")]}| (within tolerance)"
+        puts "         Expected Output: |#{yellow[displayable[testcase["expected"]]]}|"
+        puts "         Actual Output:   |#{yellow[displayable[testcase["output"]]]}| (within tolerance)"
       else
-        puts "         Expected Output: |#{green[testcase["expected"].gsub(/\n/, "\\n")]}|"
-        puts "         Actual Output:   |#{red[testcase["output"].gsub(/\n/, "\\n")]}|"
+        puts "         Expected Output: |#{green[displayable[testcase["expected"]]]}|"
+        puts "         Actual Output:   |#{red[displayable[testcase["output"]]]}|"
       end
     }
 
@@ -652,7 +981,59 @@ class ScriptBase
     end # overall pass condition
   end
 
+  # ensure_compiled!() - for a compiled language (see @@compiled_languages),
+  #  runs `make` in the lesson directory once per test session, before any
+  #  test tries to invoke a build artifact that doesn't exist yet. `make`
+  #  itself, and the compiler it drives (see command()), are each
+  #  verified present and failed loudly and once if missing - the same
+  #  "fail once, clearly" reasoning as command()'s own PATH check,
+  #  because a broken build would otherwise surface as the exact same
+  #  confusing per-test "not recognized"/"no such file" error on every
+  #  single test in the directory.
+  @@compiled_ok = false
+  def self.ensure_compiled!
+    return unless @@compiled_languages.include?(@@language.to_sym)
+    return if @@compiled_ok
+
+    command # verifies the compiler itself is on PATH (see command())
+
+    if find_executable("make").to_s.empty?
+      STDERR.puts "ERROR: Cannot find \"make\" on PATH (needed to build #{@@dirname}/ lessons). " \
+                  "Check the setup instructions for this language."
+      exit 1
+    end
+
+    # a second, separate status header from the one testbox.rake's own
+    #  :header task prints - @@compiled_ok means this only runs once per
+    #  `rake` invocation (the first test category to execute triggers it;
+    #  every later category in the same run skips straight past). `make`
+    #  itself is still incremental across separate `rake` runs, so a
+    #  second invocation with nothing changed just streams a fast
+    #  "Nothing to be done" instead of silently doing nothing as before.
+    puts "Compiling #{language_name} lessons (one-time build)..."
+    puts "==============================================================="
+    success = stream_shell_out("make 2>&1")
+    puts "==============================================================="
+
+    unless success
+      STDERR.puts "ERROR: `make` failed while building #{@@dirname}/ lessons (see output above)."
+      exit 1
+    end
+
+    @@compiled_ok = true
+  end
+
   def self.execute(task, list)
+    ensure_compiled!
+    # testbox.rake finds implementations with a bare Dir.glob("#{task}?.*")
+    #  - fine for an interpreted language, where the source file is the
+    #  only thing in the directory matching that pattern, but a compiled
+    #  language's build artifacts (a00.output.exe, a00.output.cmd, ...)
+    #  sit right next to the source and match it too. Restrict to the
+    #  real source extension so a generated binary never gets scanned as
+    #  if it were a second implementation (testbox_tags's line-by-line
+    #  read chokes on non-UTF8 binary bytes) or double-counted.
+    list = list.select { |cmd| cmd.end_with?(".#{@@language}") } if @@compiled_languages.include?(@@language.to_sym)
     final_result, message, results, skipped, skip_reason = true, "", {}, false, nil
     # Drop implementations that are intentionally POSIX-only (see
     #  requires_posix?) when we're not running under a POSIX shell. If
@@ -671,12 +1052,37 @@ class ScriptBase
           taskdata.each do |test|
             test_result, redirect, expected, args, redirect, input = false, "", "", "", "", ""
             input_lines = nil
-            if test.has_key?("err")
+            # An "env" test (see n20.setvars.* - "MY_ORDERS set, Hit
+            #  Return to continue") doesn't write anything comparable to
+            #  stdout/stderr at all - it exports environment variables
+            #  and blocks on stdin, so there's nothing to redirect here;
+            #  env_shell_out below reads stdout itself via Open3 to know
+            #  when the lesson has reached that blocked read.
+            is_env_test = test.has_key?("env")
+            # A "match" test (see n00/n10 - "enumerating variables"/
+            #  "enumerating paths") captures stdout exactly like a normal
+            #  "out" test, but is verified via match_expected? instead of
+            #  a straight string comparison (see below) - the actual
+            #  values are host-specific, so an exact expected string
+            #  can't exist at all.
+            is_match_test = test.has_key?("match")
+            # .dup - expected.gsub! below (for $cmd$/$date$) must not
+            #  mutate the actual string cached in @@dataset itself, or
+            #  the *next* implementation of a multi-implementation
+            #  category (e.g. o20 and o21 both under "o2") would see an
+            #  already-substituted leftover from whichever ran first
+            #  instead of a fresh "$cmd$" to replace.
+            if is_env_test
+              expected = test['env']
+            elsif is_match_test
+              redirect = "2> #{null_device}"
+              expected = test['match']
+            elsif test.has_key?("err")
               redirect = "2>&1"
-              expected = test['err']
+              expected = test['err'].dup
             else
               redirect = "2> #{null_device}"
-              expected = test['out']
+              expected = test['out'].dup
             end
 
             if test.has_key?("arg")
@@ -698,23 +1104,72 @@ class ScriptBase
               end
             end
 
-            # Replacements - replace dynamically generated data
-            expected.gsub! /(\$cmd\$)/, "#{cmd}"
-            expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
+            # invoked_name is what actually goes on the command line and
+            #  into the $cmd$ substitution below - for an interpreted
+            #  language that's just `cmd` (the source file itself,
+            #  handed to runner as a data argument); for a compiled one
+            #  it's the build artifact's own name (see invocation_name),
+            #  since that - not the source file - is what a lesson's own
+            #  $0/argv[0]/os.Args[0]-style self-name check would report.
+            invoked_name = invocation_name(cmd)
 
-            # Explicit relative-path prefix, only for languages that need it
-            #  (see @@needs_path_prefix_languages) - cmd.exe treats "/" as a
-            #  switch prefix (like /c itself), not a path separator, so an
-            #  unquoted "./" gets tokenized apart - ".\" is required there.
-            #  Unconditionally ".\", not posix?-gated: @@needs_path_prefix_languages
-            #  is only ever [:cmd], so this branch is only ever building a
-            #  cmd.exe command line - cmd.exe's own "/" quirk doesn't change
-            #  based on whether the *host* shell (e.g. Msys2ShellScript) has
-            #  POSIX tools available (same posix?-conflation as native_unix?).
-            prefix = @@needs_path_prefix_languages.include?(@@language.to_sym) ? ".\\" : ""
-            command = "#{input} #{runner} #{prefix}#{cmd} #{args} #{redirect}"
+            # Explicit relative-path prefix, only for languages that need
+            #  it (see @@needs_path_prefix_languages) - both cmd.exe and
+            #  a directly-run compiled binary are resolved as *the
+            #  program to execute itself* (not a data argument to an
+            #  already-resolved interpreter), so each is subject to
+            #  NoDefaultCurrentDirectoryInExePath. native_unix?, not
+            #  posix?: this is about which path separator the target
+            #  program loader wants (/ on real Unix, \ on cmd.exe -
+            #  including under Msys2ShellScript, which is posix? true
+            #  but still Windows underneath - see native_unix?'s comment).
+            #  A compiled language additionally builds into a bin/
+            #  subdirectory (see lessons/compiled_lang/README.md), so its prefix
+            #  includes that too.
+            is_compiled = @@compiled_languages.include?(@@language.to_sym)
+            if @@needs_path_prefix_languages.include?(@@language.to_sym)
+              sep = native_unix? ? "/" : "\\"
+              subdir = is_compiled ? "bin#{sep}" : ""
+              prefix = ".#{sep}#{subdir}"
+            else
+              prefix = ""
+            end
+
+            # Replacements - replace dynamically generated data. A
+            #  compiled language's own argv[0]/os.Args[0]-style self-name
+            #  check would report the *whole* invoked path (prefix and
+            #  all) since nothing in the program strips it - unlike
+            #  batch's j00-style lessons, which explicitly strip any
+            #  prefix themselves (see lessons/win_scripts/batch/j00.arguments.cmd's
+            #  %~nx0), so only compiled languages get prefix folded in
+            #  here.
+            unless is_env_test || is_match_test
+              expected.gsub! /(\$cmd\$)/, "#{is_compiled ? prefix : ""}#{invoked_name}"
+              expected.gsub! /(\$date\$)/, "#{(Time.new).strftime("%B %d, %Y")}"
+            end
+
+            # gawk consumes any "-xxx" trailing argument as its own
+            #  option unless "--" tells it argument parsing is done -
+            #  it's the only language here invoked via a runner flag
+            #  (":awk => \"-f\"" in @@option) that has this problem,
+            #  since otherwise a lesson's own "-c"-style argument never
+            #  reaches its ARGV at all. gawk also has no argv[0]
+            #  equivalent of its own (ARGV[0] is always "gawk", never
+            #  the script file) - a "-v invoked_as=..." variable stands
+            #  in for it here, the same idea as lessons/compiled_lang/java's
+            #  Makefile-injected system property (see java/Makefile).
+            if @@language.to_sym == :awk
+              interpreter_line = "#{command} -v invoked_as=#{invoked_name} #{@@option[@@language.to_sym]}"
+              arg_separator = "--"
+            else
+              interpreter_line = runner
+              arg_separator = ""
+            end
+            command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
             #puts "DEBUG: RUNNING #{command}"
-            output = if needs_interactive?(test)
+            output = if is_env_test
+              env_shell_out(command, expected)
+            elsif needs_interactive?(test)
               interactive_shell_out(command, input_lines)
             else
               shell_out(command)
@@ -722,7 +1177,11 @@ class ScriptBase
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
 
-            if test.has_key?("precision")
+            if is_env_test
+              test_result = expected == output
+            elsif is_match_test
+              test_result = match_expected?(expected, output)
+            elsif test.has_key?("precision")
               digits = test["precision"]
               test_result = truncate_precision(expected, digits) ==
                             truncate_precision(output, digits)
@@ -749,8 +1208,12 @@ class ScriptBase
               "output"   => output,
               "expected" => expected,
               "test_result" => test_result,
-              # raw strings differ even when test_result passed via tolerance
-              "diff" => expected != output,
+              # raw strings differ even when test_result passed via tolerance.
+              #  A "match" test's expected/output aren't even the same type
+              #  (Hash of candidate substrings vs. the actual captured
+              #  string) - "differs" there just means "failed", not "passed
+              #  via tolerance", so show detail on failure only.
+              "diff" => is_match_test ? !test_result : (expected != output),
               # this implementation's "title=" tag, if any (see
               #  implementation_title) - lets report() show which
               #  technique a multi-implementation category's result
@@ -1052,3 +1515,15 @@ elsif RUBY_PLATFORM =~ /mingw|mswin/i
 else
   PosixShellScript
 end
+
+# Make `rake` (or any script requiring this file) actually fail on a
+#  failed test - by default Ruby exits 0 whenever the process ends
+#  without an uncaught exception, regardless of how many individual
+#  test comparisons came back false, since execute()/report() only ever
+#  record and print results. Without this, a CI job driven by `rake`
+#  would report success no matter what actually failed (see
+#  Script.failed?). Registered here, once, at require-time, rather than
+#  in testbox.rake, so it applies uniformly to `rake` (every task,
+#  default or a single category) without needing to touch any task
+#  definition.
+at_exit { exit 1 if Script.failed? }

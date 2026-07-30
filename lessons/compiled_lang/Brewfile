@@ -1,0 +1,12 @@
+tap 'homebrew/cask-versions'
+cask 'corretto@17'           # java
+cask 'dotnet-sdk'            # C#
+
+# langauges
+brew 'groovy'
+brew 'go'
+brew 'rust'
+
+# tools
+brew 'make'
+brew 'git'

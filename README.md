@@ -31,6 +31,7 @@ These are the languages supported.
   * :shell: C Shell (csh) †
   * :shell: Korn Shell (ksh) †
   * :shell: Shell, POSIX (sh) †
+  * :shell: Z Shell (zsh) †
 * **Windows Languages**:
   * :scroll: Command Shell (BATCH)
   * :scroll: JScript (WSH)
@@ -125,3 +126,7 @@ This section is under development, and may be put into another advance scripting
   * :green_book: Flags [O00]
   * :green_book: Options [O10]
   * :green_book: Long Form [O20]
+
+## Continuous Integration (CI)
+
+See [cibox/README.md](cibox/README.md) for what runs in CI and how to run the same workflow locally with `act`.

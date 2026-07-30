@@ -1,0 +1,134 @@
+# Scripting Tutorial: Shell (POSIX Shell)
+
+© Joaquin Menchaca, 2014-2026
+
+Version 1.4
+
+## Overview
+
+### Bourne Shell
+
+The POSIX shell evolved from the original Bourne Shell, inved by Stephen Bourne, was released in UNIX Version 7 in 1977.  Bourne shell added scripting capabilities, and replaced the limited Thompson shell ```sh``` in earlier versions of Unix.
+
+Newer shell environments extended the capabilities of Bourne shell and were released as drop in replacements for Bourne Shell.  Some of these are Bourne Again Shell (`bash`), Korn Shell (`ksh`), and Z Shell (`zsh`).  Almquist Shell (`ash`) and later Debian Almquist Shell (`dash`) maintain strict compabitity toward Bourne shell and are popular in low-memory situations.
+
+### POSIX Shell
+
+The basic Bourne shell scripting language has been updated by the POSIX (Portable Operating System Interfacee) standard, specifically  IEEE P1003.2.  This standard incorporated some features that were available in existing Korn Shell and Bourne Again Shell at the time.  Shells conforming to this specification when ran as `sh` are thus said to be POSIX Shell.
+
+Many flavors of Unix released versions of `sh` that conformed to the shell, and in the open source community, shell environments that supported Bourne shell were updated to support the standard as well.
+
+## Getting POSIX Shell on Mac OS X (macOS)
+
+For macOS (previously called Mac OS X), the best source of POSIX Shell would be to have `ksh '93u`. You would be to have the `sh` binary that links to `ksh` in your PATH before `/bin`.  Your scripts with a shebang line of `#!/usr/bin/env sh` will run the script in strict POSIX mode.
+
+The default `/bin/sh` is really **GNU bash 3.2**. When `sh` mode is used, GNU bash does try its best to run in a POSIX mode, but may suffer from what is called *bashisms*, or in other words using bash features accidently when it should be using strict POSIX shell behavior.  For this reason, `ksh` would yield better results to achieve a real POSIX shell environment.
+
+Another alternative would be use `dash` to execute strict POSIX shell scripts, e.g. `dash my_posix_script.sh`
+
+Whatever strategy you use, you can get these shells with Homebrew using the following:
+
+```bash
+brew install ksh        # ksh93 1.0.10
+brew install dash-shell # dash 0.5.13.5 
+brew install bash       # bash 5.3.12
+```
+
+### GNU getopt (required for o21.longform.sh)
+
+macOS ships the old one-true-getopt as `/usr/bin/getopt`, which silently ignores `-o`/`--long` and doesn't support long options at all - it just echoes its arguments back unparsed. The o21 lesson needs GNU getopt (from `util-linux`) for `--long` option parsing:
+
+```bash
+brew install gnu-getopt
+```
+
+Homebrew installs this keg-only (to avoid clobbering the system `getopt`), so it won't be on `PATH` as `getopt` by default. Put it ahead of the system path before running the tutorial's tests:
+
+```bash
+export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"   # Intel Homebrew prefix
+# or, on Apple Silicon:
+export PATH="/opt/homebrew/opt/gnu-getopt/bin:$PATH"
+```
+
+Without this, `getopt` resolves to the BSD version, `PARSED` ends up garbage, and o21 silently falls through to its usage/error path on every real option.
+
+## Getting POSIX Shell on Windows 11
+
+You can install POSIX environments like **[MSYS2](https://www.msys2.org/)** or **[Cygwin](https://www.cygwin.com/)**.
+
+You can use Chocolatey to install **[MSYS2](https://www.msys2.org/)**
+
+```bash
+choco install msys2
+```
+
+## Testing
+
+* :dvd: *__OS X 10.8.5 (Mountain Lion)__*
+  * :cd: Bash 3.2.48(1)-release (x86_64_appledarwin12) using `/bin/sh`
+
+
+## Notes
+
+This covers notes regarding each section.
+
+1. Output
+2. Variables
+3. Arithmetic
+4. Input
+5. Branch (**Requires** understanding of ```test```)
+   * if on number
+   * case on single character
+     * demonstrates case's glob pattern with POSIX selector
+   * if on single character
+     * demonstrates using POSIX selector with ```tr``` and sub-shell ```$( command )``` to capture result
+6. Looping
+   * iterative loop
+      * example: 10 to 1
+        * ```while``` loop with counter
+        * ```for...in``` loop using ```seq``` to generate range
+   * conditional loops
+        * both ```while``` and ```until``` loops demonstrated
+        * spin loop demonstrated
+   * collection loop
+      * iterate through set of items
+      * example: directory listing
+7. Arrays
+   * **OMITTED** *POSIX Shell does not support arrays*
+   * Alternatives offered:
+     * Using space delimited strings
+8. Associative Arrays
+   * **OMITTED**: *POSIX Shell does not support associative arrays.*
+9. Subroutines
+   * Subroutine (Function in POSIX Shell) that prints out the date in friendly format *.
+10. Arguments
+    * Exact Arguments (2):
+      * Add two numbers
+        * Demonstrates, ```$#```, positional parameters, arithmetic using ```$(( expr ))```
+    * Unlimited Arguments (n):
+      * Print numbered list of arguments (varies methods)
+        * conditional loop using ```while``` with ```shift``` to change positional parameters
+        * collection loop on ```"$@"```
+        * iterative style loop using ```while``` with ```eval```
+        * iterative style loop uisng ```for``` with range from ```$(seq 1 $#)```
+    * Unlimited Arguments (n):
+      * Print all arguments in reverse order
+        * iterative style loop using ```while``` with ```eval```
+        * iterative style loop using ```until``` with ```eval```
+        * iterative style loop uisng ```for``` with range from ```$(seq 1 $#)```
+11. Parameters
+    * Subroutine that accepts numbers and prints out their summation.
+12. Functions
+    * **OMITTED**: *POSIX Shell does not have real functions.  They return an error code, but not a value.*
+    * Alternatives (returning integer):
+      * Capture Stdout from sub-shell, e.g. ```result=$(myfunction params)```
+      * Use side-effect by setting outer scope variable, e.g. ```global_result_var=$return_value_in_function```
+      * Use Error Code to contain resulting value, e.g. ```echo "result=$?"```
+    * Alternatives (returning string)
+      * demonstrate capitalize (uppercase) a string
+        * using translate
+        * using awk
+        * using GNU sed
+        * using perl
+13. Extra
+   * Test Review I

@@ -1,0 +1,50 @@
+# PowerShell/cmd.exe-native counterpart to ./Makefile - see
+# ../java/Makefile.win for the full rationale. Use it explicitly with
+# `make -f Makefile.win`. The default ./Makefile stays untouched and
+# POSIX-only.
+#
+# Unlike java/cs, rust's own build step (`rustc`) is a single external
+# command with no shell-specific syntax needed at all - it's already
+# fine under cmd.exe as-is. Only `clean:` and the bin/-promotion step
+# (rm/cp aren't real executables outside a POSIX-ish shell) need
+# cmd.exe-native replacements here.
+#
+# SHELL is pinned to cmd.exe for every target in this file (safe here,
+# unlike ./Makefile: this whole file is Windows-only).
+
+SHELL := cmd.exe
+
+EXE := .exe
+
+SRC := $(wildcard src/*.rs)
+BIN := $(addprefix bin/,$(notdir $(SRC:.rs=$(EXE))))
+
+.PHONY: all clean
+all: $(BIN)
+
+# Without this, GNU Make treats target/%$(EXE) as a disposable
+#  intermediate of the target/%$(EXE) -> bin/%$(EXE) chain below and
+#  silently deletes each one right after promoting it - defeating the
+#  point of keeping a build copy in target/ at all.
+.SECONDARY:
+
+bin:
+	-mkdir bin
+
+target:
+	-mkdir target
+
+target/%$(EXE): src/%.rs | target
+	rustc -O --crate-name $(subst .,_,$*) -o $@ $<
+
+# copy (unlike del/rmdir) requires backslash paths - confirmed directly:
+#  it fails with "The syntax of the command is incorrect" on forward
+#  slashes, even though most other cmd.exe builtins tolerate them fine.
+bin/%$(EXE): target/%$(EXE) | bin
+	@copy $(subst /,\,$<) $(subst /,\,$@) >NUL
+
+clean:
+	-del /Q /F $(subst /,\,$(BIN)) >NUL 2>&1
+	-rmdir /S /Q target >NUL 2>&1
+	-mkdir target
+	-type nul >target\.gitkeep

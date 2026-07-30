@@ -1,0 +1,70 @@
+# NMAKE version of Makefile, for Microsoft's own build tools (cl.exe) -
+# see ../README.md for the shared bin/-output convention this follows.
+# Run from a "Developer Command Prompt" / after vcvars64.bat, via:
+#
+#   nmake /f Makefile.nmake
+#
+# NMAKE has no wildcard/glob function the way GNU Make's $(wildcard ...)
+# does, and its macro substitution can't prepend "bin\" to a whole list
+# the way $(addprefix ...) can - so, unlike the GNU Makefile, both lists
+# here are maintained by hand: add each new src\a00.output.cpp-style
+# lesson to SOURCES, and its matching bin\a00.output.exe entry to
+# BINARIES.
+#
+# cl.exe compiles and links in one invocation, but /Fo and /Fe still let
+# the object file and the final executable land in two different
+# directories - so, like the GNU Makefile, only the final executable
+# ends up in bin\ (see ../README.md's Directory Structure section).
+
+SOURCES  = src\a00.output.cpp src\a10.output.cpp \
+           src\b10.variables.cpp \
+           src\c00.arithmetic.cpp src\c10.arithmetic.cpp src\c20.arithmetic.cpp src\c30.arithmetic.cpp \
+           src\d00.input.cpp \
+           src\e00.branch.cpp src\e10.branch.cpp src\e20.branch.cpp src\e30.branch.cpp src\e40.branch.cpp src\e50.branch.cpp src\e60.branch.cpp \
+           src\f00.loop.cpp src\f01.loop.cpp src\f02.loop.cpp src\f03.loop.cpp \
+           src\f10.loop.cpp src\f11.loop.cpp src\f12.loop.cpp src\f13.loop.cpp \
+           src\f20.loop.cpp src\f21.loop.cpp \
+           src\f30.loop.cpp src\f31.loop.cpp src\f32.loop.cpp \
+           src\f40.loop.cpp src\f41.loop.cpp src\f42.loop.cpp \
+           src\g00.array.cpp src\g10.array.cpp src\g20.array.cpp \
+           src\h00.associative.cpp src\h10.associative.cpp \
+           src\i00.subroutine.cpp \
+           src\j00.arguments.cpp src\j10.arguments.cpp src\j20.arguments.cpp \
+           src\k00.parameters.cpp src\k10.parameters.cpp \
+           src\l00.exit.cpp \
+           src\m00.function.cpp src\m10.function.cpp src\m20.function.cpp
+BINARIES = bin\a00.output.exe bin\a10.output.exe \
+           bin\b10.variables.exe \
+           bin\c00.arithmetic.exe bin\c10.arithmetic.exe bin\c20.arithmetic.exe bin\c30.arithmetic.exe \
+           bin\d00.input.exe \
+           bin\e00.branch.exe bin\e10.branch.exe bin\e20.branch.exe bin\e30.branch.exe bin\e40.branch.exe bin\e50.branch.exe bin\e60.branch.exe \
+           bin\f00.loop.exe bin\f01.loop.exe bin\f02.loop.exe bin\f03.loop.exe \
+           bin\f10.loop.exe bin\f11.loop.exe bin\f12.loop.exe bin\f13.loop.exe \
+           bin\f20.loop.exe bin\f21.loop.exe \
+           bin\f30.loop.exe bin\f31.loop.exe bin\f32.loop.exe \
+           bin\f40.loop.exe bin\f41.loop.exe bin\f42.loop.exe \
+           bin\g00.array.exe bin\g10.array.exe bin\g20.array.exe \
+           bin\h00.associative.exe bin\h10.associative.exe \
+           bin\i00.subroutine.exe \
+           bin\j00.arguments.exe bin\j10.arguments.exe bin\j20.arguments.exe \
+           bin\k00.parameters.exe bin\k10.parameters.exe \
+           bin\l00.exit.exe \
+           bin\m00.function.exe bin\m10.function.exe bin\m20.function.exe
+
+CXX = cl
+CXXFLAGS = /nologo /EHsc /std:c++17 /O2 /W3
+
+all: bin target $(BINARIES)
+
+bin:
+	if not exist bin mkdir bin
+
+target:
+	if not exist target mkdir target
+
+{src}.cpp{bin}.exe:
+	$(CXX) $(CXXFLAGS) /Fo:target\ /Fe:$@ $<
+
+clean:
+	-del /q bin\*.exe 2>nul
+	-rmdir /s /q target 2>nul

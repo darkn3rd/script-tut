@@ -1,5 +1,11 @@
 #!/usr/bin/ruby
-require '../../testbox/Script'  # include Script.rb
+require '../../../testbox/Script'  # include Script.rb
+
+# Every task below finds its implementations via Script.find_implementations
+#  (a thin Dir.glob wrapper), not a bare Dir.glob("#{task}?.*") - this
+#  language directory's actual lesson files might live right here, in a
+#  scripts/ subdirectory, or in a src/ subdirectory, depending on which
+#  convention it uses (see Script.rb's @@source_subdir).
 
 task :default do
   Rake::Task["header"].invoke
@@ -16,6 +22,8 @@ task :default do
   Rake::Task["parameters"].invoke
   Rake::Task["exit"].invoke
   Rake::Task["function"].invoke
+  Rake::Task["flags"].invoke
+  Rake::Task["environment"].invoke
   Script.print_summary
 end
 
@@ -44,7 +52,7 @@ end
 desc 'Standard Ouput'
 task :a0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -52,7 +60,7 @@ end
 desc 'Standard Error'
 task :a1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -60,7 +68,7 @@ end
 desc 'Output Here-String (or Multiline String)'
 task :a2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -78,7 +86,7 @@ end
 desc 'String Concatenation'
 task :b0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -86,7 +94,7 @@ end
 desc 'String Concatenation'
 task :b1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -94,7 +102,7 @@ end
 desc 'String Formatting'
 task :b2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -102,7 +110,7 @@ end
 desc 'Here-String (Multiline String)'
 task :b3 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -120,7 +128,7 @@ end
 desc 'Multiplication'
 task :c0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -128,7 +136,7 @@ end
 desc 'Boolean Logic'
 task :c1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -136,7 +144,7 @@ end
 desc 'Exponential'
 task :c2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -144,7 +152,7 @@ end
 desc 'Math Function (Triganometry)'
 task :c3 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -160,7 +168,7 @@ end
 desc 'Line Input'
 task :d0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -168,7 +176,7 @@ end
 desc 'Character Input'
 task :d1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -189,7 +197,7 @@ end
 desc 'String Evaluation (Yes/No)'
 task :e0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -197,7 +205,7 @@ end
 desc 'Ternary (or single-line)'
 task :e1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -205,7 +213,7 @@ end
 desc 'Number Range'
 task :e2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -213,7 +221,7 @@ end
 desc 'Number Match'
 task :e3 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -221,7 +229,7 @@ end
 desc 'Multiway with Number'
 task :e4 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -229,7 +237,7 @@ end
 desc 'Multiway with String Pattern'
 task :e5 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -237,7 +245,7 @@ end
 desc 'String Pattern'
 task :e6 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -256,7 +264,7 @@ end
 desc 'Collection Loop'
 task :f0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -264,7 +272,7 @@ end
 desc 'Count Loop'
 task :f1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -272,7 +280,7 @@ end
 desc 'Conditional Loop'
 task :f2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -280,7 +288,7 @@ end
 desc 'Spin Loop'
 task :f3 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -288,7 +296,7 @@ end
 desc 'Skipping a Loop Iteration'
 task :f4 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -305,7 +313,7 @@ end
 desc 'Array Index Assignment and Length'
 task :g0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -313,7 +321,7 @@ end
 desc 'Array List Assignment and Enumeration by Item'
 task :g1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -321,7 +329,7 @@ end
 desc 'Array List Assignment and Enumeration by Item'
 task :g2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -337,7 +345,7 @@ end
 desc 'Association Array Assignment by Key'
 task :h0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -346,7 +354,7 @@ end
 desc 'Association Array Assignment by List and Appending'
 task :h1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -363,7 +371,7 @@ end
 desc 'Creating and Calling'
 task :i0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -371,7 +379,7 @@ end
 desc 'Global Variables'
 task :i1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -379,7 +387,7 @@ end
 desc 'Local Variables'
 task :i2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -396,7 +404,7 @@ end
 desc 'Usage Statement, Script Name, Argument Count'
 task :j0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -404,7 +412,7 @@ end
 desc 'Enumerate Arguments in Order'
 task :j1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -412,7 +420,7 @@ end
 desc 'Enumerate Arguments in Reverse Order'
 task :j2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -428,7 +436,7 @@ end
 desc 'Passing a Single Parameter'
 task :k0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -436,7 +444,7 @@ end
 desc 'Passing Variable Number of Parameters'
 task :k1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -453,7 +461,7 @@ end
 desc 'Reporting Status Code'
 task :l0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -470,7 +478,7 @@ end
 desc 'Returning a Number'
 task :m0 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -478,7 +486,7 @@ end
 desc 'Returning a String'
 task :m1 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end
@@ -486,7 +494,71 @@ end
 desc 'Returning an Array'
 task :m2 do |t|
   Rake::Task["header"].invoke
-  list   = Dir.glob("#{t.to_s}?.*")
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Command-Line Flags'
+task :flags do
+  Rake::Task["header"].invoke
+  Rake::Task["o0"].invoke
+  Rake::Task["o1"].invoke
+  Rake::Task["o2"].invoke
+end
+
+desc 'Single Command-Line Flag'
+task :o0 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Multiple Command-Line Flags'
+task :o1 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Long-Form and Short-Form Flags with Values'
+task :o2 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Environment Variables'
+task :environment do
+  Rake::Task["header"].invoke
+  Rake::Task["n0"].invoke
+  Rake::Task["n1"].invoke
+  Rake::Task["n2"].invoke
+end
+
+desc 'Enumerating Variables'
+task :n0 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Enumerating Paths'
+task :n1 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
+  result = Script.execute(t.to_s, list)
+  Script.report(result)
+end
+
+desc 'Setting Environment Variables'
+task :n2 do |t|
+  Rake::Task["header"].invoke
+  list   = Script.find_implementations(t.to_s)
   result = Script.execute(t.to_s, list)
   Script.report(result)
 end

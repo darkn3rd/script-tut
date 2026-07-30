@@ -1,0 +1,57 @@
+# PowerShell/cmd.exe-native counterpart to ./Makefile, for running `make`
+# directly from a plain Windows PowerShell or Command Prompt session with
+# no MSYS2/Git-bash (and so no grep/sed/printf/rm/cp) on PATH at all -
+# use it explicitly with `make -f Makefile.win`. The default ./Makefile
+# stays untouched and POSIX-only (MSYS2/Git-bash/real POSIX) - see its
+# own header for why (short version: `grep`/`sed`/`printf` aren't real
+# executables outside a POSIX-ish shell, confirmed directly). This file
+# reimplements the same lesson-launcher generation using only cmd.exe
+# builtins and PowerShell (both always present on Windows), so it never
+# needs those tools.
+#
+# SHELL is pinned to cmd.exe for every target in this file (safe here,
+# unlike ./Makefile: this whole file is Windows-only, so there's no
+# POSIX-syntax recipe elsewhere in it that pinning SHELL could break).
+
+SHELL := cmd.exe
+
+WRAPEXT := .bat
+
+SRC := $(wildcard src/*.java)
+BIN := $(addprefix bin/,$(notdir $(SRC:.java=$(WRAPEXT))))
+
+.PHONY: all clean
+all: $(BIN)
+
+bin:
+	-mkdir bin
+
+target:
+	-mkdir target
+
+# javac's own output naming is tied to the *class name* declared inside
+#  the file (see ../README.md) - the PowerShell one-liner below finds it
+#  with the same regex ./Makefile's `grep` used, then writes the launcher
+#  batch file directly. Two things confirmed necessary by direct testing,
+#  not assumed: (1) every literal "%" meant to end up in the *generated*
+#  .bat file is doubled ("%%") - GNU Make on Windows runs a recipe line
+#  by writing it to a temp .bat file and executing that, so an
+#  undoubled "%~0"/"%*" gets expanded as a real batch parameter of that
+#  *temp* file before PowerShell ever sees the string, corrupting it;
+#  (2) the double quotes around %~0/%~dp0 are built via [char]34, not
+#  written as literal '"' characters - cmd.exe's own quote-parsing of
+#  the whole -Command argument doesn't understand "nesting" and silently
+#  drops literal embedded quotes it wasn't expecting.
+bin/%$(WRAPEXT): src/%.java | bin target
+	javac -d target $<
+	powershell -NoProfile -Command "$$q = [char]34; $$m = [regex]::Match((Get-Content '$<' -Raw), '(?:^|[^A-Za-z0-9_])class\s+([A-Za-z_]\w*)'); $$c = $$m.Groups[1].Value; $$nl = [char]13 + [char]10; $$lines = '@echo off', ('java -Dinvoked.as=' + $$q + '%%~0' + $$q + ' -cp ' + $$q + '%%~dp0..\target' + $$q + ' ' + $$c + ' %%*'); Set-Content -NoNewline -Path '$@' -Value ($$lines -join $$nl)"
+
+# del/rmdir/type are cmd.exe builtins - no separate shell-detection
+#  branching needed here (unlike an earlier, abandoned attempt at fixing
+#  this same problem in ./Makefile itself) since SHELL is unconditionally
+#  cmd.exe for this whole file.
+clean:
+	-del /Q /F $(subst /,\,$(BIN)) >NUL 2>&1
+	-rmdir /S /Q target >NUL 2>&1
+	-mkdir target
+	-type nul >target\.gitkeep
