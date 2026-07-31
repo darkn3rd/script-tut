@@ -2,6 +2,16 @@
 
 ## macOS
 
+### Gatekeeper
+
+Gatekeeper on macOS is a built-in security feature that ensures only trusted software, signed and notarized by Apple or verified developers, runs on your Mac.  This can prevent open source software that you download from the Internet from running.
+
+```bash
+# disable GateKeeper (security risk)
+sudo spctl --master-disable
+# remove quaranteen attribute
+xattr -d com.apple.quarantine /path/to/app 
+```
 
 ### Install 
 
@@ -57,3 +67,12 @@ winserver -k
 ```bash
 ls "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine/x86_64-windows/" | grep '\.exe$' | column
 ```
+
+## Fruther Reading
+
+* [macOS Gatekeeper / Quarantine / XProtect](https://hacktricks.wiki/en/macos-hardening/macos-security-and-privilege-escalation/macos-security-protections/macos-gatekeeper.html)
+* [Gatekeeper and runtime protection in macOS](https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web)
+* [Removing support for --no-quarantine for casks](https://github.com/Homebrew/brew/issues/20755)
+* [wine-stable (deprecated)](https://formulae.brew.sh/cask/wine-stable)
+* [Wine Wiki: MacOS](https://gitlab.winehq.org/wine/wine/-/wikis/MacOS)
+* [How to get a certificate, the process of code-signing & notarization of macOS binaries for distribution outside of the Apple App Store.](https://dennisbabkin.com/blog/?t=how-to-get-certificate-code-sign-notarize-macos-binaries-outside-apple-app-store#run_unsigned)
