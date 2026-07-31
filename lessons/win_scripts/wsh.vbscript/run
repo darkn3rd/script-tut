@@ -1,2 +1,4 @@
 #!/bin/sh
-cscript //Nologo "$@" 
+COMMAND="cscript"
+[ $(uname -s) = "Darwin" ] && COMMAND="wine $COMMAND"
+$COMMAND //Nologo "scripts/$@" 

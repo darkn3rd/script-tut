@@ -1,5 +1,7 @@
 #!/bin/sh
-# Runs a BATCH lesson (.cmd) via a real cmd.exe from git-bash/MSYS2/Cygwin.
+# Runs a BATCH lesson (.cmd) via cmd.exe - Wine's (macOS/Linux) or the
+#  real one (Windows, native or via git-bash/MSYS2/Cygwin).
+#
 # bash can't exec a .cmd file directly (it's not a PE binary or a script
 #  with a shebang it understands), so this shells out explicitly instead.
 #
@@ -8,18 +10,43 @@
 #  cmd.exe into an interactive session instead of running the command
 #  (confirmed directly) - doubling the slash is the same escape hatch
 #  already used for cscript //Nologo in ../wsh.jscript/run and
-#  ../wsh.vbscript/run.
+#  ../wsh.vbscript/run. Confirmed the same //c also works unchanged
+#  under Wine's cmd.exe.
 #
-# Always resolved to an absolute path via cygpath -w (not a bare/relative
-#  filename) - Windows' NoDefaultCurrentDirectoryInExePath security
-#  setting refuses to resolve a bare filename as *the program to run*
-#  from the current directory (confirmed directly: "a00.output.cmd" by
-#  itself fails, ".\a00.output.cmd" works) - cygpath -w only converts
-#  something that already looks like a path, so a bare filename is made
-#  absolute first.
+# Resolved to an absolute path only when Windows' NoDefaultCurrentDirectoryInExePath
+#  is actually set - it strips the current directory from the search
+#  path cmd.exe uses to resolve a bare filename (confirmed directly:
+#  "a00.output.cmd" by itself fails there, ".\a00.output.cmd" works).
+#  It's opt-in hardening, off by default, so this only matters on
+#  machines where it's been turned on. Wine never enforces it (confirmed),
+#  so this whole check is skipped on the Wine side.
+#
+# cygpath -w only converts something that already looks like a path.
+#  NOT narrowed to Cygwin-only - that would assume MSYS2's automatic
+#  argument conversion makes this redundant there, which is untested
+#  (no Windows/MSYS2/Cygwin box available to check it against). Kept
+#  exactly as the original, already-proven script applied it:
+#  unconditionally, for every non-Wine case, since only that combination
+#  is actually verified.
+# Lesson files live under ./scripts/ - prepend that for a bare filename,
+#  same convention as ../wsh.jscript/run and ../wsh.vbscript/run. Skipped
+#  if the caller already passed an absolute path.
 script="$1"; shift
 case "$script" in
   /*) ;;
-  *) script="$(pwd)/$script" ;;
+  *) script="scripts/$script" ;;
 esac
-cmd //c "$(cygpath -w "$script")" "$@"
+
+if [ "$(uname -s)" = "Darwin" ]; then
+  wine cmd //c "$script" "$@"
+else
+  case "$script" in
+    /*) ;;
+    *)
+      if [ -n "${NoDefaultCurrentDirectoryInExePath+x}" ]; then
+        script="$(pwd)/$script"
+      fi
+      ;;
+  esac
+  cmd //c "$(cygpath -w "$script")" "$@"
+fi
