@@ -75,6 +75,8 @@ macos:
         packages:
           - cask: wine-stable
             script: macos_wine_fix
+          - brew: wintricks
+            script: macos_winetricks_wsh57
         powershell:
           packages:
             - brew: powershell
@@ -138,6 +140,18 @@ scripts:
     cmd: |
       echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.bashrc
       echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+  macos_winetricks_wsh57:
+    type: bash
+    cmd: |
+      winetricks wsh57
+
+      WINE_APP_STUBS="/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine/x86_64-windows"
+      SYS32="$HOME/.wine/drive_c/windows/system32"
+      SYSWOW64="$HOME/.wine/drive_c/windows/syswow64"
+
+      cp "${SYSWOW64}/cscript.exe" "${SYS32}/cscript.exe"
+      cp "${SYSWOW64}/wscript.exe" "${SYS32}/wscript.exe"
+
 
     
 

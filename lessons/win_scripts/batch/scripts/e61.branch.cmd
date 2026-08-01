@@ -1,4 +1,5 @@
 @echo off
+REM testbox: title="findstr regex classification"
 REM get input
 set /p keypress=Input a character:
 
