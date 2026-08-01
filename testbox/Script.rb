@@ -1082,6 +1082,15 @@ class ScriptBase
     end # overall pass condition
   end
 
+  # run_pre_actions!() - hook for a subclass that needs to do some one-time
+  #  setup action, with its own visible "Running Actions..." banner,
+  #  before any lesson test runs (see WineShellScript's override) - called
+  #  from testbox.rake's :header task, right after the Environment/
+  #  Language Target/Language Version lines. A no-op here since most
+  #  environments need no such setup.
+  def self.run_pre_actions!
+  end
+
   # ensure_compiled!() - for a compiled language (see @@compiled_languages),
   #  runs `make` in the lesson directory once per test session, before any
   #  test tries to invoke a build artifact that doesn't exist yet. `make`
@@ -1112,7 +1121,7 @@ class ScriptBase
     #  second invocation with nothing changed just streams a fast
     #  "Nothing to be done" instead of silently doing nothing as before.
     puts "Compiling #{language_name} lessons (one-time build)..."
-    puts "==============================================================="
+    puts "-" * 63
     success = stream_shell_out("make 2>&1")
     puts "==============================================================="
 
@@ -1443,6 +1452,36 @@ class WineShellScript < PosixShellScript
     exit 1
   end
 
+  # run_pre_actions!() - launches wineserver in persistent mode (-p),
+  #  which keeps explorer.exe/services.exe warm across every test in this
+  #  run instead of re-booting the whole wine prefix on each individual
+  #  test's invocation - confirmed directly (see
+  #  lessons/win_scripts/WINE_EXPERIMENTS.md) this is the difference
+  #  between a ~5s and a ~1.6s wine invocation. Backgrounded (trailing &)
+  #  since wineserver -p doesn't return on its own; killed unconditionally
+  #  at exit so it doesn't linger as an orphaned process once this rake
+  #  run - pass or fail - is done. Printed with its own visible banner,
+  #  matching ensure_compiled!'s style, from testbox.rake's :header task
+  #  so it appears after the Environment/Language Target/Language Version
+  #  lines. Guarded so it only actually runs once per `rake` invocation,
+  #  no matter how many category tasks each re-invoke :header (Rake
+  #  itself already dedupes task bodies, but this class variable makes
+  #  that explicit rather than relying on it).
+  @@wine_ready = false
+  def self.run_pre_actions!
+    return if @@wine_ready
+
+    puts "Running Actions before running lessons..."
+    puts "-" * 63
+    cmd = "wineserver -p &"
+    puts "Launching WineServer: #{cmd}"
+    `#{cmd}`
+    at_exit { `wineserver -k` }
+    puts "=" * 63
+
+    @@wine_ready = true
+  end
+
   # find_executable(cmd) - cmd/cscript are never on the real macOS PATH
   #  (see ensure_wine_available!'s comment above); what actually needs to
   #  resolve here is wine itself.
@@ -1753,17 +1792,11 @@ else
 end
 
 if Script == WineShellScript
+  # Checked here, at require time, rather than inside run_pre_actions! -
+  #  this must fail immediately if wine/wineserver are missing, before
+  #  testbox.rake's :header task even tries to print Language Version
+  #  (which itself shells out to wine to probe it).
   Script.ensure_wine_available!
-  # -p (persistent): keeps explorer.exe/services.exe warm across every
-  #  test in this run instead of re-booting the whole wine prefix on each
-  #  individual test's invocation - confirmed directly (see
-  #  lessons/win_scripts/WINE_EXPERIMENTS.md) this is the difference
-  #  between a ~5s and a ~1.6s wine invocation. Backgrounded (trailing &)
-  #  since wineserver -p doesn't return on its own; killed unconditionally
-  #  at exit so it doesn't linger as an orphaned process once this rake
-  #  run - pass or fail - is done.
-  `wineserver -p &`
-  at_exit { `wineserver -k` }
 end
 
 # Make `rake` (or any script requiring this file) actually fail on a

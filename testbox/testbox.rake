@@ -32,6 +32,7 @@ task :header do
   puts "Language Target:  #{Script.language_name} (#{Script.path})"
   puts "Language Version: #{Script.version}"
   puts "==============================================================="
+  Script.run_pre_actions!
 end
 
 # For Future
