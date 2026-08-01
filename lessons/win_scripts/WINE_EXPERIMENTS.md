@@ -1,4 +1,4 @@
-# Experiments in WINE
+# Experiments in WINE (WINE Is Not an Emulator)
 
 ## macOS
 
@@ -25,7 +25,7 @@ ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine" /usr/loca
 
 ### Wine Server
 
-If you run a Wine Server in the background, this will speed up executing any scripts. Without the server, running a small batch file will require bringing the whole emulator stack every time a script is launched. 
+If you run a Wine Server in the background, this will speed up executing any scripts. Without the server, running a small batch file will require bringing the whole tranlation stack every time a script is launched. 
 
 ```bash
 # Run Server

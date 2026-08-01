@@ -1,0 +1,143 @@
+macos:
+  global:
+    packages:
+      - script: macos_xcode_cli_tools
+      - script: macos_homebrew
+    lessions:
+      gen_scripts:
+        awk:
+          packages:
+            - brew: gawk
+        groovy:
+          packages:
+            - brew: groovy
+              needs: java
+        perl:
+          packages:
+            - system: perl
+              meets: perl
+            - brew: perl
+              meets: perl
+              script: cpan_local_setup
+            - cpan: App::cpanminus
+            - cpanm: Switch
+        php:
+          packages:
+            - brew: php
+        python3:
+          packages:
+            - brew: python3
+        ruby:
+          packages:
+            - brew: ruby
+        tcl:
+          packages:
+            - brew: tcl-tk
+      shell_scripts:
+        packages: 
+            - brew: bc
+            - brew: getopt
+        bash:
+            packages: 
+              - brew: bash
+                script: macos_setup_homebrew_bash
+        csh:
+            packages: 
+              - brew: tcsh
+        ksh:
+            packages: 
+              - brew: ksh
+        posix:
+            packages:
+              - brew: dash-shell
+                needs: perl
+        zsh:
+            packages:
+            - brew: zsh
+              script: macos_setup_homebrew_zsh
+      compiled_lang:
+        cs:
+          packages:
+            - cask: dotnet-sdk
+        go:
+          packages:
+            - brew: go
+        java:
+          packages:
+            - tap: homebrew/cask-versions
+            - cask: corretto@17
+              meets: java
+              script: macos_java_17_home
+        rust:
+          packages:
+            - brew: rust
+      win_scripts:
+        packages:
+          - cask: wine-stable
+            script: macos_wine_fix
+        powershell:
+          packages:
+            - brew: powershell
+    cibox:
+      packages: 
+        - brew: act
+        - brew: colima
+        - brew: docker
+    testbox:
+      packages:
+        - brew: powershell
+        - brew: ruby
+scripts:
+  macos_homebrew:
+    type: bash
+    cmd: |
+      script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+      /bin/bash -c "$(curl -fsSL "$script_url")"
+
+      if ! command -v brew >/dev/null 2>&1; then
+        echo "macos_homebrew: brew not found on PATH after install - stopping" >&2
+        exit 1
+      fi
+
+      echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.bashrc
+      echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.zshrc
+  cpan_local_setup:
+    type: bash
+    cmd: |
+      PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+  macos_wine_fix:
+    type: bash
+    cmd: |
+      ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/share/wine" /usr/local/share/wine
+      ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine" /usr/local/lib/wine
+      echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.bashrc
+      echo 'export WINEDEBUG=-all' >> ~/.bashrc
+      echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.zshrc
+      echo 'export WINEDEBUG=-all' >> ~/.zshrc
+  macos_setup_homebrew_bash:
+    type: bash
+    cmd: echo "$(brew --prefix)/bin/bash" | sudo tee -a /etc/shells
+  macos_setup_homebrew_zsh:
+    type: bash
+    cmd: echo "$(brew --prefix)/bin/zsh" | sudo tee -a /etc/shells
+  macos_xcode_cli_tools:
+    type: bash
+    cmd: |
+      touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+      label=$(softwareupdate -l 2>&1 \
+        | grep -B1 -E 'Command Line Tools' \
+        | awk -F'\* Label: ' '{print $2}' \
+        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+        | head -1)
+      sudo softwareupdate -i "$label" --agree-to-license --verbose
+      rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+  macos_java_17_home:
+    type: bash
+    cmd: |
+      echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.bashrc
+      echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+
+    
+
