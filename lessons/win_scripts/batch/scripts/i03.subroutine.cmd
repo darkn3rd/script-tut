@@ -13,10 +13,11 @@ GOTO :EOF
 :: Windows' nor Wine's builtin `date` command supports `+FORMAT` (Wine's
 :: prints "Not Yet Implemented", confirmed directly).
 ::
-:: Called by its full path with the .exe extension rather than the bare
-:: name "date" - both real Windows' cmd.exe and Wine's builtin `date`
-:: command claim that bare name first; an explicit path+extension always
-:: bypasses builtin lookup and executes the real file instead, on either.
+:: Called as "date.exe", not bare "date" - both real Windows' cmd.exe and
+:: Wine's builtin `date` command claim that bare name first; adding the
+:: .exe extension always bypasses builtin lookup and searches PATH for
+:: the real file instead, on either. No path prefix needed beyond that -
+:: Microsoft's coreutils installer adds its own bin/ directory to PATH.
 ::
 :: The format string uses "_" instead of spaces/commas-with-a-space, and
 :: FOR /F's own single-quoted command capture doesn't correctly handle a
@@ -27,7 +28,7 @@ GOTO :EOF
 :: "_" are swapped back to spaces afterward with plain variable
 :: substitution.
 :SHOWDATE
-  FOR /F "delims=" %%a IN ('"C:\Program Files\coreutils\bin\date.exe" +%%B_%%d,_%%Y') DO SET RAW=%%a
+  FOR /F "delims=" %%a IN ('date.exe +%%B_%%d,_%%Y') DO SET RAW=%%a
   SET TODAY=%RAW:_= %
   ECHO Today is %TODAY%.
 GOTO :EOF

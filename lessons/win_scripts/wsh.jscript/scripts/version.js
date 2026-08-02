@@ -1,1 +1,6 @@
-WScript.Echo(ScriptEngine() + " Version " + ScriptEngineMajorVersion() + "." + ScriptEngineMinorVersion() + "." + ScriptEngineBuildVersion());
+var engine = ScriptEngine();
+var major  = ScriptEngineMajorVersion();
+var minor  = ScriptEngineMinorVersion();
+var build  = ScriptEngineBuildVersion();
+
+WScript.Echo(engine + " Version " + major + "." + minor + "." + build);
