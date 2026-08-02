@@ -215,6 +215,28 @@ Here are some examplpes of using these installs:
   apt-cyg install git
   ```
 
+## Enabling chmod
+
+If you would like `chmod` to work, you need to enabled ACLs when mounting root file system. If you installed either MSYS2 or Cygwin using Chocolatey, you can enabled ACLs with the following. 
+
+* For [MSYS2](https://www.msys2.org/), you can run this
+  ```bash
+  cat <<'EOF' >> /etc/fstab
+
+  # Override the default root mount to enable ACL-based permissions,
+  # so chmod/chown actually take effect instead of being a no-op.
+  C:/tools/msys64 / ntfs binary,acl,auto 0 0
+  EOF
+  ```
+* For **[Cygwin](https://www.cygwin.com/)**, you can run this. 
+  ```bash
+  cat <<'EOF' >> /etc/fstab
+
+  # Override the default root mount to enable ACL-based permissions
+  C:/tools/cygwin / ntfs binary,acl,auto 0 0
+  EOF
+  ```
+
 ## Launching from within PowerShell
 
 As MinTTY (`mintty.exe`) will crash if gsudo is launched, you can launch MSYS2 or Cygwin directly from Windows Terminal (`wt.exe`):

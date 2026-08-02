@@ -191,6 +191,20 @@ expected environmental noise rather than chased further; a
 retry-once-on-suspicious-empty-output policy for real test invocations was
 considered but not implemented.
 
+## Ubuntu 26.04 Resolute Raccoo
+
+### Install
+
+```bash
+wget -O - https://dl.winehq.org/wine-builds/winehq.key \
+ | sudo gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key -
+sudo wget -NP /etc/apt/sources.list.d/ \
+  https://dl.winehq.org/wine-builds/ubuntu/dists/resolute/winehq-resolute.sources
+sudo apt update
+
+sudo apt install --install-recommends winehq-stable
+```
+
 ## Further Reading
 
 * [macOS Gatekeeper / Quarantine / XProtect](https://hacktricks.wiki/en/macos-hardening/macos-security-and-privilege-escalation/macos-security-protections/macos-gatekeeper.html)
@@ -201,6 +215,7 @@ considered but not implemented.
 * [How to get a certificate, the process of code-signing & notarization of macOS binaries for distribution outside of the Apple App Store.](https://dennisbabkin.com/blog/?t=how-to-get-certificate-code-sign-notarize-macos-binaries-outside-apple-app-store#run_unsigned)
 * https://github.com/winetricks/winetricks
 * https://github.com/microsoft/coreutils
+* https://gitlab.winehq.org/wine/wine/-/wikis/Debian-Ubuntu
 
 Deprecated or not used
 
