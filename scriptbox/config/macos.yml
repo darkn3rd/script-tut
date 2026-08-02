@@ -77,6 +77,7 @@ macos:
             script: macos_wine_fix
           - brew: wintricks
             script: macos_winetricks_wsh57
+          - script: wine_coreutils
         powershell:
           packages:
             - brew: powershell
@@ -151,6 +152,28 @@ scripts:
 
       cp "${SYSWOW64}/cscript.exe" "${SYS32}/cscript.exe"
       cp "${SYSWOW64}/wscript.exe" "${SYS32}/wscript.exe"
+  wine_coreutils:
+    type: bash
+    cmd: |
+        pushd $HOME/Downloads
+
+        # Download coreutils
+        curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
+        
+        # Verify checksum
+        ACTUAL_SHA=$(shasum -a 256 coreutils-2026.6.16-x64.exe | cut -f1 -d' ')
+        EXPECTED_SHA="f862b1aa433310420ae20f9b1384f3f974a26ba98ae37ac548061116a3ef6c62"
+        
+        if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+          echo "ERROR: CHECKSUM MISMATCH - DO NOT USE THIS FILE" >&2
+          exit 1
+        fi
+        echo "CHECKSUM OK"
+        
+        # install coreutils 
+        wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+        
+        popd
 
 
     

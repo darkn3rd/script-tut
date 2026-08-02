@@ -15,28 +15,21 @@ Microsoft provides Coreutils, a UNIX-style reimplementation of core utilities us
 ```bash
 install_core_utils() {
   pushd ~/Downloads
-curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
+  
+  # download 
+  curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
+
+  # checksum
   ACTUAL_SHA=$(shasum -a 256 coreutils-2026.6.16-x64.exe | cut -f1 -d' ')
   EXPECTED_SHA="f862b1aa433310420ae20f9b1384f3f974a26ba98ae37ac548061116a3ef6c62"
-
   if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
     echo "ERROR: CHECKSUM MISMATCH - DO NOT USE THIS FILE" >&2
     return 1
   fi
-
   echo "CHECKSUM OK"
 
+  # install
   wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
-
-  if [ -z "$(find ~/.wine/drive_c -iname "date.exe" 2>/dev/null)" ]; then
-    echo "ERROR: 'date.exe' was not installed" >&2
-    return 1
-  fi
-
-  if [ -z "$(find ~/.wine/drive_c -iname "grep.exe" 2>/dev/null)" ]; then
-    echo "ERROR: 'grep.exe' was not installed" >&2
-    return 1
-  fi
 
   popd
 }
@@ -129,17 +122,17 @@ All failures are fixed under native WSH 5.7 (41/41 pass, no crashes).
 ### Failed in both JScript and VBScript
 (all with empty actual output — the script produced nothing)
 
-| ID | Test | Notes |
-|---|---|---|
-| A1 | Standard Error | `WScript.StdErr` output not captured |
-| A2 | Here Document / Multiline Output | |
-| D0 | Reading a Line | needs `WScript.StdIn.ReadLine` |
-| E0–E6 | all branch/pattern-matching tests | all prompt via stdin first |
-| F0 | Collection Loop | |
+| ID | Test                           | Notes |
+|----|--------------------------------|-------|
+| A1 | Standard Error                 | `WScript.StdErr` output not captured |
+| A2 | Here Document<br>Multiline Output | |
+| D0 | Reading a Line                 | needs `WScript.StdIn.ReadLine` |
+| E0–E6 | all branch<br>pattern-matching tests | all prompt via stdin first |
+| F0 | Collection Loop                | |
 | F2–F4 | Conditional/Spin/Skip loops | all stdin-driven |
-| J0 | Usage Statement | fails only when arg count is wrong (tests 1–2); test 3 (correct args) passes |
-| O0 | Command-Line Flags | short-form flags (tests 1–3) fail empty; long-form (tests 4–10) pass |
-| N2 | Setting Environment Variables | env var never actually gets set |
+| J0 | Usage Statement                | fails only when arg count is wrong (tests 1–2); test 3 (correct args) passes |
+| O0 | Command-Line Flags             | short-form flags (tests 1–3) fail empty; long-form (tests 4–10) pass |
+| N2 | Setting Environment Variables  | env var never actually gets set |
 
 ### JScript-only failures
 - **H0** – Assign by Key (VBScript's `H0` passed)
@@ -207,7 +200,10 @@ considered but not implemented.
 * [Wine Wiki: MacOS](https://gitlab.winehq.org/wine/wine/-/wikis/MacOS)
 * [How to get a certificate, the process of code-signing & notarization of macOS binaries for distribution outside of the Apple App Store.](https://dennisbabkin.com/blog/?t=how-to-get-certificate-code-sign-notarize-macos-binaries-outside-apple-app-store#run_unsigned)
 * https://github.com/winetricks/winetricks
-* https://github.com/mbuilov/grep-windows
 * https://github.com/microsoft/coreutils
-* https://github.com/uutils/grep
+
+Deprecated or not used
+
 * https://github.com/Whisky-App/Whisky
+* https://github.com/mbuilov/grep-windows
+* https://github.com/uutils/grep
