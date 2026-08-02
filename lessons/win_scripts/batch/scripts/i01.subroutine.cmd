@@ -1,4 +1,5 @@
 @ECHO off
+:: testbox: title="fixed-position date parsing (US locale only)"
 :: Call the function
 CALL :SHOWDATE
 GOTO :EOF

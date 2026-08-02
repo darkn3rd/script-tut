@@ -280,6 +280,15 @@ class ScriptBase
   require 'set'
   @@verified_commands = Set.new
 
+  # Without this, stdout is fully block-buffered whenever it isn't a live
+  #  TTY (e.g. captured to a file/pipe, as CI and any backgrounded local
+  #  run both do) - every report()/print_summary line would sit invisible
+  #  in Ruby's internal buffer until the whole run exits, making a
+  #  genuinely slow-but-working run indistinguishable from a truly hung
+  #  one from the outside (confirmed directly while debugging a Wine run
+  #  that looked stuck but may only have been unflushed).
+  $stdout.sync = true
+
   # Process JSON files and configure @@dataset
   require 'json'
   require 'date'
@@ -297,6 +306,14 @@ class ScriptBase
 
   def self.language_name
     @@language_name[@@language.to_sym]
+  end
+
+  # language() - the raw file-extension-derived language key (e.g. "cmd",
+  #  "js") - used outside any class body, by the platform-selection logic
+  #  at the bottom of this file, to decide whether the current lesson
+  #  directory actually needs Wine.
+  def self.language
+    @@language
   end
 
   def self.data(reference)
@@ -427,6 +444,46 @@ class ScriptBase
     `#{cmd_str}`
   end
 
+  # shell_out_with_timeout(cmd_str, timeout_seconds:) - like shell_out,
+  #  but gives up and returns "" if cmd_str hasn't finished within
+  #  timeout_seconds, using the same watchdog-thread + kill_process_tree +
+  #  forced pipe-close technique as interactive_shell_out/env_shell_out
+  #  (see kill_process_tree's own comment for why both are needed). Used
+  #  for auxiliary probes (e.g. WineShellScript#special_version) where an
+  #  external command is confirmed intermittently flaky (a bare
+  #  "wine cmd /c ver" - no target file - hangs unpredictably under Wine
+  #  on macOS, confirmed directly: sometimes instant, sometimes hangs,
+  #  with no reliable fix found on the calling side) - unlike a real
+  #  test's shell_out, silently losing this result is an acceptable
+  #  fallback rather than blocking the whole run over a "nice to have".
+  def self.shell_out_with_timeout(cmd_str, timeout_seconds: 10)
+    require 'open3'
+    popen_opts = native_unix? ? { pgroup: true } : {}
+    output = String.new
+
+    Open3.popen3(cmd_str, **popen_opts) do |stdin, stdout, _stderr, wait_thr|
+      stdin.close rescue nil
+      watchdog = Thread.new do
+        sleep timeout_seconds
+        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        stdout.close unless stdout.closed?
+      rescue StandardError
+      end
+
+      begin
+        loop { output << stdout.readpartial(4096) }
+      rescue EOFError, IOError, SystemCallError
+      ensure
+        watchdog.kill
+        watchdog.join
+      end
+    end
+
+    output
+  rescue StandardError
+    ""
+  end
+
   # stream_shell_out(cmd_str) - like shell_out, but prints cmd_str's
   #  combined output line-by-line as it's produced instead of capturing it
   #  silently until the process exits. Used only for the one-time `make`
@@ -455,6 +512,26 @@ class ScriptBase
     !!test["interactive"] && @@interactive_required_languages.include?(@@language.to_sym)
   end
 
+  # kill_process_tree(pid) - force-kills pid and every process descended
+  #  from it, used by the interactive_shell_out/env_shell_out watchdogs
+  #  below. On native Windows Ruby, wait_thr.pid is only ever the outer
+  #  cmd.exe wrapper Kernel#`/Open3 spawns, not the real interpreter
+  #  running underneath it - taskkill's /T flag reaches the whole tree
+  #  rooted there. On POSIX (including Wine on macOS), the equivalent is
+  #  killing the whole process *group* instead - which only works because
+  #  each caller passes pgroup: true to Open3.popen3, putting the spawned
+  #  process in a new group of its own (pgid == its own pid), so a
+  #  negative pid here reaches every descendant the same way /T does.
+  def self.kill_process_tree(pid)
+    if native_unix?
+      Process.kill('KILL', -pid)
+    else
+      `taskkill /F /T /PID #{pid}`
+    end
+  rescue Errno::ESRCH
+    # already gone
+  end
+
   # interactive_shell_out(cmd_str, input_lines) - like shell_out, but for
   #  tests tagged "interactive": true. Windows buffers a pre-built pipe's
   #  entire input at once rather than delivering it incrementally, which
@@ -471,21 +548,34 @@ class ScriptBase
     output = String.new
     remaining = input_lines.dup
 
-    Open3.popen3(cmd_str) do |stdin, stdout, _stderr, wait_thr|
+    # pgroup: true (native_unix? only - see kill_process_tree) puts the
+    #  spawned process in a new process group of its own, so the whole
+    #  tree can be killed at once via that group - the POSIX equivalent
+    #  of taskkill's /T flag used on Windows. Omitted on Windows classes
+    #  since Ruby's :pgroup spawn option isn't the same real POSIX
+    #  concept there.
+    popen_opts = native_unix? ? { pgroup: true } : {}
+    Open3.popen3(cmd_str, **popen_opts) do |stdin, stdout, _stderr, wait_thr|
       # Ruby's Timeout can't reliably interrupt a thread blocked in a
       #  native Windows pipe read, so instead of racing the read itself,
-      #  an independent watchdog thread kills the process directly after
-      #  timeout_seconds. That breaks the pipe out from under the blocked
-      #  readpartial, which is what actually unblocks it. Plain
-      #  Process.kill(wait_thr.pid) isn't enough: on native Windows Ruby,
-      #  wait_thr.pid is the outer cmd.exe wrapper Kernel#`/Open3 always
-      #  spawns, not the real interpreter running underneath it - killing
-      #  that outer PID leaves the actual hung grandchild (e.g. perl.exe)
-      #  alive and still holding the pipe open. taskkill's /T flag kills
-      #  the whole process tree rooted at that PID instead.
+      #  an independent watchdog thread acts after timeout_seconds.
+      #  kill_process_tree(wait_thr.pid) alone isn't reliable under Wine:
+      #  confirmed directly - a stalled cmd.exe test can exit (wait_thr
+      #  goes not-alive, becoming a <defunct> zombie) while orphaned
+      #  winedevice.exe grandchildren it forked stay alive and keep their
+      #  own inherited copy of the *same* stdout pipe's write end open, so
+      #  readpartial below never sees EOF even though there's nothing left
+      #  that will ever write to it again - and the kill is skipped
+      #  entirely since it's gated on wait_thr still being alive. Forcibly
+      #  closing our own read end is what actually guarantees the blocked
+      #  readpartial unblocks (with an IOError, caught below) regardless
+      #  of what any grandchild process is doing on the other end - the
+      #  process-tree kill is kept alongside it purely for cleanup (so an
+      #  orphaned winedevice.exe doesn't linger burning CPU after this).
       watchdog = Thread.new do
         sleep timeout_seconds
-        `taskkill /F /T /PID #{wait_thr.pid}` if wait_thr.alive?
+        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        stdout.close unless stdout.closed?
       rescue StandardError
       end
 
@@ -550,10 +640,21 @@ class ScriptBase
     require 'open3'
     actual_env = {}
 
-    Open3.popen3(cmd_str) do |stdin, stdout, _stderr, wait_thr|
+    # See interactive_shell_out's identical popen_opts/watchdog comments -
+    #  this "n2" test runs under every language (is_env_test isn't gated
+    #  to any one @@language the way needs_interactive? is), so a stalled
+    #  lesson here is reachable regardless of platform, not just :cmd.
+    popen_opts = native_unix? ? { pgroup: true } : {}
+    Open3.popen3(cmd_str, **popen_opts) do |stdin, stdout, _stderr, wait_thr|
+      # See interactive_shell_out's identical watchdog comment - closing
+      #  our own read end is what actually guarantees this unblocks, since
+      #  killing wait_thr's (possibly already-<defunct>) pid alone doesn't
+      #  reach a grandchild process (e.g. an orphaned winedevice.exe under
+      #  Wine) that inherited its own copy of this same pipe's write end.
       watchdog = Thread.new do
         sleep timeout_seconds
-        `taskkill /F /T /PID #{wait_thr.pid}` if wait_thr.alive?
+        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        stdout.close unless stdout.closed?
       rescue StandardError
       end
 
@@ -981,6 +1082,15 @@ class ScriptBase
     end # overall pass condition
   end
 
+  # run_pre_actions!() - hook for a subclass that needs to do some one-time
+  #  setup action, with its own visible "Running Actions..." banner,
+  #  before any lesson test runs (see WineShellScript's override) - called
+  #  from testbox.rake's :header task, right after the Environment/
+  #  Language Target/Language Version lines. A no-op here since most
+  #  environments need no such setup.
+  def self.run_pre_actions!
+  end
+
   # ensure_compiled!() - for a compiled language (see @@compiled_languages),
   #  runs `make` in the lesson directory once per test session, before any
   #  test tries to invoke a build artifact that doesn't exist yet. `make`
@@ -1011,7 +1121,7 @@ class ScriptBase
     #  second invocation with nothing changed just streams a fast
     #  "Nothing to be done" instead of silently doing nothing as before.
     puts "Compiling #{language_name} lessons (one-time build)..."
-    puts "==============================================================="
+    puts "-" * 63
     success = stream_shell_out("make 2>&1")
     puts "==============================================================="
 
@@ -1299,6 +1409,250 @@ class PosixShellScript < ScriptBase
 end
 
 # =============================================
+# WineShellScript - macOS running a :cmd/:js/:vbs lesson directory (batch,
+# WSH JScript/VBScript) through Wine, since there's no native cmd.exe/
+# cscript.exe on macOS. Kernel#` is still /bin/sh-backed exactly like
+# PosixShellScript - every other language directory on macOS keeps using
+# that class unchanged (see the selection logic below) - this only
+# overrides what's actually different for a wine-backed invocation.
+# =============================================
+class WineShellScript < PosixShellScript
+  # the resolved binary names (see @@command) that actually need routing
+  #  through wine, as opposed to @@language's raw extension-derived keys
+  WINE_TARGET_COMMANDS = %w[cmd cscript]
+
+  # debug_hang_log(msg) - opt-in diagnostic for tracking down an
+  #  intermittent hang seen under `rake <single-category>` (e.g. `rake
+  #  j0`) that hasn't reproduced under a plain direct `wine cmd` loop or
+  #  under the full `rake` run - silent unless WINE_DEBUG_HANG is set, so
+  #  normal runs/CI are unaffected. Timestamped so a START line with no
+  #  matching END pinpoints exactly which invocation froze, and how long
+  #  after wineserver launched it happened.
+  def self.debug_hang_log(msg)
+    return unless ENV['WINE_DEBUG_HANG']
+    STDERR.puts "[#{Time.now.strftime('%H:%M:%S.%L')}] (pid #{Process.pid}) #{msg}"
+  end
+
+  # shell_out(cmd_str) - overridden (rather than using ScriptBase's plain
+  #  Kernel#` version) for two reasons:
+  #
+  #  1. cmd.exe/cscript always emit Windows-style CRLF line endings,
+  #     confirmed directly (every plain out/err test failed with
+  #     visually-identical expected/actual strings differing only by a
+  #     trailing \r). A *native* Windows Ruby build's Kernel#` translates
+  #     CRLF to LF automatically as part of its own text-mode I/O (see
+  #     interactive_shell_out's identical normalization comment) - macOS
+  #     Ruby has no such OS-level translation to invoke wine through, so
+  #     it has to happen here instead, same as every other test
+  #     comparison in this harness expects.
+  #
+  #  2. A real test invocation can hang indefinitely - confirmed directly
+  #     (see run_pre_actions!'s comment) - not just the version probe
+  #     shell_out_with_timeout already protects. Routing through it here
+  #     too means a hung invocation times out and force-closes its pipe
+  #     instead of blocking Kernel#` forever. 25s, not the version probe's
+  #     8s: a real test invocation legitimately runs slower under load
+  #     (13s+ observed) than the version probe's bare no-file case ever
+  #     does, so it needs more headroom before being treated as hung.
+  def self.shell_out(cmd_str)
+    debug_hang_log("shell_out START: #{cmd_str}")
+    started = Time.now
+    result = shell_out_with_timeout(cmd_str, timeout_seconds: 25).gsub("\r\n", "\n")
+    elapsed = Time.now - started
+    debug_hang_log("shell_out END (#{elapsed.round(1)}s#{" - TIMED OUT" if elapsed >= 25})")
+    result
+  end
+
+  # ensure_wine_available!() - checked once, right when this class is
+  #  selected (see the require-time hook below), before any test tries to
+  #  invoke wine at all - same "fail once, clearly" reasoning as
+  #  ensure_compiled!/command(): without wine/wineserver on PATH, every
+  #  single test in this lesson directory would otherwise fail with the
+  #  same confusing "cannot find cmd/cscript on PATH" error, since
+  #  cmd.exe/cscript.exe live inside Wine's own virtual C: drive, never on
+  #  the real macOS PATH itself - what actually needs to be on PATH is
+  #  wine/wineserver.
+  def self.ensure_wine_available!
+    missing = %w[wine wineserver].reject { |bin| !`which "#{bin}"`.chomp.empty? }
+    return if missing.empty?
+    STDERR.puts "ERROR: Cannot find #{missing.map { |b| "\"#{b}\"" }.join(' / ')} on PATH " \
+                "(needed to run #{@@dirname}/ lessons via Wine on macOS). " \
+                "See lessons/win_scripts/WINE_NOTES.md."
+    exit 1
+  end
+
+  # wineserver_running?() - true only if a *persistent* wineserver (-p)
+  #  already exists (started by an earlier session, a manual
+  #  `wineserver -p &`, or another still-running rake process) - checked
+  #  so run_pre_actions! never launches a redundant second one, and never
+  #  registers an at_exit kill for a wineserver this run didn't itself
+  #  start. That second part matters concretely: an unconditional
+  #  `wineserver -k` at exit is exactly what broke a still-running test
+  #  earlier (see lessons/win_scripts/WINE_NOTES.md) when an unrelated
+  #  process's wineserver got killed out from under it.
+  #
+  #  Deliberately matches "-p" specifically, not a bare `pgrep -f
+  #  wineserver` - confirmed directly that the version probe (run just
+  #  before this, from testbox.rake's :header task) triggers its own
+  #  transient, non-persistent wineserver as a side effect of the plain
+  #  `wine cmd /c ver` it runs. That transient session self-terminates on
+  #  its own after a short grace period; treating it as "already running"
+  #  would skip launching our actual persistent one and leave every real
+  #  test invocation to cold-start its own transient session once that
+  #  grace period lapses - the exact wineboot race warm_up_wine! exists to
+  #  avoid, recurring throughout the whole run instead of just once.
+  def self.wineserver_running?
+    system("pgrep -f 'wineserver -p' > /dev/null 2>&1")
+  end
+
+  # run_pre_actions!() - launches wineserver in persistent mode (-p),
+  #  which keeps explorer.exe/services.exe warm across every test in this
+  #  run instead of re-booting the whole wine prefix on each individual
+  #  test's invocation - confirmed directly (see
+  #  lessons/win_scripts/WINE_NOTES.md) this is the difference
+  #  between a ~5s and a ~1.6s wine invocation. Skipped entirely (no
+  #  launch, no banner, no at_exit kill registered) if wineserver_running?
+  #  finds one already up - see that method's comment for why.
+  #
+  #  A fresh wineserver -p also kicks off wineboot.exe --init doing real
+  #  prefix-initialization work in the background (confirmed directly -
+  #  seen consuming 60%+ CPU right after a fresh start) - a real test
+  #  invocation that races against this before it finishes was the actual
+  #  source of the intermittent multi-second slowdowns/hangs seen in
+  #  practice, not random flakiness. `warm_up_wine!` (below) absorbs that
+  #  race here, once, synchronously, before any real test ever runs - run
+  #  unconditionally (even when wineserver was already running) since it's
+  #  cheap and timeout-protected either way.
+  #
+  #  Backgrounded (trailing &) since wineserver -p doesn't return on its
+  #  own; killed at exit - only when this run is the one that started it -
+  #  so it doesn't linger as an orphaned process once this rake run - pass
+  #  or fail - is done. Printed with its own visible banner, matching
+  #  ensure_compiled!'s style, from testbox.rake's :header task so it
+  #  appears after the Environment/Language Target/Language Version
+  #  lines. Guarded so it only actually runs once per `rake` invocation,
+  #  no matter how many category tasks each re-invoke :header (Rake
+  #  itself already dedupes task bodies, but this class variable makes
+  #  that explicit rather than relying on it).
+  @@wine_ready = false
+  def self.run_pre_actions!
+    return if @@wine_ready
+    @@wine_ready = true
+
+    if wineserver_running?
+      debug_hang_log("wineserver already running, skipping launch")
+    else
+      puts "Running Actions before running lessons..."
+      puts "-" * 63
+      cmd = "wineserver -p &"
+      puts "Launching WineServer: #{cmd}"
+      debug_hang_log("wineserver -p launching")
+      `#{cmd}`
+      debug_hang_log("wineserver -p launch call returned (backgrounded)")
+      at_exit { `wineserver -k` }
+      puts "=" * 63
+    end
+
+    warm_up_wine!
+  end
+
+  # warm_up_wine!() - a synchronous, throwaway wine invocation run once
+  #  right after wineserver -p starts, purely to absorb the wineboot.exe
+  #  --init race described above before any real test invocation happens.
+  #  Its own output/success is irrelevant - shell_out_with_timeout's
+  #  timeout + forced-pipe-close protection means this can never itself
+  #  hang the harness, even if it hits the exact race it's meant to
+  #  absorb.
+  def self.warm_up_wine!
+    debug_hang_log("warm-up invocation starting")
+    shell_out_with_timeout("wine cmd /c ver 2>&1 < /dev/null", timeout_seconds: 20)
+    debug_hang_log("warm-up invocation done")
+  end
+
+  # find_executable(cmd) - cmd/cscript are never on the real macOS PATH
+  #  (see ensure_wine_available!'s comment above); what actually needs to
+  #  resolve here is wine itself.
+  def self.find_executable(cmd)
+    return super unless WINE_TARGET_COMMANDS.include?(cmd)
+    super("wine")
+  end
+
+  # runner() - every command this class ever builds is for :cmd or
+  #  :js/:vbs (see the selection logic below - this class is never chosen
+  #  for any other language), so unconditionally routing through wine here
+  #  is always correct. Deliberately does NOT detect or prefer a real
+  #  cscript.exe under syswow64 even if one happens to be present (e.g.
+  #  via `winetricks wsh57`) - this harness must behave identically
+  #  regardless of undocumented, machine-specific state a normal user
+  #  wouldn't have; it always runs Wine's own bundled cscript, uniformly.
+  def self.runner
+    "wine #{super}"
+  end
+
+  def self.special_version(lang)
+    # shell_out_with_timeout, not a plain backtick: confirmed directly - a
+    #  bare builtin/no-file invocation (no .cmd script, no .vbs/.js file)
+    #  hangs *intermittently* under Wine's cmd.exe/cscript on macOS - not
+    #  reliably fixed by < /dev/null, a startup delay after wineserver, or
+    #  Process.spawn detachment, all tried directly. Every real test
+    #  invocation (see runner/execute) hands cmd.exe/cscript an actual
+    #  file to run instead, which has never shown this flakiness - only
+    #  the version probe itself does, so it's the one thing here worth a
+    #  timeout fallback rather than a real fix, since losing just the
+    #  version string is harmless.
+    case lang
+    when :cmd
+      # Wine's own `ver` output is "Microsoft Windows 10.0.19045" - no
+      #  "[Version ...]" wrapper, no literal word "Version" at all (unlike
+      #  real Windows) - confirmed directly. The regex used for real
+      #  Windows (see CommandShellScript/PowerShellScript) would never
+      #  match this, always silently returning "".
+      shell_out_with_timeout("wine cmd /c ver 2>&1 < /dev/null", timeout_seconds: 8)[/Windows\s+([\d.]+)/, 1].to_s
+    when :js, :vbs
+      # Not cscript.exe's own host banner - Wine's builtin cscript prints
+      #  none at all, bare or with //?, confirmed directly. Querying the
+      #  *script engine's* own version
+      #  from inside a running script (ScriptEngineMajorVersion & co,
+      #  built into JScript/VBScript itself) works with Wine's stub
+      #  cscript as-is - confirmed directly, reliably, no wsh57/winetricks
+      #  dependency at all - since it only requires actually running a
+      #  script file, which (unlike a bare no-file invocation) has never
+      #  shown any of the intermittent-hang flakiness seen elsewhere in
+      #  this class.
+      engine_version(lang)
+    else
+      super
+    end
+  end
+
+  # engine_version(lang) - see special_version's :js/:vbs case above.
+  #  Runs a one-line probe script through Wine's cscript and captures
+  #  whatever ScriptEngineMajorVersion/Minor/Build report from inside it.
+  #  Written to, and run from, a fresh tmpdir with a relative filename -
+  #  required, not just tidy: confirmed directly - Wine's cscript
+  #  misparses a leading "/" (any absolute Unix path) as a command-line
+  #  switch rather than a filename ("unsupported switch
+  #  L\"Users/joaquin/...\""), so the probe file must be referenced by a
+  #  bare relative name from its own directory, exactly like every real
+  #  test invocation already does (see execute's invoked_name).
+  def self.engine_version(lang)
+    require 'tmpdir'
+    ext = lang == :js ? "js" : "vbs"
+    snippet = lang == :js ?
+      'WScript.Echo(ScriptEngineMajorVersion() + "." + ScriptEngineMinorVersion() + "." + ScriptEngineBuildVersion());' :
+      'WScript.Echo ScriptEngineMajorVersion() & "." & ScriptEngineMinorVersion() & "." & ScriptEngineBuildVersion()'
+
+    Dir.mktmpdir do |dir|
+      filename = "version_probe.#{ext}"
+      File.write(File.join(dir, filename), snippet)
+      Dir.chdir(dir) do
+        shell_out_with_timeout("wine cscript //Nologo #{filename} 2>&1 < /dev/null", timeout_seconds: 8).strip
+      end
+    end
+  end
+end
+
+# =============================================
 # CommandShellScript - native (non-MSYS) Windows Ruby, where Kernel#`
 # invokes cmd.exe. Uses only cmd.exe builtins/native binaries - no
 # posix/GNUWin32 tools required.
@@ -1508,12 +1862,28 @@ end
 # (confirmed directly - see Msys2ShellScript), so it needs its own class,
 # not PosixShellScript outright.
 # =============================================
+# Languages with no native cmd.exe/cscript.exe on macOS at all (see
+#  WineShellScript) - every other language directory (awk, perl, bash,
+#  ...) has a real, native macOS build and keeps using plain
+#  PosixShellScript exactly as before, unaffected by any of this.
+WINE_LANGUAGES = %w[cmd js vbs].freeze
+
 Script = if ENV['MSYSTEM']
   Msys2ShellScript
 elsif RUBY_PLATFORM =~ /mingw|mswin/i
   windows_host_shell(Process.ppid) == :powershell ? PowerShellScript : CommandShellScript
+elsif RUBY_PLATFORM =~ /darwin/i && WINE_LANGUAGES.include?(ScriptBase.language)
+  WineShellScript
 else
   PosixShellScript
+end
+
+if Script == WineShellScript
+  # Checked here, at require time, rather than inside run_pre_actions! -
+  #  this must fail immediately if wine/wineserver are missing, before
+  #  testbox.rake's :header task even tries to print Language Version
+  #  (which itself shells out to wine to probe it).
+  Script.ensure_wine_available!
 end
 
 # Make `rake` (or any script requiring this file) actually fail on a

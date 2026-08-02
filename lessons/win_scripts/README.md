@@ -7,6 +7,14 @@ This area covers scripting languages used on Windows operating systems.
 * 🌐 [Widnows Script Host: JScript](./wsh.jscript/README.md) - Active Scripting langauge based on JavaScript
 * 📝 [Windows Script Host: VBScript](./wsh.vbscript/README.md) - Active Scripting language based on VisualBasic
 
+## About Language Support
+
+* PowerShell
+  * **PowerShell 5.1** is bundled on Windows systems and requires .NET Framework to run. 
+  * **PowerShell 7.x** (`pwsh`) - runs on Windows, Linux, and macOS and is bundled with its own embedded DotNet environment. 
+  * Batch (`cmd`) only runs on Windows, but can run under [WINE](#wine-wine-is-not-an-emulator) on Linux or macOS
+  * Windows Script Host (`cscript`) with support for JScript and VBScript only runs on Windows, but can run under [WINE](#wine-wine-is-not-an-emulator) on Linux or macOS.
+
 ## Directory Structure
 
 Each language directory will have the following items
@@ -38,3 +46,9 @@ script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 # Install PowerShell (pwsh)
 brew bundle --verbose
 ```
+
+## WINE (WINE Is Not an Emulator)
+
+The WINE environment can execute Win32 binaries on non-Windows systems and comes their implementation of popular binaries: `cmd.exe`, `cscript.exe`, `findstr.exe`, `where.exe`.
+
+See [WINE NOTES](WINE_NOTES.md) for further information. 
