@@ -1421,17 +1421,46 @@ class WineShellScript < PosixShellScript
   #  through wine, as opposed to @@language's raw extension-derived keys
   WINE_TARGET_COMMANDS = %w[cmd cscript]
 
-  # shell_out(cmd_str) - cmd.exe/cscript always emit Windows-style CRLF
-  #  line endings, confirmed directly (every plain out/err test failed
-  #  with visually-identical expected/actual strings differing only by a
-  #  trailing \r). A *native* Windows Ruby build's Kernel#` translates
-  #  CRLF to LF automatically as part of its own text-mode I/O (see
-  #  interactive_shell_out's identical normalization comment) - macOS
-  #  Ruby has no such OS-level translation to invoke wine through, so it
-  #  has to happen here instead, same as every other test comparison in
-  #  this harness expects.
+  # debug_hang_log(msg) - opt-in diagnostic for tracking down an
+  #  intermittent hang seen under `rake <single-category>` (e.g. `rake
+  #  j0`) that hasn't reproduced under a plain direct `wine cmd` loop or
+  #  under the full `rake` run - silent unless WINE_DEBUG_HANG is set, so
+  #  normal runs/CI are unaffected. Timestamped so a START line with no
+  #  matching END pinpoints exactly which invocation froze, and how long
+  #  after wineserver launched it happened.
+  def self.debug_hang_log(msg)
+    return unless ENV['WINE_DEBUG_HANG']
+    STDERR.puts "[#{Time.now.strftime('%H:%M:%S.%L')}] (pid #{Process.pid}) #{msg}"
+  end
+
+  # shell_out(cmd_str) - overridden (rather than using ScriptBase's plain
+  #  Kernel#` version) for two reasons:
+  #
+  #  1. cmd.exe/cscript always emit Windows-style CRLF line endings,
+  #     confirmed directly (every plain out/err test failed with
+  #     visually-identical expected/actual strings differing only by a
+  #     trailing \r). A *native* Windows Ruby build's Kernel#` translates
+  #     CRLF to LF automatically as part of its own text-mode I/O (see
+  #     interactive_shell_out's identical normalization comment) - macOS
+  #     Ruby has no such OS-level translation to invoke wine through, so
+  #     it has to happen here instead, same as every other test
+  #     comparison in this harness expects.
+  #
+  #  2. A real test invocation can hang indefinitely - confirmed directly
+  #     (see run_pre_actions!'s comment) - not just the version probe
+  #     shell_out_with_timeout already protects. Routing through it here
+  #     too means a hung invocation times out and force-closes its pipe
+  #     instead of blocking Kernel#` forever. 25s, not the version probe's
+  #     8s: a real test invocation legitimately runs slower under load
+  #     (13s+ observed) than the version probe's bare no-file case ever
+  #     does, so it needs more headroom before being treated as hung.
   def self.shell_out(cmd_str)
-    super.gsub("\r\n", "\n")
+    debug_hang_log("shell_out START: #{cmd_str}")
+    started = Time.now
+    result = shell_out_with_timeout(cmd_str, timeout_seconds: 25).gsub("\r\n", "\n")
+    elapsed = Time.now - started
+    debug_hang_log("shell_out END (#{elapsed.round(1)}s#{" - TIMED OUT" if elapsed >= 25})")
+    result
   end
 
   # ensure_wine_available!() - checked once, right when this class is
@@ -1448,21 +1477,59 @@ class WineShellScript < PosixShellScript
     return if missing.empty?
     STDERR.puts "ERROR: Cannot find #{missing.map { |b| "\"#{b}\"" }.join(' / ')} on PATH " \
                 "(needed to run #{@@dirname}/ lessons via Wine on macOS). " \
-                "See lessons/win_scripts/WINE_EXPERIMENTS.md."
+                "See lessons/win_scripts/WINE_NOTES.md."
     exit 1
+  end
+
+  # wineserver_running?() - true only if a *persistent* wineserver (-p)
+  #  already exists (started by an earlier session, a manual
+  #  `wineserver -p &`, or another still-running rake process) - checked
+  #  so run_pre_actions! never launches a redundant second one, and never
+  #  registers an at_exit kill for a wineserver this run didn't itself
+  #  start. That second part matters concretely: an unconditional
+  #  `wineserver -k` at exit is exactly what broke a still-running test
+  #  earlier (see lessons/win_scripts/WINE_NOTES.md) when an unrelated
+  #  process's wineserver got killed out from under it.
+  #
+  #  Deliberately matches "-p" specifically, not a bare `pgrep -f
+  #  wineserver` - confirmed directly that the version probe (run just
+  #  before this, from testbox.rake's :header task) triggers its own
+  #  transient, non-persistent wineserver as a side effect of the plain
+  #  `wine cmd /c ver` it runs. That transient session self-terminates on
+  #  its own after a short grace period; treating it as "already running"
+  #  would skip launching our actual persistent one and leave every real
+  #  test invocation to cold-start its own transient session once that
+  #  grace period lapses - the exact wineboot race warm_up_wine! exists to
+  #  avoid, recurring throughout the whole run instead of just once.
+  def self.wineserver_running?
+    system("pgrep -f 'wineserver -p' > /dev/null 2>&1")
   end
 
   # run_pre_actions!() - launches wineserver in persistent mode (-p),
   #  which keeps explorer.exe/services.exe warm across every test in this
   #  run instead of re-booting the whole wine prefix on each individual
   #  test's invocation - confirmed directly (see
-  #  lessons/win_scripts/WINE_EXPERIMENTS.md) this is the difference
-  #  between a ~5s and a ~1.6s wine invocation. Backgrounded (trailing &)
-  #  since wineserver -p doesn't return on its own; killed unconditionally
-  #  at exit so it doesn't linger as an orphaned process once this rake
-  #  run - pass or fail - is done. Printed with its own visible banner,
-  #  matching ensure_compiled!'s style, from testbox.rake's :header task
-  #  so it appears after the Environment/Language Target/Language Version
+  #  lessons/win_scripts/WINE_NOTES.md) this is the difference
+  #  between a ~5s and a ~1.6s wine invocation. Skipped entirely (no
+  #  launch, no banner, no at_exit kill registered) if wineserver_running?
+  #  finds one already up - see that method's comment for why.
+  #
+  #  A fresh wineserver -p also kicks off wineboot.exe --init doing real
+  #  prefix-initialization work in the background (confirmed directly -
+  #  seen consuming 60%+ CPU right after a fresh start) - a real test
+  #  invocation that races against this before it finishes was the actual
+  #  source of the intermittent multi-second slowdowns/hangs seen in
+  #  practice, not random flakiness. `warm_up_wine!` (below) absorbs that
+  #  race here, once, synchronously, before any real test ever runs - run
+  #  unconditionally (even when wineserver was already running) since it's
+  #  cheap and timeout-protected either way.
+  #
+  #  Backgrounded (trailing &) since wineserver -p doesn't return on its
+  #  own; killed at exit - only when this run is the one that started it -
+  #  so it doesn't linger as an orphaned process once this rake run - pass
+  #  or fail - is done. Printed with its own visible banner, matching
+  #  ensure_compiled!'s style, from testbox.rake's :header task so it
+  #  appears after the Environment/Language Target/Language Version
   #  lines. Guarded so it only actually runs once per `rake` invocation,
   #  no matter how many category tasks each re-invoke :header (Rake
   #  itself already dedupes task bodies, but this class variable makes
@@ -1470,16 +1537,36 @@ class WineShellScript < PosixShellScript
   @@wine_ready = false
   def self.run_pre_actions!
     return if @@wine_ready
-
-    puts "Running Actions before running lessons..."
-    puts "-" * 63
-    cmd = "wineserver -p &"
-    puts "Launching WineServer: #{cmd}"
-    `#{cmd}`
-    at_exit { `wineserver -k` }
-    puts "=" * 63
-
     @@wine_ready = true
+
+    if wineserver_running?
+      debug_hang_log("wineserver already running, skipping launch")
+    else
+      puts "Running Actions before running lessons..."
+      puts "-" * 63
+      cmd = "wineserver -p &"
+      puts "Launching WineServer: #{cmd}"
+      debug_hang_log("wineserver -p launching")
+      `#{cmd}`
+      debug_hang_log("wineserver -p launch call returned (backgrounded)")
+      at_exit { `wineserver -k` }
+      puts "=" * 63
+    end
+
+    warm_up_wine!
+  end
+
+  # warm_up_wine!() - a synchronous, throwaway wine invocation run once
+  #  right after wineserver -p starts, purely to absorb the wineboot.exe
+  #  --init race described above before any real test invocation happens.
+  #  Its own output/success is irrelevant - shell_out_with_timeout's
+  #  timeout + forced-pipe-close protection means this can never itself
+  #  hang the harness, even if it hits the exact race it's meant to
+  #  absorb.
+  def self.warm_up_wine!
+    debug_hang_log("warm-up invocation starting")
+    shell_out_with_timeout("wine cmd /c ver 2>&1 < /dev/null", timeout_seconds: 20)
+    debug_hang_log("warm-up invocation done")
   end
 
   # find_executable(cmd) - cmd/cscript are never on the real macOS PATH

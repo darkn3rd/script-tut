@@ -2,45 +2,46 @@
 
 WINE can run Win32 binaries on macOS, Linux, and other operating systems.  It comes bundled with the Command Shell (`cmd.exe`) and Windows Script Host (`cscript.exe`), as well as other utilities like `findstr.exe`, `where.exe`.
 
-When you run a script such as BATCH file with `cmd.exe` or JScript or VBScript with `cscript.exe`, you cannot run non-Win32 binaries like `grep`.  If you would like to use those utilities, you'll have to them into your `$HOME/.wine/drive_c/windows/system32/` path.
+When you run a script such as BATCH file with `cmd.exe` or JScript or VBScript with `cscript.exe`, you cannot run non-Win32 binaries like `grep`.  If you would like to use those utilities, you'll have to install a Windows-native build of them somewhere on Wine's `PATH` (e.g. `$HOME/.wine/drive_c/windows/system32/`, or wherever an installer like Microsoft's Coreutils puts its own `bin/` directory - see below).
 
 ## Running WINE with Tests
 
 ### BATCH (`cmd.exe`)
 
+#### Core Utils Tool
 
-#### Grep Tool 
-
-You can install the `grep` command using the following commands:
+Microsoft provides Coreutils, a UNIX-style reimplementation of core utilities using the Rust language, for Windows. This will include `date.exe` and `grep.exe`
 
 ```bash
-# 1. Get the file's metadata, including GitHub's own independently-computed
-#    checksum (the git blob sha - separate data channel from the raw
-#    download itself, though both ultimately come from GitHub)
-curl -s "https://api.github.com/repos/mbuilov/grep-windows/contents/grep-3.11-x64.exe" \
-  | python3 -c "import json,sys; d=json.load(sys.stdin); print('sha:', d['sha']); print('size:', d['size'])"
-# sha: 6e5451337f046d1dede2f401e709f46d39b8a3ec
-# size: 1003008
+install_core_utils() {
+  pushd ~/Downloads
+curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
+  ACTUAL_SHA=$(shasum -a 256 coreutils-2026.6.16-x64.exe | cut -f1 -d' ')
+  EXPECTED_SHA="f862b1aa433310420ae20f9b1384f3f974a26ba98ae37ac548061116a3ef6c62"
 
-# 2. Download it
-curl -fsSL -o grep-3.11-x64.exe \
-  "https://raw.githubusercontent.com/mbuilov/grep-windows/master/grep-3.11-x64.exe"
+  if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+    echo "ERROR: CHECKSUM MISMATCH - DO NOT USE THIS FILE" >&2
+    return 1
+  fi
 
-# 3. Verify the checksum BEFORE trusting the file at all - git's own
-#    blob-hashing algorithm (sha1 with a "blob <size>\0" prefix), not a
-#    plain shasum, is what matches GitHub's "sha" field
-test "$(git hash-object grep-3.11-x64.exe)" = "6e5451337f046d1dede2f401e709f46d39b8a3ec" \
-  && echo "CHECKSUM OK" || echo "CHECKSUM MISMATCH - DO NOT USE THIS FILE"
+  echo "CHECKSUM OK"
 
-# 4. Verify it's a real Windows binary too
-file grep-3.11-x64.exe   # expect: PE32+ executable (console) x86-64, for MS Windows
+  wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
 
-# 5. Drop it into Wine's system32 (already on %PATH% inside Wine)
-cp grep-3.11-x64.exe ~/.wine/drive_c/windows/system32/grep.exe
+  if [ -z "$(find ~/.wine/drive_c -iname "date.exe" 2>/dev/null)" ]; then
+    echo "ERROR: 'date.exe' was not installed" >&2
+    return 1
+  fi
 
-# 6. Test it - redirect to a FILE, not a pipe, to avoid Wine's
-#    orphaned-child-process-holds-the-pipe-open hang we hit earlier
-wine cmd //c "grep --version" > /tmp/out.txt 2>&1; cat /tmp/out.txt
+  if [ -z "$(find ~/.wine/drive_c -iname "grep.exe" 2>/dev/null)" ]; then
+    echo "ERROR: 'grep.exe' was not installed" >&2
+    return 1
+  fi
+
+  popd
+}
+
+install_core_utils
 ```
 
 ## macOS
@@ -66,7 +67,7 @@ ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/share/wine" /usr/lo
 ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine" /usr/local/lib/wine
 ```
 
-The default Wine WSH5.8 environemnt fails and even causes a crash see [Wine builtin WSH (5.8.x) — failure summary](#wine-builtin-wsh-58x--failure-summary).  You can download WSH7 from Microsoft directly using [Winetricks](https://gitlab.winehq.org/wine/wine/-/wikis/Winetricks) ([source](https://github.com/winetricks/winetricks), [wiki](https://github.com/Winetricks/winetricks/wiki)).
+The default Wine WSH5.8 environment fails and even causes a crash see [Wine builtin WSH (5.8.x) — failure summary](#wine-builtin-wsh-58x--failure-summary).  You can download WSH7 from Microsoft directly using [Winetricks](https://gitlab.winehq.org/wine/wine/-/wikis/Winetricks) ([source](https://github.com/winetricks/winetricks), [wiki](https://github.com/Winetricks/winetricks/wiki)).
 
 ```bash
 brew install winetricks
@@ -76,7 +77,7 @@ winetricks wsh57
 
 ### Wine Server
 
-If you run a Wine Server in the background, this will speed up executing any scripts. Without the server, running a small batch file will require bringing the whole tranlation stack every time a script is launched. 
+If you run a Wine Server in the background, this will speed up executing any scripts. Without the server, running a small batch file will require bringing the whole translation stack every time a script is launched. 
 
 ```bash
 # Run Server
@@ -110,7 +111,7 @@ wine cscript //Nologo a00.output.js
 If the Wine Server is no longer needed, you can run this:
 
 ```bash
-winserver -k
+wineserver -k
 ```
 
 ### For a list of applications
@@ -154,10 +155,50 @@ All failures are fixed under native WSH 5.7 (41/41 pass, no crashes).
   crash, not just wrong output; did not occur anywhere in the JScript run
 - **O2** – only the "no valid flag" sub-tests (1–2) fail empty; the rest pass
 
+## Known Issue: Intermittent Empty Output on Test Invocations
 
+Under this Wine-on-macOS setup, a small fraction of test invocations in the
+`testbox` harness occasionally complete (no hang) but return empty or
+truncated output instead of the expected text. It hits a different,
+essentially random category each run (`E4`, `E6`, `D0`, `I0`, `J1`, `O0`,
+`O2`, ... have all shown it at one point or another) and re-running the
+exact same test in isolation immediately afterward typically passes. No
+deterministic trigger has been found despite a fair amount of digging -
+notably, it happens at a comparable rate with the harness's own
+`WINE_DEBUG_HANG` diagnostic logging (see `testbox/Script.rb`'s
+`debug_hang_log`) fully on or fully off, ruling out that logging itself as
+the cause (confirmed via back-to-back full-suite runs with it unset).
 
+Two related, real mechanisms *were* pinned down and fixed along the way,
+though neither turned out to be the full explanation for this specific
+symptom:
 
-## Fruther Reading
+- **`wineboot.exe --init` doing real initialization work** right after a
+  fresh `wineserver -p` starts (confirmed directly - seen consuming 60%+
+  CPU immediately after a cold start). A real test invocation racing
+  against this before it finishes was a source of multi-second slowdowns
+  and, in the worst case, a full hang. Fixed with a synchronous, throwaway
+  warm-up `wine` invocation in `WineShellScript.run_pre_actions!`, run once
+  right after `wineserver -p` starts, absorbing that race before any real
+  test ever runs.
+- **Orphaned `winedevice.exe` processes holding a test's stdout pipe open**
+  even after the direct `wine cmd` child process has already exited -
+  confirmed directly via a `ps` snapshot taken mid-hang (no `wine cmd`
+  child left, but `wineserver`/`winedevice.exe` still alive), causing
+  Ruby's `Kernel#` to block forever waiting for an EOF that never comes.
+  Fixed by routing every real test invocation through
+  `shell_out_with_timeout` (25s) instead of a plain backtick, so this now
+  fails as a bounded, visible `FAIL` instead of an indefinite hang
+  requiring a manual `Ctrl-C`.
+
+The residual "completes, but with less output than expected" symptom
+documented here is a *different* manifestation of what looks like the same
+underlying instability, and remains unresolved. It's currently treated as
+expected environmental noise rather than chased further; a
+retry-once-on-suspicious-empty-output policy for real test invocations was
+considered but not implemented.
+
+## Further Reading
 
 * [macOS Gatekeeper / Quarantine / XProtect](https://hacktricks.wiki/en/macos-hardening/macos-security-and-privilege-escalation/macos-security-protections/macos-gatekeeper.html)
 * [Gatekeeper and runtime protection in macOS](https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web)
