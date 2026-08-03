@@ -49,6 +49,54 @@ brew install php
 sudo apt install php
 ```
 
+### Windows Services for Linux v1 (WSL1) + Ubuntu 26.04
+
+```bash
+sudo apt install php8.5-cli
+```
+
+**Windows Services for Linux v1** (**WSL1**) rejects the `GNU_PROPERTY` header before glibc runs.  The Intel CET features like Indirect Branch Tracking (IBT) and Shadow Stack (SHSTK) are not supported in WSL1. To work around this limitation, you create wrapper script:
+
+```bash
+# Create PHP Wrapper Script
+sudo tee /usr/local/bin/php >/dev/null <<'EOF'
+#!/bin/sh
+export GLIBC_TUNABLES='glibc.cpu.x86_ibt=off:glibc.cpu.x86_shstk=off'
+exec /lib64/ld-linux-x86-64.so.2 /usr/bin/php8.5 "$@"
+EOF
+
+sudo chmod 755 /usr/local/bin/php
+
+# Reset rembered locations, e.g. /usr/bin/php
+hash -r
+
+# List paths for php, make sure /usr/local/bin comes before /usr/bin
+type -a php
+
+# Verify PHP works 
+php -v
+```
+
+Note you can test executables to see if they have this feature, as you may want to make wrapper scripts for other binaries:
+
+```bash
+readelf -n /usr/bin/php8.5 | grep -i -A2 'property\|GNU_PROPERTY\|x86 feature'
+```
+
+This will show the following: 
+
+```yaml
+Displaying notes found in: .note.gnu.property
+  Owner                Data size        Description
+  GNU                  0x00000020       NT_GNU_PROPERTY_TYPE_0
+      Properties: x86 feature: IBT, SHSTK
+        x86 ISA needed: x86-64-baseline
+```
+
+
+
+
+
 ### Windows: Chocolatey
 
 ```pwsh

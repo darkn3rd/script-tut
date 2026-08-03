@@ -297,3 +297,46 @@ TARGET_NAME=$HOME/repos
 alias sudo='/c/tools/gsudo/Current/gsudo.exe'
 sudo ln -s $TARGET_NAME $LINK_NAME
 ```
+
+## Further Reading
+
+* Shells
+  * [Fish](https://fishshell.com/) - user friendly shell
+  * [Nushell](https://www.nushell.sh/) - sql-like shell
+  * [Xonsh](https://xon.sh/) - python-like shell
+  * [tcsh](https://www.tcsh.org/) - cshell
+* POSIX shells
+  * Debian Almquist Shell
+    * [What is Dash Shell in Linux?](https://linuxhandbook.com/dash-shell)
+    * [Dash Website](http://gondor.apana.org.au/~herbert/dash/)
+  * Bourne Again Shell
+    * [Oh My Bash](https://ohmybash.nntoan.com/)
+    * [Bash Website](https://www.gnu.org/software/bash/)
+  * Korn Shells
+    * [MirBSD Korn Shell](https://mbsd.evolvis.org/mksh.htm) - ksh88
+    * [ksh93](https://github.com/ksh93/ksh) - ksh93
+  * Zsh
+    * [zsh](https://www.zsh.org/)
+    * [oh my zsh](https://ohmyz.sh/) - framework for managing your Zsh configuration.
+    * [Powerlevel10k](https://github.com/romkatv/powerlevel10k) - zsh theme
+    * [Zim Framework](https://github.com/zimfw/zimfw)
+    * [Prezto](https://github.com/sorin-ionescu/prezto) - the configuration framework for Zsh
+  * [Ion Shell](https://gitlab.redox-os.org/redox-os/ion)
+  * [Project Oriented Shell](https://foomo.github.io/posh/)
+  * [Yet Another Shell](https://magicant.github.io/yash/)
+* Other
+  * [ShellBench](https://github.com/shellspec/shellbench) - A benchmark utility for POSIX shell comparison
+  * [starship](https://github.com/starship/starship)
+  * [Powerline](https://powerline.readthedocs.io/en/master/index.html) - statusline plugin for Vim, and provides statuslines and prompts for several other applications, including zsh, bash, fish, tmux, IPython, Awesome, i3 and Qtile
+    * [Powerline Git Repo](https://github.com/powerline/powerline)
+  * [Oh My Posh](https://ohmyposh.dev/) - customisable and low-latency cross platform/shell prompt renderer
+  * [Terminalizer](https://github.com/faressoft/terminalizer) - Record your terminal and generate animated gif images or share a web player
+* Fonts
+  * [Powerline Fonts](https://github.com/powerline/fonts)
+  * [nerdfonts](https://www.nerdfonts.com/)
+* Articles
+  *  [\[HowTo\] P10k, Powerline and zsh 101](https://forum.manjaro.org/t/howto-p10k-powerline-and-zsh-101/61160) 
+  * [Setting up iTerm2 with OH-MY-ZSH and Powerline on OSX](https://www.thorsten-hans.com/setting-up-iterm2-with-oh-my-zsh-and-powerline-on-osx/)
+  * [Zsh Topics](https://github.com/topics/zsh)
+  * [Beyond Bash: 9 Lesser-Known Linux Shells and Their Capabilities](https://itsfoss.com/shells-linux/#9-yash)
+  * [Awesome Shell](https://github.com/alebcay/awesome-shell) - curated list of shells and utilities

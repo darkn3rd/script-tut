@@ -1,0 +1,221 @@
+ubuntu22:
+  global:
+    packages:
+      - script: ubuntu22_sdkman
+      - apt: ['curl','git','make','wget']
+    lessons:
+      gen_scripts:
+        packages:
+          - apt:
+              - autoconf
+              - bison
+              - build-essential
+              - libbz2-dev
+              - libdb-dev
+              - libffi-dev
+              - libgdbm6
+              - libgdbm-dev
+              - liblzma-dev
+              - libncurses5-dev
+              - libncursesw5-dev
+              - libreadline6-dev
+              - libreadline-dev
+              - libsqlite3-dev
+              - libssl-dev
+              - libxml2-dev
+              - libxmlsec1-dev
+              - libyaml-dev
+              - llvm
+              - tk-dev
+              - xz-utils
+              - zlib1g-dev
+          - apt: rbenv
+            script: ubuntu22_post_rbenv
+          - script: ubuntu22_pyenv
+        awk:
+          packages:
+            - apt: gawk
+        groovy:
+          packages:
+            - sdkman: groovy
+              needs: java
+        perl:
+          packages:
+            - system: perl
+              meets: perl
+        php:
+          packages:
+            - apt: php8.5-cli
+              script: wsl1_php_wrapper
+        python2:
+          packages:
+            - system: python3 # 3.14.4
+            - pyenv: 2.7.18
+              cmd: pyenv global 3.10.4 2.7.18
+              requires:
+                - pyenv: 3.14.6
+        python3:
+          packages:
+            - pyenv: 3.14.6
+              cmd: pyenv global 3.10.4
+        ruby:
+          packages:
+            - rbenv: 4.0.6
+              cmd: rbenv global 4.0.6
+        tcl:
+          packages:
+            - apt: tcl
+      shell_scripts:
+        bash:
+            packages: 
+              - system: bash
+        csh:
+            packages: 
+              - brew: tcsh
+        ksh:
+            packages: 
+              - brew: ksh93u+m
+        posix:
+            packages: 
+              - system: dash
+              - needs: perl
+        zsh:
+            packages:
+            - apt: zsh
+              script: ubuntu2604_default_zshrc
+      compiled_lang:
+        packages:
+          apt:
+            - curl
+            - build-essential
+              meets: make
+        cs:
+          packages:
+            apt: dotnet-sdk-10.0
+        java:
+          packages:
+            apt: openjdk-17-jdk
+        go: 
+          packages:
+            apt: golang-go
+        rust:
+          packages:
+            script: ubuntu22_rust
+      win_scripts:
+        powershell:
+          packages:
+            - script: ubuntu22_powershell
+    # container runtime service cannot run under WSLv1
+    # docker client can run and point to a service accessible by localhost
+    cibox:
+    testbox:
+      packages:
+        - script: ubuntu22_powershell
+        - rbenv: 4.0.6
+scripts:
+  ubuntu2604_default_zshrc:
+    type: sh
+    cmd: |
+      cat <<'EOF' > $HOME/.zshrc
+      # Set up the prompt
+
+      autoload -Uz promptinit
+      promptinit
+      prompt adam1
+
+      setopt histignorealldups sharehistory
+
+      # Use emacs keybindings even if our EDITOR is set to vi
+      bindkey -e
+
+      # Keep 1000 lines of history within the shell and save it to ~/.zsh_history:
+      HISTSIZE=1000
+      SAVEHIST=1000
+      HISTFILE=~/.zsh_history
+
+      # Use modern completion system
+      autoload -Uz compinit
+      compinit
+
+      zstyle ':completion:*' auto-description 'specify: %d'
+      zstyle ':completion:*' completer _expand _complete _correct _approximate
+      zstyle ':completion:*' format 'Completing %d'
+      zstyle ':completion:*' group-name ''
+      zstyle ':completion:*' menu select=2
+      eval "$(dircolors -b)"
+      zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+      zstyle ':completion:*' list-colors ''
+      zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+      zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+      zstyle ':completion:*' menu select=long
+      zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+      zstyle ':completion:*' use-compctl false
+      zstyle ':completion:*' verbose true
+
+      zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+      zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+  ubuntu_rust:
+    type: bash
+    cmd: |
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --profile minimal --no-modify-path
+      echo 'source "$HOME/.cargo/env' >> ~/.bashrc
+      echo 'source "$HOME/.cargo/env' >> ~/.zshrc
+
+      source ~/.bashrc
+  wsl1_php_wrapper:
+    type: bash
+    cmd: |
+      sudo tee /usr/local/bin/php >/dev/null <<'EOF'
+      #!/bin/sh
+      export GLIBC_TUNABLES='glibc.cpu.x86_ibt=off:glibc.cpu.x86_shstk=off'
+      exec /lib64/ld-linux-x86-64.so.2 /usr/bin/php8.5 "$@"
+      EOF
+
+      sudo chmod 755 /usr/local/bin/php
+  wsl1_run_wrapper:
+    type: bash
+    cmd: |
+      sudo tee /usr/local/bin/wsl1-run >/dev/null <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      COMMAND_NAME=${0##*/}
+
+      case $COMMAND_NAME in
+        cmd)     USAGE='cmd <path-to-script.cmd|.bat> [args...]' ;;
+        cscript) USAGE='cscript <path-to-script.js|.vbs> [args...]' ;;
+        *)       printf 'wsl1-run: invoke this script as cmd or cscript\n' >&2; exit 2 ;;
+      esac
+
+      if (( $# < 1 )); then
+        printf 'Usage: %s\n' "$USAGE" >&2
+        exit 2
+      fi
+
+      INPUT_PATH=$1; shift
+
+      if ! SCRIPT_PATH=$(realpath -e -- "$INPUT_PATH"); then
+        printf '%s: cannot resolve file: %s\n' "$COMMAND_NAME" "$INPUT_PATH" >&2; exit 1
+      fi
+
+      if [[ ! -f $SCRIPT_PATH ]]; then
+        printf '%s: not a regular file: %s\n' "$COMMAND_NAME" "$SCRIPT_PATH" >&2; exit 1
+      fi
+
+      WIN_PATH=$(wslpath -w "$SCRIPT_PATH")
+
+      # Prevent WSL1 warnings when Windows inherits a Linux-only working directory.
+      cd /mnt/c/Windows/Temp
+
+      case $COMMAND_NAME in
+          cmd)     exec cmd.exe /c "$WIN_PATH" "$@" ;;
+          cscript) exec cscript.exe //Nologo "$WIN_PATH" "$@" ;;
+      esac
+
+      sudo chmod 755 /usr/local/bin/wsl1-run
+      sudo ln -s /usr/local/bin/wsl1-run /usr/local/bin/cmd
+      sudo ln -s /usr/local/bin/wsl1-run /usr/local/bin/cscript
+
+
+

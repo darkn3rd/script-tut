@@ -1276,13 +1276,27 @@ class ScriptBase
               arg_separator = ""
             end
             command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
-            #puts "DEBUG: RUNNING #{command}"
+            # A plain shell_out invocation with no "in" data of its own
+            #  (is_env_test/needs_interactive? each manage their own stdin
+            #  via Open3 instead - see env_shell_out/interactive_shell_out -
+            #  so they're deliberately excluded here) has nothing to feed a
+            #  lesson that unexpectedly tries to read stdin anyway (e.g. a
+            #  cmd.exe builtin silently shadowing an external command of
+            #  the same name and falling back to its own interactive
+            #  prompt - confirmed directly with win_scripts/batch's i03).
+            #  Without this, that inherits whatever live terminal happens
+            #  to be behind the harness's own stdin and blocks on it
+            #  indefinitely; closing it here makes that fail fast (an
+            #  immediate EOF) instead.
+            shell_out_command = is_env_test || needs_interactive?(test) || !input.empty? ?
+              command : "#{command} < #{null_device}"
+            #puts "DEBUG: RUNNING #{shell_out_command}"
             output = if is_env_test
               env_shell_out(command, expected)
             elsif needs_interactive?(test)
               interactive_shell_out(command, input_lines)
             else
-              shell_out(command)
+              shell_out(shell_out_command)
             end
             #puts "EXPECT: |#{expected}|"
             #puts "OUTPUT: |#{output}|"
@@ -1653,6 +1667,68 @@ class WineShellScript < PosixShellScript
 end
 
 # =============================================
+# Wsl1ShellScript - WSL1 (a genuine Windows binfmt/lxss compatibility
+# layer, not a real Linux VM like WSL2 - see wsl1?) running a :cmd/:js/:vbs
+# lesson directory. WSL1 can exec real cmd.exe/cscript.exe directly, no
+# Wine needed, but only through the wsl1-run wrapper scripts installed as
+# `cmd`/`cscript` on PATH (see lessons/win_scripts/wsl1-run.sh and
+# win_scripts/README.md#wsl1) - calling cmd.exe/cscript.exe directly from
+# a WSL1 shell whose cwd maps to a UNC path (\\wsl.localhost\...) makes
+# cmd.exe print a "UNC paths are not supported" warning to stderr and
+# silently default its working directory to Windows's own instead,
+# corrupting every stderr-compared test; the wrapper sidesteps this by
+# cd-ing to /mnt/c before exec-ing the real binary. Kernel#` is still
+# /bin/sh-backed exactly like PosixShellScript (WSL1 Ruby is a real,
+# native Linux build) - every other language directory keeps using that
+# class unchanged (see the selection logic below) - this only overrides
+# what's actually different for a wrapper-backed invocation.
+# =============================================
+class Wsl1ShellScript < PosixShellScript
+  # runner() - the wsl1-run wrapper (installed as `cmd`/`cscript`) already
+  #  hardcodes cmd.exe's own "/c" and cscript.exe's own "//Nologo" inside
+  #  itself (see wsl1-run.sh) - it only ever accepts a single positional
+  #  script path (+ the lesson's own args), unlike real cmd.exe/cscript.exe.
+  #  Passing "/c"/"//Nologo" again here, the way every other environment's
+  #  @@option does, would just misfire as the wrapper's own <path> argument
+  #  (realpath would then fail looking for a file literally named "/c").
+  def self.runner
+    case @@language.to_sym
+    when :cmd
+      "cmd"
+    when :js, :vbs
+      "cscript"
+    else
+      super
+    end
+  end
+
+  # shell_out(cmd_str) - overridden (rather than using PosixShellScript's
+  #  plain Kernel#` version) for two reasons, both mirroring
+  #  WineShellScript#shell_out exactly:
+  #
+  #  1. cmd.exe/cscript.exe are real Windows binaries here too (launched
+  #     through WSL1's own interop, not Wine), and still emit CRLF line
+  #     endings that only a *native* Windows Ruby's Kernel#` would
+  #     translate away on its own - WSL1 Ruby is a real Linux build with
+  #     no such translation, so every plain out/err comparison would
+  #     otherwise fail on a trailing \r alone.
+  #
+  #  2. A real test invocation can hang indefinitely - confirmed directly
+  #     (a plain `rake` run left a real cmd.exe sitting alive, unread,
+  #     with its wrapping `cmd`/sh both still blocked in D, for 19+
+  #     minutes on lessons/win_scripts/batch's i03 implementation - it ran
+  #     fine standalone (`rake i0`) but hung under the full run, the same
+  #     intermittent-hang character WineShellScript's own comment
+  #     describes for wine on macOS). A bare Kernel#` has no way to give
+  #     up on a wedged child, so route through shell_out_with_timeout
+  #     instead, which force-closes the pipe (and kills the process tree)
+  #     after timeout_seconds.
+  def self.shell_out(cmd_str)
+    shell_out_with_timeout(cmd_str, timeout_seconds: 25).gsub("\r\n", "\n")
+  end
+end
+
+# =============================================
 # CommandShellScript - native (non-MSYS) Windows Ruby, where Kernel#`
 # invokes cmd.exe. Uses only cmd.exe builtins/native binaries - no
 # posix/GNUWin32 tools required.
@@ -1849,6 +1925,18 @@ def windows_host_shell(pid)
   end
 end
 
+# wsl1?() - true only under WSL1, distinguished from a real Linux box (and
+#  from WSL2, a genuine Linux VM) by the kernel release string alone: WSL1
+#  reports the NT kernel's own Linux-syscall emulation build (generically
+#  "*-Microsoft"), WSL2 reports a real Linux kernel build that happens to
+#  say "*-microsoft-standard-WSL2".
+def wsl1?
+  release = File.read('/proc/sys/kernel/osrelease')
+  release =~ /microsoft/i && release !~ /wsl2/i
+rescue Errno::ENOENT
+  false
+end
+
 # =============================================
 # Bind Script to whichever concrete environment subclass matches how this
 # process is actually running. testbox.rake only ever refers to `Script`.
@@ -1868,12 +1956,20 @@ end
 #  PosixShellScript exactly as before, unaffected by any of this.
 WINE_LANGUAGES = %w[cmd js vbs].freeze
 
+# Languages wsl1-run's `cmd`/`cscript` wrappers actually cover (see
+#  Wsl1ShellScript) - every other language directory on WSL1 (bash,
+#  python, ...) has a real, native Linux build and keeps using plain
+#  PosixShellScript exactly as before, unaffected by any of this.
+WSL1_LANGUAGES = %w[cmd js vbs].freeze
+
 Script = if ENV['MSYSTEM']
   Msys2ShellScript
 elsif RUBY_PLATFORM =~ /mingw|mswin/i
   windows_host_shell(Process.ppid) == :powershell ? PowerShellScript : CommandShellScript
 elsif RUBY_PLATFORM =~ /darwin/i && WINE_LANGUAGES.include?(ScriptBase.language)
   WineShellScript
+elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl1?
+  Wsl1ShellScript
 else
   PosixShellScript
 end
