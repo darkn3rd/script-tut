@@ -104,3 +104,61 @@ Hello
 ```
 
 [`cygwin-run.sh`](cygwin-run.sh) resolves the script path via `cygpath -w` before invoking the real `cmd.exe`/`cscript.exe`, the same fix shown above. Copy it to `/usr/local/bin/cmd` and `/usr/local/bin/cscript` the same way as WSL1's `wsl1-run.sh`, so `Script.rb`'s `CygwinShellScript` can find them on PATH.
+
+## Windows NoDefaultCurrentDirectoryInExePath
+
+If the environment variable `NoDefaultCurrentDirectoryInExePath` is set, you will not be able to execute scripts in your current working directory, unless you prefix the variable with a path such as `.\` in Windows PowerShell or Command Shell (cmd.exe), and `./` for any POSIX system running on Windows, like Cygwin, MSYS2, or WSLv1.
+
+To set or unset `NoDefaultCurrentDirectoryInExePath` (which prevents Windows from implicitly searching the current working directory for executables), use environment variable commands across PowerShell, CMD, or POSIX-compatible translation layers:
+
+### **PowerShell**
+  * **Set (Session)**: 
+    ```pwsh
+    $env:NoDefaultCurrentDirectoryInExePath = '1'
+    ```
+  * **Unset (Session)**:
+    ```pwsh
+    Remove-Item Env:\NoDefaultCurrentDirectoryInExePath
+    ```
+  * **Set (Persistent User)**: 
+    ```pwsh
+    [Environment]::SetEnvironmentVariable('NoDefaultCurrentDirectoryInExePath', '1', 'User')
+    ```
+  * **Unset (Persistent User)**:
+    ```pwsh
+    [Environment]::SetEnvironmentVariable('NoDefaultCurrentDirectoryInExePath, $null, 'User')
+    ```
+
+### ***Command Shell (cmd.exe)*** 
+
+  * **Set (Session)**: 
+    ```dos
+    set NoDefaultCurrentDirectoryInExePath=1
+    ```
+  * **Unset (Session)**:
+    ```dos
+    set NoDefaultCurrentDirectoryInExePath=
+    ```
+  * **Set (Persistent User)**: 
+    ```dos
+    setx NoDefaultCurrentDirectoryInExePath 1
+    ```
+  * **Unset (Persistent User)**:
+    ```dos
+    reg delete "HKCU\Environment" /v NoDefaultCurrentDirectoryInExePath /f
+    ```
+
+### ***POSIX (WSL1, Cygwin, MSYS2)*** 
+
+  * **Set (Session)**: 
+    ```sh
+    export NoDefaultCurrentDirectoryInExePath=1
+    ```
+  * **Unset (Session)**:
+    ```sh
+    unset NoDefaultCurrentDirectoryInExePath
+    ```
+  * **Set (Persistent via `~/.bashrc` or `~/.profile`)**:
+    ```sh
+    echo "export NoDefaultCurrentDirectoryInExePath=1" >> ~/.profile
+    ```
