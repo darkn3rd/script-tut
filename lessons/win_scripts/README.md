@@ -88,3 +88,19 @@ cscript wsh.jscript/scripts/a00.output.js
 > **NOTES**: 
 >  1. The tools `cmd.exe` or `cscript.exe` must be run from /mnt/c or otherwise, they'll print warnings to stderr. 
 >  2. The full absolute path must be used 
+
+The actual, current version of these helpers lives in [`wsl1-run.sh`](wsl1-run.sh) - copy it to `/usr/local/bin/cmd` and `/usr/local/bin/cscript` (both names dispatch off the same script) so `rake`/`Script.rb`'s `Wsl1ShellScript` can find them on PATH the same way any other interpreter is resolved.
+
+## Cygwin
+
+**[Cygwin](https://www.cygwin.com/)** is a full POSIX environment on Windows (unlike MSYS2/WSL1, its Ruby build is genuinely Cygwin-runtime-linked, not a native Windows binary) - it can run `cmd.exe`/`cscript.exe` directly, no WINE or interop layer needed, but Cygwin's own argument handling mis-parses a `./`-style relative path passed to a native (non-Cygwin) executable - confirmed directly:
+
+```bash
+$ cmd /c ./scripts/a00.output.cmd
+'.' is not recognized as an internal or external command, operable program or batch file.
+
+$ cmd /c "$(cygpath -w ./scripts/a00.output.cmd)"
+Hello
+```
+
+[`cygwin-run.sh`](cygwin-run.sh) resolves the script path via `cygpath -w` before invoking the real `cmd.exe`/`cscript.exe`, the same fix shown above. Copy it to `/usr/local/bin/cmd` and `/usr/local/bin/cscript` the same way as WSL1's `wsl1-run.sh`, so `Script.rb`'s `CygwinShellScript` can find them on PATH.

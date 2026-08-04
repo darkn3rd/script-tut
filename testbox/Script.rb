@@ -435,6 +435,25 @@ class ScriptBase
     Dir.glob(File.join(@@source_subdir, "#{task}?.*")).map { |f| File.basename(f) }
   end
 
+  # debug?() - true if DEBUG is set (to anything non-empty) in the
+  #  environment, e.g. `DEBUG=1 rake`. Checked live rather than cached, so
+  #  it reflects the current run's environment exactly. Unlike
+  #  WineShellScript's own WINE_DEBUG_HANG (a narrower, Wine-specific
+  #  hang-timing diagnostic - see debug_hang_log), this is the general
+  #  per-test command/expected/actual trace every environment shares.
+  def self.debug?
+    !ENV['DEBUG'].to_s.empty?
+  end
+
+  # debug_log(label, msg) - prints msg to stderr, tagged with label, only
+  #  when debug? - lets a wrong or slow-looking test be diagnosed by
+  #  seeing exactly what execute() actually ran (and what came back)
+  #  without permanently cluttering every normal run's output.
+  def self.debug_log(label, msg)
+    return unless debug?
+    STDERR.puts "[DEBUG] #{label}: #{msg}"
+  end
+
   # shell_out(cmd_str) - runs cmd_str the same way the harness runs a
   #  test's command (i.e. via Kernel#`, whatever shell that natively
   #  invokes), and returns raw stdout/stderr. Subclasses may add their own
@@ -1290,7 +1309,7 @@ class ScriptBase
             #  immediate EOF) instead.
             shell_out_command = is_env_test || needs_interactive?(test) || !input.empty? ?
               command : "#{command} < #{null_device}"
-            #puts "DEBUG: RUNNING #{shell_out_command}"
+            debug_log("RUNNING", shell_out_command)
             output = if is_env_test
               env_shell_out(command, expected)
             elsif needs_interactive?(test)
@@ -1298,8 +1317,8 @@ class ScriptBase
             else
               shell_out(shell_out_command)
             end
-            #puts "EXPECT: |#{expected}|"
-            #puts "OUTPUT: |#{output}|"
+            debug_log("EXPECTED", expected.inspect)
+            debug_log("OUTPUT", output.inspect)
 
             if is_env_test
               test_result = expected == output
@@ -1729,6 +1748,54 @@ class Wsl1ShellScript < PosixShellScript
 end
 
 # =============================================
+# CygwinShellScript - genuine Cygwin Ruby (cygwin1.dll-linked, a real POSIX
+# build - confirmed directly: RUBY_PLATFORM reports "*-cygwin", and Kernel#`
+# is /bin/sh-backed exactly like PosixShellScript, unlike a *native*
+# mingw/UCRT Ruby's Kernel#` which is cmd.exe-backed) running a
+# :cmd/:js/:vbs lesson directory. Unlike WSL1, cmd.exe/cscript.exe already
+# inherit a genuine, correct native Windows cwd here with no UNC/warning
+# problem at all - confirmed directly, a bare relative filename with no
+# path prefix runs fine as-is. The actual problem is narrower: Cygwin's own
+# argv handling mis-parses a "./"-style relative path when it's passed as
+# an argument to a native (non-Cygwin) executable - confirmed directly,
+# "cmd /c ./scripts/a00.output.cmd" fails with "'.' is not recognized...",
+# while the identical file referenced by its Windows form instead
+# ("cmd /c \"$(cygpath -w ./scripts/a00.output.cmd)\"") runs fine - so this
+# only needs the cygwin-run wrapper scripts installed as `cmd`/`cscript` on
+# PATH (see lessons/win_scripts/cygwin-run.sh) to resolve that path first,
+# nothing else different from PosixShellScript.
+# =============================================
+class CygwinShellScript < PosixShellScript
+  # runner() - see Wsl1ShellScript#runner's identical reasoning: the
+  #  cygwin-run wrapper already hardcodes cmd.exe's own "/c" and
+  #  cscript.exe's own "//Nologo" itself, and only ever accepts a single
+  #  positional script path (+ the lesson's own args).
+  def self.runner
+    case @@language.to_sym
+    when :cmd
+      "cmd"
+    when :js, :vbs
+      "cscript"
+    else
+      super
+    end
+  end
+
+  # shell_out(cmd_str) - see Wsl1ShellScript#shell_out's identical CRLF
+  #  reasoning: cmd.exe/cscript.exe are real Windows binaries here too, and
+  #  a genuine Cygwin Ruby's Kernel#` has no native-Windows-Ruby-style CRLF
+  #  translation of its own, so every plain out/err comparison would
+  #  otherwise fail on a trailing \r alone. No shell_out_with_timeout
+  #  wrapping here unlike Wsl1ShellScript - that was a response to a
+  #  confirmed intermittent hang specific to WSL1's cross-kernel process
+  #  interop; nothing analogous has been observed for Cygwin's own, more
+  #  conventional native process spawning.
+  def self.shell_out(cmd_str)
+    `#{cmd_str}`.gsub("\r\n", "\n")
+  end
+end
+
+# =============================================
 # CommandShellScript - native (non-MSYS) Windows Ruby, where Kernel#`
 # invokes cmd.exe. Uses only cmd.exe builtins/native binaries - no
 # posix/GNUWin32 tools required.
@@ -1962,6 +2029,12 @@ WINE_LANGUAGES = %w[cmd js vbs].freeze
 #  PosixShellScript exactly as before, unaffected by any of this.
 WSL1_LANGUAGES = %w[cmd js vbs].freeze
 
+# Languages cygwin-run's `cmd`/`cscript` wrappers actually cover (see
+#  CygwinShellScript) - every other language directory under Cygwin (bash,
+#  perl, ...) has a real Cygwin-native build and keeps using plain
+#  PosixShellScript exactly as before, unaffected by any of this.
+CYGWIN_LANGUAGES = %w[cmd js vbs].freeze
+
 Script = if ENV['MSYSTEM']
   Msys2ShellScript
 elsif RUBY_PLATFORM =~ /mingw|mswin/i
@@ -1970,6 +2043,8 @@ elsif RUBY_PLATFORM =~ /darwin/i && WINE_LANGUAGES.include?(ScriptBase.language)
   WineShellScript
 elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl1?
   Wsl1ShellScript
+elsif RUBY_PLATFORM =~ /cygwin/i && CYGWIN_LANGUAGES.include?(ScriptBase.language)
+  CygwinShellScript
 else
   PosixShellScript
 end
