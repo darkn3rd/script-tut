@@ -14,11 +14,12 @@ GOTO :EOF
 :: "8/1/2026" - no day-name prefix, no zero-padding) has no day-name
 :: token to split off here, so this fails under Wine.
 :SHOWDATE
-  FOR /F "tokens=2 delims= " %%a IN ("%DATE%") DO SET DATEPART=%%a
+  SET "DATEPART="
+  FOR %%a IN (%DATE%) DO SET "DATEPART=%%a"
   FOR /F "tokens=1-3 delims=/" %%a IN ("%DATEPART%") DO (
-    SET mon=%%a
-    SET day=%%b
-    SET year=%%c
+    SET "mon=%%a"
+    SET "day=%%b"
+    SET "year=%%c"
   )
 
   :: Zero-padded month (e.g. "08") never matches the bare 1-12 compared

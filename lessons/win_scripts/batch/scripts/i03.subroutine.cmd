@@ -33,7 +33,16 @@ GOTO :EOF
 :: (confirmed directly) - so the capture file is a plain relative name in
 :: the current directory instead, deleted right after reading it back.
 :SHOWDATE
-  "C:\Program Files\coreutils\bin\date.exe" +%%B_%%d,_%%Y > date_capture.tmp
+  :: Test for date.exe
+  SET "DATE_EXE="
+  FOR %%a IN (date.exe) DO SET "DATE_EXE=%%~$PATH:a"
+  IF NOT DEFINED DATE_EXE (
+    >&2 ECHO ERROR: date.exe was not found on PATH.
+    EXIT /B 127
+  )
+
+  :: Capture Date using CoreUtils date.exe
+  "%DATE_EXE%" +%%B_%%d,_%%Y > date_capture.tmp
   SET /P RAW=<date_capture.tmp
   DEL date_capture.tmp
   SET TODAY=%RAW:_= %
