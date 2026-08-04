@@ -73,10 +73,10 @@ class ScriptBase
     :sh     => "sh",
     :ksh    => "ksh",
     :zsh    => "zsh",
-    :js     => "cscript",
-    :vbs    => "cscript",
+    :js     => "cscript.exe",
+    :vbs    => "cscript.exe",
     :ps1    => "powershell",
-    :cmd    => "cmd"
+    :cmd    => "cmd.exe"
   }
 
   # options required for command
@@ -433,6 +433,34 @@ class ScriptBase
   #  (scripts/ and src/) existed.
   def self.find_implementations(task)
     Dir.glob(File.join(@@source_subdir, "#{task}?.*")).map { |f| File.basename(f) }
+  end
+
+  # target_script_path(path) - converts and quotes the script path handed to
+  # the language runner. Most environments can use the path exactly as Ruby
+  # sees it; Cygwin/WSL1 override this because their POSIX Ruby launches a
+  # native Windows interpreter that requires a Windows-form path.
+  def self.target_script_path(path)
+    path
+  end
+
+  # prepare_shell_command(cmd_str) - final platform hook after stdin/stdout
+  # redirection has been composed. WSL1 uses it to ensure Windows processes
+  # inherit a Windows-accessible cwd; every other environment is unchanged.
+  def self.prepare_shell_command(cmd_str)
+    cmd_str
+  end
+
+  # windows_target_path(path, converter, *options) - shared Cygwin/WSL1
+  # boundary for handing a native Windows interpreter an absolute Windows
+  # path while still composing the outer command for a POSIX /bin/sh.
+  def self.windows_target_path(path, converter, *options)
+    require 'open3'
+    require 'shellwords'
+
+    converted, status = Open3.capture2(converter, *options, File.expand_path(path))
+    raise "#{converter} failed for: #{path}" unless status.success?
+
+    Shellwords.escape(converted.chomp)
   end
 
   # debug?() - true if DEBUG is set (to anything non-empty) in the
@@ -1294,7 +1322,8 @@ class ScriptBase
               interpreter_line = runner
               arg_separator = ""
             end
-            command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
+            target = target_script_path("#{prefix}#{invoked_name}")
+            command = "#{input} #{interpreter_line} #{target} #{arg_separator} #{args} #{redirect}"
             # A plain shell_out invocation with no "in" data of its own
             #  (is_env_test/needs_interactive? each manage their own stdin
             #  via Open3 instead - see env_shell_out/interactive_shell_out -
@@ -1309,6 +1338,8 @@ class ScriptBase
             #  immediate EOF) instead.
             shell_out_command = is_env_test || needs_interactive?(test) || !input.empty? ?
               command : "#{command} < #{null_device}"
+            command = prepare_shell_command(command)
+            shell_out_command = prepare_shell_command(shell_out_command)
             debug_log("RUNNING", shell_out_command)
             output = if is_env_test
               env_shell_out(command, expected)
@@ -1452,7 +1483,7 @@ end
 class WineShellScript < PosixShellScript
   # the resolved binary names (see @@command) that actually need routing
   #  through wine, as opposed to @@language's raw extension-derived keys
-  WINE_TARGET_COMMANDS = %w[cmd cscript]
+  WINE_TARGET_COMMANDS = %w[cmd.exe cscript.exe]
 
   # debug_hang_log(msg) - opt-in diagnostic for tracking down an
   #  intermittent hang seen under `rake <single-category>` (e.g. `rake
@@ -1686,39 +1717,25 @@ class WineShellScript < PosixShellScript
 end
 
 # =============================================
-# Wsl1ShellScript - WSL1 (a genuine Windows binfmt/lxss compatibility
-# layer, not a real Linux VM like WSL2 - see wsl1?) running a :cmd/:js/:vbs
-# lesson directory. WSL1 can exec real cmd.exe/cscript.exe directly, no
-# Wine needed, but only through the wsl1-run wrapper scripts installed as
-# `cmd`/`cscript` on PATH (see lessons/win_scripts/wsl1-run.sh and
-# win_scripts/README.md#wsl1) - calling cmd.exe/cscript.exe directly from
-# a WSL1 shell whose cwd maps to a UNC path (\\wsl.localhost\...) makes
-# cmd.exe print a "UNC paths are not supported" warning to stderr and
-# silently default its working directory to Windows's own instead,
-# corrupting every stderr-compared test; the wrapper sidesteps this by
-# cd-ing to /mnt/c before exec-ing the real binary. Kernel#` is still
-# /bin/sh-backed exactly like PosixShellScript (WSL1 Ruby is a real,
-# native Linux build) - every other language directory keeps using that
-# class unchanged (see the selection logic below) - this only overrides
-# what's actually different for a wrapper-backed invocation.
+# Wsl1ShellScript - WSL1 running a :cmd/:js/:vbs lesson directory. Its Ruby
+# is a native Linux build, but the target interpreter is a native Windows
+# executable. Convert lesson paths with wslpath, normalize Windows CRLF, and
+# give the child a Windows-accessible cwd when the repository itself is on
+# WSL's Linux filesystem. No external wrapper is required.
 # =============================================
 class Wsl1ShellScript < PosixShellScript
-  # runner() - the wsl1-run wrapper (installed as `cmd`/`cscript`) already
-  #  hardcodes cmd.exe's own "/c" and cscript.exe's own "//Nologo" inside
-  #  itself (see wsl1-run.sh) - it only ever accepts a single positional
-  #  script path (+ the lesson's own args), unlike real cmd.exe/cscript.exe.
-  #  Passing "/c"/"//Nologo" again here, the way every other environment's
-  #  @@option does, would just misfire as the wrapper's own <path> argument
-  #  (realpath would then fail looking for a file literally named "/c").
-  def self.runner
-    case @@language.to_sym
-    when :cmd
-      "cmd"
-    when :js, :vbs
-      "cscript"
-    else
-      super
-    end
+  def self.target_script_path(path)
+    windows_target_path(path, "wslpath", "-w")
+  end
+
+  def self.prepare_shell_command(cmd_str)
+    # A cwd already on a mounted Windows drive is safe and preserves the
+    # lesson's normal relative-file semantics. A Linux-only cwd cannot be
+    # inherited by cmd.exe/cscript.exe without a warning, so launch that
+    # child from a stable Windows directory instead. Parentheses keep any
+    # stdin pipeline/redirections inside the changed-directory subshell.
+    return cmd_str if Dir.pwd.match?(%r{\A/mnt/[a-z](?:/|\z)}i)
+    "(cd /mnt/c/Windows/Temp && #{cmd_str})"
   end
 
   # shell_out(cmd_str) - overridden (rather than using PosixShellScript's
@@ -1745,40 +1762,28 @@ class Wsl1ShellScript < PosixShellScript
   def self.shell_out(cmd_str)
     shell_out_with_timeout(cmd_str, timeout_seconds: 25).gsub("\r\n", "\n")
   end
-end
 
-# =============================================
-# CygwinShellScript - genuine Cygwin Ruby (cygwin1.dll-linked, a real POSIX
-# build - confirmed directly: RUBY_PLATFORM reports "*-cygwin", and Kernel#`
-# is /bin/sh-backed exactly like PosixShellScript, unlike a *native*
-# mingw/UCRT Ruby's Kernel#` which is cmd.exe-backed) running a
-# :cmd/:js/:vbs lesson directory. Unlike WSL1, cmd.exe/cscript.exe already
-# inherit a genuine, correct native Windows cwd here with no UNC/warning
-# problem at all - confirmed directly, a bare relative filename with no
-# path prefix runs fine as-is. The actual problem is narrower: Cygwin's own
-# argv handling mis-parses a "./"-style relative path when it's passed as
-# an argument to a native (non-Cygwin) executable - confirmed directly,
-# "cmd /c ./scripts/a00.output.cmd" fails with "'.' is not recognized...",
-# while the identical file referenced by its Windows form instead
-# ("cmd /c \"$(cygpath -w ./scripts/a00.output.cmd)\"") runs fine - so this
-# only needs the cygwin-run wrapper scripts installed as `cmd`/`cscript` on
-# PATH (see lessons/win_scripts/cygwin-run.sh) to resolve that path first,
-# nothing else different from PosixShellScript.
-# =============================================
-class CygwinShellScript < PosixShellScript
-  # runner() - see Wsl1ShellScript#runner's identical reasoning: the
-  #  cygwin-run wrapper already hardcodes cmd.exe's own "/c" and
-  #  cscript.exe's own "//Nologo" itself, and only ever accepts a single
-  #  positional script path (+ the lesson's own args).
-  def self.runner
-    case @@language.to_sym
+  def self.special_version(lang)
+    case lang
     when :cmd
-      "cmd"
+      shell_out(prepare_shell_command("cmd.exe /d /c ver 2>&1 < /dev/null"))[/Version ([\d.]+)/, 1].to_s
     when :js, :vbs
-      "cscript"
+      shell_out(prepare_shell_command("cscript.exe 2>&1 < /dev/null"))[/Windows Script Host Version \S+/].to_s
     else
       super
     end
+  end
+end
+
+# =============================================
+# CygwinShellScript - genuine Cygwin Ruby running a :cmd/:js/:vbs lesson
+# directory. Kernel#` is POSIX-shell-backed, while the target interpreter is
+# native Windows. Convert the lesson filename with cygpath and normalize the
+# interpreter's CRLF output. No external wrapper is required.
+# =============================================
+class CygwinShellScript < PosixShellScript
+  def self.target_script_path(path)
+    windows_target_path(path, "cygpath", "-aw")
   end
 
   # shell_out(cmd_str) - see Wsl1ShellScript#shell_out's identical CRLF
@@ -1792,6 +1797,17 @@ class CygwinShellScript < PosixShellScript
   #  conventional native process spawning.
   def self.shell_out(cmd_str)
     `#{cmd_str}`.gsub("\r\n", "\n")
+  end
+
+  def self.special_version(lang)
+    case lang
+    when :cmd
+      shell_out("cmd.exe /d /c ver 2>&1 < /dev/null")[/Version ([\d.]+)/, 1].to_s
+    when :js, :vbs
+      shell_out("cscript.exe 2>&1 < /dev/null")[/Windows Script Host Version \S+/].to_s
+    else
+      super
+    end
   end
 end
 
@@ -2023,14 +2039,14 @@ end
 #  PosixShellScript exactly as before, unaffected by any of this.
 WINE_LANGUAGES = %w[cmd js vbs].freeze
 
-# Languages wsl1-run's `cmd`/`cscript` wrappers actually cover (see
-#  Wsl1ShellScript) - every other language directory on WSL1 (bash,
+# Native Windows languages handled directly by Wsl1ShellScript. Every other
+#  language directory on WSL1 (bash,
 #  python, ...) has a real, native Linux build and keeps using plain
 #  PosixShellScript exactly as before, unaffected by any of this.
 WSL1_LANGUAGES = %w[cmd js vbs].freeze
 
-# Languages cygwin-run's `cmd`/`cscript` wrappers actually cover (see
-#  CygwinShellScript) - every other language directory under Cygwin (bash,
+# Native Windows languages handled directly by CygwinShellScript. Every other
+#  language directory under Cygwin (bash,
 #  perl, ...) has a real Cygwin-native build and keeps using plain
 #  PosixShellScript exactly as before, unaffected by any of this.
 CYGWIN_LANGUAGES = %w[cmd js vbs].freeze
