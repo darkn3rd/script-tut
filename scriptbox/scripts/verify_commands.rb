@@ -27,10 +27,16 @@ AREAS = [
   {
     name: 'Windows Scripts',
     languages: [
-      { name: 'Batch',        bin: %w[cmd],                version: :cmd },
-      { name: 'PowerShell',   bin: %w[pwsh powershell],     version: :powershell },
-      { name: 'WSH JScript',  bin: %w[cscript],             version: :cscript },
-      { name: 'WSH VBScript', bin: %w[cscript],             version: :cscript },
+      # ".exe" candidates listed first and explicitly, not left to
+      #  find_on_path's own PATHEXT-driven extension search - confirmed
+      #  directly this matters under WSL1: a bare "cmd" there finds
+      #  /usr/local/bin/cmd (this project's own wsl1-run wrapper, not a
+      #  real interpreter to report on), while "cmd.exe" correctly finds
+      #  the real /mnt/c/Windows/system32/cmd.exe instead.
+      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd },
+      { name: 'PowerShell',   bin: %w[pwsh.exe pwsh powershell.exe powershell], version: :powershell },
+      { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
+      { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
     ]
   },
   {
@@ -92,6 +98,11 @@ def find_on_path(name)
   #  as a jarringly-uppercase "cmd.EXE" even though the real file on disk
   #  is "cmd.exe" - downcase these before ever building a candidate.
   exts = Gem.win_platform? ? (ENV['PATHEXT'] || '.EXE;.BAT;.CMD;.COM').split(';').map(&:downcase) : ['']
+  # `name` may already carry a recognized extension itself (e.g.
+  #  "cmd.exe", asked for explicitly - see AREAS' Windows Scripts
+  #  candidates) - appending PATHEXT's own extensions on top of that too
+  #  would go looking for nonsense like "cmd.exe.exe".
+  exts = [''] if exts.any? { |ext| name.downcase.end_with?(ext) }
   ENV['PATH'].to_s.split(File::PATH_SEPARATOR).each do |dir|
     exts.each do |ext|
       candidate = File.join(dir, "#{name}#{ext}")
@@ -179,10 +190,25 @@ end
 def package_info(path)
   return nil unless path
 
+  # A package manager tracks the *real* file it installed, not
+  #  necessarily the name resolve_binary found it under - confirmed
+  #  directly, WSL1's /usr/bin/ksh is a symlink to /usr/bin/ksh93 (the
+  #  package "ksh93u+m" owns the target, dpkg -S on the symlink itself
+  #  finds nothing at all). File.realpath is a no-op for anything that
+  #  isn't a symlink, so resolving unconditionally here is safe for the
+  #  already-working pacman/cygcheck cases too.
+  real = begin
+    File.realpath(path)
+  rescue StandardError
+    path
+  end
+
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-    pacman_owner(pacman, path)
+    pacman_owner(pacman, real)
   elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
-    cygcheck_owner(cygcheck, path)
+    cygcheck_owner(cygcheck, real)
+  elsif (dpkg = find_on_path('dpkg'))
+    apt_owner(dpkg, real)
   end
 end
 
@@ -239,6 +265,43 @@ def cygcheck_owner(cygcheck, path)
 
   version_line = `"#{cygcheck}" -c "#{name}" 2>&1`.lines.find { |l| l.start_with?("#{name} ") }
   { name: name, version: version_line.to_s.split(/\s+/)[1] }
+rescue StandardError
+  nil
+end
+
+# apt_owner(dpkg, path) - Debian/Ubuntu's own file-ownership tool
+#  (confirmed directly under WSL1's Ubuntu). `dpkg -S <file>` prints
+#  "<pkgname>: <file>" (or "<pkg1>,<pkg2>: <file>" for the rare file
+#  shared by multiple packages - first one wins, same "first listed
+#  provider" convention resolve_order.rb's own needs/meets resolution
+#  already uses), and unlike pacman's -Qo, has no version in the same
+#  line at all - `dpkg -s <pkgname>` gets that separately, straight from
+#  the local package database (no network/apt-cache-update dependency,
+#  unlike `apt show`).
+#
+#  A file dpkg doesn't manage at all (confirmed directly: any real
+#  Windows binary reached via /mnt/c under WSL1, or a manually-placed
+#  tool like Strawberry Perl's cpanm.bat) isn't just silent - dpkg -S
+#  prints its own error, "dpkg-query: no path found matching pattern
+#  <file>", to stderr. Merged in via 2>&1, that error's own
+#  "dpkg-query:" prefix *also* contains a colon, so a bare "does this
+#  contain ':'" check was misreading it as a successful
+#  "<pkgname>: <file>" answer, with "dpkg-query" mistaken for the
+#  package name. Checking that the text after the colon actually equals
+#  the path just queried is what a genuine success has to satisfy.
+def apt_owner(dpkg, path)
+  raw = `"#{dpkg}" -S "#{path}" 2>&1`.strip.lines.first.to_s.strip
+  return nil unless raw.include?(': ')
+
+  pkgs, found_path = raw.split(': ', 2)
+  return nil unless found_path == path
+
+  name = pkgs.to_s.split(',').first.to_s.strip
+  return nil if name.empty?
+
+  version_line = `"#{dpkg}" -s "#{name}" 2>&1`.lines.find { |l| l.start_with?('Version:') }
+  version = version_line.to_s.sub(/\AVersion:\s*/, '').strip
+  { name: name, version: version.empty? ? nil : version }
 rescue StandardError
   nil
 end
@@ -349,12 +412,16 @@ def probe_version(name, path, mode)
     raw = `"#{path}" -version 2>&1`
     raw[/version "([^"]+)"/, 1] || raw[/(\d+\.\d+\.\d+)/, 1]
   when :ksh_env
-    # `ksh` doesn't reliably resolve to a real AT&T/ksh93 build at all -
-    #  confirmed directly, on MSYS2 it's the `mksh` package - and neither
-    #  ksh93 nor mksh have a --version flag; both instead set their own
-    #  $KSH_VERSION in every shell they start, which works identically
-    #  whichever actual ksh implementation this resolves to.
-    raw = `"#{path}" -c "echo $KSH_VERSION" 2>&1`.strip
+    # `ksh` doesn't reliably resolve to the same implementation
+    #  everywhere - confirmed directly, on MSYS2/Cygwin it's `mksh`
+    #  (which has no --version, but sets $KSH_VERSION); on Ubuntu/WSL1
+    #  it's real AT&T ksh93 (which *does* answer --version - "version
+    #  sh (AT&T Research) 93u+m/..." - but doesn't reliably set
+    #  $KSH_VERSION at all). Try the flag first since it's the more
+    #  informative, standard-shaped answer when it works, falling back
+    #  to the variable for whichever implementation doesn't support it.
+    raw = `"#{path}" --version 2>&1`.strip
+    raw = `"#{path}" -c "echo $KSH_VERSION" 2>&1`.strip if error_output?(raw)
     error_output?(raw) ? nil : raw
   else # :flag - the common case, try --version then -version
     raw = `"#{path}" --version 2>&1`
@@ -381,7 +448,11 @@ end
 def error_output?(text)
   return true if text.to_s.strip.empty?
 
-  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized/i ? true : false
+  # "not found"/"no such file" - confirmed directly with cpanm.bat, a
+  #  Windows launcher found via /mnt/c under WSL1 that resolve_binary
+  #  happily locates (it's a real file) but a Linux shell can't actually
+  #  execute (wrong format entirely, not just a missing flag).
+  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized|not found|no such file/i ? true : false
 end
 
 # tcl_version(path) - `echo "puts $tcl_version" | tclsh` is tempting but
