@@ -244,7 +244,8 @@ As MinTTY (`mintty.exe`) will crash if gsudo is launched, you can launch MSYS2 o
 For **[Cygwin](https://www.cygwin.com/)**, you can run this. 
 
 ```pwsh
-& "C:\cygwin64\bin\bash.exe" --login -i
+# launch Chocolatey installed Cygwin
+& "C:\tools\cygwin\bin\bash.exe" --login -i
 ```
 
 For [MSYS2](https://www.msys2.org/), you can run this, depending on desired environment: 

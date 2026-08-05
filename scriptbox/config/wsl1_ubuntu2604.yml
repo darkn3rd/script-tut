@@ -1,4 +1,4 @@
-ubuntu22:
+ubuntu26_wsl1:
   global:
     packages:
       - script: ubuntu22_sdkman
@@ -178,6 +178,10 @@ scripts:
     cmd: |
       sudo tee /usr/local/bin/wsl1-run >/dev/null <<'EOF'
       #!/usr/bin/env bash
+      # WSL1 Run Wrapper 
+      # This script is a convenience script for running Command Shell (cmd.exe)
+      #  or Windows Script Host (cscript) scripts.  This is not used by the 
+      #  Test Harness
       set -euo pipefail
 
       COMMAND_NAME=${0##*/}
@@ -216,6 +220,3 @@ scripts:
       sudo chmod 755 /usr/local/bin/wsl1-run
       sudo ln -s /usr/local/bin/wsl1-run /usr/local/bin/cmd
       sudo ln -s /usr/local/bin/wsl1-run /usr/local/bin/cscript
-
-
-
