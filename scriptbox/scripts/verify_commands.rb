@@ -219,18 +219,25 @@ PACKAGE_CACHE = {}
 #  isn't a package-owned file at all (manually placed, or built from
 #  source).
 #
-#  PACKAGE_CACHE.fetch (not []) - a *cached* nil (a real "not owned"
-#  answer from prefetch_package_info!) must short-circuit here without
-#  falling through to lookup_package_info's own, individual, un-batched
+#  A cached "not owned" (nil) answer must short-circuit here without
+#  falling through to lookup_package_info's own individual, un-batched
 #  shell-out - that's exactly the per-tool cost prefetching exists to
-#  avoid. fetch's block only ever runs for a genuine cache *miss*
-#  (prefetch skipped, or missed this particular path), so this still
-#  works correctly even if prefetch_package_info! is never called at all.
+#  avoid. Hash#fetch-with-a-block *reads* an already-cached nil
+#  correctly (its block only runs on a genuine key miss), but it never
+#  *writes* the block's own result back into the hash - confirmed
+#  directly this was a real gap: two languages resolving to the exact
+#  same not-package-owned file (e.g. WSH JScript and VBScript both
+#  landing on the identical cscript.exe) each re-ran the same
+#  individual lookup from scratch instead of the second one being a
+#  cache hit. key?/[]= here instead of fetch's block form is what
+#  actually persists a fresh lookup - found *or* nil - for next time.
 def package_info(path)
   return nil unless path
 
   real = realpath(path)
-  PACKAGE_CACHE.fetch(real) { lookup_package_info(real) }
+  return PACKAGE_CACHE[real] if PACKAGE_CACHE.key?(real)
+
+  PACKAGE_CACHE[real] = lookup_package_info(real)
 end
 
 # realpath(path) - a package manager tracks the *real* file it
@@ -646,6 +653,20 @@ def resolve_language(lang)
   )
 end
 
+# ENTRY_CACHE - [real path, version_mode] -> the {resolved_binary:,
+#  package_name:, path:, version:} portion of resolve_entry's own
+#  result - i.e. everything that costs a subprocess call to compute,
+#  memoized across every call site that happens to resolve to the same
+#  underlying file. Confirmed directly this matters beyond just
+#  package_info's own cache (see its comment): WSH JScript and WSH
+#  VBScript both resolve to the identical cscript.exe, which isn't
+#  package-owned on Cygwin at all - package_info correctly caching its
+#  own "not owned" answer still leaves probe_version's *own* --version
+#  subprocess call running twice for the exact same file. This caches
+#  the whole computed result instead, so a repeat path is a total no-op
+#  the second time, not just a partial one.
+ENTRY_CACHE = {}
+
 # resolve_entry(candidates, version_mode) - shared by resolve_language
 #  (a language) and its own "tools" list (its dependent tooling) - both
 #  need the exact same resolve/package-lookup/version-fallback shape, so
@@ -658,20 +679,27 @@ end
 #  comment for why that's preferred where it's available at all.
 def resolve_entry(candidates, version_mode)
   name, path = resolve_binary(candidates)
-  pkg = package_info(path)
-  {
-    binaries: candidates,
-    resolved_binary: pkg ? pkg[:name] : name,
-    # Kept separate from resolved_binary (which always has *some* value,
-    #  even a package manager, e.g. "cmd" for Batch) - table_row only
-    #  wants to flag an actual package-identity discovery like
-    #  "ksh" -> "mksh", not every ordinary case where the candidate name
-    #  searched for isn't identical to the language's own display name.
-    package_name: pkg && pkg[:name],
-    found: !path.nil?,
-    path: to_posix(path),
-    version: (pkg && pkg[:version]) || probe_version(name, path, version_mode)
-  }
+  real = path && realpath(path)
+  cached = real && ENTRY_CACHE.key?([real, version_mode]) && ENTRY_CACHE[[real, version_mode]]
+
+  computed = cached || begin
+    pkg = package_info(path)
+    {
+      resolved_binary: pkg ? pkg[:name] : name,
+      # Kept separate from resolved_binary (which always has *some*
+      #  value, even a package manager, e.g. "cmd" for Batch) -
+      #  table_row only wants to flag an actual package-identity
+      #  discovery like "ksh" -> "mksh", not every ordinary case where
+      #  the candidate name searched for isn't identical to the
+      #  language's own display name.
+      package_name: pkg && pkg[:name],
+      path: to_posix(path),
+      version: (pkg && pkg[:version]) || probe_version(name, path, version_mode)
+    }
+  end
+  ENTRY_CACHE[[real, version_mode]] = computed if real && !cached
+
+  { binaries: candidates, found: !path.nil? }.merge(computed)
 end
 
 # ---------------------------------------------------------------------
