@@ -662,8 +662,14 @@ end
 #  package_info(path) call along the way is a cache hit.
 def prefetch_package_info!
   paths = AREAS.flat_map { |area| area[:languages] }.flat_map do |lang|
+    lang_path = resolve_binary(lang[:bin])[1]
+    # Mirrors resolve_language's own "skip tools when the language
+    #  itself isn't found" rule - no point prefetching package info for
+    #  tools that will never be resolved or displayed anyway.
+    next [lang_path] unless lang_path
+
     dirs = lang[:native_tools] ? windows_native_path_dirs : nil
-    [resolve_binary(lang[:bin])[1]] + (lang[:tools] || []).map { |tool| resolve_binary(Array(tool), dirs)[1] }
+    [lang_path] + (lang[:tools] || []).map { |tool| resolve_binary(Array(tool), dirs)[1] }
   end.compact.map { |p| realpath(p) }.uniq
   return if paths.empty?
 
@@ -921,12 +927,28 @@ end
 #  strings need genuinely different probes - see Script.rb's
 #  @@special_version_langs) - a report tool can settle for "close enough
 #  to confirm it's installed", where the test harness can't.
+# NULL_DEVICE - stdin gets redirected from this in every probe_version
+#  subprocess call below - confirmed directly this isn't hypothetical:
+#  MSYS2's own /usr/bin/date.exe, run bare with no arguments, doesn't
+#  error or print anything - it prompts "Enter the new date:" and
+#  blocks on stdin, the exact same class of hang testbox/Script.rb's
+#  own PosixShellScript already had to defend against early in this
+#  project (see its shell_out_command's own null-device redirect). A
+#  probed binary reading from Ruby's own inherited stdin - which has no
+#  input waiting, and won't hit EOF either since it's an interactive
+#  console - would freeze the entire report generation, not just fail
+#  one row. `< NUL`/`< /dev/null` redirection syntax is valid for both
+#  a cmd.exe-backed and a POSIX-shell-backed Kernel#`, so this needs no
+#  native_windows_ruby?-style branching the way probe_version's own
+#  :powershell quoting does.
+NULL_DEVICE = File::NULL
+
 def probe_version(name, path, mode)
   return nil unless path
 
   case mode
   when :cmd
-    `#{path} /c ver 2>&1`[/Version ([\d.]+)/, 1]
+    `#{path} /c ver < #{NULL_DEVICE} 2>&1`[/Version ([\d.]+)/, 1]
   when :powershell
     # Quote style has to match which shell is actually delivering this
     #  backtick - confirmed directly (same reasoning testbox/Script.rb's
@@ -941,15 +963,15 @@ def probe_version(name, path, mode)
     #  by /bin/sh's own quoting, leaving pwsh the same bare, unquoted
     #  expression text either way.
     quoted = native_windows_ruby? ? '"$PSVersionTable.PSVersion.ToString()"' : "'$PSVersionTable.PSVersion.ToString()'"
-    `"#{path}" -NoProfile -NonInteractive -Command #{quoted} 2>&1`.strip
+    `"#{path}" -NoProfile -NonInteractive -Command #{quoted} < #{NULL_DEVICE} 2>&1`.strip
   when :cscript
-    `#{path} 2>&1`[/Version (\S+)/, 1]
+    `#{path} < #{NULL_DEVICE} 2>&1`[/Version (\S+)/, 1]
   when :tcl
     tcl_version(path)
   when :go
-    `"#{path}" version 2>&1`[/go version go(\S+)/, 1]
+    `"#{path}" version < #{NULL_DEVICE} 2>&1`[/go version go(\S+)/, 1]
   when :java
-    raw = `"#{path}" -version 2>&1`
+    raw = `"#{path}" -version < #{NULL_DEVICE} 2>&1`
     raw[/version "([^"]+)"/, 1] || raw[/(\d+\.\d+\.\d+)/, 1]
   when :ksh_env
     # `ksh` doesn't reliably resolve to the same implementation
@@ -960,12 +982,12 @@ def probe_version(name, path, mode)
     #  $KSH_VERSION at all). Try the flag first since it's the more
     #  informative, standard-shaped answer when it works, falling back
     #  to the variable for whichever implementation doesn't support it.
-    raw = `"#{path}" --version 2>&1`.strip
-    raw = `"#{path}" -c "echo $KSH_VERSION" 2>&1`.strip if error_output?(raw)
+    raw = `"#{path}" --version < #{NULL_DEVICE} 2>&1`.strip
+    raw = `"#{path}" -c "echo $KSH_VERSION" < #{NULL_DEVICE} 2>&1`.strip if error_output?(raw)
     error_output?(raw) ? nil : raw
   else # :flag - the common case, try --version then -version
-    raw = `"#{path}" --version 2>&1`
-    raw = `"#{path}" -version 2>&1` if error_output?(raw)
+    raw = `"#{path}" --version < #{NULL_DEVICE} 2>&1`
+    raw = `"#{path}" -version < #{NULL_DEVICE} 2>&1` if error_output?(raw)
     return nil if error_output?(raw)
 
     # Search the *whole* output, not just the first line - some tools
@@ -1010,7 +1032,7 @@ def tcl_version(path)
   Dir.mktmpdir do |dir|
     script = File.join(dir, 'tcl_version_probe.tcl')
     File.write(script, "puts $tcl_version\n")
-    `"#{path}" "#{script}" 2>&1`.strip
+    `"#{path}" "#{script}" < #{NULL_DEVICE} 2>&1`.strip
   end
 end
 
@@ -1036,24 +1058,35 @@ end
 
 def resolve_language(lang)
   entry = resolve_entry(lang[:bin], lang[:version])
-  entry.merge(
-    name: lang[:name],
-    binaries: lang[:bin],
-    # A tools: entry is normally a plain tool name (e.g. "make"), but
-    #  can also be an array of [real-name, search-only hint, ...] -
-    #  same "tcl"/"jvm" trick languages already use for
-    #  chocolatey_owner's tag search, just plumbed through Array() so
-    #  the common single-name case doesn't need to change shape at all.
-    tools: (lang[:tools] || []).map do |tool|
-      names = Array(tool)
-      # native_tools: true (Batch's own AREAS entry) means these tools
-      #  need to be reachable via cmd.exe's real PATH specifically, not
-      #  wherever Ruby itself happens to be running from - see
-      #  windows_native_path_dirs.
-      dirs = lang[:native_tools] ? windows_native_path_dirs : nil
-      resolve_entry(names, :flag, dirs).merge(name: names.first)
-    end
-  )
+  # Tools are only meaningful as *dependent* tooling for this specific
+  #  language's own lessons - if the language's own compiler/
+  #  interpreter isn't even present, there's nothing for them to be
+  #  dependent tooling for. Confirmed directly this matters most for
+  #  Batch: on any non-Windows platform cmd.exe is never found at all,
+  #  so listing date.exe/grep.exe as if they were relevant Batch
+  #  tooling would be actively misleading, not just extra noise -
+  #  same reasoning applies to e.g. "make" under a missing compiler.
+  #  Skipped rather than resolved-and-hidden, so no subprocess time is
+  #  spent probing tools nothing can use anyway.
+  tools = entry[:found] ? resolve_tools(lang) : []
+  entry.merge(name: lang[:name], binaries: lang[:bin], tools: tools)
+end
+
+# resolve_tools(lang) - a tools: entry is normally a plain tool name
+#  (e.g. "make"), but can also be an array of [real-name, search-only
+#  hint, ...] - same "tcl"/"jvm" trick languages already use for
+#  chocolatey_owner's tag search, just plumbed through Array() so the
+#  common single-name case doesn't need to change shape at all.
+def resolve_tools(lang)
+  (lang[:tools] || []).map do |tool|
+    names = Array(tool)
+    # native_tools: true (Batch's own AREAS entry) means these tools
+    #  need to be reachable via cmd.exe's real PATH specifically, not
+    #  wherever Ruby itself happens to be running from - see
+    #  windows_native_path_dirs.
+    dirs = lang[:native_tools] ? windows_native_path_dirs : nil
+    resolve_entry(names, :flag, dirs).merge(name: names.first)
+  end
 end
 
 # ENTRY_CACHE - [real path, version_mode] -> the {resolved_binary:,
