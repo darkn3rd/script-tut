@@ -443,6 +443,36 @@ class ScriptBase
     path
   end
 
+  # env_tmp_dir() - a fresh, isolated directory for env_shell_out to run a
+  #  lesson's own env-test subprocess in (see env_shell_out's own comment).
+  #  Every language's n20.setvars.* writes to a bare, hardcoded
+  #  "dump_env.out" with no path of its own - running two invocations (two
+  #  terminals racing each other, a wrapper re-running a lesson that a
+  #  prior crashed run never got to clean up after, ...) from the *same*
+  #  directory risks exactly the file-collision/lock-contention scenario
+  #  this exists to rule out entirely, not just make less likely.
+  #
+  #  Overridden by Wsl1ShellScript/CygwinShellScript, the same two classes
+  #  that already override target_script_path for an identical reason:
+  #  Dir.mktmpdir's own default location isn't necessarily reachable by
+  #  the *native Windows* interpreter these classes actually launch - a
+  #  WSL1 /tmp lives inside its own private VM disk, invisible to any real
+  #  Windows process at all, the same constraint prepare_shell_command's
+  #  own /mnt/c/Windows/Temp fallback already documents and works around.
+  def self.env_tmp_dir
+    require 'tmpdir'
+    Dir.mktmpdir
+  end
+
+  # env_tmp_dir_disposable?() - true by default: env_tmp_dir above always
+  #  returns a fresh Dir.mktmpdir env_shell_out itself created and is
+  #  safe to fully remove when done. Wsl1ShellScript overrides this to
+  #  false, since its own env_tmp_dir override returns a real, shared,
+  #  pre-existing system directory instead - see its own comment.
+  def self.env_tmp_dir_disposable?
+    true
+  end
+
   # prepare_shell_command(cmd_str) - final platform hook after stdin/stdout
   # redirection has been composed. WSL1 uses it to ensure Windows processes
   # inherit a Windows-accessible cwd; every other environment is unchanged.
@@ -655,8 +685,9 @@ class ScriptBase
   end
 
   # DUMP_ENV_FILE - the file a lesson dumps its own environment to (see
-  #  env_shell_out) - a fixed, well-known name in the current directory,
-  #  same convention every language's n20.setvars.* lesson follows.
+  #  env_shell_out) - a fixed, well-known name, same convention every
+  #  language's n20.setvars.* lesson follows. No lesson script needs to
+  #  know or care where it actually ends up - see env_tmp_dir.
   DUMP_ENV_FILE = "dump_env.out"
 
   # env_shell_out(cmd_str, expected_env) - like shell_out, but for a
@@ -677,21 +708,26 @@ class ScriptBase
   #  that - reading it is plain file I/O, no OS-specific process
   #  introspection needed anywhere.
   #
-  #  Launches cmd_str in the background, waits for its prompt line (by
-  #  which point DUMP_ENV_FILE has already been written), reads it
-  #  directly, then writes a newline to unblock the lesson - which
-  #  deletes DUMP_ENV_FILE itself as part of its own exit. Returns a
-  #  hash of {key => actual_value} for every key expected_env asked
-  #  about - report() compares this against expected_env itself.
+  #  Launches cmd_str in the background (from a fresh env_tmp_dir - see
+  #  its own comment for why: two invocations of the same lesson, racing
+  #  or one left over from a prior crash, must never be able to collide
+  #  on the same DUMP_ENV_FILE), waits for its prompt line (by which
+  #  point DUMP_ENV_FILE has already been written), reads it directly,
+  #  then writes a newline to unblock the lesson - which deletes
+  #  DUMP_ENV_FILE itself as part of its own exit. Returns a hash of
+  #  {key => actual_value} for every key expected_env asked about -
+  #  report() compares this against expected_env itself.
   def self.env_shell_out(cmd_str, expected_env, timeout_seconds: 15)
     require 'open3'
+    require 'fileutils'
     actual_env = {}
+    tmp_dir = env_tmp_dir
 
     # See interactive_shell_out's identical popen_opts/watchdog comments -
     #  this "n2" test runs under every language (is_env_test isn't gated
     #  to any one @@language the way needs_interactive? is), so a stalled
     #  lesson here is reachable regardless of platform, not just :cmd.
-    popen_opts = native_unix? ? { pgroup: true } : {}
+    popen_opts = (native_unix? ? { pgroup: true } : {}).merge(chdir: tmp_dir)
     Open3.popen3(cmd_str, **popen_opts) do |stdin, stdout, _stderr, wait_thr|
       # See interactive_shell_out's identical watchdog comment - closing
       #  our own read end is what actually guarantees this unblocks, since
@@ -712,7 +748,8 @@ class ScriptBase
         #  or flaky on a slow/loaded one.
         stdout.readline rescue nil
 
-        dump = File.exist?(DUMP_ENV_FILE) ? File.read(DUMP_ENV_FILE) : ""
+        dump_path = File.join(tmp_dir, DUMP_ENV_FILE)
+        dump = File.exist?(dump_path) ? File.read(dump_path) : ""
         expected_env.each_key do |key|
           actual_env[key] = dump[/^#{Regexp.escape(key)}=(.*)$/, 1]&.strip
         end
@@ -740,6 +777,21 @@ class ScriptBase
     end
 
     actual_env
+  ensure
+    # env_tmp_dir_disposable? guards this - Wsl1ShellScript's own
+    #  env_tmp_dir override returns a real, shared, pre-existing system
+    #  directory (see its own comment for why), not something owned
+    #  here; removing *that* would be catastrophic, not just messy.
+    # rescue-wrapped, not left to raise - a disposable temp dir that
+    #  fails to clean up (e.g. the lesson's own subprocess still has a
+    #  lingering handle on it after a timeout/kill) shouldn't turn a
+    #  real test result into a crash; it's just a leftover temp dir at
+    #  that point, same as any other orphaned-process leftover already
+    #  possible here.
+    begin
+      FileUtils.remove_entry(tmp_dir) if tmp_dir && env_tmp_dir_disposable? && Dir.exist?(tmp_dir)
+    rescue StandardError
+    end
   end
 
   # version() - human-readable version string for the language under test.
@@ -1322,7 +1374,24 @@ class ScriptBase
               interpreter_line = runner
               arg_separator = ""
             end
-            target = target_script_path("#{prefix}#{invoked_name}")
+            raw_target = "#{prefix}#{invoked_name}"
+            # Absolute *before* target_script_path, not after - its own
+            #  Wsl1ShellScript/CygwinShellScript overrides already
+            #  produce a Windows-form absolute path (via
+            #  windows_target_path's own File.expand_path call), and
+            #  running File.expand_path a *second* time on an
+            #  already-converted "C:\..." string, from a still-POSIX
+            #  Ruby, wouldn't recognize it as absolute at all - it'd try
+            #  to treat it as relative and mangle it. Only needed for
+            #  is_env_test: env_shell_out now runs its subprocess from a
+            #  fresh env_tmp_dir rather than the lesson's own directory
+            #  (see its own comment for why), so the interpreter needs
+            #  an absolute reference to actually find the script there;
+            #  every other test still runs from the lesson directory
+            #  itself, where the existing relative reference already
+            #  works fine.
+            raw_target = File.expand_path(raw_target) if is_env_test
+            target = target_script_path(raw_target)
             command = "#{input} #{interpreter_line} #{target} #{arg_separator} #{args} #{redirect}"
             # A plain shell_out invocation with no "in" data of its own
             #  (is_env_test/needs_interactive? each manage their own stdin
@@ -1728,6 +1797,36 @@ class Wsl1ShellScript < PosixShellScript
     windows_target_path(path, "wslpath", "-w")
   end
 
+  # env_tmp_dir() - NOT a fresh Dir.mktmpdir subdirectory here, unlike
+  #  the base default or CygwinShellScript's own override - confirmed
+  #  directly that doesn't actually work for WSL1: prepare_shell_command
+  #  below unconditionally wraps every cmd/js/vbs command with
+  #  "(cd /mnt/c/Windows/Temp && ...)" *before* env_shell_out ever sees
+  #  the command string, and that wrap always wins over Open3's own
+  #  chdir: option (it's the first thing the spawned shell actually
+  #  executes) - so the real lesson script always runs from
+  #  /mnt/c/Windows/Temp regardless of what directory env_tmp_dir
+  #  chooses. Pointing this at that same shared location keeps
+  #  env_shell_out's own read in sync with where the file actually lands
+  #  - the trade-off is WSL1 doesn't get the same full collision
+  #  protection every other platform does here (two concurrent WSL1
+  #  invocations can still collide, same as before this existed) -
+  #  properly fixing that would mean making prepare_shell_command itself
+  #  aware of env_tmp_dir, a larger change than this one. See
+  #  env_tmp_dir_disposable? - this location must never be deleted.
+  def self.env_tmp_dir
+    "/mnt/c/Windows/Temp"
+  end
+
+  # env_tmp_dir_disposable?() - false here: env_tmp_dir above returns a
+  #  real, shared, pre-existing system directory, not something
+  #  env_shell_out created and owns - deleting it would be catastrophic.
+  #  See ScriptBase's own default (true) for the normal case, where
+  #  env_tmp_dir always returns a fresh Dir.mktmpdir of its own.
+  def self.env_tmp_dir_disposable?
+    false
+  end
+
   def self.prepare_shell_command(cmd_str)
     # A cwd already on a mounted Windows drive is safe and preserves the
     # lesson's normal relative-file semantics. A Linux-only cwd cannot be
@@ -1784,6 +1883,14 @@ end
 class CygwinShellScript < PosixShellScript
   def self.target_script_path(path)
     windows_target_path(path, "cygpath", "-aw")
+  end
+
+  # env_tmp_dir() - same reasoning as Wsl1ShellScript's own override,
+  #  just Cygwin's own drive-mount convention (/cygdrive/c/... rather
+  #  than /mnt/c/...).
+  def self.env_tmp_dir
+    require 'tmpdir'
+    Dir.mktmpdir(nil, "/cygdrive/c/Windows/Temp")
   end
 
   # shell_out(cmd_str) - see Wsl1ShellScript#shell_out's identical CRLF

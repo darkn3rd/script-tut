@@ -67,17 +67,30 @@ LANGUAGE_DIRS = {
 ANSI = /\e\[\d+m/.freeze
 
 # run_rake(dir) - the raw, ANSI-stripped combined stdout+stderr of a
-#  `rake` run in dir. stdin redirected from NULL_DEVICE for the same
-#  reason compile_check.rb's own build_lesson already does this - a
-#  hang here would freeze the whole run, not just one language. Wrapped
-#  in RAKE_TIMEOUT as a second line of defense on top of that, for
-#  whatever this class of hang turns out to be beyond simple stdin
-#  starvation.
+#  `rake` run in dir.
+#
+#  Deliberately does NOT redirect stdin from NULL_DEVICE the way
+#  compile_check.rb's own build_lesson does - confirmed directly that
+#  was actively wrong here: testbox/Script.rb's own harness already has
+#  careful per-test logic (its "is_env_test || needs_interactive?(test)"
+#  check) deciding, per lesson, whether to connect that specific
+#  subprocess's stdin to the real terminal or redirect it - built and
+#  tested earlier in this same project specifically so lessons like
+#  win_scripts/powershell's own n20.setvars.ps1 can pause on a genuine
+#  "Hit Return to continue" ([Console]::In.ReadLine()) for an external
+#  observer to inspect a dumped-environment file before it deletes it
+#  and exits. Wrapping the *outer* rake invocation in a blanket NUL
+#  redirect gets inherited by every child process rake spawns, which
+#  overrides Script.rb's own per-test decision regardless of what it
+#  wants - ReadLine() then hits immediate EOF from a device that can
+#  never signal "a human is about to press Enter", and hangs forever.
+#  RAKE_TIMEOUT below is the safety net now instead - a real hang still
+#  can't block the whole run, it just eventually reports as failed.
 def run_rake(dir)
   rake = find_on_path('rake')
   return 'rake not found on PATH' unless rake
 
-  Dir.chdir(dir) { Timeout.timeout(RAKE_TIMEOUT) { `"#{rake}" < #{NULL_DEVICE} 2>&1` } }.gsub(ANSI, '')
+  Dir.chdir(dir) { Timeout.timeout(RAKE_TIMEOUT) { `"#{rake}" 2>&1` } }.gsub(ANSI, '')
 rescue Timeout::Error
   "ERROR: rake did not finish within #{RAKE_TIMEOUT}s (possibly hung)"
 end
