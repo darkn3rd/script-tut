@@ -293,7 +293,7 @@ def lookup_package_info(real)
   elsif (dpkg = find_on_path('dpkg'))
     apt_owner(dpkg, real)
   else
-    homebrew_owner(real)
+    homebrew_owner(real) || macos_java_cask(real)
   end
 end
 
@@ -350,6 +350,34 @@ def homebrew_owner(real)
 
   name = m[1]
   { name: name, version: brew_installed_list(find_on_path('brew'))[name] }
+end
+
+# macos_java_cask(real) - {name:, version:} for a JDK cask (corretto,
+#  temurin, zulu, ...), a case homebrew_owner's own prefix-rooted match
+#  can never catch: confirmed directly, `brew install --cask corretto@17`
+#  runs a real macOS .pkg installer that drops the JDK straight into
+#  /Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk (the
+#  standard system-wide JDK registration point every "java_home"-aware
+#  tool expects), entirely outside Homebrew's own prefix tree - there's
+#  no Cellar/opt/Caskroom symlink chain back to Homebrew at all for
+#  homebrew_owner to walk, unlike a normal formula/cask install. The
+#  cask's own name is still recoverable by fuzzy substring match: cask
+#  names for JDKs are "<vendor>[@<major>]" (e.g. "corretto@17"), and the
+#  installed bundle's own directory name reliably embeds both the
+#  vendor and the major version together (e.g. "amazon-corretto-17.jdk")
+#  - confirmed directly against a real "corretto@17" install.
+def macos_java_cask(real)
+  return nil unless RUBY_PLATFORM =~ /darwin/
+
+  bundle = real.to_s[%r{/([^/]+)\.jdk/Contents/Home/bin/}, 1]
+  return nil unless bundle
+
+  brew = find_on_path('brew')
+  return nil unless brew
+
+  installed = brew_installed_list(brew)
+  name = installed.keys.find { |cask| cask.split('@').all? { |part| bundle.downcase.include?(part.downcase) } }
+  name && { name: name, version: installed[name] }
 end
 
 # prefetch_package_info!() - resolves every language's and every tool's
