@@ -205,19 +205,23 @@ end
 PACKAGE_CACHE = {}
 
 # package_info(path) - {name:, version:} from this platform's own
-#  package manager, given the file that's *actually* on disk - not
-#  guessed from whatever name found it. Confirmed directly this
+#  package manager (pacman/MSYS2, cygcheck/Cygwin, dpkg/Debian-Ubuntu,
+#  or the Cellar path itself for Homebrew/macOS - see lookup_package_info
+#  for the priority order), given the file that's *actually* on disk -
+#  not guessed from whatever name found it. Confirmed directly this
 #  matters: MSYS2's own "ksh" binary is provided by a package literally
 #  named "mksh", not "ksh" - the same kind of alias @@command_override
 #  already has to handle for python2/python3 in testbox/Script.rb, just
 #  discovered from the *package* side instead of the language side here.
 #  Preferred over a plain --version probe (see probe_version) precisely
 #  because it's package metadata - closer to what `pacman -Qi`/`apt-cyg
-#  show` themselves report than a tool's own (sometimes missing, see
-#  dash; sometimes needlessly verbose, see mksh's banner) self-reported
-#  version string. nil if no package manager is available, or `path`
-#  isn't a package-owned file at all (manually placed, or built from
-#  source).
+#  show`/`brew info` themselves report than a tool's own (sometimes
+#  missing, see dash; sometimes needlessly verbose, see mksh's/real
+#  ksh93's own --version banner - confirmed directly this affects macOS
+#  too, wherever ksh93 is actually the resolved implementation) self-
+#  reported version string. nil if no package manager is available, or
+#  `path` isn't a package-owned file at all (manually placed, or built
+#  from source).
 #
 #  A cached "not owned" (nil) answer must short-circuit here without
 #  falling through to lookup_package_info's own individual, un-batched
@@ -260,7 +264,25 @@ def lookup_package_info(real)
     cygcheck_owner(cygcheck, real)
   elsif (dpkg = find_on_path('dpkg'))
     apt_owner(dpkg, real)
+  else
+    homebrew_owner(real)
   end
+end
+
+# homebrew_owner(real) - {name:, version:} straight from the path
+#  string itself, no subprocess call at all - confirmed directly this
+#  works: every Homebrew-installed binary is a symlink chain (e.g.
+#  /usr/local/bin/bash -> .../opt/bash/bin/bash -> ...) that bottoms out
+#  in /usr/local/Cellar/<formula>/<version>/... (Intel) or
+#  /opt/homebrew/Cellar/... (Apple Silicon) - realpath (already computed
+#  by package_info before calling this) has already walked that whole
+#  chain, so the formula name and its exact installed version are
+#  sitting right there in the resolved string, regardless of which
+#  prefix Homebrew happens to be installed under. No `brew` invocation
+#  needed - unlike pacman/cygcheck/dpkg, this is effectively free.
+def homebrew_owner(real)
+  m = real.to_s.match(%r{/(?:Cellar|Caskroom)/([^/]+)/([^/]+)/})
+  m && { name: m[1], version: m[2] }
 end
 
 # prefetch_package_info!() - resolves every language's and every tool's
