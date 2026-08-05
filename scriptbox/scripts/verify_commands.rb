@@ -117,13 +117,21 @@ def find_on_path(name)
   #  - NTFS is case-insensitive so this doesn't affect whether a file is
   #  actually found, but it would otherwise leak into the reported path
   #  as a jarringly-uppercase "cmd.EXE" even though the real file on disk
-  #  is "cmd.exe" - downcase these before ever building a candidate.
-  exts = windows_fs ? (ENV['PATHEXT'] || '.EXE;.BAT;.CMD;.COM').split(';').map(&:downcase) : ['']
+  #  is "cmd.exe" - downcase these before ever building a candidate. The
+  #  bare, extension-less name stays in the list too (tried last, after
+  #  the real extensions) rather than replacing it - confirmed directly
+  #  this matters even under Cygwin: /usr/bin/ksh is a genuine Cygwin
+  #  symlink (`ksh -> mksh.exe`) whose *own* filename carries no
+  #  extension at all, same for /usr/bin/python3 (-> /etc/alternatives/
+  #  python3, itself another extension-less symlink) - trying only
+  #  ".exe"/".bat"/... candidates never finds either, and silently falls
+  #  through to an unrelated Windows-side install found later on PATH.
+  exts = windows_fs ? (ENV['PATHEXT'] || '.EXE;.BAT;.CMD;.COM').split(';').map(&:downcase) + [''] : ['']
   # `name` may already carry a recognized extension itself (e.g.
   #  "cmd.exe", asked for explicitly - see AREAS' Windows Scripts
   #  candidates) - appending PATHEXT's own extensions on top of that too
   #  would go looking for nonsense like "cmd.exe.exe".
-  exts = [''] if exts.any? { |ext| name.downcase.end_with?(ext) }
+  exts = [''] if exts.any? { |ext| !ext.empty? && name.downcase.end_with?(ext) }
   ENV['PATH'].to_s.split(File::PATH_SEPARATOR).each do |dir|
     exts.each do |ext|
       candidate = File.join(dir, "#{name}#{ext}")
@@ -183,6 +191,19 @@ def resolve_binary(candidates)
   [candidates.first, nil]
 end
 
+# PACKAGE_CACHE - real path -> {name:, version:} or nil (looked up,
+#  genuinely not package-owned) - populated once by prefetch_package_info!
+#  before build_report ever walks the AREAS tree for real, so every
+#  individual package_info(path) call below just hits this cache instead
+#  of shelling out again. Confirmed directly this mattered: a naive
+#  per-tool lookup (a fresh pacman -Qo, or worst of all cygcheck -c's
+#  own full-package-listing scan, invoked once per tool) took 30-40s
+#  across ~20 lookups on MSYS2/Cygwin, against ~1-6s on WSL1/native
+#  Windows for the exact same report. pacman -Qo and dpkg -S/-s all
+#  accept a whole batch of files/packages in one call - there's no
+#  reason to pay each one's own startup cost 20 times over.
+PACKAGE_CACHE = {}
+
 # package_info(path) - {name:, version:} from this platform's own
 #  package manager, given the file that's *actually* on disk - not
 #  guessed from whatever name found it. Confirmed directly this
@@ -197,22 +218,35 @@ end
 #  version string. nil if no package manager is available, or `path`
 #  isn't a package-owned file at all (manually placed, or built from
 #  source).
+#
+#  PACKAGE_CACHE.fetch (not []) - a *cached* nil (a real "not owned"
+#  answer from prefetch_package_info!) must short-circuit here without
+#  falling through to lookup_package_info's own, individual, un-batched
+#  shell-out - that's exactly the per-tool cost prefetching exists to
+#  avoid. fetch's block only ever runs for a genuine cache *miss*
+#  (prefetch skipped, or missed this particular path), so this still
+#  works correctly even if prefetch_package_info! is never called at all.
 def package_info(path)
   return nil unless path
 
-  # A package manager tracks the *real* file it installed, not
-  #  necessarily the name resolve_binary found it under - confirmed
-  #  directly, WSL1's /usr/bin/ksh is a symlink to /usr/bin/ksh93 (the
-  #  package "ksh93u+m" owns the target, dpkg -S on the symlink itself
-  #  finds nothing at all). File.realpath is a no-op for anything that
-  #  isn't a symlink, so resolving unconditionally here is safe for the
-  #  already-working pacman/cygcheck cases too.
-  real = begin
-    File.realpath(path)
-  rescue StandardError
-    path
-  end
+  real = realpath(path)
+  PACKAGE_CACHE.fetch(real) { lookup_package_info(real) }
+end
 
+# realpath(path) - a package manager tracks the *real* file it
+#  installed, not necessarily the name resolve_binary found it under -
+#  confirmed directly, WSL1's /usr/bin/ksh is a symlink to
+#  /usr/bin/ksh93 (the package "ksh93u+m" owns the target, dpkg -S on
+#  the symlink itself finds nothing at all). A no-op for anything that
+#  isn't a symlink, so resolving unconditionally is safe for the
+#  already-working pacman/cygcheck cases too.
+def realpath(path)
+  File.realpath(path)
+rescue StandardError
+  path
+end
+
+def lookup_package_info(real)
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
     pacman_owner(pacman, real)
   elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
@@ -220,6 +254,32 @@ def package_info(path)
   elsif (dpkg = find_on_path('dpkg'))
     apt_owner(dpkg, real)
   end
+end
+
+# prefetch_package_info!() - resolves every language's and every tool's
+#  binary across the whole AREAS tree (resolve_binary alone - pure Ruby,
+#  no subprocess), then batch-queries the package manager once (pacman,
+#  apt) - or, for Cygwin, just makes sure cygcheck_installed_list's own
+#  memoized full listing gets fetched only the one time it's needed
+#  regardless of how many files end up checked against it. Call this
+#  once, before build_report's own tree-walk, so every later
+#  package_info(path) call along the way is a cache hit.
+def prefetch_package_info!
+  paths = AREAS.flat_map { |area| area[:languages] }.flat_map do |lang|
+    [resolve_binary(lang[:bin])[1]] + (lang[:tools] || []).map { |tool| resolve_binary([tool])[1] }
+  end.compact.map { |p| realpath(p) }.uniq
+  return if paths.empty?
+
+  if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
+    prefetch_pacman!(pacman, paths)
+  elsif (dpkg = find_on_path('dpkg')) && !cygwin_environment?
+    prefetch_apt!(dpkg, paths)
+  end
+  # Cygwin needs no batch prefetch here - cygcheck_owner's own
+  #  cygcheck_installed_list memoization already avoids paying for the
+  #  expensive full-listing scan more than once; cygcheck -f itself is
+  #  a cheap, targeted per-file lookup, unlike pacman's/dpkg's own
+  #  meaningful per-invocation startup cost.
 end
 
 # cygwin_environment?() - true only for a genuine Cygwin session, not
@@ -242,9 +302,33 @@ rescue StandardError
   false
 end
 
-# pacman_owner(pacman, path) - `pacman -Qo <file>` prints
-#  "<file> is owned by <pkgname> <pkgver>" - name and version in one
-#  authoritative call, no separate "guess the package name" step needed.
+# prefetch_pacman!(pacman, paths) - one `pacman -Qo <path1> <path2> ...`
+#  batch call instead of one per path - pacman prints one
+#  "<path> is owned by <pkgname> <pkgver>" line per *found* path (an
+#  unowned one just gets its own "error: No package owns <path>" line,
+#  confirmed directly - silently skipped by the match below), so every
+#  queried path gets marked "not owned" (nil) up front and only
+#  overwritten for the ones that actually match a line back.
+def prefetch_pacman!(pacman, paths)
+  posix_map = paths.each_with_object({}) { |p, h| h[to_posix(p)] = p }
+  posix_map.each_value { |real| PACKAGE_CACHE[real] = nil }
+
+  raw = `"#{pacman}" -Qo #{posix_map.keys.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
+  raw.each_line do |line|
+    m = line.match(/\A(.+?) is owned by (\S+) (\S+)\s*\z/)
+    next unless m
+
+    real = posix_map[m[1]]
+    PACKAGE_CACHE[real] = { name: m[2], version: m[3] } if real
+  end
+rescue StandardError
+  nil
+end
+
+# pacman_owner(pacman, path) - single-path fallback for a cache miss
+#  (prefetch_package_info! not called, or missed this particular path) -
+#  same "is owned by <pkgname> <pkgver>" line prefetch_pacman! parses in
+#  bulk, just for one file.
 def pacman_owner(pacman, path)
   raw = `"#{pacman}" -Qo "#{to_posix(path)}" 2>&1`.strip
   m = raw.match(/is owned by (\S+) (\S+)/)
@@ -253,38 +337,87 @@ rescue StandardError
   nil
 end
 
+# cygcheck_installed_list(cygcheck) - {name => version}, from
+#  `cygcheck -c` with no argument - every installed package, memoized
+#  process-wide (not per lookup) since it's the expensive part
+#  (confirmed directly - this single call was what made every earlier
+#  per-tool cygcheck_owner call so slow) and the table already carries
+#  each package's version in the same listing, so no second
+#  `cygcheck -c <name>` call is needed per package on top of it either.
+def cygcheck_installed_list(cygcheck)
+  @cygcheck_installed_list ||= `"#{cygcheck}" -c 2>&1`.lines.each_with_object({}) do |line, h|
+    parts = line.split(/\s+/)
+    h[parts[0]] = parts[1] if parts[0] && parts[1]
+  end
+end
+
 # cygcheck_owner(cygcheck, path) - Cygwin's own file-ownership tool.
-#  Unlike pacman -Qo, `cygcheck -f <file>` doesn't print a clean
-#  "name version" pair - it prints the full package *specifier*
-#  ("bash-5.2.21-1", "perl_base-5.44.0-1-x86_64") with no marked
-#  boundary between name and version - and naively splitting on the
-#  first "-" mis-parses any package whose own name contains one
-#  (confirmed directly: "util-linux-2.40.2-2" is the package
-#  "util-linux", not "util"). `cygcheck -c` with no argument lists
-#  every installed package's own bare name in its first column - the
-#  *longest* one the specifier actually starts with (followed by "-")
-#  disambiguates correctly, then a second `cygcheck -c <name>` call gets
-#  its clean version the same way pacman_owner gets its own in one shot.
+#  `cygcheck -f <file>` doesn't print a clean "name version" pair - it
+#  prints the full package *specifier* ("bash-5.2.21-1",
+#  "perl_base-5.44.0-1-x86_64") with no marked boundary between name
+#  and version - and naively splitting on the first "-" mis-parses any
+#  package whose own name contains one (confirmed directly:
+#  "util-linux-2.40.2-2" is the package "util-linux", not "util").
+#  cygcheck_installed_list's keys are every installed package's own bare
+#  name - the *longest* one the specifier actually starts with
+#  (followed by "-") disambiguates correctly, and its version comes
+#  from that same already-fetched table.
 def cygcheck_owner(cygcheck, path)
   spec = `"#{cygcheck}" -f "#{path}" 2>&1`.strip.lines.first.to_s.strip
   return nil if spec.empty? || spec =~ /not found|no package/i
 
-  installed = `"#{cygcheck}" -c 2>&1`.lines.map { |l| l.split(/\s+/).first }.compact
-  name = installed.select { |n| spec == n || spec.start_with?("#{n}-") }.max_by(&:length)
-  return { name: spec, version: nil } unless name
-
-  version_line = `"#{cygcheck}" -c "#{name}" 2>&1`.lines.find { |l| l.start_with?("#{name} ") }
-  { name: name, version: version_line.to_s.split(/\s+/)[1] }
+  installed = cygcheck_installed_list(cygcheck)
+  name = installed.keys.select { |n| spec == n || spec.start_with?("#{n}-") }.max_by(&:length)
+  name ? { name: name, version: installed[name] } : { name: spec, version: nil }
 rescue StandardError
   nil
 end
 
-# apt_owner(dpkg, path) - Debian/Ubuntu's own file-ownership tool
-#  (confirmed directly under WSL1's Ubuntu). `dpkg -S <file>` prints
-#  "<pkgname>: <file>" (or "<pkg1>,<pkg2>: <file>" for the rare file
-#  shared by multiple packages - first one wins, same "first listed
-#  provider" convention resolve_order.rb's own needs/meets resolution
-#  already uses), and unlike pacman's -Qo, has no version in the same
+# prefetch_apt!(dpkg, paths) - one `dpkg -S <path1> <path2> ...` batch
+#  call for ownership, then one more `dpkg -s <pkg1> <pkg2> ...` batch
+#  call for every version at once (dpkg -s accepts multiple package
+#  names, printing one "Package:"/"Version:" stanza per package) -
+#  instead of two round trips (see apt_owner) *per* path.
+def prefetch_apt!(dpkg, paths)
+  paths.each { |real| PACKAGE_CACHE[real] = nil }
+
+  raw = `"#{dpkg}" -S #{paths.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
+  names = []
+  raw.each_line do |line|
+    next unless line.include?(': ')
+
+    pkgs, found_path = line.strip.split(': ', 2)
+    next unless paths.include?(found_path)
+
+    name = pkgs.to_s.split(',').first.to_s.strip
+    next if name.empty?
+
+    PACKAGE_CACHE[found_path] = { name: name, version: nil }
+    names << name
+  end
+  return if names.empty?
+
+  info = `"#{dpkg}" -s #{names.uniq.map { |n| "\"#{n}\"" }.join(' ')} 2>&1`
+  versions = {}
+  current = nil
+  info.each_line do |line|
+    if line.start_with?('Package:')
+      current = line.sub(/\APackage:\s*/, '').strip
+    elsif line.start_with?('Version:') && current
+      versions[current] = line.sub(/\AVersion:\s*/, '').strip
+    end
+  end
+  PACKAGE_CACHE.each_value { |pkg| pkg[:version] = versions[pkg[:name]] if pkg && versions.key?(pkg[:name]) }
+rescue StandardError
+  nil
+end
+
+# apt_owner(dpkg, path) - single-path fallback for a cache miss
+#  (prefetch_package_info! not called, or missed this particular path).
+#  `dpkg -S <file>` prints "<pkgname>: <file>" (or "<pkg1>,<pkg2>:
+#  <file>" for the rare file shared by multiple packages - first one
+#  wins, same "first listed provider" convention resolve_order.rb's own
+#  needs/meets resolution already uses), with no version in the same
 #  line at all - `dpkg -s <pkgname>` gets that separately, straight from
 #  the local package database (no network/apt-cache-update dependency,
 #  unlike `apt show`).
@@ -489,6 +622,7 @@ end
 #  "tools" array of its dependent tooling in the same shape, so a
 #  formatter never needs to special-case "a tool" vs "a language".
 def build_report
+  prefetch_package_info!
   uname = uname_string
   {
     uname: uname,
