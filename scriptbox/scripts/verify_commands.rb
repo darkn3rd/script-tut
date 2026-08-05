@@ -32,9 +32,17 @@ AREAS = [
       #  directly this matters under WSL1: a bare "cmd" there finds
       #  /usr/local/bin/cmd (this project's own wsl1-run wrapper, not a
       #  real interpreter to report on), while "cmd.exe" correctly finds
-      #  the real /mnt/c/Windows/system32/cmd.exe instead.
+      #  the real /mnt/c/Windows/system32/cmd.exe instead. cmd/cscript
+      #  have no native Linux port to prefer at all, so reaching for
+      #  the Windows one first is always right for them - PowerShell is
+      #  the one exception: confirmed directly, WSL1's Ubuntu has a
+      #  genuine native `pwsh` (`which pwsh` -> /usr/bin/pwsh, a real,
+      #  fully-functional PowerShell build, not any kind of wrapper), so
+      #  it gets the opposite order - bare name first, matching how
+      #  every other Shell/General Scripts tool already prefers native
+      #  over reaching into /mnt/c for the Windows one.
       { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd },
-      { name: 'PowerShell',   bin: %w[pwsh.exe pwsh powershell.exe powershell], version: :powershell },
+      { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell },
       { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
       { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
     ]
@@ -92,12 +100,25 @@ end
 #  entirely and just does the same directory-listing check those tools
 #  would, directly.
 def find_on_path(name)
+  # Gem.win_platform? is false under Cygwin (confirmed directly) even
+  #  though it's still a Windows filesystem where every real binary is
+  #  a ".exe" underneath - without trying that extension explicitly, a
+  #  bare-name search (e.g. "pwsh") still succeeds (Cygwin's own runtime
+  #  silently resolves the extension for File.file? even when it's not
+  #  in the string), but the extension then never makes it into the
+  #  *returned* path, showing an inconsistent "/cygdrive/c/.../pwsh"
+  #  next to "/cygdrive/c/.../cmd.exe" (the latter only correct because
+  #  AREAS' own candidate already spelled out ".exe" explicitly).
+  #  RUBY_PLATFORM directly, not the fuller cygwin_environment? check -
+  #  that shells out to `uname` via this same find_on_path, which would
+  #  recurse right back into here resolving "uname" itself.
+  windows_fs = Gem.win_platform? || RUBY_PLATFORM =~ /cygwin/i
   # PATHEXT's own entries are conventionally uppercase (".EXE;.BAT;...")
   #  - NTFS is case-insensitive so this doesn't affect whether a file is
   #  actually found, but it would otherwise leak into the reported path
   #  as a jarringly-uppercase "cmd.EXE" even though the real file on disk
   #  is "cmd.exe" - downcase these before ever building a candidate.
-  exts = Gem.win_platform? ? (ENV['PATHEXT'] || '.EXE;.BAT;.CMD;.COM').split(';').map(&:downcase) : ['']
+  exts = windows_fs ? (ENV['PATHEXT'] || '.EXE;.BAT;.CMD;.COM').split(';').map(&:downcase) : ['']
   # `name` may already carry a recognized extension itself (e.g.
   #  "cmd.exe", asked for explicitly - see AREAS' Windows Scripts
   #  candidates) - appending PATHEXT's own extensions on top of that too
@@ -107,7 +128,7 @@ def find_on_path(name)
     exts.each do |ext|
       candidate = File.join(dir, "#{name}#{ext}")
       # File.join always uses "/" - normalize to a plain Windows path
-      #  (kept as the *real*, executable path - see display_path for the
+      #  (kept as the *real*, executable path - see to_posix for the
       #  MSYS2-POSIX-form conversion, applied only to the report's own
       #  output, never to what actually gets shelled out to).
       candidate = candidate.tr('/', '\\') if Gem.win_platform?
@@ -117,42 +138,31 @@ def find_on_path(name)
   nil
 end
 
-# display_path(path) - path form for the *report*, as opposed to
-#  find_on_path's real, executable one. Under MSYS2 (ENV['MSYSTEM'] set)
-#  this converts to MSYS2's own POSIX form - the form MSYS2's own
-#  shell/tools actually use and a human at an MSYS2 prompt expects to
-#  see. Deliberately never fed back into probe_version's own shell_out
-#  calls - confirmed directly, a native Windows Ruby's Kernel#` is
-#  cmd.exe-backed (see Msys2ShellScript in testbox/Script.rb) and
-#  cmd.exe can no more resolve a POSIX path than File.file? can (same
-#  underlying reason find_on_path itself has to check existence against
-#  the Windows form, never the converted one).
+# to_posix(path) - path form for the *report* (called display_path
+#  where used for that - see resolve_entry), and also the form
+#  package_info's own pacman -Qo lookup needs (an MSYS2-native tool,
+#  expecting a POSIX path the same way its own PATH/cwd/argv all are)
+#  rather than the Windows form actually used to invoke things. Under
+#  MSYS2 (ENV['MSYSTEM'] set) this converts to MSYS2's own POSIX form -
+#  the form MSYS2's own shell/tools actually use and a human at an
+#  MSYS2 prompt expects to see, extension included (confirmed this
+#  should stay rather than trying to match `which`'s own extension-less
+#  convention - simpler, and consistent with every path shown, not just
+#  ones under a drive mount). Deliberately never fed back into
+#  probe_version's own shell_out calls - confirmed directly, a native
+#  Windows Ruby's Kernel#` is cmd.exe-backed (see Msys2ShellScript in
+#  testbox/Script.rb) and cmd.exe can no more resolve a POSIX path than
+#  File.file? can (same underlying reason find_on_path itself has to
+#  check existence against the Windows form, never the converted one).
 #
 #  Shells out to cygpath rather than hand-rolling the conversion -
 #  confirmed directly this isn't just "/<lowercase-drive>/..." for every
 #  path: MSYS2 mounts its own install root as "/" itself, so anything
 #  under it maps *relative to that root* instead
-#  ("C:\tools\msys64\usr\bin\make.EXE" -> "/usr/bin/make.EXE", not
-#  "/c/tools/msys64/usr/bin/make.EXE"). cygpath already knows that whole
+#  ("C:\tools\msys64\usr\bin\make.exe" -> "/usr/bin/make.exe", not
+#  "/c/tools/msys64/usr/bin/make.exe"). cygpath already knows that whole
 #  mount table authoritatively; reimplementing it here would just be
 #  another way to get it subtly wrong.
-def display_path(path)
-  posix = to_posix(path)
-  return posix unless posix
-
-  # `which` itself never shows the executable extension for a bare-name
-  #  lookup - confirmed directly, `which bc` -> "/usr/bin/bc", not
-  #  "/usr/bin/bc.exe" - every lookup here is by bare name too (never
-  #  "foo.exe"), so match that and strip it for display.
-  posix.sub(/\.(exe|bat|cmd|com)\z/i, '')
-end
-
-# to_posix(path) - the real, on-disk path (extension intact, unlike
-#  display_path) converted to MSYS2's own POSIX form - shared by
-#  display_path and package_info's own pacman -Qo lookup, which needs
-#  pacman's own idea of the path (an MSYS2-native tool, expecting a
-#  POSIX path the same way its own PATH/cwd/argv all are) rather than
-#  the Windows form actually used to invoke things.
 def to_posix(path)
   return path unless path && Gem.win_platform? && ENV['MSYSTEM']
 
@@ -525,7 +535,7 @@ def resolve_entry(candidates, version_mode)
     #  searched for isn't identical to the language's own display name.
     package_name: pkg && pkg[:name],
     found: !path.nil?,
-    path: display_path(path),
+    path: to_posix(path),
     version: (pkg && pkg[:version]) || probe_version(name, path, version_mode)
   }
 end
