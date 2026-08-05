@@ -242,7 +242,15 @@ def windows_native_path_dirs
     else
       cmd = find_on_path('cmd.exe') || find_on_path('cmd')
       raw = cmd ? `"#{cmd}" /c echo %PATH% 2>&1`.strip : ''
-      dirs = raw.split(';').reject(&:empty?)
+      # Strips any trailing backslash(es) - confirmed directly a
+      #  Windows %PATH% entry commonly ends with one (e.g.
+      #  "C:\Windows\System32\"), and interpolating that straight into
+      #  a double-quoted shell argument ("...System32\") leaves the
+      #  backslash escaping the closing quote itself, not terminating
+      #  it - the shell then keeps consuming the rest of the command
+      #  line looking for a real closing quote that never comes
+      #  ("Unterminated quoted string").
+      dirs = raw.split(';').reject(&:empty?).map { |d| d.sub(/\\+\z/, '') }
       # cmd.exe's own answer is always Windows-form ("C:\Windows\...") -
       #  Cygwin's File.file? needs cygpath's POSIX form to check it at
       #  all; WSL1 needs wslpath's /mnt/c/... form for the same reason
