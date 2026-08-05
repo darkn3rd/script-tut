@@ -14,7 +14,6 @@
 require 'optparse'
 require 'json'
 require 'yaml'
-require 'csv'
 
 # AREAS - the four lesson areas (lessons/win_scripts, shell_scripts,
 #  gen_scripts, compiled_lang), each language's candidate binary name(s)
@@ -1208,7 +1207,17 @@ end
 #  real quoting/escaping to round-trip correctly, the same reasoning
 #  against hand-rolling already applied to path conversion elsewhere in
 #  this file (cygpath/wslpath instead of guessing at the mount table).
+#
+#  require 'csv' happens here, lazily, rather than at file load time -
+#  confirmed directly this matters: csv stopped being a default gem as
+#  of Ruby 3.4, so a Ruby that doesn't have it installed as a real gem
+#  would fail to even *load* this file at all otherwise - breaking
+#  every other script in this project that requires_relative
+#  verify_commands.rb purely for its detection helpers and never
+#  touches CSV output, not just the (actually rare) case of someone
+#  asking for --format csv without the gem installed.
 def format_csv(report)
+  require 'csv'
   CSV.generate do |csv|
     csv << %w[Area Name Kind Parent Status Version Package Path]
     report[:areas].each do |area|
