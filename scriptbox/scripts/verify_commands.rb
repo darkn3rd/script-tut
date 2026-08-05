@@ -238,7 +238,7 @@ PACKAGE_CACHE = {}
 def package_info(path)
   return nil unless path
 
-  real = realpath(path)
+  real = realpath(macos_java_home_binary(path) || path)
   return PACKAGE_CACHE[real] if PACKAGE_CACHE.key?(real)
 
   PACKAGE_CACHE[real] = lookup_package_info(real)
@@ -257,6 +257,34 @@ rescue StandardError
   path
 end
 
+# macos_java_home_binary(path) - macOS's own /usr/bin/java and
+#  /usr/bin/javac are Apple-provided launcher stubs, not symlinks -
+#  confirmed directly, realpath on either just returns the same
+#  unchanged /usr/bin/... path, so a Homebrew-installed OpenJDK behind
+#  them (registered under /Library/Java/JavaVirtualMachines, exactly as
+#  Homebrew's own openjdk formula caveats instruct) stays invisible to
+#  homebrew_owner's path-based matching - there's no symlink chain to
+#  walk at all. `java_home` is the one Apple-provided tool that actually
+#  knows which JDK those stubs currently resolve to; re-pointing lookup
+#  at its real bin/ directory (still just an ordinary path, realpath'd
+#  the normal way immediately afterwards) is what lets a Homebrew JDK
+#  show up the same way every other Homebrew tool already does.
+def macos_java_home_binary(path)
+  return nil unless RUBY_PLATFORM =~ /darwin/
+
+  name = File.basename(path.to_s)
+  return nil unless %w[java javac].include?(name)
+
+  java_home_tool = '/usr/libexec/java_home'
+  return nil unless File.exist?(java_home_tool)
+
+  home = `"#{java_home_tool}" 2>&1`.strip
+  candidate = File.join(home, 'bin', name)
+  File.exist?(candidate) ? candidate : nil
+rescue StandardError
+  nil
+end
+
 def lookup_package_info(real)
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
     pacman_owner(pacman, real)
@@ -269,20 +297,59 @@ def lookup_package_info(real)
   end
 end
 
-# homebrew_owner(real) - {name:, version:} straight from the path
-#  string itself, no subprocess call at all - confirmed directly this
-#  works: every Homebrew-installed binary is a symlink chain (e.g.
-#  /usr/local/bin/bash -> .../opt/bash/bin/bash -> ...) that bottoms out
-#  in /usr/local/Cellar/<formula>/<version>/... (Intel) or
-#  /opt/homebrew/Cellar/... (Apple Silicon) - realpath (already computed
-#  by package_info before calling this) has already walked that whole
-#  chain, so the formula name and its exact installed version are
-#  sitting right there in the resolved string, regardless of which
-#  prefix Homebrew happens to be installed under. No `brew` invocation
-#  needed - unlike pacman/cygcheck/dpkg, this is effectively free.
+# brew_prefix - `brew --prefix`, memoized, once. Confirmed directly this
+#  matters: a plain regex just checking for "/Cellar/" or "/Caskroom/"
+#  anywhere in the path missed real Homebrew-managed bash/zsh/perl/php/
+#  ruby/pwsh - realpath on those stops one level short, at
+#  "$(brew --prefix)/opt/<formula>/bin/<name>" rather than resolving on
+#  through to a literal ".../Cellar/<formula>/<version>/..." segment
+#  (Homebrew keeps that opt symlink itself version-pinned for these
+#  rather than a second symlink hop down into Cellar - this is what the
+#  install docs mean by "uses brew --prefix for the path"). Rooting the
+#  match at the real, authoritative prefix - rather than guessing at
+#  "/usr/local" (Intel) vs "/opt/homebrew" (Apple Silicon) vs any
+#  custom --prefix - is also what makes matching *both* the opt and
+#  Cellar forms safe: a bare "/opt/" substring match with no anchor
+#  would misfire on plenty of unrelated paths that happen to contain
+#  "/opt/" (e.g. WSL1's own /opt/... system dirs), Homebrew's own
+#  prefix does not.
+def brew_prefix
+  return @brew_prefix if defined?(@brew_prefix)
+
+  brew = find_on_path('brew')
+  @brew_prefix = brew && `"#{brew}" --prefix 2>&1`.strip
+rescue StandardError
+  @brew_prefix = nil
+end
+
+# brew_installed_list(brew) - {name => version}, from one batched
+#  `brew list --formula --versions` call (plus `--cask` for GUI-
+#  installed CLI tools like the PowerShell cask) - the same one-full-
+#  listing-fetched-once-and-grepped shape as cygcheck_installed_list,
+#  so a formula's version never costs its own extra `brew info` round
+#  trip per lookup.
+def brew_installed_list(brew)
+  @brew_installed_list ||= %w[--formula --cask].each_with_object({}) do |kind, h|
+    `"#{brew}" list #{kind} --versions 2>&1`.each_line do |line|
+      parts = line.split(/\s+/)
+      h[parts[0]] = parts[1] if parts[0] && parts[1]
+    end
+  end
+end
+
+# homebrew_owner(real) - {name:, version:} for a Homebrew-managed
+#  binary, matched against the real `brew --prefix` root (see
+#  brew_prefix) rather than a bare "/Cellar/" guess, so it catches both
+#  a fully-resolved Cellar path and one that stops at the opt symlink.
 def homebrew_owner(real)
-  m = real.to_s.match(%r{/(?:Cellar|Caskroom)/([^/]+)/([^/]+)/})
-  m && { name: m[1], version: m[2] }
+  prefix = brew_prefix
+  return nil unless prefix && !prefix.empty?
+
+  m = real.to_s.match(%r{\A#{Regexp.escape(prefix)}/(?:Cellar|opt|Caskroom)/([^/]+)/})
+  return nil unless m
+
+  name = m[1]
+  { name: name, version: brew_installed_list(find_on_path('brew'))[name] }
 end
 
 # prefetch_package_info!() - resolves every language's and every tool's
