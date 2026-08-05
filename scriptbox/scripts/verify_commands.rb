@@ -14,6 +14,7 @@
 require 'optparse'
 require 'json'
 require 'yaml'
+require 'csv'
 
 # AREAS - the four lesson areas (lessons/win_scripts, shell_scripts,
 #  gen_scripts, compiled_lang), each language's candidate binary name(s)
@@ -1195,12 +1196,43 @@ def format_yaml(report)
   YAML.dump(JSON.parse(JSON.generate(report)))
 end
 
-FORMATTERS = { 'table' => method(:format_table), 'json' => method(:format_json), 'yaml' => method(:format_yaml) }.freeze
+# format_csv(report) - one row per language, one row per tool
+#  (Parent naming which language it belongs to) - flat and spreadsheet-
+#  friendly rather than nested like table/json/yaml, since CSV has no
+#  natural way to represent the tools: sub-list otherwise. Platform/Ruby
+#  (table's own header lines) are left out - they're not rows of the
+#  same shape as everything else, and CSV has no clean way to carry
+#  metadata alongside a single tabular header row. Built with the
+#  stdlib csv library rather than joining strings with commas by hand -
+#  a path or package name containing a comma, quote, or space needs
+#  real quoting/escaping to round-trip correctly, the same reasoning
+#  against hand-rolling already applied to path conversion elsewhere in
+#  this file (cygpath/wslpath instead of guessing at the mount table).
+def format_csv(report)
+  CSV.generate do |csv|
+    csv << %w[Area Name Kind Parent Status Version Package Path]
+    report[:areas].each do |area|
+      area[:languages].each do |lang|
+        csv << [area[:name], lang[:name], 'language', nil, lang[:found] ? 'OK' : 'MISSING', lang[:version], lang[:package_name], lang[:path]]
+        lang[:tools].each do |tool|
+          csv << [area[:name], tool[:name], 'tool', lang[:name], tool[:found] ? 'OK' : 'MISSING', tool[:version], tool[:package_name], tool[:path]]
+        end
+      end
+    end
+  end
+end
+
+FORMATTERS = {
+  'table' => method(:format_table),
+  'json' => method(:format_json),
+  'yaml' => method(:format_yaml),
+  'csv' => method(:format_csv)
+}.freeze
 
 if __FILE__ == $PROGRAM_NAME
   format = 'table'
   OptionParser.new do |opts|
-    opts.banner = 'Usage: verify.rb [--format table|json|yaml]'
+    opts.banner = 'Usage: verify.rb [--format table|json|yaml|csv]'
     opts.on('-f FORMAT', '--format FORMAT', FORMATTERS.keys, "Output format (#{FORMATTERS.keys.join('|')})") do |f|
       format = f
     end
