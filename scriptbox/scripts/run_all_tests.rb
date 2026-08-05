@@ -17,8 +17,35 @@
 #  Usage: ruby run_all_tests.rb
 
 require_relative 'verify_commands'
+require 'timeout'
+
+# WINEDEBUG=-all suppresses WINE's own debug-channel logging (all
+#  channels) - confirmed directly this is needed: on macOS, WSH's own
+#  JScript/VBScript areas run under WINE there, and its MoltenVK
+#  backend prints diagnostic lines (e.g. "[mvk-info] MoltenVK version
+#  1.4.1") to stdout/stderr that land right in the middle of Script.rb's
+#  own combined output once merged via 2>&1 - sometimes interleaved
+#  into the exact same line as a real "Language Version:" line, which
+#  post-hoc line filtering can't reliably undo. Silencing it at the
+#  source is the only fix that's actually robust against that
+#  interleaving. ||= so an explicit WINEDEBUG the user already set
+#  (e.g. for their own debugging) isn't clobbered.
+ENV['WINEDEBUG'] ||= '-all'
 
 LESSON_ROOT = File.expand_path('../../lessons', __dir__)
+
+# RAKE_TIMEOUT - seconds before giving up on a single language's own
+#  `rake` run rather than blocking the whole batch forever - confirmed
+#  directly this is needed: a native-Windows run of the powershell area
+#  hangs indefinitely (root cause not yet pinned down - possibly a
+#  console prompt waiting on input despite the NULL_DEVICE stdin
+#  redirect below). Timeout.timeout doesn't kill the underlying rake/
+#  pwsh subprocess itself when it fires - just stops *this script* from
+#  waiting on it - so a genuinely hung process is left running orphaned
+#  rather than terminated; that's a real gap, but a script that finishes
+#  reporting everything else (with one language marked TIMEOUT) is
+#  still far more useful than one that never returns control at all.
+RAKE_TIMEOUT = 120
 
 # LANGUAGE_DIRS - every lesson language directory, grouped by area -
 #  the same 22 directories verify_commands.rb's own AREAS/Compiled
@@ -42,12 +69,17 @@ ANSI = /\e\[\d+m/.freeze
 # run_rake(dir) - the raw, ANSI-stripped combined stdout+stderr of a
 #  `rake` run in dir. stdin redirected from NULL_DEVICE for the same
 #  reason compile_check.rb's own build_lesson already does this - a
-#  hang here would freeze the whole run, not just one language.
+#  hang here would freeze the whole run, not just one language. Wrapped
+#  in RAKE_TIMEOUT as a second line of defense on top of that, for
+#  whatever this class of hang turns out to be beyond simple stdin
+#  starvation.
 def run_rake(dir)
   rake = find_on_path('rake')
   return 'rake not found on PATH' unless rake
 
-  Dir.chdir(dir) { `"#{rake}" < #{NULL_DEVICE} 2>&1` }.gsub(ANSI, '')
+  Dir.chdir(dir) { Timeout.timeout(RAKE_TIMEOUT) { `"#{rake}" < #{NULL_DEVICE} 2>&1` } }.gsub(ANSI, '')
+rescue Timeout::Error
+  "ERROR: rake did not finish within #{RAKE_TIMEOUT}s (possibly hung)"
 end
 
 # NOT_INSTALLED - Script.rb's own PATH check (see its "Cannot find
@@ -101,10 +133,28 @@ def trim_version(str)
   #  says "JScript (WSH)"/"VBScript (WSH)", so keeping it here just
   #  pushed the version column wide enough to misalign everything after
   #  it - confirmed directly.
+  # ksh93's own "version         sh (AT&T Research) 93u+m/1.0.10
+  #  2022-08-25" answer (confirmed directly on macOS and WSL1 both) -
+  #  same boilerplate-prefix shape as the other two, just with real
+  #  info (a build tag, a date) after it that the plain digit-run match
+  #  below would otherwise stop short at (it matches the bare "93" and
+  #  gives up, since "u+m" isn't part of a dotted number).
+  # "go version go1.26.4" (Go's own answer) repeats "go" twice for no
+  #  reason useful here - the language column already says "Go".
+  #  "Groovy Version: 5.0.7" is the same redundant-label shape too.
   cleaned = str.sub(/\AShell\s*\([^)]*\)\s*=\s*/i, '')
                .sub(/\AWindows Script Host Version\s+/i, '')
+               .sub(/\Aversion\s+sh\s*\([^)]*\)\s*/i, '')
+               .sub(/\Ago version\s+/i, '')
+               .sub(/\AGroovy Version:\s*/i, '')
                .strip
-  (cleaned[/\A.*?\d+(?:\.\d+)*/] || cleaned.split(/[,(\n]/).first.to_s).strip
+  result = (cleaned[/\A.*?\d+(?:\.\d+)*/] || cleaned.split(/[,(\n]/).first.to_s).strip
+  # Safety net, not a primary strategy - confirmed directly the
+  #  targeted fixes above can't realistically cover every version
+  #  banner shape this project's ~22 language areas might ever print;
+  #  capping the length guarantees a new one can misalign this table's
+  #  columns but can never mangle it entirely.
+  result.length > 28 ? "#{result[0, 25]}..." : result
 end
 
 # WEAK_VERSION - Script.rb's own generic "couldn't determine a real
@@ -113,6 +163,13 @@ end
 #  placeholder instead of a raw error) - confirmed directly this is
 #  literally just the word "Shell", not any kind of version number.
 WEAK_VERSION = /\Ashell\z/i.freeze
+
+# BARE_NUMBER - a lone 1-3 digit number with no dots (e.g. ksh93's own
+#  truncated "93", see trim_version's own comment on that shape) -
+#  suspicious enough on its own that resolve_version prefers real
+#  package metadata over it when one's available, rather than trusting
+#  it as a complete version.
+BARE_NUMBER = /\A\d{1,3}\z/.freeze
 
 # parse_result(output) - pulls the header (Language Target/Version/
 #  Environment) and the final Summary line's four counts out of a
@@ -124,9 +181,20 @@ WEAK_VERSION = /\Ashell\z/i.freeze
 #  ash, ...) and to fall back to real package metadata when Script.rb's
 #  own version probe comes back weak or erroring.
 def parse_result(output)
+  # Greedy up to the *last* "(...)" on the line, not the first -
+  #  confirmed directly Script.rb sometimes prints a second parenthetical
+  #  as part of the language name itself (e.g.
+  #  "Language Target:  JScript (WSH) (C:\Windows\System32\cscript.exe)"),
+  #  and the earlier non-greedy version grabbed "(WSH)" as if it were
+  #  the path - that bogus "WSH" string then got treated as a real file
+  #  and matched against Chocolatey's tag search, landing on
+  #  "powershell-core" by sheer coincidence. Ruby's ^/$ are line anchors
+  #  by default (no /m needed), so this stays scoped to one line even
+  #  though `output` itself is the whole multi-line rake run.
+  target = output.match(/Language Target:\s+(.+)\s+\(([^)]+)\)\s*$/)
   {
-    language: output[/Language Target:\s+(\S.*?)\s+\(/, 1],
-    path: output[/Language Target:\s+\S.*?\((.+?)\)/, 1],
+    language: target && target[1],
+    path: target && target[2],
     version: output[/Language Version:\s+(.+)/, 1],
     platform: output[/Environment:\s+(.+)/, 1],
     total: output[/Total=(\d+)/, 1]&.to_i,
@@ -187,9 +255,9 @@ end
 #  is one cheap lookup away.
 def resolve_version(r, pkg)
   v = trim_version(r[:version])
-  return v if v && v != 'unknown' && v !~ WEAK_VERSION
+  return v if v && v != 'unknown' && v !~ WEAK_VERSION && v !~ BARE_NUMBER
 
-  pkg && pkg[:version] ? pkg[:version] : 'unknown'
+  pkg && pkg[:version] ? pkg[:version] : (v || 'unknown')
 end
 
 # expand_selection(argv) - {area => [lang, ...]} to actually run, from
