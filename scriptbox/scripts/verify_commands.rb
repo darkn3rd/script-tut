@@ -41,7 +41,18 @@ AREAS = [
       #  it gets the opposite order - bare name first, matching how
       #  every other Shell/General Scripts tool already prefers native
       #  over reaching into /mnt/c for the Windows one.
-      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd },
+      # "coreutils" in each tool entry is a search-only hint, same
+      #  reasoning as TCL's own "tcl"/Java's own "jvm" - confirmed
+      #  directly neither "date" nor "grep" shares any substring with
+      #  the real package id "mscoreutils" at all, but
+      #  `choco list coreutils --by-tags-only` finds it unambiguously.
+      # native_tools: true - date/grep have to be reachable via
+      #  cmd.exe's own real PATH, not wherever Ruby happens to be
+      #  running from - confirmed directly a Cygwin /usr/bin/date.exe
+      #  resolves fine from Ruby's own inherited PATH but is invisible
+      #  to a real Batch script, which runs under cmd.exe and never
+      #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
+      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true },
       { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell },
       { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
       { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
@@ -67,7 +78,14 @@ AREAS = [
       { name: 'Python2', bin: %w[python2],        version: :flag },
       { name: 'Python3', bin: %w[python3 python], version: :flag },
       { name: 'Ruby',    bin: %w[ruby],           version: :flag },
-      { name: 'TCL',     bin: %w[tclsh],          version: :tcl },
+      # "tcl" here is never actually found as a real executable (there's
+      #  no tcl.exe on Windows) - it's included purely to widen the
+      #  Chocolatey tag-search net (see chocolatey_owner/choco_tag_owner):
+      #  confirmed directly `choco list tclsh --by-tags-only` matches
+      #  nothing, but `choco list tcl --by-tags-only` finds
+      #  "magicsplat-tcl-tk" - resolve_binary already skips straight past
+      #  it to "tclsh" since that resolves first, at zero extra cost.
+      { name: 'TCL',     bin: %w[tclsh tcl],     version: :tcl },
     ]
   },
   {
@@ -76,7 +94,13 @@ AREAS = [
       { name: 'C++',   bin: %w[g++ clang++ cl],  version: :flag,    tools: %w[make] },
       { name: 'C#',    bin: %w[dotnet],          version: :flag,    tools: %w[make] },
       { name: 'Go',    bin: %w[go],              version: :go,      tools: %w[make] },
-      { name: 'Java',  bin: %w[javac java],      version: :java,    tools: %w[make] },
+      # "jvm" here is never actually found as a real executable, same
+      #  reasoning as TCL's own "tcl" - confirmed directly `choco list
+      #  java --by-tags-only` returns 4 ambiguous hits (corretto17jdk,
+      #  groovy, vscode, vscode.install - declined by choco_tag_owner's
+      #  own single-hit requirement), but `choco list jvm --by-tags-only`
+      #  finds exactly "corretto17jdk", unambiguously.
+      { name: 'Java',  bin: %w[javac java jvm],  version: :java,    tools: %w[make] },
       { name: 'Rust',  bin: %w[rustc],           version: :flag,    tools: %w[make] },
     ]
   },
@@ -99,7 +123,7 @@ end
 #  across MSYS2/Cygwin/WSL1/native Windows, so this sidesteps all of that
 #  entirely and just does the same directory-listing check those tools
 #  would, directly.
-def find_on_path(name)
+def find_on_path(name, path_dirs = nil)
   # Gem.win_platform? is false under Cygwin (confirmed directly) even
   #  though it's still a Windows filesystem where every real binary is
   #  a ".exe" underneath - without trying that extension explicitly, a
@@ -132,7 +156,7 @@ def find_on_path(name)
   #  candidates) - appending PATHEXT's own extensions on top of that too
   #  would go looking for nonsense like "cmd.exe.exe".
   exts = [''] if exts.any? { |ext| !ext.empty? && name.downcase.end_with?(ext) }
-  ENV['PATH'].to_s.split(File::PATH_SEPARATOR).each do |dir|
+  (path_dirs || ENV['PATH'].to_s.split(File::PATH_SEPARATOR)).each do |dir|
     exts.each do |ext|
       candidate = File.join(dir, "#{name}#{ext}")
       # File.join always uses "/" - normalize to a plain Windows path
@@ -180,15 +204,63 @@ def to_posix(path)
   `"#{cygpath}" -u "#{path}" 2>&1`.strip
 end
 
-# resolve_binary(candidates) - first candidate name actually found on
-#  PATH, tried in the order listed (e.g. python3 before bare "python",
-#  which some systems alias to python2 instead).
-def resolve_binary(candidates)
+# resolve_binary(candidates, path_dirs = nil) - first candidate name
+#  actually found on PATH, tried in the order listed (e.g. python3
+#  before bare "python", which some systems alias to python2 instead).
+#  path_dirs overrides which directories get searched (see
+#  windows_native_path_dirs) - nil means the ordinary ENV['PATH'].
+def resolve_binary(candidates, path_dirs = nil)
   candidates.each do |name|
-    path = find_on_path(name)
+    path = find_on_path(name, path_dirs)
     return [name, path] if path
   end
   [candidates.first, nil]
+end
+
+# windows_native_path_dirs - the directories cmd.exe itself actually
+#  searches, as opposed to Ruby's own inherited ENV['PATH'] - confirmed
+#  directly these diverge under Cygwin: a real /usr/bin/date.exe (GNU
+#  coreutils) resolves fine from Ruby's own POSIX-shell-inherited PATH,
+#  but a genuine Batch script invoking bare "date" runs under cmd.exe,
+#  which never sees Cygwin's /usr/bin at all - reporting that binary as
+#  found would be misleading for exactly the audience (Batch script
+#  authors) this tool exists to help. Queried once via a real
+#  `cmd.exe /c echo %PATH%` subprocess call - the same mechanism a
+#  fresh cmd.exe process actually uses, not a guess at it - then
+#  converted from cmd.exe's own Windows-form answer to this Ruby's own
+#  POSIX form via cygpath (batched, one call for the whole list), the
+#  same conversion to_posix already relies on elsewhere in this file.
+#  On a native Windows Ruby, ENV['PATH'] already IS what cmd.exe would
+#  see (no POSIX shell in between), so this just reuses that directly
+#  rather than paying for the extra subprocess call.
+def windows_native_path_dirs
+  return @windows_native_path_dirs if defined?(@windows_native_path_dirs)
+
+  @windows_native_path_dirs =
+    if native_windows_ruby?
+      ENV['PATH'].to_s.split(File::PATH_SEPARATOR)
+    else
+      cmd = find_on_path('cmd.exe') || find_on_path('cmd')
+      raw = cmd ? `"#{cmd}" /c echo %PATH% 2>&1`.strip : ''
+      dirs = raw.split(';').reject(&:empty?)
+      # cmd.exe's own answer is always Windows-form ("C:\Windows\...") -
+      #  Cygwin's File.file? needs cygpath's POSIX form to check it at
+      #  all; WSL1 needs wslpath's /mnt/c/... form for the same reason
+      #  (a raw "C:\..." string means nothing to WSL1's own Linux-native
+      #  filesystem calls - confirmed directly this isn't optional, not
+      #  just cosmetic like to_posix's own MSYS2 conversion is). Neither
+      #  tool batches multiple paths the way cygpath's own -u flag does
+      #  for wslpath, so WSL1's case converts one directory at a time.
+      if (cygpath = find_on_path('cygpath')) && !dirs.empty?
+        `"#{cygpath}" -u #{dirs.map { |d| "\"#{d}\"" }.join(' ')} 2>&1`.each_line.map(&:strip)
+      elsif (wslpath = find_on_path('wslpath')) && !dirs.empty?
+        dirs.map { |d| `"#{wslpath}" -u "#{d}" 2>&1`.strip }
+      else
+        dirs
+      end
+    end
+rescue StandardError
+  @windows_native_path_dirs = []
 end
 
 # PACKAGE_CACHE - real path -> {name:, version:} or nil (looked up,
@@ -235,13 +307,13 @@ PACKAGE_CACHE = {}
 #  individual lookup from scratch instead of the second one being a
 #  cache hit. key?/[]= here instead of fetch's block form is what
 #  actually persists a fresh lookup - found *or* nil - for next time.
-def package_info(path)
+def package_info(path, candidates = nil)
   return nil unless path
 
   real = realpath(macos_java_home_binary(path) || path)
   return PACKAGE_CACHE[real] if PACKAGE_CACHE.key?(real)
 
-  PACKAGE_CACHE[real] = lookup_package_info(real)
+  PACKAGE_CACHE[real] = lookup_package_info(real, candidates)
 end
 
 # realpath(path) - a package manager tracks the *real* file it
@@ -285,16 +357,22 @@ rescue StandardError
   nil
 end
 
-def lookup_package_info(real)
-  if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-    pacman_owner(pacman, real)
-  elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
-    cygcheck_owner(cygcheck, real)
-  elsif (dpkg = find_on_path('dpkg'))
-    apt_owner(dpkg, real)
-  else
-    homebrew_owner(real) || macos_java_cask(real)
-  end
+def lookup_package_info(real, candidates = nil)
+  owner =
+    if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
+      pacman_owner(pacman, real)
+    elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
+      cygcheck_owner(cygcheck, real)
+    elsif (dpkg = find_on_path('dpkg'))
+      apt_owner(dpkg, real)
+    else
+      homebrew_owner(real) || macos_java_cask(real)
+    end
+  # SDKMAN and Chocolatey aren't tied to any one OS's own package
+  #  manager the way pacman/cygcheck/dpkg/Homebrew above are, so both
+  #  are tried as final catch-alls regardless of platform or which
+  #  branch above ran, not as another elsif arm.
+  owner || chocolatey_owner(real, candidates) || sdkman_owner(real)
 end
 
 # brew_prefix - `brew --prefix`, memoized, once. Confirmed directly this
@@ -380,6 +458,200 @@ def macos_java_cask(real)
   name && { name: name, version: installed[name] }
 end
 
+# sdkman_dir - $SDKMAN_DIR if set, else the conventional ~/.sdkman -
+#  confirmed directly SDKMAN itself honors this same override (its own
+#  init script checks $SDKMAN_DIR before defaulting), so a lookup that
+#  ignored it could silently miss a real SDKMAN install on a machine
+#  where it's been relocated.
+def sdkman_dir
+  return @sdkman_dir if defined?(@sdkman_dir)
+
+  configured = ENV['SDKMAN_DIR']
+  @sdkman_dir = configured && !configured.empty? ? configured : File.join(Dir.home, '.sdkman')
+rescue StandardError
+  @sdkman_dir = nil
+end
+
+# sdkman_owner(real) - {name:, version:} for an SDKMAN-managed
+#  candidate, straight from the path string, no subprocess at all -
+#  unlike Homebrew's opt-symlink case (see brew_prefix's own comment),
+#  SDKMAN has no intermediate hop to worry about: it installs each
+#  version under $SDKMAN_DIR/candidates/<candidate>/<version>/ directly
+#  and points a "current" symlink at that exact directory, so realpath
+#  (already computed by package_info before calling this) lands
+#  straight on a real, uniquely-versioned path with both the candidate
+#  name and its exact version - vendor suffix included, e.g.
+#  "17.0.9-tem" vs "17.0.9-amzn" for two different Java builds of the
+#  same numeric version, a distinction a raw --version probe can't
+#  reliably draw - sitting right there in the string already.
+def sdkman_owner(real)
+  dir = sdkman_dir
+  return nil unless dir
+
+  m = real.to_s.match(%r{\A#{Regexp.escape(dir)}/candidates/([^/]+)/([^/]+)/})
+  m && { name: m[1], version: m[2] }
+end
+
+# choco_installed_list(choco) - {package id => version}, from one
+#  `choco list --limit-output` batch call - "--limit-output" ("-r")
+#  prints a stable, script-friendly "id|version" line per package, no
+#  column-width table or trailing summary line to parse around - the
+#  same one-full-listing-fetched-once shape as
+#  cygcheck_installed_list/brew_installed_list.
+def choco_installed_list(choco)
+  @choco_installed_list ||= `"#{choco}" list --limit-output 2>&1`.each_line.each_with_object({}) do |line, h|
+    id, version = line.strip.split('|', 2)
+    h[id] = version if id && version
+  end
+end
+
+# chocolatey_owner(real, candidates) - {name:, version:} for a
+#  Chocolatey-managed binary, matched purely by name/tag against
+#  `choco list`, with no path confirmation at all -
+#  confirmed directly this has to be the approach: plenty of real
+#  `choco install`s just run a downloaded installer and let it place
+#  the binary wherever it normally would (Strawberry Perl to
+#  C:\Strawberry, Go and dotnet-sdk to their own Program Files dirs,
+#  the "magicsplat-tcl-tk"/"corretto17jdk" packages the same way),
+#  completely outside any Chocolatey-owned directory - not just outside
+#  $env:ChocolateyInstall, but also outside $env:ChocolateyToolsLocation
+#  (the other Chocolatey-recognized install root, C:\tools by default),
+#  the two together still missing most of what actually matters here. A
+#  shimgen shim under ChocolateyInstall\bin wouldn't help distinguish
+#  these either way - its real redirect target is embedded inside the
+#  shim binary itself, not discoverable via realpath.
+#
+#  `candidates` is the language's whole bin: list (not just whichever
+#  one resolve_binary happened to find first) - confirmed directly this
+#  matters: PowerShell's own AREAS entry tries "pwsh" before
+#  "powershell", so a genuine local pwsh.exe resolves before ever
+#  trying the "powershell" name, and "pwsh" alone isn't a substring of
+#  the real package id "powershell-core" ("powershell" is, but that
+#  name would never even get tried without checking every candidate).
+#
+#  Same "good enough for a friendly report, not a security check"
+#  tradeoff probe_version already makes - an exact id match against
+#  `choco list` (dotnet, go, ruby, python3, gawk, groovy, rust via
+#  "rustc" - all confirmed directly) is tried first, then a substring
+#  match in either direction (catches "strawberryperl"/perl,
+#  "powershell-core"/powershell). What's left after that - "javac"/
+#  "corretto17jdk", "tclsh"/"magicsplat-tcl-tk" - share no substring at
+#  all, but `choco info <pkg>`'s own Tags field does carry the missing
+#  link (confirmed directly: corretto17jdk is tagged "corretto java
+#  jvm", magicsplat-tcl-tk "magicsplat-tcl-tk magicsplat tcl tk",
+#  powershell-core "powershell-core powershell pwsh admin") -
+#  `choco list <name> --by-tags-only` searches that Tags field
+#  specifically, so it's tried last, only for whatever the cheaper
+#  list-based match didn't already resolve. `choco search` looks like
+#  the more obvious tool for this but confirmed directly it's the wrong
+#  one - it full-text-matches id/title/tags/description together and,
+#  even with --local-only, returned flatly unrelated packages for exact
+#  tag terms ("java" -> docfetcher/stigviewer/UnderscoreBackup, none
+#  Java-related at all) - --by-tags-only is what actually stays scoped
+#  to the Tags field alone.
+#
+#  Gated on native_windows_ruby? - Chocolatey itself is native-Windows-
+#  only, and this hasn't been exercised from MSYS2/Cygwin/WSL1 even
+#  though `choco.exe` might technically be reachable from their PATH
+#  too.
+def chocolatey_owner(real, candidates)
+  return nil unless candidates && native_windows_ruby?
+
+  # Chocolatey never installs applications into %SystemRoot% (that
+  #  directory is reserved for OS components) - confirmed directly this
+  #  guard is needed: C:\Windows\system32\bash.exe is Windows' own
+  #  launcher stub for the default WSL distro, not MSYS2's bash at all
+  #  (running it drops you into WSL1), yet a real "msys2" Chocolatey
+  #  package happens to be tagged "bash" too - name/tag matching alone
+  #  can't tell those apart, since it never looks at the path at all.
+  #  Excluding %SystemRoot%/%windir% outright, before ever querying
+  #  choco, is safe precisely because nothing Chocolatey-managed is
+  #  ever legitimately found there.
+  # Falls back to the conventional literal default when the env var
+  #  comes back empty/unset for any reason, rather than silently
+  #  skipping the guard - confirmed directly the bare ENV lookup alone
+  #  wasn't actually blocking C:\Windows\system32\bash.exe as expected
+  #  on at least one real machine, cause not yet pinned down.
+  system_root = ENV['SystemRoot'] || ENV['windir']
+  system_root = 'C:\Windows' if system_root.to_s.empty?
+  # Separators normalized to "/" on both sides before comparing -
+  #  confirmed directly the hardcoded literal fallback above still
+  #  didn't block C:\Windows\system32\bash.exe, which pointed at a
+  #  format mismatch rather than a missing env var: realpath (used to
+  #  compute `real`) likely returns forward-slash form even on Windows,
+  #  while system_root here is a plain backslash literal - a
+  #  start_with? check across mismatched separators silently never
+  #  matches, regardless of how correct the actual path is.
+  return nil if real.to_s.downcase.tr('\\', '/').start_with?(system_root.downcase.tr('\\', '/'))
+
+  choco = find_on_path('choco')
+  return nil unless choco
+
+  names = candidates.map { |c| c.sub(/\.exe\z/i, '') }.uniq
+  installed = choco_installed_list(choco)
+  # A raw substring check isn't safe at any length - confirmed directly
+  #  with two different failure shapes: "cl" (C++'s own MSVC candidate)
+  #  collides with "act-cli" purely because of the "cli" in it, and
+  #  "date" (a plain dictionary word) collides with
+  #  "chocolatey-windowsupdate.extension" purely because "date" is
+  #  embedded in "update" - a length floor catches the first but not
+  #  the second. Splitting each id on its own delimiters ("-", ".",
+  #  "_") into real tokens and requiring an exact match against one of
+  #  them is safe against both: "core" isn't a token of "windowsupdate"
+  #  under any split, and neither is "cl" a token of "cli". This does
+  #  cost a couple of previously-working matches that relied on the
+  #  id/name being glued together with no delimiter at all
+  #  ("strawberryperl" for "perl", "rust" for "rustc") - those fall
+  #  through to choco_tag_owner now (or stay honestly unmatched)
+  #  instead of a coincidental-but-correct substring hit, which is the
+  #  right trade given the false positives above were the same kind of
+  #  coincidence just pointed the wrong way.
+  key = names.find { |n| installed.key?(n) } ||
+        installed.keys.find { |id| names.any? { |n| id.downcase.split(/[^a-z0-9]+/).include?(n.downcase) } }
+  return { name: key, version: installed[key] } if key
+
+  names.each do |n|
+    found = choco_tag_owner(choco, n)
+    return found if found
+  end
+  nil
+end
+
+# choco_tag_owner(choco, name) - {name:, version:} via
+#  `choco list <name> --by-tags-only --limit-output`, matched against
+#  Chocolatey's own Tags metadata rather than a path or plain-id guess -
+#  see chocolatey_owner's own comment for why this is the only way to
+#  connect e.g. "tclsh" to "magicsplat-tcl-tk" at all, and why
+#  `choco search` isn't used for this despite looking similar.
+#
+#  Only trusted when exactly one package carries the tag - confirmed
+#  directly this ambiguity is real, not hypothetical: "java" tags four
+#  different installed packages (corretto17jdk, groovy, vscode,
+#  vscode.install) - groovy is already its own, separately-tracked
+#  language elsewhere in AREAS, so picking any one of these by
+#  assumption (e.g. "first result") risks mislabeling Java's own
+#  version with a completely unrelated package's. Declining outright
+#  when the tag alone doesn't pin down a single package is the same
+#  "don't guess wrong" choice already made for cases with no lexical
+#  relationship at all.
+#
+#  One subprocess call per still-unmatched candidate, not batched -
+#  unlike choco_installed_list's single full listing, there's no
+#  "look up tags for everything at once" equivalent, but this only runs
+#  for the handful of names the cheap list-based match didn't already
+#  resolve.
+def choco_tag_owner(choco, name)
+  raw = `"#{choco}" list "#{name}" --by-tags-only --limit-output 2>&1`
+  hits = raw.each_line.filter_map do |line|
+    id, version = line.strip.split('|', 2)
+    [id, version] if id && version
+  end
+  return nil unless hits.length == 1
+
+  id, version = hits.first
+  { name: id, version: version }
+end
+
 # prefetch_package_info!() - resolves every language's and every tool's
 #  binary across the whole AREAS tree (resolve_binary alone - pure Ruby,
 #  no subprocess), then batch-queries the package manager once (pacman,
@@ -390,7 +662,8 @@ end
 #  package_info(path) call along the way is a cache hit.
 def prefetch_package_info!
   paths = AREAS.flat_map { |area| area[:languages] }.flat_map do |lang|
-    [resolve_binary(lang[:bin])[1]] + (lang[:tools] || []).map { |tool| resolve_binary([tool])[1] }
+    dirs = lang[:native_tools] ? windows_native_path_dirs : nil
+    [resolve_binary(lang[:bin])[1]] + (lang[:tools] || []).map { |tool| resolve_binary(Array(tool), dirs)[1] }
   end.compact.map { |p| realpath(p) }.uniq
   return if paths.empty?
 
@@ -766,7 +1039,20 @@ def resolve_language(lang)
   entry.merge(
     name: lang[:name],
     binaries: lang[:bin],
-    tools: (lang[:tools] || []).map { |tool| resolve_entry([tool], :flag).merge(name: tool) }
+    # A tools: entry is normally a plain tool name (e.g. "make"), but
+    #  can also be an array of [real-name, search-only hint, ...] -
+    #  same "tcl"/"jvm" trick languages already use for
+    #  chocolatey_owner's tag search, just plumbed through Array() so
+    #  the common single-name case doesn't need to change shape at all.
+    tools: (lang[:tools] || []).map do |tool|
+      names = Array(tool)
+      # native_tools: true (Batch's own AREAS entry) means these tools
+      #  need to be reachable via cmd.exe's real PATH specifically, not
+      #  wherever Ruby itself happens to be running from - see
+      #  windows_native_path_dirs.
+      dirs = lang[:native_tools] ? windows_native_path_dirs : nil
+      resolve_entry(names, :flag, dirs).merge(name: names.first)
+    end
   )
 end
 
@@ -794,13 +1080,13 @@ ENTRY_CACHE = {}
 #  self-reported --version, or a per-tool special case - see
 #  probe_version) for both name and version - see package_info's own
 #  comment for why that's preferred where it's available at all.
-def resolve_entry(candidates, version_mode)
-  name, path = resolve_binary(candidates)
+def resolve_entry(candidates, version_mode, path_dirs = nil)
+  name, path = resolve_binary(candidates, path_dirs)
   real = path && realpath(path)
   cached = real && ENTRY_CACHE.key?([real, version_mode]) && ENTRY_CACHE[[real, version_mode]]
 
   computed = cached || begin
-    pkg = package_info(path)
+    pkg = package_info(path, candidates)
     {
       resolved_binary: pkg ? pkg[:name] : name,
       # Kept separate from resolved_binary (which always has *some*
