@@ -1107,9 +1107,35 @@ function Invoke-TestBoxCategory {
     return [PSCustomObject]$result
 }
 
-function Write-Colored {
+# Get-ColoredText(text, color) - text wrapped in raw ANSI escape codes,
+#  same convention as Script.rb's own colorize()/red/green/yellow - a
+#  plain string, not a Write-Host call. Callers build one complete line
+#  as a single string (embedding this where color is wanted) and make
+#  exactly one Write-Host call for it - confirmed directly this is
+#  necessary, not just style: Write-Host's own -NoNewline is a *host
+#  rendering* hint that's silently ignored once the Information stream
+#  gets redirected (e.g. Invoke-Psake *>&1 | Out-String, exactly what
+#  run_all_tests.ps1 does to capture and parse output) - each Write-Host
+#  call becomes its own line regardless of -NoNewline, so what looks
+#  like one line interactively ("A0 - Standard Output: [PASS]") was
+#  actually landing as three separate lines once captured, corrupting
+#  every downstream parse. A single Write-Host call per line sidesteps
+#  the whole problem, the same way Script.rb's rake-based colorize()
+#  already does (one puts, ANSI codes embedded directly in the string).
+#  Respects NO_COLOR (https://no-color.org/, any non-empty value) -
+#  returns Text unwrapped when set, satisfying the same "runs cleanly
+#  through a plain-text-only parser" need without requiring color to be
+#  stripped back out downstream.
+function Get-ColoredText {
     param([string]$Text, [string]$Color)
-    Write-Host $Text -ForegroundColor $Color -NoNewline
+    if (-not [string]::IsNullOrEmpty($env:NO_COLOR)) { return $Text }
+    $code = switch ($Color) {
+        'Green'  { 32 }
+        'Red'    { 31 }
+        'Yellow' { 33 }
+        default  { 0 }
+    }
+    "`e[${code}m${Text}`e[0m"
 }
 
 function Format-PassFail {
@@ -1142,19 +1168,11 @@ function Write-TestBoxDiff {
     $outputText   = ConvertTo-DisplayableText $TestCase.Output
 
     if ($TestCase.TestResult) {
-        Write-Host "         Expected Output: |" -NoNewline
-        Write-Colored $expectedText 'Yellow'
-        Write-Host "|"
-        Write-Host "         Actual Output:   |" -NoNewline
-        Write-Colored $outputText 'Yellow'
-        Write-Host "| (within tolerance)"
+        Write-Host "         Expected Output: |$(Get-ColoredText $expectedText 'Yellow')|"
+        Write-Host "         Actual Output:   |$(Get-ColoredText $outputText 'Yellow')| (within tolerance)"
     } else {
-        Write-Host "         Expected Output: |" -NoNewline
-        Write-Colored $expectedText 'Green'
-        Write-Host "|"
-        Write-Host "         Actual Output:   |" -NoNewline
-        Write-Colored $outputText 'Red'
-        Write-Host "|"
+        Write-Host "         Expected Output: |$(Get-ColoredText $expectedText 'Green')|"
+        Write-Host "         Actual Output:   |$(Get-ColoredText $outputText 'Red')|"
     }
 }
 
@@ -1168,9 +1186,7 @@ function Write-TestBoxReport {
     if ($Results.Skipped) {
         $script:Summary.Skip++
         $reason = if ($Results.SkipReason) { " ($($Results.SkipReason))" } else { '' }
-        Write-Host "${label}: [" -NoNewline
-        Write-Colored 'SKIP' 'Yellow'
-        Write-Host "]$reason"
+        Write-Host "${label}: [$(Get-ColoredText 'SKIP' 'Yellow')]$reason"
         return
     }
 
@@ -1181,9 +1197,7 @@ function Write-TestBoxReport {
     $hasTitles = @($Results.Results.Values | ForEach-Object { $_ } | Where-Object { $_.Title }).Count -gt 0
 
     $pf = Format-PassFail $Results.FinalResult
-    Write-Host "${label}: [" -NoNewline
-    Write-Colored $pf.Text $pf.Color
-    Write-Host "]"
+    Write-Host "${label}: [$(Get-ColoredText $pf.Text $pf.Color)]"
 
     if (-not $Results.FinalResult -or $anyDiff -or $hasTitles) {
         if ($Results.Results.Count -eq 0) {
@@ -1196,18 +1210,14 @@ function Write-TestBoxReport {
                 if ($entry.Value.Count -eq 1) {
                     $tc = $entry.Value[0]
                     $tpf = Format-PassFail $tc.TestResult
-                    Write-Host "      - ${implLabel}: [" -NoNewline
-                    Write-Colored $tpf.Text $tpf.Color
-                    Write-Host "]"
+                    Write-Host "      - ${implLabel}: [$(Get-ColoredText $tpf.Text $tpf.Color)]"
                     Write-TestBoxDiff -TestCase $tc
                 } else {
                     Write-Host "      - $implLabel ($($entry.Value.Count) testcases):"
                     $count = 1
                     foreach ($tc in $entry.Value) {
                         $tpf = Format-PassFail $tc.TestResult
-                        Write-Host "        - Test ${count}: [" -NoNewline
-                        Write-Colored $tpf.Text $tpf.Color
-                        Write-Host "]"
+                        Write-Host "        - Test ${count}: [$(Get-ColoredText $tpf.Text $tpf.Color)]"
                         Write-TestBoxDiff -TestCase $tc
                         $count++
                     }
@@ -1224,11 +1234,10 @@ function Invoke-TestBoxTask {
 
 function Show-TestBoxSummary {
     Write-Host ('=' * 63)
-    Write-Host "Summary: Total=$($script:Summary.Total)  " -NoNewline
-    Write-Colored "Pass=$($script:Summary.Pass)  " 'Green'
-    Write-Colored "Fail=$($script:Summary.Fail)  " 'Red'
-    Write-Colored "Skip=$($script:Summary.Skip)" 'Yellow'
-    Write-Host ""
+    $passText = Get-ColoredText "Pass=$($script:Summary.Pass)" 'Green'
+    $failText = Get-ColoredText "Fail=$($script:Summary.Fail)" 'Red'
+    $skipText = Get-ColoredText "Skip=$($script:Summary.Skip)" 'Yellow'
+    Write-Host "Summary: Total=$($script:Summary.Total)  $passText  $failText  $skipText"
 }
 
 # Test-TestBoxFailed() - true if any category run so far this session had

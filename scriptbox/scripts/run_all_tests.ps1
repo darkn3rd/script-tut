@@ -86,17 +86,23 @@ $LanguageDirs = [ordered]@{
   'compiled_lang' = @('cpp', 'cs', 'go', 'java', 'rust')
 }
 
-# NativeWindowsShell - true unless MSYSTEM is set - see
-#  run_all_tests.rb's own NATIVE_WINDOWS_SHELL comment for the concrete
-#  failure mode this guards against (cmd.exe/PowerShell's own `where
-#  bash` can resolve to Windows' WSL launcher stub instead of a real
-#  bash, which silently corrupts interactive input and eventually
-#  hangs). This script only ever runs from a native Windows PowerShell
-#  session to begin with, so it's effectively always true in practice -
-#  checked the same way as the Ruby version anyway, for the rare case
-#  pwsh itself got launched from inside an MSYS2 session. Skipped by
-#  default below - pass --allow-native-shell to opt in anyway.
-$NativeWindowsShell = [string]::IsNullOrEmpty($env:MSYSTEM)
+# NativeWindowsShell - true only when actually running on Windows
+#  *and* MSYSTEM isn't set - see run_all_tests.rb's own
+#  NATIVE_WINDOWS_SHELL comment for the concrete failure mode this
+#  guards against (cmd.exe/PowerShell's own `where bash` can resolve to
+#  Windows' WSL launcher stub instead of a real bash, which silently
+#  corrupts interactive input and eventually hangs).
+#  The OS check matters, not just MSYSTEM - confirmed directly checking
+#  MSYSTEM alone is wrong: pwsh (PowerShell 7+) runs natively on
+#  macOS/Linux too, where MSYSTEM is equally unset (it's an MSYS2-only,
+#  Windows-only convention) despite the host being a completely genuine
+#  POSIX environment - the original MSYSTEM-only check wrongly skipped
+#  shell_scripts/* there as well, exactly the case this whole guard
+#  exists to *not* block. $IsWindows only exists in PowerShell 6+
+#  (Core/pwsh) - it's absent in Windows PowerShell 5.1, which only ever
+#  runs on Windows anyway, so its absence defaults to true safely.
+$RunningOnWindows = if (Get-Variable -Name IsWindows -ErrorAction SilentlyContinue) { $IsWindows } else { $true }
+$NativeWindowsShell = $RunningOnWindows -and [string]::IsNullOrEmpty($env:MSYSTEM)
 
 # AllowNativeShell - the one exception to NativeWindowsShell's default
 #  skip below, stripped from Selectors before Expand-Selection ever
@@ -429,9 +435,14 @@ function Invoke-AllTests {
       $displayLanguage = Get-DisplayLanguage $result $pkg
       if (-not $displayLanguage) { $displayLanguage = $lang }
       $displayVersion = Resolve-DisplayVersion $result $pkg
+      # ?? is PowerShell 7.0+ only - Windows PowerShell 5.1 (the default
+      #  powershell.exe) doesn't understand it, confirmed directly this
+      #  broke a real 5.1 session even though it parsed fine under this
+      #  environment's own pwsh-backed syntax check.
+      $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
 
       Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
-        $displayLanguage, $displayVersion, ($result.Platform ?? '-'), `
+        $displayLanguage, $displayVersion, $platformDisplay, `
         $result.Total, $result.Pass, $result.Fail, $result.Skip)
 
       $totals.Total += $result.Total
