@@ -115,11 +115,20 @@ if ($Selectors -contains '--allow-native-shell') {
   $Selectors = @($Selectors | Where-Object { $_ -ne '--allow-native-shell' })
 }
 
-# NotInstalledPattern - Script.rb's own PATH check (its "Cannot find
-#  ... on PATH" fatal check, run before any lesson executes) - matched
-#  separately so a genuinely missing interpreter reads as a clean,
-#  expected skip rather than a raw "could not parse output" dump.
-$NotInstalledPattern = 'ERROR: Cannot find "(\S+)" on PATH'
+# NotInstalledPattern - the "Cannot find ... on PATH" fatal check run
+#  before any lesson executes - matched separately so a genuinely
+#  missing interpreter reads as a clean, expected skip rather than a
+#  raw "could not parse output" dump. "ERROR: " prefix optional -
+#  confirmed directly Script.rb's own STDERR message has it
+#  ("ERROR: Cannot find ...") but TestBox.psm1's thrown exception
+#  message doesn't (just "Cannot find ..."), so a pattern requiring the
+#  prefix literally never matched psake's own version of this exact
+#  same fatal check - a missing tool under psake fell all the way
+#  through to the "could not parse Invoke-Psake output" branch and
+#  dumped the whole raw error/build-failure object instead of a clean
+#  one-line skip, even though the wrapper's own loop was already moving
+#  on to the next language correctly either way.
+$NotInstalledPattern = '(?:ERROR: )?Cannot find "(\S+)" on PATH'
 
 # Test-ErrorOutput(text) - true if this looks like a shell's own
 #  "I don't understand that flag" complaint rather than a real version -
@@ -413,42 +422,55 @@ function Invoke-AllTests {
         continue
       }
 
-      $output = Invoke-PsakeRun $dir
+      # Nothing below here - including any future change to it - should
+      #  ever be able to abort the *whole* run just because one language
+      #  hit something unanticipated. Invoke-PsakeRun/NotInstalledPattern/
+      #  ConvertFrom-PsakeOutput already handle the two known failure
+      #  shapes explicitly (Invoke-PsakeRun itself already has its own
+      #  try/catch around Invoke-Psake); this is the backstop for
+      #  everything else (Resolve-PackageInfo's ruby bridge throwing on
+      #  some odd real-world banner, a malformed summary line, ...) - one
+      #  bad language should read as one bad row, never a crashed batch.
+      try {
+        $output = Invoke-PsakeRun $dir
 
-      if ($output -match $NotInstalledPattern) {
-        Write-Host ('{0,-36} SKIPPED ({1} not found on PATH)' -f $lang, $Matches[1])
-        $notInstalled += $lang
-        continue
+        if ($output -match $NotInstalledPattern) {
+          Write-Host ('{0,-36} SKIPPED ({1} not found on PATH)' -f $lang, $Matches[1])
+          $notInstalled += $lang
+          continue
+        }
+
+        $result = ConvertFrom-PsakeOutput $output
+
+        if ($null -eq $result.Total) {
+          Write-Host "${lang}: could not parse Invoke-Psake output"
+          $output -split "`n" | ForEach-Object { Write-Host "  $_" }
+          continue
+        }
+
+        $binaryName = if ($result.Path) { [System.IO.Path]::GetFileNameWithoutExtension($result.Path) } else { $null }
+        $pkg = Resolve-PackageInfo -Path $result.Path -BinaryName $binaryName
+
+        $displayLanguage = Get-DisplayLanguage $result $pkg
+        if (-not $displayLanguage) { $displayLanguage = $lang }
+        $displayVersion = Resolve-DisplayVersion $result $pkg
+        # ?? is PowerShell 7.0+ only - Windows PowerShell 5.1 (the default
+        #  powershell.exe) doesn't understand it, confirmed directly this
+        #  broke a real 5.1 session even though it parsed fine under this
+        #  environment's own pwsh-backed syntax check.
+        $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
+
+        Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
+          $displayLanguage, $displayVersion, $platformDisplay, `
+          $result.Total, $result.Pass, $result.Fail, $result.Skip)
+
+        $totals.Total += $result.Total
+        $totals.Pass += $result.Pass
+        $totals.Fail += $result.Fail
+        $totals.Skip += $result.Skip
+      } catch {
+        Write-Host "${lang}: ERROR - $_"
       }
-
-      $result = ConvertFrom-PsakeOutput $output
-
-      if ($null -eq $result.Total) {
-        Write-Host "${lang}: could not parse Invoke-Psake output"
-        $output -split "`n" | ForEach-Object { Write-Host "  $_" }
-        continue
-      }
-
-      $binaryName = if ($result.Path) { [System.IO.Path]::GetFileNameWithoutExtension($result.Path) } else { $null }
-      $pkg = Resolve-PackageInfo -Path $result.Path -BinaryName $binaryName
-
-      $displayLanguage = Get-DisplayLanguage $result $pkg
-      if (-not $displayLanguage) { $displayLanguage = $lang }
-      $displayVersion = Resolve-DisplayVersion $result $pkg
-      # ?? is PowerShell 7.0+ only - Windows PowerShell 5.1 (the default
-      #  powershell.exe) doesn't understand it, confirmed directly this
-      #  broke a real 5.1 session even though it parsed fine under this
-      #  environment's own pwsh-backed syntax check.
-      $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
-
-      Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
-        $displayLanguage, $displayVersion, $platformDisplay, `
-        $result.Total, $result.Pass, $result.Fail, $result.Skip)
-
-      $totals.Total += $result.Total
-      $totals.Pass += $result.Pass
-      $totals.Fail += $result.Fail
-      $totals.Skip += $result.Skip
     }
   }
 

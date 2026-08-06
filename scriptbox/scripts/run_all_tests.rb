@@ -368,31 +368,43 @@ def run_all(argv = ARGV)
         next
       end
 
-      output = run_rake(dir, timeout_seconds: LANGUAGE_TIMEOUTS.fetch(lang, RAKE_TIMEOUT))
+      # Nothing below here - including any future change to it - should
+      #  ever be able to abort the *whole* run just because one language
+      #  hit something unanticipated. run_rake/NOT_INSTALLED/parse_result
+      #  already handle the two known failure shapes (a genuine hang, a
+      #  missing interpreter) explicitly; this is the backstop for
+      #  everything else (a package_info lookup raising on some odd real-
+      #  world banner, a malformed rake summary line, ...) - one bad
+      #  language should read as one bad row, never a crashed batch.
+      begin
+        output = run_rake(dir, timeout_seconds: LANGUAGE_TIMEOUTS.fetch(lang, RAKE_TIMEOUT))
 
-      if (m = output.match(NOT_INSTALLED))
-        puts format('%-36s SKIPPED (%s not found on PATH)', lang, m[1])
-        not_installed << lang
-        next
+        if (m = output.match(NOT_INSTALLED))
+          puts format('%-36s SKIPPED (%s not found on PATH)', lang, m[1])
+          not_installed << lang
+          next
+        end
+
+        r = parse_result(output)
+
+        if r[:total].nil?
+          puts "#{lang}: could not parse rake output"
+          output.each_line { |line| puts "  #{line}" }
+          next
+        end
+
+        pkg = resolve_package(r)
+        puts format('%-36s %-26s %-34s Total=%-4d Pass=%-4d Fail=%-4d Skip=%d',
+                     display_language(r, pkg) || lang, resolve_version(r, pkg), r[:platform] || '-',
+                     r[:total], r[:pass], r[:fail], r[:skip])
+
+        totals[:total] += r[:total]
+        totals[:pass] += r[:pass]
+        totals[:fail] += r[:fail]
+        totals[:skip] += r[:skip]
+      rescue StandardError => e
+        puts "#{lang}: ERROR - #{e.class}: #{e.message}"
       end
-
-      r = parse_result(output)
-
-      if r[:total].nil?
-        puts "#{lang}: could not parse rake output"
-        output.each_line { |line| puts "  #{line}" }
-        next
-      end
-
-      pkg = resolve_package(r)
-      puts format('%-36s %-26s %-34s Total=%-4d Pass=%-4d Fail=%-4d Skip=%d',
-                   display_language(r, pkg) || lang, resolve_version(r, pkg), r[:platform] || '-',
-                   r[:total], r[:pass], r[:fail], r[:skip])
-
-      totals[:total] += r[:total]
-      totals[:pass] += r[:pass]
-      totals[:fail] += r[:fail]
-      totals[:skip] += r[:skip]
     end
   end
 
