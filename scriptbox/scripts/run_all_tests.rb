@@ -71,6 +71,18 @@ LANGUAGE_DIRS = {
   'compiled_lang' => %w[cpp cs go java rust]
 }.freeze
 
+# AREA_LABELS - human-readable section headers for the table format
+#  only (see run_all's own table branch) - a flat, ungrouped list reads
+#  fine for one or two areas, but confirmed directly a full run across
+#  all four gets hard to scan without something marking where one area
+#  ends and the next begins.
+AREA_LABELS = {
+  'win_scripts' => 'Windows Scripts',
+  'shell_scripts' => 'Shell Scripts',
+  'gen_scripts' => 'General Scripts',
+  'compiled_lang' => 'Compiled Languages'
+}.freeze
+
 # NATIVE_WINDOWS_SHELL - true when this run is native Windows Ruby
 #  (mingw/mswin) without MSYSTEM set - i.e. launched from a plain
 #  cmd.exe or PowerShell session, neither a real POSIX host.
@@ -190,6 +202,25 @@ def trim_version(str)
                .sub(/\Ago version\s+/i, '')
                .sub(/\AGroovy Version:\s*/i, '')
                .strip
+
+  # g++'s own banner ("g++.exe (MinGW-W64 x86_64-ucrt-posix-seh, built
+  #  by Brecht Sanders, r8) 13.2.0") puts the real version *after* a
+  #  parenthetical block that itself is full of incidental digits
+  #  (architecture/build strings) - confirmed directly the plain digit-
+  #  run match below, being the *first* digit run in the string, was
+  #  latching onto "64" (from "MinGW-W64") and stopping there, well
+  #  before the real "13.2.0" that comes after the closing paren.
+  #  Skipped only when a *leading* parenthetical exists and itself
+  #  contains a digit - every other already-handled banner shape either
+  #  has no leading parenthetical at this point (php/gawk/rustc, whose
+  #  real version already comes first) or was already stripped by one
+  #  of the targeted .subs above (ksh93's "version sh (...)" prefix),
+  #  so this can't regress any of those.
+  if (paren = cleaned.match(/\A(\S+)\s*\(([^)]*)\)/)) && paren[2] =~ /\d/
+    after = cleaned[paren.end(0)..-1].to_s.strip
+    cleaned = after unless after.empty?
+  end
+
   result = (cleaned[/\A.*?\d+(?:\.\d+)*/] || cleaned.split(/[,(\n]/).first.to_s).strip
   # Safety net, not a primary strategy - confirmed directly the
   #  targeted fixes above can't realistically cover every version
@@ -339,12 +370,110 @@ def expand_selection(argv)
   selected
 end
 
+# new_record(area, lang, status, **fields) - the one row shape every
+#  formatter below (table/json/yaml/csv/junit) works from, regardless of
+#  how that language's run actually went. Unifying this was necessary,
+#  not just tidy - the four "something other than a clean pass/fail
+#  count" cases (shell_scripts skipped, directory missing, interpreter
+#  not on PATH, an unexpected exception) previously each just puts'd
+#  their own ad-hoc text with no structure behind it at all, which the
+#  table format could get away with but a JSON/YAML/CSV/JUnit consumer
+#  can't - every row needs the same fields present (even if nil) so a
+#  machine reading the output doesn't need special-case code per status.
+#  total/pass/fail/skip stay nil (not 0) for a non-ok row - nil means
+#  "not applicable", 0 would wrongly claim "ran and found nothing".
+def new_record(area, lang, status, language: nil, version: nil, platform: nil,
+               total: nil, pass: nil, fail: nil, skip: nil, message: nil)
+  {
+    area: area, lang: lang, status: status,
+    language: language, version: version, platform: platform,
+    total: total, pass: pass, fail: fail, skip: skip, message: message
+  }
+end
+
+# FORMATS - every --format value this script accepts, each a lambda
+#  taking (records, totals) and returning the full string to print.
+#  'table' is handled separately below (streamed row-by-row as each
+#  language finishes, not built from records after the fact) since
+#  that's the one format where printing progress *during* a long batch
+#  run - rather than staying silent until everything's done - actually
+#  matters; the other four are structured documents that only make
+#  sense complete, so they're assembled once at the very end instead.
+RUN_ALL_FORMATTERS = {
+  'json' => lambda do |records, totals|
+    require 'json'
+    JSON.pretty_generate(
+      'results' => records.map { |r| r.transform_keys(&:to_s) },
+      'summary' => totals.transform_keys(&:to_s)
+    )
+  end,
+  'yaml' => lambda do |records, totals|
+    require 'yaml'
+    YAML.dump(
+      'results' => records.map { |r| r.transform_keys(&:to_s) },
+      'summary' => totals.transform_keys(&:to_s)
+    )
+  end,
+  'csv' => lambda do |records, _totals|
+    require 'csv'
+    columns = %i[area lang status language version platform total pass fail skip message]
+    CSV.generate do |csv|
+      csv << columns.map(&:to_s)
+      records.each { |r| csv << columns.map { |c| r[c] } }
+    end
+  end,
+  # JUnit XML - built via REXML (Ruby stdlib, no extra gem) rather than
+  #  hand-formatted strings, so attribute/text escaping (a language
+  #  name or error message containing &/</>/", none implausible here)
+  #  is handled correctly by construction instead of needing its own
+  #  escaping logic to get right and keep right.
+  'junit' => lambda do |records, totals|
+    require 'rexml/document'
+    doc = REXML::Document.new
+    doc << REXML::XMLDecl.new('1.0', 'UTF-8')
+    errors = records.count { |r| %w[parse_error error].include?(r[:status]) }
+    suites = doc.add_element('testsuites',
+      'tests' => totals[:total].to_s, 'failures' => totals[:fail].to_s,
+      'skipped' => totals[:skip].to_s, 'errors' => errors.to_s)
+    records.each do |r|
+      name = "#{r[:area]}/#{r[:lang]}"
+      if r[:status] == 'ok'
+        suite = suites.add_element('testsuite', 'name' => name,
+          'tests' => r[:total].to_s, 'failures' => r[:fail].to_s, 'skipped' => r[:skip].to_s)
+        testcase = suite.add_element('testcase', 'name' => (r[:language] || r[:lang]), 'classname' => r[:area])
+        testcase.add_element('failure', 'message' => "#{r[:fail]} of #{r[:total]} tests failed") if r[:fail].to_i > 0
+      else
+        kind = %w[parse_error error].include?(r[:status]) ? 'errors' : 'skipped'
+        suite = suites.add_element('testsuite', 'name' => name, 'tests' => '1', kind => '1')
+        testcase = suite.add_element('testcase', 'name' => r[:lang], 'classname' => r[:area])
+        tag = kind == 'errors' ? 'error' : 'skipped'
+        testcase.add_element(tag, 'message' => (r[:message] || r[:status]).to_s)
+      end
+    end
+    out = String.new
+    doc.write(output: out, indent: 2)
+    out
+  end
+}.freeze
+
 def run_all(argv = ARGV)
   $stdout.sync = true
   # --allow-native-shell - the one exception to NATIVE_WINDOWS_SHELL's
   #  default skip below, stripped from argv before expand_selection
   #  ever sees it so it never gets mistaken for an AREA token.
   allow_native_shell = !argv.delete('--allow-native-shell').nil?
+  # --format=FORMAT - accepted as either "--format=X" or "--format X",
+  #  stripped from argv the same way, before expand_selection sees it.
+  format_name = 'table'
+  if (i = argv.index { |a| a == '--format' || a.start_with?('--format=') })
+    token = argv.delete_at(i)
+    format_name = token.include?('=') ? token.split('=', 2)[1] : argv.delete_at(i).to_s
+  end
+  unless format_name == 'table' || RUN_ALL_FORMATTERS.key?(format_name)
+    warn "Unknown format '#{format_name}' - expected one of: table #{RUN_ALL_FORMATTERS.keys.join(' ')}"
+    return
+  end
+
   selection = expand_selection(argv)
   if selection.empty? || selection.values.all?(&:empty?)
     warn 'Nothing to run.'
@@ -353,18 +482,31 @@ def run_all(argv = ARGV)
   totals = { total: 0, pass: 0, fail: 0, skip: 0 }
   not_installed = []
   skipped_non_posix = []
+  records = []
+  table = format_name == 'table'
 
   selection.each do |area, langs|
+    next if langs.empty?
+
+    if table
+      label = AREA_LABELS.fetch(area, area)
+      puts "\n#{label}\n#{'-' * label.length}"
+    end
+
     langs.each do |lang|
       if area == 'shell_scripts' && NATIVE_WINDOWS_SHELL && !allow_native_shell
-        puts format('%-36s SKIPPED (needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override)', lang)
+        message = 'needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override'
+        puts format('%-36s SKIPPED (%s)', lang, message) if table
         skipped_non_posix << lang
+        records << new_record(area, lang, 'skipped_non_posix', message: message)
         next
       end
 
       dir = File.join(LESSON_ROOT, area, lang)
       unless Dir.exist?(dir)
-        puts "#{lang}: directory not found (#{dir})"
+        message = "directory not found (#{dir})"
+        puts "#{lang}: #{message}" if table
+        records << new_record(area, lang, 'directory_not_found', message: message)
         next
       end
 
@@ -380,45 +522,61 @@ def run_all(argv = ARGV)
         output = run_rake(dir, timeout_seconds: LANGUAGE_TIMEOUTS.fetch(lang, RAKE_TIMEOUT))
 
         if (m = output.match(NOT_INSTALLED))
-          puts format('%-36s SKIPPED (%s not found on PATH)', lang, m[1])
+          message = "#{m[1]} not found on PATH"
+          puts format('%-36s SKIPPED (%s)', lang, message) if table
           not_installed << lang
+          records << new_record(area, lang, 'skipped_not_installed', message: message)
           next
         end
 
         r = parse_result(output)
 
         if r[:total].nil?
-          puts "#{lang}: could not parse rake output"
-          output.each_line { |line| puts "  #{line}" }
+          if table
+            puts "#{lang}: could not parse rake output"
+            output.each_line { |line| puts "  #{line}" }
+          end
+          records << new_record(area, lang, 'parse_error', message: 'could not parse rake output')
           next
         end
 
         pkg = resolve_package(r)
+        language = display_language(r, pkg) || lang
+        version = resolve_version(r, pkg)
+        platform = r[:platform] || '-'
         puts format('%-36s %-26s %-34s Total=%-4d Pass=%-4d Fail=%-4d Skip=%d',
-                     display_language(r, pkg) || lang, resolve_version(r, pkg), r[:platform] || '-',
-                     r[:total], r[:pass], r[:fail], r[:skip])
+                     language, version, platform, r[:total], r[:pass], r[:fail], r[:skip]) if table
 
         totals[:total] += r[:total]
         totals[:pass] += r[:pass]
         totals[:fail] += r[:fail]
         totals[:skip] += r[:skip]
+        records << new_record(area, lang, 'ok', language: language, version: version, platform: platform,
+                                                  total: r[:total], pass: r[:pass], fail: r[:fail], skip: r[:skip])
       rescue StandardError => e
-        puts "#{lang}: ERROR - #{e.class}: #{e.message}"
+        message = "#{e.class}: #{e.message}"
+        puts "#{lang}: ERROR - #{message}" if table
+        records << new_record(area, lang, 'error', message: message)
       end
     end
   end
 
-  puts '==============================================================='
-  puts format('Final Summary: Total=%d  Pass=%d  Fail=%d  Skip=%d',
-               totals[:total], totals[:pass], totals[:fail], totals[:skip])
-  puts "Not installed (skipped): #{not_installed.join(', ')}" unless not_installed.empty?
-  puts "Skipped (non-POSIX host): #{skipped_non_posix.join(', ')}" unless skipped_non_posix.empty?
+  if table
+    puts '==============================================================='
+    puts format('Final Summary: Total=%d  Pass=%d  Fail=%d  Skip=%d',
+                 totals[:total], totals[:pass], totals[:fail], totals[:skip])
+    puts "Not installed (skipped): #{not_installed.join(', ')}" unless not_installed.empty?
+    puts "Skipped (non-POSIX host): #{skipped_non_posix.join(', ')}" unless skipped_non_posix.empty?
+  else
+    puts RUN_ALL_FORMATTERS.fetch(format_name).call(records, totals)
+  end
 end
 
 if __FILE__ == $PROGRAM_NAME
   if %w[-h --help].include?(ARGV.first)
-    puts 'Usage: run_all_tests.rb [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ... [--allow-native-shell]'
+    puts 'Usage: run_all_tests.rb [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ... [--allow-native-shell] [--format=FORMAT]'
     puts "Areas: #{LANGUAGE_DIRS.keys.join(' ')}"
+    puts "Formats: table (default) #{RUN_ALL_FORMATTERS.keys.join(' ')}"
     puts 'No arguments runs every area/language.'
     puts 'shell_scripts/* is skipped by default under native Windows Ruby (cmd.exe/PowerShell,'
     puts 'no MSYSTEM) - it needs a real POSIX host. Pass --allow-native-shell to run it anyway.'

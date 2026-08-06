@@ -86,6 +86,17 @@ $LanguageDirs = [ordered]@{
   'compiled_lang' = @('cpp', 'cs', 'go', 'java', 'rust')
 }
 
+# AreaLabels - human-readable section headers for the table format only
+#  (see Invoke-AllTests's own table branch) - same reasoning as
+#  run_all_tests.rb's own AREA_LABELS: a flat, ungrouped list gets hard
+#  to scan across a full run of all four areas.
+$AreaLabels = @{
+  'win_scripts'   = 'Windows Scripts'
+  'shell_scripts' = 'Shell Scripts'
+  'gen_scripts'   = 'General Scripts'
+  'compiled_lang' = 'Compiled Languages'
+}
+
 # NativeWindowsShell - true only when actually running on Windows
 #  *and* MSYSTEM isn't set - see run_all_tests.rb's own
 #  NATIVE_WINDOWS_SHELL comment for the concrete failure mode this
@@ -104,16 +115,31 @@ $LanguageDirs = [ordered]@{
 $RunningOnWindows = if (Get-Variable -Name IsWindows -ErrorAction SilentlyContinue) { $IsWindows } else { $true }
 $NativeWindowsShell = $RunningOnWindows -and [string]::IsNullOrEmpty($env:MSYSTEM)
 
-# AllowNativeShell - the one exception to NativeWindowsShell's default
-#  skip below, stripped from Selectors before Expand-Selection ever
-#  sees it so it never gets mistaken for an AREA token - same flag
-#  spelling as run_all_tests.rb's own, so it works identically no
-#  matter which wrapper is invoked.
+# AllowNativeShell/FormatName - both stripped from Selectors in one
+#  pass before Expand-Selection ever sees either, the same way
+#  run_all_tests.rb's own run_all does - so neither one is mistaken for
+#  an AREA token, and "--format json" (a separate token pair, not
+#  "--format=json") doesn't leave a stray "json" behind as a bogus
+#  selector either.
 $AllowNativeShell = $false
-if ($Selectors -contains '--allow-native-shell') {
-  $AllowNativeShell = $true
-  $Selectors = @($Selectors | Where-Object { $_ -ne '--allow-native-shell' })
+$FormatName = 'table'
+$remaining = New-Object System.Collections.Generic.List[string]
+$i = 0
+while ($i -lt $Selectors.Count) {
+  $token = $Selectors[$i]
+  if ($token -eq '--allow-native-shell') {
+    $AllowNativeShell = $true
+  } elseif ($token -eq '--format') {
+    $i++
+    if ($i -lt $Selectors.Count) { $FormatName = $Selectors[$i] }
+  } elseif ($token -like '--format=*') {
+    $FormatName = $token.Substring('--format='.Length)
+  } else {
+    $remaining.Add($token)
+  }
+  $i++
 }
+$Selectors = @($remaining)
 
 # NotInstalledPattern - the "Cannot find ... on PATH" fatal check run
 #  before any lesson executes - matched separately so a genuinely
@@ -169,6 +195,28 @@ function ConvertTo-TrimmedVersion {
     -replace '^go version\s+', '' `
     -replace '^Groovy Version:\s*', ''
   $cleaned = $cleaned.Trim()
+
+  # g++'s own banner puts the real version *after* a parenthetical
+  #  block full of incidental digits (architecture/build strings) - see
+  #  run_all_tests.rb's own identical trim_version comment for the
+  #  concrete example and why this is scoped to a *leading*
+  #  parenthetical that itself contains a digit, so it can't regress
+  #  php/gawk/rustc (real version already comes first, no leading
+  #  parenthetical at this point) or ksh93 (already stripped above).
+  # $matchLength/$group2 captured into locals *before* the second
+  #  -match below - confirmed directly $Matches is a single global
+  #  slot that any -match call overwrites, even one just checking a
+  #  string pulled out of the *previous* match (like $Matches[2] here)
+  #  - using $Matches[0] afterward without capturing it first silently
+  #  reads the inner match's result instead of the outer one's.
+  if ($cleaned -match '^(\S+)\s*\(([^)]*)\)') {
+    $matchLength = $Matches[0].Length
+    $group2 = $Matches[2]
+    if ($group2 -match '\d') {
+      $after = $cleaned.Substring($matchLength).Trim()
+      if ($after) { $cleaned = $after }
+    }
+  }
 
   if ($cleaned -match '^.*?\d+(\.\d+)*') {
     $result = $Matches[0]
@@ -411,8 +459,205 @@ function Expand-Selection {
   return $selected
 }
 
+# New-ResultRecord(...) - the one row shape every formatter below
+#  (table/json/yaml/csv/junit) works from - see run_all_tests.rb's own
+#  identical new_record for why this was necessary, not just tidy: a
+#  machine-readable consumer needs every row to carry the same fields
+#  (even $null ones) rather than each status having its own ad-hoc
+#  Write-Host text with no structure behind it. [ordered] so JSON/YAML/
+#  CSV field order is predictable and matches run_all_tests.rb's own
+#  output shape, aside from the lowercase-vs-PascalCase key casing
+#  difference (kept PascalCase internally, matching every other
+#  variable in this file - see ConvertTo-LowercaseKeys for where that
+#  gets normalized right before serializing).
+function New-ResultRecord {
+  # Language/Version/Platform/Message deliberately untyped ($Language,
+  #  not [string]$Language) - confirmed directly a [string]-typed
+  #  parameter silently coerces a passed-in $null to an *empty string*,
+  #  not $null, which then serialized as json's "" instead of null for
+  #  every non-ok row (skipped/error rows never set these fields) -
+  #  losing the "not applicable" meaning run_all_tests.rb's own nil
+  #  correctly preserves.
+  param(
+    [string]$Area, [string]$Lang, [string]$Status,
+    $Language = $null, $Version = $null, $Platform = $null,
+    $Total = $null, $Pass = $null, $Fail = $null, $Skip = $null, $Message = $null
+  )
+  return [ordered]@{
+    Area = $Area; Lang = $Lang; Status = $Status
+    Language = $Language; Version = $Version; Platform = $Platform
+    Total = $Total; Pass = $Pass; Fail = $Fail; Skip = $Skip; Message = $Message
+  }
+}
+
+# ConvertTo-LowercaseKeys(obj) - only used at the serialization
+#  boundary (see the Format-* functions below) - keeps every other use
+#  of a record/totals hashtable in this file PascalCase (matching this
+#  file's own existing convention, e.g. $totals.Total) while still
+#  emitting lowercase field names in json/yaml/csv output, matching
+#  run_all_tests.rb's own output field casing so either script's output
+#  is directly comparable.
+function ConvertTo-LowercaseKeys {
+  param($Obj)
+  $result = [ordered]@{}
+  foreach ($key in $Obj.Keys) { $result[$key.ToLowerInvariant()] = $Obj[$key] }
+  return $result
+}
+
+# ConvertTo-YamlScalar(value) - PowerShell has no built-in YAML support
+#  (unlike Ruby's own stdlib `yaml`/psych, used directly by
+#  run_all_tests.rb's own formatter) - reimplementing a general YAML
+#  emitter would be a large undertaking, but this only ever needs to
+#  serialize one specific, simple shape (a flat record of string/int/
+#  null scalars, no nesting), which is a small enough surface to hand-
+#  roll correctly rather than pull in an external module
+#  (powershell-yaml) that may not be installed. Quotes a value (YAML
+#  double-quoted scalar syntax) whenever leaving it bare could change
+#  its meaning to a YAML parser - starts with a YAML-significant
+#  character, contains ": " (would look like a nested mapping), is
+#  empty, or would be misread as null/bool/a bare number when it's
+#  actually meant as a string (an error message that happens to be
+#  exactly "yes" or "123", say).
+function ConvertTo-YamlScalar {
+  param($Value)
+  if ($null -eq $Value) { return '' }
+  if ($Value -is [int] -or $Value -is [long]) { return $Value.ToString() }
+  $s = [string]$Value
+  if ($s -eq '') { return "''" }
+  $needsQuote = ($s -match '^[\-\?\:\[\]\{\}\#\&\*\!\|\>\x27"%@`]') -or
+                ($s -match ':\s') -or ($s -match '\s#') -or
+                ($s -match '^\s') -or ($s -match '\s$') -or
+                ($s -match '^-?\d+(\.\d+)?$') -or
+                (@('null', '~', 'true', 'false', 'yes', 'no') -contains $s.ToLowerInvariant())
+  if ($needsQuote) {
+    $escaped = $s -replace '\\', '\\\\' -replace '"', '\"'
+    return "`"$escaped`""
+  }
+  return $s
+}
+
+# Format-RecordsAsJson/Yaml/Csv/Junit(records, totals) - each returns
+#  the full string to print, mirroring run_all_tests.rb's own
+#  RUN_ALL_FORMATTERS hash one function per format instead (PowerShell
+#  scriptblocks stored in a hashtable would work too, but named
+#  functions read more naturally alongside this file's existing style).
+function Format-RecordsAsJson {
+  param($Records, $Totals)
+  $obj = [ordered]@{
+    results = @($Records | ForEach-Object { ConvertTo-LowercaseKeys $_ })
+    summary = ConvertTo-LowercaseKeys $Totals
+  }
+  return ($obj | ConvertTo-Json -Depth 5)
+}
+
+function Format-RecordsAsYaml {
+  param($Records, $Totals)
+  $lines = @('---', 'results:')
+  foreach ($r in $Records) {
+    $lc = ConvertTo-LowercaseKeys $r
+    $lines += "- area: $(ConvertTo-YamlScalar $lc.area)"
+    $lines += "  lang: $(ConvertTo-YamlScalar $lc.lang)"
+    $lines += "  status: $(ConvertTo-YamlScalar $lc.status)"
+    $lines += "  language: $(ConvertTo-YamlScalar $lc.language)"
+    $lines += "  version: $(ConvertTo-YamlScalar $lc.version)"
+    $lines += "  platform: $(ConvertTo-YamlScalar $lc.platform)"
+    $lines += "  total: $(ConvertTo-YamlScalar $lc.total)"
+    $lines += "  pass: $(ConvertTo-YamlScalar $lc.pass)"
+    $lines += "  fail: $(ConvertTo-YamlScalar $lc.fail)"
+    $lines += "  skip: $(ConvertTo-YamlScalar $lc.skip)"
+    $lines += "  message: $(ConvertTo-YamlScalar $lc.message)"
+  }
+  if ($Records.Count -eq 0) { $lines += 'results: []' }
+  $lines += 'summary:'
+  $lines += "  total: $($Totals.Total)"
+  $lines += "  pass: $($Totals.Pass)"
+  $lines += "  fail: $($Totals.Fail)"
+  $lines += "  skip: $($Totals.Skip)"
+  return ($lines -join "`n")
+}
+
+function Format-RecordsAsCsv {
+  param($Records, $Totals)
+  $rows = $Records | ForEach-Object { [PSCustomObject](ConvertTo-LowercaseKeys $_) }
+  return ($rows | ConvertTo-Csv -NoTypeInformation | Out-String).TrimEnd("`r", "`n")
+}
+
+# Format-RecordsAsJunit - built via System.Xml.XmlDocument rather than
+#  hand-formatted strings, so attribute/text escaping (a language name
+#  or error message containing &/</>/", none implausible here) is
+#  handled correctly by construction - same reasoning as
+#  run_all_tests.rb's own REXML-based version.
+function Format-RecordsAsJunit {
+  param($Records, $Totals)
+  $doc = New-Object System.Xml.XmlDocument
+  $decl = $doc.CreateXmlDeclaration('1.0', 'UTF-8', $null)
+  [void]$doc.AppendChild($decl)
+
+  $errorsCount = @($Records | Where-Object { $_.Status -in @('parse_error', 'error') }).Count
+  $suites = $doc.CreateElement('testsuites')
+  $suites.SetAttribute('tests', [string]$Totals.Total)
+  $suites.SetAttribute('failures', [string]$Totals.Fail)
+  $suites.SetAttribute('skipped', [string]$Totals.Skip)
+  $suites.SetAttribute('errors', [string]$errorsCount)
+  [void]$doc.AppendChild($suites)
+
+  foreach ($r in $Records) {
+    $name = "$($r.Area)/$($r.Lang)"
+    $suite = $doc.CreateElement('testsuite')
+    $suite.SetAttribute('name', $name)
+
+    if ($r.Status -eq 'ok') {
+      $suite.SetAttribute('tests', [string]$r.Total)
+      $suite.SetAttribute('failures', [string]$r.Fail)
+      $suite.SetAttribute('skipped', [string]$r.Skip)
+      $testcase = $doc.CreateElement('testcase')
+      $testcase.SetAttribute('name', $(if ($r.Language) { $r.Language } else { $r.Lang }))
+      $testcase.SetAttribute('classname', $r.Area)
+      if ([int]$r.Fail -gt 0) {
+        $failure = $doc.CreateElement('failure')
+        $failure.SetAttribute('message', "$($r.Fail) of $($r.Total) tests failed")
+        [void]$testcase.AppendChild($failure)
+      }
+      [void]$suite.AppendChild($testcase)
+    } else {
+      $kind = if ($r.Status -in @('parse_error', 'error')) { 'errors' } else { 'skipped' }
+      $suite.SetAttribute('tests', '1')
+      $suite.SetAttribute($kind, '1')
+      $testcase = $doc.CreateElement('testcase')
+      $testcase.SetAttribute('name', $r.Lang)
+      $testcase.SetAttribute('classname', $r.Area)
+      $tag = if ($kind -eq 'errors') { 'error' } else { 'skipped' }
+      $elem = $doc.CreateElement($tag)
+      $elem.SetAttribute('message', $(if ($r.Message) { $r.Message } else { $r.Status }))
+      [void]$testcase.AppendChild($elem)
+      [void]$suite.AppendChild($testcase)
+    }
+    [void]$suites.AppendChild($suite)
+  }
+
+  $sw = New-Object System.IO.StringWriter
+  $xw = New-Object System.Xml.XmlTextWriter($sw)
+  $xw.Formatting = [System.Xml.Formatting]::Indented
+  $doc.WriteTo($xw)
+  $xw.Flush()
+  return $sw.ToString()
+}
+
+# FormatNames - every --format value this script accepts besides the
+#  default 'table' - a plain array (not a hashtable of function
+#  references) dispatched via the switch in Invoke-AllTests below,
+#  simpler than making FunctionInfo objects invocable through a
+#  hashtable lookup for no real benefit here.
+$FormatNames = @('json', 'yaml', 'csv', 'junit')
+
 function Invoke-AllTests {
-  param([string[]]$Argv)
+  param([string[]]$Argv, [string]$Format = 'table')
+
+  if ($Format -ne 'table' -and $FormatNames -notcontains $Format) {
+    Write-Warning "Unknown format '$Format' - expected one of: table $($FormatNames -join ' ')"
+    return
+  }
+  $table = $Format -eq 'table'
 
   $selection = Expand-Selection $Argv
   $anyLanguages = $false
@@ -422,21 +667,38 @@ function Invoke-AllTests {
     return
   }
 
-  $totals = @{ Total = 0; Pass = 0; Fail = 0; Skip = 0 }
+  # [ordered], not a plain hashtable - a plain @{} enumerates in
+  #  hash-bucket order, not insertion order, which left the summary
+  #  object's json/yaml field order scrambled (e.g. skip before total).
+  $totals = [ordered]@{ Total = 0; Pass = 0; Fail = 0; Skip = 0 }
   $notInstalled = @()
   $skippedNonPosix = @()
+  $records = New-Object System.Collections.Generic.List[object]
 
   foreach ($area in $selection.Keys) {
+    if ($selection[$area].Count -eq 0) { continue }
+
+    if ($table) {
+      $label = if ($AreaLabels.ContainsKey($area)) { $AreaLabels[$area] } else { $area }
+      Write-Host ''
+      Write-Host $label
+      Write-Host ('-' * $label.Length)
+    }
+
     foreach ($lang in $selection[$area]) {
       if ($area -eq 'shell_scripts' -and $NativeWindowsShell -and -not $AllowNativeShell) {
-        Write-Host ('{0,-36} SKIPPED (needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override)' -f $lang)
+        $message = 'needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override'
+        if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
         $skippedNonPosix += $lang
+        $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_non_posix' -Message $message))
         continue
       }
 
       $dir = Join-Path (Join-Path $LessonRoot $area) $lang
       if (-not (Test-Path $dir)) {
-        Write-Host "${lang}: directory not found ($dir)"
+        $message = "directory not found ($dir)"
+        if ($table) { Write-Host "${lang}: $message" }
+        $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'directory_not_found' -Message $message))
         continue
       }
 
@@ -453,16 +715,22 @@ function Invoke-AllTests {
         $output = Invoke-PsakeRun $dir
 
         if ($output -match $NotInstalledPattern) {
-          Write-Host ('{0,-36} SKIPPED ({1} not found on PATH)' -f $lang, $Matches[1])
+          $notInstalledTool = $Matches[1]
+          $message = "$notInstalledTool not found on PATH"
+          if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
           $notInstalled += $lang
+          $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_not_installed' -Message $message))
           continue
         }
 
         $result = ConvertFrom-PsakeOutput $output
 
         if ($null -eq $result.Total) {
-          Write-Host "${lang}: could not parse Invoke-Psake output"
-          $output -split "`n" | ForEach-Object { Write-Host "  $_" }
+          if ($table) {
+            Write-Host "${lang}: could not parse Invoke-Psake output"
+            $output -split "`n" | ForEach-Object { Write-Host "  $_" }
+          }
+          $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'parse_error' -Message 'could not parse Invoke-Psake output'))
           continue
         }
 
@@ -478,37 +746,62 @@ function Invoke-AllTests {
         #  environment's own pwsh-backed syntax check.
         $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
 
-        Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
-          $displayLanguage, $displayVersion, $platformDisplay, `
-          $result.Total, $result.Pass, $result.Fail, $result.Skip)
+        if ($table) {
+          Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
+            $displayLanguage, $displayVersion, $platformDisplay, `
+            $result.Total, $result.Pass, $result.Fail, $result.Skip)
+        }
 
         $totals.Total += $result.Total
         $totals.Pass += $result.Pass
         $totals.Fail += $result.Fail
         $totals.Skip += $result.Skip
+        $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'ok' `
+          -Language $displayLanguage -Version $displayVersion -Platform $platformDisplay `
+          -Total $result.Total -Pass $result.Pass -Fail $result.Fail -Skip $result.Skip))
       } catch {
-        Write-Host "${lang}: ERROR - $_"
+        $message = "$_"
+        if ($table) { Write-Host "${lang}: ERROR - $message" }
+        $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'error' -Message $message))
       }
     }
   }
 
-  Write-Host '==============================================================='
-  Write-Host ('Final Summary: Total={0}  Pass={1}  Fail={2}  Skip={3}' -f `
-    $totals.Total, $totals.Pass, $totals.Fail, $totals.Skip)
-  if ($notInstalled.Count -gt 0) {
-    Write-Host "Not installed (skipped): $($notInstalled -join ', ')"
+  if ($table) {
+    Write-Host '==============================================================='
+    Write-Host ('Final Summary: Total={0}  Pass={1}  Fail={2}  Skip={3}' -f `
+      $totals.Total, $totals.Pass, $totals.Fail, $totals.Skip)
+    if ($notInstalled.Count -gt 0) {
+      Write-Host "Not installed (skipped): $($notInstalled -join ', ')"
+    }
+    if ($skippedNonPosix.Count -gt 0) {
+      Write-Host "Skipped (non-POSIX host): $($skippedNonPosix -join ', ')"
+    }
+    return
   }
-  if ($skippedNonPosix.Count -gt 0) {
-    Write-Host "Skipped (non-POSIX host): $($skippedNonPosix -join ', ')"
+
+  # .ToArray(), not @($records) - confirmed directly @() on a
+  #  List[object] containing OrderedDictionary elements (what
+  #  New-ResultRecord returns) throws "Argument types do not match",
+  #  an internal PowerShell array-subexpression quirk with no obvious
+  #  cause from documentation alone - the List's own native ToArray()
+  #  sidesteps it entirely.
+  $recordsArray = $records.ToArray()
+  switch ($Format) {
+    'json'  { Write-Host (Format-RecordsAsJson $recordsArray $totals) }
+    'yaml'  { Write-Host (Format-RecordsAsYaml $recordsArray $totals) }
+    'csv'   { Write-Host (Format-RecordsAsCsv $recordsArray $totals) }
+    'junit' { Write-Host (Format-RecordsAsJunit $recordsArray $totals) }
   }
 }
 
 if ($Selectors -and ($Selectors[0] -eq '-h' -or $Selectors[0] -eq '--help')) {
-  Write-Host 'Usage: run_all_tests.ps1 [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ... [--allow-native-shell]'
+  Write-Host 'Usage: run_all_tests.ps1 [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ... [--allow-native-shell] [--format FORMAT]'
   Write-Host "Areas: $($LanguageDirs.Keys -join ' ')"
+  Write-Host "Formats: table (default) $($FormatNames -join ' ')"
   Write-Host 'No arguments runs every area/language.'
   Write-Host 'shell_scripts/* is skipped by default under native Windows PowerShell - it needs'
   Write-Host 'a real POSIX host. Pass --allow-native-shell to run it anyway.'
 } else {
-  Invoke-AllTests $Selectors
+  Invoke-AllTests -Argv $Selectors -Format $FormatName
 }
