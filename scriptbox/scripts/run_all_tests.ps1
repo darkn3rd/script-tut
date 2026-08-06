@@ -211,7 +211,25 @@ function Invoke-PsakeRun {
     Pop-Location
   }
 
-  return ($output -replace "`e\[\d+m", '')
+  # \r stripped alongside ANSI codes, not just \n-split later - confirmed
+  #  directly this is a real, load-bearing fix, not cosmetic: Invoke-Psake's
+  #  own Write-Host output captured via *>&1 | Out-String keeps Windows-
+  #  style \r\n line endings, and ConvertFrom-PsakeOutput's own
+  #  '(?m)^...(.+)$' regexes have the classic gotcha where "." matches \r
+  #  (it only excludes \n) - so a captured field like $result.Version ends
+  #  up with a trailing "`r" baked directly into the value. That \r then
+  #  rides along into the final -f format string, and once Write-Host
+  #  sends it to a *real* terminal, a bare \r (unlike \r\n) means "return
+  #  the cursor to column 0 of the current line" - so everything printed
+  #  after it overwrites everything printed before it on that same line.
+  #  Confirmed directly this reproduces exactly the "blank language
+  #  column, version-string fragments bleeding into the Skip value"
+  #  corruption reported from a real console session - and confirmed
+  #  directly it's invisible from here, since this environment's own
+  #  output capture doesn't render a bare \r as a real cursor-jump the
+  #  way an actual terminal does, so the identical malformed string looks
+  #  completely fine when inspected here.
+  return ($output -replace "`e\[\d+m", '' -replace "`r", '')
 }
 
 # ConvertFrom-PsakeOutput(output) - pulls the header (Language Target/

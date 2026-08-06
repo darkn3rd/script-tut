@@ -503,7 +503,15 @@ function Get-SpecialVersion {
     param([string]$Language)
     switch ($Language) {
         'cmd' {
-            $raw = cmd /c ver | Out-String
+            # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper
+            #  script (no .exe extension) on PATH, which shadows the real
+            #  Windows cmd.exe whenever MSYS2's own bin directory comes
+            #  first - confirmed directly this breaks under a pwsh
+            #  session launched from MSYS2 bash ("Cannot run a document
+            #  in the middle of a pipeline"). The explicit .exe forces
+            #  resolution to the real Windows binary regardless of PATH
+            #  order, since MSYS2's own stub never carries that extension.
+            $raw = cmd.exe /c ver | Out-String
             if ($raw -match 'Version ([\d.]+)') { return $Matches[1] }
             return ''
         }
@@ -520,7 +528,7 @@ function Get-SpecialVersion {
             #  it a one-liner needs to differ (see Invoke-ShellOut for why
             #  a real shell, not pwsh, is used on POSIX).
             if ($script:IsWindowsHost) {
-                return (cmd /c 'echo puts [info patchlevel] | tclsh').Trim()
+                return (cmd.exe /c 'echo puts [info patchlevel] | tclsh').Trim()
             }
             return (sh -c "echo 'puts [info patchlevel];exit 0' | tclsh").Trim()
         }
@@ -556,7 +564,7 @@ function Get-TestBoxVersion {
     # Real shell, not pwsh, on POSIX - same reasoning as Invoke-ShellOut:
     #  these probe strings embed their own "2>&1", which needs fd-level
     #  redirection semantics.
-    $raw = if ($script:IsWindowsHost) { cmd /c $probe | Out-String } else { sh -c $probe | Out-String }
+    $raw = if ($script:IsWindowsHost) { cmd.exe /c $probe | Out-String } else { sh -c $probe | Out-String }
     return ConvertTo-ExtractedVersion -Raw $raw -Language $Language
 }
 
@@ -939,7 +947,7 @@ function Test-EnvMatches {
 function Get-InputRedirect {
     param([string]$Value)
     $lines = ($Value -split "`n") | ForEach-Object { "echo $_" }
-    return 'cmd /c "' + ($lines -join '&') + '"|'
+    return 'cmd.exe /c "' + ($lines -join '&') + '"|'
 }
 
 # Invoke-TestBoxCategory(task) - the core comparison loop, ported from

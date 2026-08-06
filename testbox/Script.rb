@@ -2000,7 +2000,14 @@ class CommandShellScript < ScriptBase
   #  silently appends a stray trailing space to it.
   def self.input_redirect(value)
     lines = value.split("\n").map { |line| "echo #{line}" }
-    %Q{cmd /c "#{lines.join('&')}"|}
+    # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper script
+    #  (no .exe extension) on PATH, which shadows the real Windows
+    #  cmd.exe whenever MSYS2's own bin directory comes first - the
+    #  explicit .exe forces resolution to the real Windows binary
+    #  regardless of PATH order, since MSYS2's own stub never carries
+    #  that extension. Same fix as TestBox.psm1's identical bare-cmd
+    #  bug ("Cannot run a document in the middle of a pipeline").
+    %Q{cmd.exe /c "#{lines.join('&')}"|}
   end
 
   def self.special_version(lang)
@@ -2104,7 +2111,14 @@ class PowerShellScript < ScriptBase
   #  cmd.exe here too, so the same nested-`cmd /c` trick applies.
   def self.input_redirect(value)
     lines = value.split("\n").map { |line| "echo #{line}" }
-    %Q{cmd /c "#{lines.join('&')}"|}
+    # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper script
+    #  (no .exe extension) on PATH, which shadows the real Windows
+    #  cmd.exe whenever MSYS2's own bin directory comes first - the
+    #  explicit .exe forces resolution to the real Windows binary
+    #  regardless of PATH order, since MSYS2's own stub never carries
+    #  that extension. Same fix as TestBox.psm1's identical bare-cmd
+    #  bug ("Cannot run a document in the middle of a pipeline").
+    %Q{cmd.exe /c "#{lines.join('&')}"|}
   end
 
   def self.special_version(lang)
