@@ -651,7 +651,14 @@ class ScriptBase
       #  orphaned winedevice.exe doesn't linger burning CPU after this).
       watchdog = Thread.new do
         sleep timeout_seconds
-        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        # See env_shell_out's identical comment - kill_process_tree's own
+        #  failure must never skip stdout.close below, or the main
+        #  thread's blocked readpartial loop has nothing left to unblock
+        #  it.
+        begin
+          kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        rescue StandardError
+        end
         stdout.close unless stdout.closed?
       rescue StandardError
       end
@@ -736,7 +743,22 @@ class ScriptBase
       #  Wine) that inherited its own copy of this same pipe's write end.
       watchdog = Thread.new do
         sleep timeout_seconds
-        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        # kill_process_tree's own failure must never prevent stdout.close
+        #  below - confirmed directly this is a real gap, not just
+        #  theoretical: the outer `rescue StandardError` on this whole
+        #  thread body means an exception raised *inside*
+        #  kill_process_tree (taskkill failing/erroring for any reason -
+        #  e.g. racing a process that's mid-exit, or one it can't fully
+        #  reach, like a WSL-hosted grandchild) would otherwise skip
+        #  stdout.close entirely, leaving the main thread's blocked
+        #  stdout.readline below with nothing left to ever unblock it -
+        #  a permanent hang indistinguishable from the lesson itself
+        #  being stuck, and with no DUMP_ENV_FILE ever written since the
+        #  underlying process was never confirmed dead either way.
+        begin
+          kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        rescue StandardError
+        end
         stdout.close unless stdout.closed?
       rescue StandardError
       end
@@ -855,6 +877,36 @@ class ScriptBase
   #  environment's own executable-lookup facility.
   def self.find_executable(cmd)
     raise NotImplementedError, "#{name} must implement find_executable"
+  end
+
+  # wsl_bash_stub_paths() - every known real-world location Windows' own
+  #  "launch WSL" bash.exe stub can appear at - not a real POSIX bash at
+  #  all, confirmed directly running it launches WSL and silently
+  #  corrupts interactive input (a stray \r survives into string
+  #  comparisons) before eventually hanging outright, rather than
+  #  erroring out where find_executable could otherwise catch it.
+  #  %SystemRoot%\System32\bash.exe is the original, always-present
+  #  copy; %LocalAppData%\Microsoft\WindowsApps\bash.exe is a second,
+  #  separate one (a Store app-execution alias) - confirmed directly
+  #  both exist simultaneously on a real machine, and which one a given
+  #  lookup mechanism resolves to isn't consistent: `where.exe` and
+  #  PowerShell's `Get-Command` (without -All) picked *different* ones
+  #  of the two here, so both need excluding, not just whichever one a
+  #  single test happened to turn up.
+  def self.wsl_bash_stub_paths
+    system_root = ENV['SystemRoot'] || ENV['windir']
+    system_root = 'C:\Windows' if system_root.to_s.empty?
+    paths = [File.join(system_root, 'System32', 'bash.exe')]
+    local_app_data = ENV['LOCALAPPDATA']
+    paths << File.join(local_app_data, 'Microsoft', 'WindowsApps', 'bash.exe') unless local_app_data.to_s.empty?
+    paths.map { |p| p.tr('\\', '/').downcase }
+  end
+
+  # wsl_bash_stub?(path) - see wsl_bash_stub_paths above. Used by
+  #  CommandShellScript/PowerShellScript's own find_executable overrides
+  #  to filter cmd == "bash" lookups before taking the first match.
+  def self.wsl_bash_stub?(path)
+    wsl_bash_stub_paths.include?(path.to_s.tr('\\', '/').downcase)
   end
 
   # null_device() - where to redirect stderr to discard it.
@@ -1928,7 +1980,12 @@ class CommandShellScript < ScriptBase
     # where.exe prints its own "INFO: Could not find files..." to stderr
     #  on a miss - silence it so command()'s own error message (see
     #  ScriptBase#command) is the only thing on screen when this fails.
-    `where "#{cmd}" 2>#{null_device}`.split("\n").first.to_s.chomp
+    # cmd == "bash": see ScriptBase#wsl_bash_stub_paths - where.exe's
+    #  plain first-match-wins order can just as easily turn up either
+    #  WSL launcher stub instead of a genuine MSYS2/Git-for-Windows bash.
+    matches = `where "#{cmd}" 2>#{null_device}`.split("\n").map(&:chomp)
+    matches = matches.reject { |m| wsl_bash_stub?(m) } if cmd == "bash"
+    matches.first.to_s
   end
 
   def self.null_device
@@ -2028,7 +2085,15 @@ class PowerShellScript < ScriptBase
   end
 
   def self.find_executable(cmd)
-    pwsh("(Get-Command #{cmd}).Source")
+    # -All: without it, Get-Command silently returns just one match for
+    #  an ambiguous external command, and confirmed directly that one
+    #  isn't reliably the same WSL launcher stub CommandShellScript's
+    #  own `where.exe`-based lookup happens to prefer either - see
+    #  ScriptBase#wsl_bash_stub_paths, both need to be visible here to
+    #  filter either one out.
+    matches = pwsh("(Get-Command #{cmd} -All -ErrorAction SilentlyContinue).Source").split("\n").map(&:strip).reject(&:empty?)
+    matches = matches.reject { |m| wsl_bash_stub?(m) } if cmd == "bash"
+    matches.first.to_s
   end
 
   def self.null_device

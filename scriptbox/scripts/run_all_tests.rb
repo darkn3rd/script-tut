@@ -47,6 +47,18 @@ LESSON_ROOT = File.expand_path('../../lessons', __dir__)
 #  still far more useful than one that never returns control at all.
 RAKE_TIMEOUT = 120
 
+# LANGUAGE_TIMEOUTS - per-language override for RAKE_TIMEOUT, for a
+#  language whose own startup cost - not a hang - genuinely exceeds the
+#  120s default. groovy: confirmed directly a real (non-hung) run took
+#  348s on one real machine (JVM/Groovy classloading cold-start), well
+#  past 120s but nowhere near actually hung. Raising RAKE_TIMEOUT
+#  itself instead would make every *other* language wait just as long
+#  before a genuine hang gets reported - a per-language override keeps
+#  the default tight everywhere else.
+LANGUAGE_TIMEOUTS = {
+  'groovy' => 420
+}.freeze
+
 # LANGUAGE_DIRS - every lesson language directory, grouped by area -
 #  the same 22 directories verify_commands.rb's own AREAS/Compiled
 #  Languages entries describe, but keyed by actual directory name
@@ -58,6 +70,23 @@ LANGUAGE_DIRS = {
   'gen_scripts' => %w[awk groovy perl php python2 python3 ruby tcl],
   'compiled_lang' => %w[cpp cs go java rust]
 }.freeze
+
+# NATIVE_WINDOWS_SHELL - true when this run is native Windows Ruby
+#  (mingw/mswin) without MSYSTEM set - i.e. launched from a plain
+#  cmd.exe or PowerShell session, neither a real POSIX host.
+#  shell_scripts/* expects real POSIX tools (dash/tcsh/ksh/zsh, POSIX-
+#  correct line-ending handling) that neither provides - confirmed
+#  directly: cmd.exe's own `where bash` can resolve to
+#  C:\Windows\System32\bash.exe (Windows' own WSL launcher stub, not a
+#  real bash at all - it actually launches WSL and silently corrupts
+#  interactive input via a stray \r surviving into string comparisons,
+#  then hangs outright partway through), and even once that stub is
+#  excluded, cmd.exe's own CRLF-terminated `echo` input has no
+#  translation layer before a POSIX `read` ever sees it. Skipped by
+#  default below rather than risking another hang - pass
+#  --allow-native-shell to opt in anyway (e.g. to deliberately test
+#  Git-for-Windows' own bash).
+NATIVE_WINDOWS_SHELL = !!(RUBY_PLATFORM =~ /mingw|mswin/i) && ENV['MSYSTEM'].to_s.empty?
 
 # ANSI - Script.rb's own colorize() wraps the Pass/Fail/Skip *labels* in
 #  color codes unconditionally (no TTY check, confirmed directly by a
@@ -86,13 +115,13 @@ ANSI = /\e\[\d+m/.freeze
 #  never signal "a human is about to press Enter", and hangs forever.
 #  RAKE_TIMEOUT below is the safety net now instead - a real hang still
 #  can't block the whole run, it just eventually reports as failed.
-def run_rake(dir)
+def run_rake(dir, timeout_seconds: RAKE_TIMEOUT)
   rake = find_on_path('rake')
   return 'rake not found on PATH' unless rake
 
-  Dir.chdir(dir) { Timeout.timeout(RAKE_TIMEOUT) { `"#{rake}" 2>&1` } }.gsub(ANSI, '')
+  Dir.chdir(dir) { Timeout.timeout(timeout_seconds) { `"#{rake}" 2>&1` } }.gsub(ANSI, '')
 rescue Timeout::Error
-  "ERROR: rake did not finish within #{RAKE_TIMEOUT}s (possibly hung)"
+  "ERROR: rake did not finish within #{timeout_seconds}s (possibly hung)"
 end
 
 # NOT_INSTALLED - Script.rb's own PATH check (see its "Cannot find
@@ -312,6 +341,10 @@ end
 
 def run_all(argv = ARGV)
   $stdout.sync = true
+  # --allow-native-shell - the one exception to NATIVE_WINDOWS_SHELL's
+  #  default skip below, stripped from argv before expand_selection
+  #  ever sees it so it never gets mistaken for an AREA token.
+  allow_native_shell = !argv.delete('--allow-native-shell').nil?
   selection = expand_selection(argv)
   if selection.empty? || selection.values.all?(&:empty?)
     warn 'Nothing to run.'
@@ -319,16 +352,23 @@ def run_all(argv = ARGV)
   end
   totals = { total: 0, pass: 0, fail: 0, skip: 0 }
   not_installed = []
+  skipped_non_posix = []
 
   selection.each do |area, langs|
     langs.each do |lang|
+      if area == 'shell_scripts' && NATIVE_WINDOWS_SHELL && !allow_native_shell
+        puts format('%-36s SKIPPED (needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override)', lang)
+        skipped_non_posix << lang
+        next
+      end
+
       dir = File.join(LESSON_ROOT, area, lang)
       unless Dir.exist?(dir)
         puts "#{lang}: directory not found (#{dir})"
         next
       end
 
-      output = run_rake(dir)
+      output = run_rake(dir, timeout_seconds: LANGUAGE_TIMEOUTS.fetch(lang, RAKE_TIMEOUT))
 
       if (m = output.match(NOT_INSTALLED))
         puts format('%-36s SKIPPED (%s not found on PATH)', lang, m[1])
@@ -360,13 +400,16 @@ def run_all(argv = ARGV)
   puts format('Final Summary: Total=%d  Pass=%d  Fail=%d  Skip=%d',
                totals[:total], totals[:pass], totals[:fail], totals[:skip])
   puts "Not installed (skipped): #{not_installed.join(', ')}" unless not_installed.empty?
+  puts "Skipped (non-POSIX host): #{skipped_non_posix.join(', ')}" unless skipped_non_posix.empty?
 end
 
 if __FILE__ == $PROGRAM_NAME
   if %w[-h --help].include?(ARGV.first)
-    puts 'Usage: run_all_tests.rb [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ...'
+    puts 'Usage: run_all_tests.rb [AREA | AREA/lang | AREA/{lang1,lang2} | AREA/*] ... [--allow-native-shell]'
     puts "Areas: #{LANGUAGE_DIRS.keys.join(' ')}"
     puts 'No arguments runs every area/language.'
+    puts 'shell_scripts/* is skipped by default under native Windows Ruby (cmd.exe/PowerShell,'
+    puts 'no MSYSTEM) - it needs a real POSIX host. Pass --allow-native-shell to run it anyway.'
   else
     run_all
   end
