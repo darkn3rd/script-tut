@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# testbox: title="shift + prepend, for loop over seq range"
 # illustrative variables
 arg_count=$#           # get number of arguments
 # utility variables

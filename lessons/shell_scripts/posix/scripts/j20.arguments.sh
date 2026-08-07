@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# testbox: title="shift + prepend, while loop counting up"
 # illustrative variables
 arg_count=$#     # get number of arguments
 # utility variables
