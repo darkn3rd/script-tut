@@ -71,10 +71,10 @@ ubuntu26_wsl1:
               - system: bash
         csh:
             packages: 
-              - brew: tcsh
+              - apt: tcsh
         ksh:
             packages: 
-              - brew: ksh93u+m
+              - apt: ksh93u+m
         posix:
             packages: 
               - system: dash
@@ -86,8 +86,8 @@ ubuntu26_wsl1:
       compiled_lang:
         packages:
           apt:
-            - curl
-            - build-essential
+            - apt: curl
+            - apt: build-essential
               meets: make
         cs:
           packages:

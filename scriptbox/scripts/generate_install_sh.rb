@@ -5,17 +5,40 @@ require_relative 'resolve_order'
 # bash_for - the shell command for one resolved step. `script` steps pull
 #  their multi-line cmd straight from the YAML's scripts: block; `system`
 #  steps are a no-op (already provided by the OS) documented as a comment.
+#  A `cmd:` sibling key (e.g. "pyenv global 3.14.6" right after installing
+#  a pyenv version) runs immediately after the install itself, in the
+#  same generated script - see resolve_order.rb's own step[:cmd].
 def bash_for(step, scripts)
-  case step[:type]
-  when 'brew'   then "brew install #{step[:name]}"
-  when 'cask'   then "brew install --cask #{step[:name]}"
-  when 'tap'    then "brew tap #{step[:name]}"
-  when 'cpan'   then "cpan -i #{step[:name]}"
-  when 'cpanm'  then "cpanm #{step[:name]}"
-  when 'system' then "# #{step[:name]}: expected to already be provided by the OS"
-  when 'script'
-    scripts.dig(step[:name], 'cmd')&.rstrip || "# missing scripts.#{step[:name]} definition"
-  end
+  install = case step[:type]
+            when 'brew'   then "brew install #{step[:name]}"
+            when 'cask'   then "brew install --cask #{step[:name]}"
+            when 'tap'    then "brew tap #{step[:name]}"
+            when 'cpan'   then "cpan -i #{step[:name]}"
+            when 'cpanm'  then "cpanm #{step[:name]}"
+            when 'system' then "# #{step[:name]}: expected to already be provided by the OS"
+            # Array.() - step[:name] is a plain string for most apt
+            #  entries, but the config also uses a YAML list for a
+            #  whole group of packages in one entry (e.g. the compiled-
+            #  toolchain dev-header list) - Array() handles both without
+            #  the caller needing to know which shape it got.
+            when 'apt'    then "sudo apt-get install -y #{Array(step[:name]).join(' ')}"
+            # -s/--skip-existing - safe to run again if this exact
+            #  version is already installed (a repeat/unattended run
+            #  shouldn't fail or rebuild from source unnecessarily).
+            when 'pyenv'  then "pyenv install -s #{step[:name]}"
+            when 'rbenv'  then "rbenv install -s #{step[:name]}"
+            # sdk itself is a shell function, not a real executable -
+            #  only defined once sdkman's own init script has been
+            #  sourced (see the ubuntu22_sdkman script step, which must
+            #  run - and its own `source ~/.bashrc` take effect - before
+            #  any sdkman step, same as pyenv/rbenv's own init).
+            # --yes - accepts the "do you want to make this the
+            #  default" prompt sdk install asks non-interactively.
+            when 'sdkman' then "sdk install #{step[:name]} --yes"
+            when 'script'
+              scripts.dig(step[:name], 'cmd')&.rstrip || "# missing scripts.#{step[:name]} definition"
+            end
+  step[:cmd] ? "#{install}\n#{step[:cmd]}" : install
 end
 
 # root_key - the platform key a config file is about (e.g. "macos",
