@@ -9,7 +9,7 @@
 #  needs to resolve *one* language for the directory it's sitting in the
 #  way Script.rb does - it enumerates all of them at once).
 #
-#  Usage: ruby verify.rb [--format table|json|yaml]
+#  Usage: ruby verify.rb [--format text|json|yaml|csv]
 
 require 'optparse'
 require 'json'
@@ -1424,17 +1424,22 @@ def format_csv(report)
   end
 end
 
+# 'text' - the plain stdout report format_table has always produced.
+#  Named for what it *is* (plain text to stdout), not how it's laid
+#  out, so a future interactive TUI formatter has an unambiguous name
+#  of its own to sit alongside it rather than overloading "table" to
+#  mean two different things.
 FORMATTERS = {
-  'table' => method(:format_table),
+  'text' => method(:format_table),
   'json' => method(:format_json),
   'yaml' => method(:format_yaml),
   'csv' => method(:format_csv)
 }.freeze
 
 if __FILE__ == $PROGRAM_NAME
-  format = 'table'
+  format = 'text'
   OptionParser.new do |opts|
-    opts.banner = 'Usage: verify.rb [--format table|json|yaml|csv]'
+    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv]'
     opts.on('-f FORMAT', '--format FORMAT', FORMATTERS.keys, "Output format (#{FORMATTERS.keys.join('|')})") do |f|
       format = f
     end
