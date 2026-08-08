@@ -27,20 +27,28 @@ LANG_DIRS = {
 
 COMPILED_LANG_ROOT = File.expand_path('../../lessons/compiled_lang', __dir__)
 
-# build_lesson(dir_name) - runs `make`/`make -f Makefile.win` (see
-#  ../../lessons/compiled_lang/README.md's own "Makefile" vs
-#  "Makefile.win" convention) inside dir_name, returning
-#  {success:, output:}. Which file to use follows the same
-#  native_windows_ruby? line verify_commands.rb already draws
-#  everywhere else - a genuine cmd.exe/PowerShell-launched Ruby uses
-#  Makefile.win, every POSIX environment (MSYS2, Cygwin, WSL1, macOS,
-#  Linux) uses the plain Makefile, matching Makefile.win's own
-#  "SHELL := cmd.exe" pin (that file assumes cmd.exe is doing the
-#  invoking, not just building). stdin redirected from NULL_DEVICE for
-#  the same reason probe_version's own subprocess calls already are -
-#  a build step hanging on unexpected interactive input would freeze
-#  this whole script, not just fail one language.
-def build_lesson(dir_name)
+# build_lesson(language_name, dir_name) - runs `make`/`make -f
+#  Makefile.win` (see ../../lessons/compiled_lang/README.md's own
+#  "Makefile" vs "Makefile.win" convention) inside dir_name, streaming
+#  its output live as it runs - same "Compiling <Language> lessons
+#  (one-time build)..." + streamed output + separator shape as
+#  testbox/Script.rb's own ensure_compiled!/stream_shell_out, so a slow
+#  build (C#'s native AOT step especially) is visibly still working
+#  instead of leaving this script sitting in total silence for however
+#  long the build takes. Returns {success:, output:} - `output` is
+#  still captured (not just streamed) so a failure can be shown again,
+#  in full, in the summary table's own "Failures:" section below.
+#  Which Makefile to use follows the same native_windows_ruby? line
+#  verify_commands.rb already draws everywhere else - a genuine
+#  cmd.exe/PowerShell-launched Ruby uses Makefile.win, every POSIX
+#  environment (MSYS2, Cygwin, WSL1, macOS, Linux) uses the plain
+#  Makefile, matching Makefile.win's own "SHELL := cmd.exe" pin (that
+#  file assumes cmd.exe is doing the invoking, not just building).
+#  stdin redirected from NULL_DEVICE for the same reason
+#  probe_version's own subprocess calls already are - a build step
+#  hanging on unexpected interactive input would freeze this whole
+#  script, not just fail one language.
+def build_lesson(language_name, dir_name)
   dir = File.join(COMPILED_LANG_ROOT, dir_name)
   return { success: false, output: "directory not found: #{dir}" } unless Dir.exist?(dir)
 
@@ -48,31 +56,56 @@ def build_lesson(dir_name)
   return { success: false, output: 'make not found on PATH' } unless make
 
   makefile = native_windows_ruby? ? 'Makefile.win' : 'Makefile'
+  puts "Compiling #{language_name} lessons..."
+  puts '-' * 63
+  output = String.new
   Dir.chdir(dir) do
-    output = `"#{make}" -f #{makefile} < #{NULL_DEVICE} 2>&1`
-    { success: $?.success?, output: output }
+    IO.popen("\"#{make}\" -f #{makefile} < #{NULL_DEVICE} 2>&1") do |io|
+      io.each_line do |line|
+        print line
+        output << line
+      end
+    end
   end
+  success = $?.success?
+  puts '=' * 63
+  puts
+  { success: success, output: output }
 end
 
-# compile_check - prints each language's summary row as soon as its own
-#  build finishes, rather than collecting every result silently and
-#  printing only at the very end - confirmed directly this matters: a
-#  real build (C#'s native AOT step especially) can take long enough
-#  that a fully-batched "print nothing until done" design leaves no way
-#  to tell a slow build apart from a hung one.
+# compile_check - builds every language one at a time, each with its own
+#  live-streamed "Compiling..." progress (see build_lesson) so a long
+#  build is never silent, then prints the full Status/Language/Compiler/
+#  Version table together at the end, once every result is in - keeping
+#  the summary as one clean block instead of interleaving table rows
+#  with each build's own scrolling output.
 def compile_check
   $stdout.sync = true
   prefetch_package_info!
   languages = AREAS.find { |area| area[:name] == 'Compiled Languages' }.fetch(:languages)
 
-  puts format('%-8s %-8s %-24s %s', 'Status', 'Language', 'Compiler', 'Version')
-  failures = []
-  languages.each do |lang|
+  results = languages.map do |lang|
     entry = resolve_language(lang)
-    build = build_lesson(LANG_DIRS.fetch(lang[:name]))
-    status = build[:success] ? 'Success' : 'Failure'
-    puts format('%-8s %-8s %-24s %s', status, lang[:name], entry[:resolved_binary] || '-', entry[:version] || '-')
-    failures << { name: lang[:name], output: build[:output] } unless build[:success]
+    build = build_lesson(lang[:name], LANG_DIRS.fetch(lang[:name]))
+    { lang: lang, entry: entry, build: build }
+  end
+
+  # Column widths sized to the longest actual value in each column
+  #  (plus the header itself), not a fixed guess - confirmed directly a
+  #  fixed guess breaks alignment the same way it did in
+  #  verify_commands.rb's own table_row: "java-17-amazon-corretto-jdk:amd64"
+  #  routinely runs past any reasonable fixed "Compiler" width.
+  rows = results.map do |r|
+    [r[:build][:success] ? 'Success' : 'Failure', r[:lang][:name], r[:entry][:resolved_binary] || '-', r[:entry][:version] || '-']
+  end
+  headers = %w[Status Language Compiler Version]
+  widths = (0..2).map { |i| ([headers[i]] + rows.map { |row| row[i] }).map(&:length).max }
+
+  puts format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %s", *headers)
+  failures = []
+  results.each_with_index do |r, i|
+    puts format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %s", *rows[i])
+    failures << { name: r[:lang][:name], output: r[:build][:output] } unless r[:build][:success]
   end
   return if failures.empty?
 
