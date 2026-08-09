@@ -29,15 +29,14 @@ COMPILED_LANG_ROOT = File.expand_path('../../lessons/compiled_lang', __dir__)
 
 # build_lesson(language_name, dir_name) - runs `make`/`make -f
 #  Makefile.win` (see ../../lessons/compiled_lang/README.md's own
-#  "Makefile" vs "Makefile.win" convention) inside dir_name, streaming
-#  its output live as it runs - same "Compiling <Language> lessons
-#  (one-time build)..." + streamed output + separator shape as
-#  testbox/Script.rb's own ensure_compiled!/stream_shell_out, so a slow
-#  build (C#'s native AOT step especially) is visibly still working
-#  instead of leaving this script sitting in total silence for however
-#  long the build takes. Returns {success:, output:} - `output` is
-#  still captured (not just streamed) so a failure can be shown again,
-#  in full, in the summary table's own "Failures:" section below.
+#  "Makefile" vs "Makefile.win" convention) inside dir_name. Returns
+#  {success:, output:} - `output` is captured in full (not streamed)
+#  so a failure can be shown, in full, in the summary table's own
+#  "Failures:" section below - see compile_check's own comment for why
+#  this doesn't stream live the way testbox/Script.rb's
+#  stream_shell_out does: five of these run concurrently now, and
+#  interleaving five processes' own line-by-line output would be
+#  unreadable, not just noisy.
 #  Which Makefile to use follows the same native_windows_ruby? line
 #  verify_commands.rb already draws everywhere else - a genuine
 #  cmd.exe/PowerShell-launched Ruby uses Makefile.win, every POSIX
@@ -48,6 +47,14 @@ COMPILED_LANG_ROOT = File.expand_path('../../lessons/compiled_lang', __dir__)
 #  probe_version's own subprocess calls already are - a build step
 #  hanging on unexpected interactive input would freeze this whole
 #  script, not just fail one language.
+#  chdir: dir, not Dir.chdir(dir) { ... } - Dir.chdir changes the
+#  *whole process's* cwd, which every thread shares; two languages
+#  building concurrently would each try to chdir the same process at
+#  once (Ruby itself raises "conflicting chdir during another chdir
+#  block" the moment a second thread attempts it). Passing chdir: as a
+#  Process.spawn-family option instead scopes the working directory to
+#  just that one child process, so five of these can run in true
+#  parallel with no shared mutable state at all.
 def build_lesson(language_name, dir_name)
   dir = File.join(COMPILED_LANG_ROOT, dir_name)
   return { success: false, output: "directory not found: #{dir}" } unless Dir.exist?(dir)
@@ -56,53 +63,60 @@ def build_lesson(language_name, dir_name)
   return { success: false, output: 'make not found on PATH' } unless make
 
   makefile = native_windows_ruby? ? 'Makefile.win' : 'Makefile'
-  puts "Compiling #{language_name} lessons..."
-  puts '-' * 63
-  output = String.new
-  Dir.chdir(dir) do
-    # make clean first - target/ and bin/ are a shared, persistent build
-    #  cache on disk, not something this one run owns exclusively: the
-    #  same lessons/compiled_lang tree is reachable (and built) from
-    #  multiple environments (native Windows, WSL1, WSL2, MSYS2, ...) on
-    #  a shared /mnt/c checkout, and an object file from one
-    #  environment's toolchain is binary-incompatible with another's -
-    #  confirmed directly: a stale Windows/MinGW-format target/*.o,
-    #  left over from a native-Windows build, crashed Ubuntu's own `ld`
-    #  rather than failing cleanly when WSL2's make trusted its
-    #  timestamp and skipped recompiling it. This script's whole job is
-    #  to verify the toolchain actually works, not to build fast - it
-    #  must never let a leftover artifact from a different environment
-    #  stand in for that check.
-    system("\"#{make}\" -f #{makefile} clean < #{NULL_DEVICE} > #{NULL_DEVICE} 2>&1")
-    IO.popen("\"#{make}\" -f #{makefile} < #{NULL_DEVICE} 2>&1") do |io|
-      io.each_line do |line|
-        print line
-        output << line
-      end
-    end
-  end
+  # make clean first - target/ and bin/ are a shared, persistent build
+  #  cache on disk, not something this one run owns exclusively: the
+  #  same lessons/compiled_lang tree is reachable (and built) from
+  #  multiple environments (native Windows, WSL1, WSL2, MSYS2, ...) on
+  #  a shared /mnt/c checkout, and an object file from one
+  #  environment's toolchain is binary-incompatible with another's -
+  #  confirmed directly: a stale Windows/MinGW-format target/*.o,
+  #  left over from a native-Windows build, crashed Ubuntu's own `ld`
+  #  rather than failing cleanly when WSL2's make trusted its
+  #  timestamp and skipped recompiling it. This script's whole job is
+  #  to verify the toolchain actually works, not to build fast - it
+  #  must never let a leftover artifact from a different environment
+  #  stand in for that check.
+  system("\"#{make}\" -f #{makefile} clean < #{NULL_DEVICE} > #{NULL_DEVICE} 2>&1", chdir: dir)
+  # $? is thread-local in Ruby - each thread's own $? only ever
+  #  reflects children *that thread* spawned, so reading it right after
+  #  this IO.popen is safe even with four other threads doing the same
+  #  thing concurrently.
+  output = IO.popen("\"#{make}\" -f #{makefile} < #{NULL_DEVICE} 2>&1", chdir: dir, &:read)
   success = $?.success?
-  puts '=' * 63
-  puts
   { success: success, output: output }
 end
 
-# compile_check - builds every language one at a time, each with its own
-#  live-streamed "Compiling..." progress (see build_lesson) so a long
-#  build is never silent, then prints the full Status/Language/Compiler/
-#  Version table together at the end, once every result is in - keeping
-#  the summary as one clean block instead of interleaving table rows
-#  with each build's own scrolling output.
+# compile_check - builds every language concurrently (one Thread per
+#  language - there are only ever five of these, so no pool/queue is
+#  needed), printing a one-line "done"/"FAILED" the moment each
+#  finishes (mutex-guarded so two threads finishing at once can't
+#  interleave mid-line), then the full Status/Language/Compiler/
+#  Version table together at the end once every result is in. A slow
+#  build (C#'s native AOT step especially) no longer blocks every
+#  other language from even starting, unlike the old one-at-a-time
+#  sequential run - confirmed directly this is the actual win here,
+#  since the five languages share no build state with each other at
+#  all (see build_lesson's own chdir: comment for why that's safe).
 def compile_check
   $stdout.sync = true
   prefetch_package_info!
   languages = AREAS.find { |area| area[:name] == 'Compiled Languages' }.fetch(:languages)
 
-  results = languages.map do |lang|
-    entry = resolve_language(lang)
-    build = build_lesson(lang[:name], LANG_DIRS.fetch(lang[:name]))
-    { lang: lang, entry: entry, build: build }
+  puts "Compiling #{languages.length} languages in parallel (#{languages.map { |l| l[:name] }.join(', ')})..."
+  print_mutex = Mutex.new
+  threads = languages.map do |lang|
+    Thread.new do
+      entry = resolve_language(lang)
+      build = build_lesson(lang[:name], LANG_DIRS.fetch(lang[:name]))
+      print_mutex.synchronize { puts "  #{build[:success] ? 'done  ' : 'FAILED'}: #{lang[:name]}" }
+      { lang: lang, entry: entry, build: build }
+    end
   end
+  # .value, not .join then a separate read - re-raises any exception a
+  #  thread hit instead of silently swallowing it, matching what a
+  #  plain sequential call would already have done.
+  results = threads.map(&:value)
+  puts
 
   # Column widths sized to the longest actual value in each column
   #  (plus the header itself), not a fixed guess - confirmed directly a
