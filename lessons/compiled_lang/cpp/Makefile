@@ -57,8 +57,19 @@ target/%.o: src/%.cpp | target
 bin/%$(EXE): target/%.o | bin
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+# -@mkdir (no -p, ignore "already exists" - same as target/bin's own
+#  prerequisite rules above), not "@mkdir -p" - GNU Make's own default
+#  recipe shell on native Windows can fall back to cmd.exe (when no
+#  real sh.exe gets picked), whose *built-in* mkdir has no -p flag at
+#  all - confirmed directly it silently created a literal directory
+#  named "-p" right next to target/ instead of erroring. That stray
+#  "-p" directory then broke every -?/-h invocation of a lesson's own
+#  binary: MinGW-w64's C runtime glob-expands argv by default, and
+#  "-?" is itself a one-character glob pattern that matched "-p" on
+#  disk, silently rewriting the argument the program actually
+#  received.
 clean:
 	rm -f $(BIN)
 	rm -rf target
-	@mkdir -p target
+	-@mkdir target
 	@touch target/.gitkeep

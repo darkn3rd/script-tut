@@ -37,7 +37,17 @@ Get-ChildItem Env: | ForEach-Object { "$($_.Name)=$($_.Value)" } | Set-Content -
 #  PowerShell's own formatting pipeline and adds its own trailing CRLF,
 #  which isn't itself a problem here, but Console.Write keeps this
 #  consistent with the other lessons that need exact control over it.
+#  Flush explicitly - confirmed directly this matters when stdout is a
+#  pipe rather than a real console: testbox/Script.rb's own
+#  env_shell_out reads this process through Open3.popen3, and without
+#  an explicit Flush() here, Windows PowerShell 5.1's buffered
+#  Console.Out can hold this line internally rather than writing it
+#  through to the pipe - the harness then blocks forever in
+#  stdout.readline waiting for a line that's sitting in a buffer it
+#  can't see, while this script sits blocked in ReadLine() waiting for
+#  the harness's own reply - a deadlock neither side can break.
 [Console]::Out.Write("MY_ORDERS set, Hit Return to continue`n")
+[Console]::Out.Flush()
 [Console]::In.ReadLine() | Out-Null
 
 Remove-Item -Path dump_env.out -Force

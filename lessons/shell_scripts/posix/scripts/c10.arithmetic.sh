@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# testbox: title="arithmetic context boolean logic via true/false=1/0 vars"
 # illustrative variables
 true=1; false=0
 # calcualte boolean logic

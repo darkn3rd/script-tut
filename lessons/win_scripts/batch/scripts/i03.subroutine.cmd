@@ -13,22 +13,38 @@ GOTO :EOF
 :: Windows' nor Wine's builtin `date` command supports `+FORMAT` (Wine's
 :: prints "Not Yet Implemented", confirmed directly).
 ::
-:: Called as "date.exe", not bare "date" - both real Windows' cmd.exe and
-:: Wine's builtin `date` command claim that bare name first; adding the
-:: .exe extension always bypasses builtin lookup and searches PATH for
-:: the real file instead, on either. No path prefix needed beyond that -
-:: Microsoft's coreutils installer adds its own bin/ directory to PATH.
+:: Full, quoted path - confirmed directly: real Windows' cmd.exe builtin
+:: `date` command claims the bare "date"/"date.exe" name outright even
+:: with the .exe extension (unlike Wine, where .exe genuinely bypasses
+:: the builtin - the technique this script originally relied on). It also
+:: isn't on PATH by default once installed. Only an actual path reaches
+:: the real coreutils binary at all here, and the space in
+:: "C:\Program Files\..." needs quoting or cmd.exe only sees "C:\Program"
+:: as the command.
 ::
-:: The format string uses "_" instead of spaces/commas-with-a-space, and
-:: FOR /F's own single-quoted command capture doesn't correctly handle a
-:: *second* double-quoted segment inside it (confirmed directly - the
-:: quotes needed around a space-containing "+%%B %%d, %%Y" argument get
-:: mis-tokenized, dropping the whole command). Formatting with no
-:: literal spaces avoids needing that second quoted segment at all; the
-:: "_" are swapped back to spaces afterward with plain variable
-:: substitution.
+:: Captured via a plain redirect + SET /P into a fixed relative filename,
+:: not FOR /F's own 'command'-capture form: confirmed directly - a
+:: quoted, space-containing exe path inside FOR /F's single-quoted
+:: command gets mis-tokenized (the same class of nested-quoting problem
+:: as a quoted format string, which is why the format string below still
+:: avoids literal spaces the same way the original did). A literal
+:: %TEMP% in the same statement as the %%B/%%d/%%Y format specifiers also
+:: mis-parses - both share the % sigil and get paired with each other
+:: (confirmed directly) - so the capture file is a plain relative name in
+:: the current directory instead, deleted right after reading it back.
 :SHOWDATE
-  FOR /F "delims=" %%a IN ('date.exe +%%B_%%d,_%%Y') DO SET RAW=%%a
+  :: Test for date.exe
+  SET "DATE_EXE="
+  FOR %%a IN (date.exe) DO SET "DATE_EXE=%%~$PATH:a"
+  IF NOT DEFINED DATE_EXE (
+    >&2 ECHO ERROR: date.exe was not found on PATH.
+    EXIT /B 127
+  )
+
+  :: Capture Date using CoreUtils date.exe
+  "%DATE_EXE%" +%%B_%%d,_%%Y > date_capture.tmp
+  SET /P RAW=<date_capture.tmp
+  DEL date_capture.tmp
   SET TODAY=%RAW:_= %
   ECHO Today is %TODAY%.
 GOTO :EOF

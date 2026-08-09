@@ -1,4 +1,5 @@
 #!/usr/bin/env -S awk -f
+# testbox: title="manual key_order tracking (POSIX-portable)"
 BEGIN {
   # individually build array, tracking insertion order in a parallel
   #  array too since awk's "for (key in array)" iteration order is

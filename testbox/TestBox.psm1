@@ -248,6 +248,17 @@ function Get-TestBoxCommand {
     if ($cmd -eq 'sh' -and -not $script:IsWindowsHost -and (Find-TestBoxExecutable -Command 'dash')) {
         $cmd = 'dash'
     }
+    # cmd/cscript resolve as bare names on native Windows only because
+    #  PowerShell's own command discovery honors PATHEXT there - under
+    #  WSL1/WSL2 interop the real files are only reachable by their full
+    #  name ("cmd.exe"/"cscript.exe"); a bare "cmd" finds nothing via
+    #  Get-Command *or* /bin/sh's own PATH lookup (see Invoke-ShellOut,
+    #  which runs this value through /bin/sh -c on a POSIX host) -
+    #  confirmed directly. Script.rb's own Wsl1ShellScript/Wsl2ShellScript
+    #  already always use the ".exe"-qualified name for this same reason.
+    if (($cmd -eq 'cmd' -or $cmd -eq 'cscript') -and -not $script:IsWindowsHost) {
+        $cmd = "$cmd.exe"
+    }
     # Fail once, loudly, and stop - ported from Script.rb's `command`. A
     #  missing interpreter/compiler would otherwise silently run every
     #  single lesson through a shell that immediately errors ("zsh: not
@@ -387,6 +398,22 @@ function Get-PathPrefix {
     return ".$sep$subdir"
 }
 
+# ConvertTo-WslWindowsPath(path) - translates a POSIX-side relative
+#  path to the equivalent absolute Windows path via wslpath -w, so a
+#  genuine Windows binary invoked through WSL interop (cmd.exe/
+#  cscript.exe - see Get-TestBoxCommand's own ".exe"-suffix fix) can
+#  actually resolve it. Only ever called on a POSIX host after
+#  Find-TestBoxExecutable already confirmed cmd.exe/cscript.exe are
+#  reachable at all, which itself only happens under WSL - wslpath
+#  won't exist anywhere else this could run, but fails soft (returns
+#  Path unchanged) rather than throwing either way.
+function ConvertTo-WslWindowsPath {
+    param([string]$Path)
+    $resolved = & wslpath -w $Path 2>$null
+    if ($LASTEXITCODE -eq 0 -and $resolved) { return $resolved.Trim() }
+    return $Path
+}
+
 # Get-BinaryExtension() - the real on-disk extension of the artifact
 #  `make` produces for the current compiled language (see
 #  lessons/compiled_lang/*/Makefile) - ported from Script.rb's binary_extension.
@@ -475,6 +502,20 @@ function Confirm-TestBoxCompiled {
         throw "Cannot find `"$cmdName`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
     }
 
+    # TESTBOX_SKIP_COMPILE - set by run_all_tests.ps1's own
+    #  --skip-compile flag, for the "run compile_check.rb first
+    #  (parallel, all five languages at once), then run_all against
+    #  what it already built" workflow - rebuilding sequentially here
+    #  on top of that would throw away a build that already succeeded
+    #  and pay the cost twice. Trusts bin/ already has what this run
+    #  needs rather than verifying it - a lesson invoking a genuinely
+    #  missing/stale binary still fails, just as a normal per-test
+    #  failure instead of this function's own upfront error.
+    if ($env:TESTBOX_SKIP_COMPILE) {
+        $script:CompiledOk = $true
+        return
+    }
+
     if (-not (Find-TestBoxExecutable -Command 'make')) {
         throw "Cannot find `"make`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
     }
@@ -488,7 +529,27 @@ function Confirm-TestBoxCompiled {
     #  be done" instead of silently doing nothing.
     Write-Host "Compiling $($script:LanguageName[$Language]) lessons (one-time build)..."
     Write-Host ('=' * 63)
-    $success = Invoke-StreamShellOut -CommandStr 'make 2>&1'
+    # $script:IsWindowsHost, not just "always Makefile" - decides
+    #  Makefile vs Makefile.win, same as compile_check.rb's own
+    #  identical choice (no MSYS2-flavored pwsh build exists the way
+    #  Ruby has one, so this needs no extra nuance beyond native-
+    #  Windows-or-not). Confirmed directly this function never made
+    #  that choice at all before, always running the plain (POSIX-only)
+    #  Makefile even on native Windows, unlike compile_check.rb which
+    #  already got this right.
+    $makefile = if ($script:IsWindowsHost) { 'Makefile.win' } else { 'Makefile' }
+    # make clean first - target/bin are a shared, persistent build cache
+    #  reachable (and built) from multiple environments (native Windows,
+    #  WSL1, WSL2, MSYS2, ...) on this same shared checkout, and an
+    #  object file from one environment's toolchain is binary-
+    #  incompatible with another's - confirmed directly: a stale Linux
+    #  ELF target/*.o left over from a WSL build crashed native
+    #  Windows's own linker ("section below image base"/"undefined
+    #  reference") rather than failing cleanly, when this function
+    #  trusted make's own timestamp check and skipped recompiling it.
+    #  See compile_check.rb's own identical fix.
+    [void](Invoke-ShellOut -CommandStr "make -f $makefile clean 2>&1")
+    $success = Invoke-StreamShellOut -CommandStr "make -f $makefile 2>&1"
     Write-Host ('=' * 63)
 
     if (-not $success) {
@@ -503,7 +564,15 @@ function Get-SpecialVersion {
     param([string]$Language)
     switch ($Language) {
         'cmd' {
-            $raw = cmd /c ver | Out-String
+            # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper
+            #  script (no .exe extension) on PATH, which shadows the real
+            #  Windows cmd.exe whenever MSYS2's own bin directory comes
+            #  first - confirmed directly this breaks under a pwsh
+            #  session launched from MSYS2 bash ("Cannot run a document
+            #  in the middle of a pipeline"). The explicit .exe forces
+            #  resolution to the real Windows binary regardless of PATH
+            #  order, since MSYS2's own stub never carries that extension.
+            $raw = cmd.exe /c ver | Out-String
             if ($raw -match 'Version ([\d.]+)') { return $Matches[1] }
             return ''
         }
@@ -511,7 +580,11 @@ function Get-SpecialVersion {
             return $PSVersionTable.PSVersion.ToString()
         }
         { $_ -in 'js', 'vbs' } {
-            $raw = cscript 2>&1 | Out-String
+            # cscript.exe, not bare "cscript" - same PATHEXT-only-on-
+            #  native-Windows gap as the "cmd"/"cmd.exe" fix just above:
+            #  under WSL interop a bare name resolves nowhere at all
+            #  (confirmed directly), only the ".exe"-qualified one does.
+            $raw = cscript.exe 2>&1 | Out-String
             if ($raw -match 'Windows Script Host Version \S+') { return $Matches[0] }
             return ''
         }
@@ -520,7 +593,7 @@ function Get-SpecialVersion {
             #  it a one-liner needs to differ (see Invoke-ShellOut for why
             #  a real shell, not pwsh, is used on POSIX).
             if ($script:IsWindowsHost) {
-                return (cmd /c 'echo puts [info patchlevel] | tclsh').Trim()
+                return (cmd.exe /c 'echo puts [info patchlevel] | tclsh').Trim()
             }
             return (sh -c "echo 'puts [info patchlevel];exit 0' | tclsh").Trim()
         }
@@ -556,7 +629,7 @@ function Get-TestBoxVersion {
     # Real shell, not pwsh, on POSIX - same reasoning as Invoke-ShellOut:
     #  these probe strings embed their own "2>&1", which needs fd-level
     #  redirection semantics.
-    $raw = if ($script:IsWindowsHost) { cmd /c $probe | Out-String } else { sh -c $probe | Out-String }
+    $raw = if ($script:IsWindowsHost) { cmd.exe /c $probe | Out-String } else { sh -c $probe | Out-String }
     return ConvertTo-ExtractedVersion -Raw $raw -Language $Language
 }
 
@@ -673,8 +746,22 @@ function Invoke-InteractiveShellOut {
     param([string]$CommandStr, [string[]]$InputLines, [int]$TimeoutSeconds = 15)
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'cmd.exe'
-    $psi.Arguments = "/c $CommandStr"
+    # Same cmd.exe-direct (Windows) vs /bin/sh -c (POSIX) branch as
+    #  Invoke-ShellOut, for the same reason - this was missing here
+    #  before, so under WSL $CommandStr (which may embed a single-quoted,
+    #  wslpath-translated Windows path - see the invocation site) was
+    #  being handed straight to cmd.exe's own tokenizer instead of sh's.
+    #  cmd.exe has no concept of single-quote quoting at all, so the
+    #  quotes themselves became part of a now-nonexistent filename -
+    #  confirmed directly (F21 produced empty output, not a real answer).
+    if ($script:IsWindowsHost) {
+        $psi.FileName = 'cmd.exe'
+        $psi.Arguments = "/c $CommandStr"
+    } else {
+        $psi.FileName = '/bin/sh'
+        $psi.ArgumentList.Add('-c')
+        $psi.ArgumentList.Add($CommandStr)
+    }
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
@@ -711,7 +798,14 @@ function Invoke-InteractiveShellOut {
         $readTask = $proc.StandardOutput.ReadAsync($buffer, 0, $buffer.Length)
         if (-not $readTask.Wait([int]$remainingMs)) {
             if (-not $proc.HasExited) {
-                & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+                # taskkill.exe doesn't exist on a POSIX host - Kill($true)
+                #  (kill the whole process tree) is the portable
+                #  equivalent, available since .NET Core 3.0.
+                if ($script:IsWindowsHost) {
+                    & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+                } else {
+                    $proc.Kill($true)
+                }
             }
             break
         }
@@ -939,7 +1033,7 @@ function Test-EnvMatches {
 function Get-InputRedirect {
     param([string]$Value)
     $lines = ($Value -split "`n") | ForEach-Object { "echo $_" }
-    return 'cmd /c "' + ($lines -join '&') + '"|'
+    return 'cmd.exe /c "' + ($lines -join '&') + '"|'
 }
 
 # Invoke-TestBoxCategory(task) - the core comparison loop, ported from
@@ -1067,7 +1161,27 @@ function Invoke-TestBoxCategory {
             #  artifact runs itself, unlike an interpreted language's
             #  test file, which is handed to $runner as a data argument.
             $runner = if ($isCompiled) { '' } else { "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])" }
-            $command = "$input $runner $prefix$invokedName $args $redirect"
+            $invokedPath = "$prefix$invokedName"
+            # cmd.exe/cscript.exe are genuine Windows binaries reached
+            #  through WSL interop (see the ".exe"-suffix fix in
+            #  Get-TestBoxCommand above) - a Linux-relative path like
+            #  "./a00.output.cmd" means nothing to them ("'.' is not
+            #  recognized as an internal or external command...",
+            #  confirmed directly), even though /bin/sh itself resolves
+            #  it just fine. Translating to the equivalent absolute
+            #  Windows path first is exactly what Script.rb's own
+            #  Wsl1ShellScript/Wsl2ShellScript already do (via wslpath
+            #  -w) for this identical reason.
+            if (($language -eq 'cmd' -or $language -eq 'js' -or $language -eq 'vbs') -and -not $script:IsWindowsHost) {
+                # Single-quoted, not bare: $command below is handed
+                #  unparsed to /bin/sh -c (see Invoke-ShellOut) - sh
+                #  treats an *unquoted* backslash as its own escape
+                #  character and strips it, mangling every backslash in
+                #  the translated Windows path ("C:\tools\..." becomes
+                #  "C:tools...", confirmed directly) unless quoted.
+                $invokedPath = "'$(ConvertTo-WslWindowsPath $invokedPath)'"
+            }
+            $command = "$input $runner $invokedPath $args $redirect"
 
             if ($isEnvTest) {
                 $output = Invoke-EnvShellOut -CommandStr $command -ExpectedEnv $expected
@@ -1107,9 +1221,35 @@ function Invoke-TestBoxCategory {
     return [PSCustomObject]$result
 }
 
-function Write-Colored {
+# Get-ColoredText(text, color) - text wrapped in raw ANSI escape codes,
+#  same convention as Script.rb's own colorize()/red/green/yellow - a
+#  plain string, not a Write-Host call. Callers build one complete line
+#  as a single string (embedding this where color is wanted) and make
+#  exactly one Write-Host call for it - confirmed directly this is
+#  necessary, not just style: Write-Host's own -NoNewline is a *host
+#  rendering* hint that's silently ignored once the Information stream
+#  gets redirected (e.g. Invoke-Psake *>&1 | Out-String, exactly what
+#  run_all_tests.ps1 does to capture and parse output) - each Write-Host
+#  call becomes its own line regardless of -NoNewline, so what looks
+#  like one line interactively ("A0 - Standard Output: [PASS]") was
+#  actually landing as three separate lines once captured, corrupting
+#  every downstream parse. A single Write-Host call per line sidesteps
+#  the whole problem, the same way Script.rb's rake-based colorize()
+#  already does (one puts, ANSI codes embedded directly in the string).
+#  Respects NO_COLOR (https://no-color.org/, any non-empty value) -
+#  returns Text unwrapped when set, satisfying the same "runs cleanly
+#  through a plain-text-only parser" need without requiring color to be
+#  stripped back out downstream.
+function Get-ColoredText {
     param([string]$Text, [string]$Color)
-    Write-Host $Text -ForegroundColor $Color -NoNewline
+    if (-not [string]::IsNullOrEmpty($env:NO_COLOR)) { return $Text }
+    $code = switch ($Color) {
+        'Green'  { 32 }
+        'Red'    { 31 }
+        'Yellow' { 33 }
+        default  { 0 }
+    }
+    "`e[${code}m${Text}`e[0m"
 }
 
 function Format-PassFail {
@@ -1142,19 +1282,11 @@ function Write-TestBoxDiff {
     $outputText   = ConvertTo-DisplayableText $TestCase.Output
 
     if ($TestCase.TestResult) {
-        Write-Host "         Expected Output: |" -NoNewline
-        Write-Colored $expectedText 'Yellow'
-        Write-Host "|"
-        Write-Host "         Actual Output:   |" -NoNewline
-        Write-Colored $outputText 'Yellow'
-        Write-Host "| (within tolerance)"
+        Write-Host "         Expected Output: |$(Get-ColoredText $expectedText 'Yellow')|"
+        Write-Host "         Actual Output:   |$(Get-ColoredText $outputText 'Yellow')| (within tolerance)"
     } else {
-        Write-Host "         Expected Output: |" -NoNewline
-        Write-Colored $expectedText 'Green'
-        Write-Host "|"
-        Write-Host "         Actual Output:   |" -NoNewline
-        Write-Colored $outputText 'Red'
-        Write-Host "|"
+        Write-Host "         Expected Output: |$(Get-ColoredText $expectedText 'Green')|"
+        Write-Host "         Actual Output:   |$(Get-ColoredText $outputText 'Red')|"
     }
 }
 
@@ -1168,9 +1300,7 @@ function Write-TestBoxReport {
     if ($Results.Skipped) {
         $script:Summary.Skip++
         $reason = if ($Results.SkipReason) { " ($($Results.SkipReason))" } else { '' }
-        Write-Host "${label}: [" -NoNewline
-        Write-Colored 'SKIP' 'Yellow'
-        Write-Host "]$reason"
+        Write-Host "${label}: [$(Get-ColoredText 'SKIP' 'Yellow')]$reason"
         return
     }
 
@@ -1181,9 +1311,7 @@ function Write-TestBoxReport {
     $hasTitles = @($Results.Results.Values | ForEach-Object { $_ } | Where-Object { $_.Title }).Count -gt 0
 
     $pf = Format-PassFail $Results.FinalResult
-    Write-Host "${label}: [" -NoNewline
-    Write-Colored $pf.Text $pf.Color
-    Write-Host "]"
+    Write-Host "${label}: [$(Get-ColoredText $pf.Text $pf.Color)]"
 
     if (-not $Results.FinalResult -or $anyDiff -or $hasTitles) {
         if ($Results.Results.Count -eq 0) {
@@ -1196,18 +1324,14 @@ function Write-TestBoxReport {
                 if ($entry.Value.Count -eq 1) {
                     $tc = $entry.Value[0]
                     $tpf = Format-PassFail $tc.TestResult
-                    Write-Host "      - ${implLabel}: [" -NoNewline
-                    Write-Colored $tpf.Text $tpf.Color
-                    Write-Host "]"
+                    Write-Host "      - ${implLabel}: [$(Get-ColoredText $tpf.Text $tpf.Color)]"
                     Write-TestBoxDiff -TestCase $tc
                 } else {
                     Write-Host "      - $implLabel ($($entry.Value.Count) testcases):"
                     $count = 1
                     foreach ($tc in $entry.Value) {
                         $tpf = Format-PassFail $tc.TestResult
-                        Write-Host "        - Test ${count}: [" -NoNewline
-                        Write-Colored $tpf.Text $tpf.Color
-                        Write-Host "]"
+                        Write-Host "        - Test ${count}: [$(Get-ColoredText $tpf.Text $tpf.Color)]"
                         Write-TestBoxDiff -TestCase $tc
                         $count++
                     }
@@ -1224,11 +1348,10 @@ function Invoke-TestBoxTask {
 
 function Show-TestBoxSummary {
     Write-Host ('=' * 63)
-    Write-Host "Summary: Total=$($script:Summary.Total)  " -NoNewline
-    Write-Colored "Pass=$($script:Summary.Pass)  " 'Green'
-    Write-Colored "Fail=$($script:Summary.Fail)  " 'Red'
-    Write-Colored "Skip=$($script:Summary.Skip)" 'Yellow'
-    Write-Host ""
+    $passText = Get-ColoredText "Pass=$($script:Summary.Pass)" 'Green'
+    $failText = Get-ColoredText "Fail=$($script:Summary.Fail)" 'Red'
+    $skipText = Get-ColoredText "Skip=$($script:Summary.Skip)" 'Yellow'
+    Write-Host "Summary: Total=$($script:Summary.Total)  $passText  $failText  $skipText"
 }
 
 # Test-TestBoxFailed() - true if any category run so far this session had

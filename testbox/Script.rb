@@ -73,10 +73,10 @@ class ScriptBase
     :sh     => "sh",
     :ksh    => "ksh",
     :zsh    => "zsh",
-    :js     => "cscript",
-    :vbs    => "cscript",
+    :js     => "cscript.exe",
+    :vbs    => "cscript.exe",
     :ps1    => "powershell",
-    :cmd    => "cmd"
+    :cmd    => "cmd.exe"
   }
 
   # options required for command
@@ -435,6 +435,83 @@ class ScriptBase
     Dir.glob(File.join(@@source_subdir, "#{task}?.*")).map { |f| File.basename(f) }
   end
 
+  # target_script_path(path) - converts and quotes the script path handed to
+  # the language runner. Most environments can use the path exactly as Ruby
+  # sees it; Cygwin/WSL1 override this because their POSIX Ruby launches a
+  # native Windows interpreter that requires a Windows-form path.
+  def self.target_script_path(path)
+    path
+  end
+
+  # env_tmp_dir() - a fresh, isolated directory for env_shell_out to run a
+  #  lesson's own env-test subprocess in (see env_shell_out's own comment).
+  #  Every language's n20.setvars.* writes to a bare, hardcoded
+  #  "dump_env.out" with no path of its own - running two invocations (two
+  #  terminals racing each other, a wrapper re-running a lesson that a
+  #  prior crashed run never got to clean up after, ...) from the *same*
+  #  directory risks exactly the file-collision/lock-contention scenario
+  #  this exists to rule out entirely, not just make less likely.
+  #
+  #  Overridden by Wsl1ShellScript/CygwinShellScript, the same two classes
+  #  that already override target_script_path for an identical reason:
+  #  Dir.mktmpdir's own default location isn't necessarily reachable by
+  #  the *native Windows* interpreter these classes actually launch - a
+  #  WSL1 /tmp lives inside its own private VM disk, invisible to any real
+  #  Windows process at all, the same constraint prepare_shell_command's
+  #  own /mnt/c/Windows/Temp fallback already documents and works around.
+  def self.env_tmp_dir
+    require 'tmpdir'
+    Dir.mktmpdir
+  end
+
+  # env_tmp_dir_disposable?() - true by default: env_tmp_dir above always
+  #  returns a fresh Dir.mktmpdir env_shell_out itself created and is
+  #  safe to fully remove when done. Wsl1ShellScript overrides this to
+  #  false, since its own env_tmp_dir override returns a real, shared,
+  #  pre-existing system directory instead - see its own comment.
+  def self.env_tmp_dir_disposable?
+    true
+  end
+
+  # prepare_shell_command(cmd_str) - final platform hook after stdin/stdout
+  # redirection has been composed. WSL1 uses it to ensure Windows processes
+  # inherit a Windows-accessible cwd; every other environment is unchanged.
+  def self.prepare_shell_command(cmd_str)
+    cmd_str
+  end
+
+  # windows_target_path(path, converter, *options) - shared Cygwin/WSL1
+  # boundary for handing a native Windows interpreter an absolute Windows
+  # path while still composing the outer command for a POSIX /bin/sh.
+  def self.windows_target_path(path, converter, *options)
+    require 'open3'
+    require 'shellwords'
+
+    converted, status = Open3.capture2(converter, *options, File.expand_path(path))
+    raise "#{converter} failed for: #{path}" unless status.success?
+
+    Shellwords.escape(converted.chomp)
+  end
+
+  # debug?() - true if DEBUG is set (to anything non-empty) in the
+  #  environment, e.g. `DEBUG=1 rake`. Checked live rather than cached, so
+  #  it reflects the current run's environment exactly. Unlike
+  #  WineShellScript's own WINE_DEBUG_HANG (a narrower, Wine-specific
+  #  hang-timing diagnostic - see debug_hang_log), this is the general
+  #  per-test command/expected/actual trace every environment shares.
+  def self.debug?
+    !ENV['DEBUG'].to_s.empty?
+  end
+
+  # debug_log(label, msg) - prints msg to stderr, tagged with label, only
+  #  when debug? - lets a wrong or slow-looking test be diagnosed by
+  #  seeing exactly what execute() actually ran (and what came back)
+  #  without permanently cluttering every normal run's output.
+  def self.debug_log(label, msg)
+    return unless debug?
+    STDERR.puts "[DEBUG] #{label}: #{msg}"
+  end
+
   # shell_out(cmd_str) - runs cmd_str the same way the harness runs a
   #  test's command (i.e. via Kernel#`, whatever shell that natively
   #  invokes), and returns raw stdout/stderr. Subclasses may add their own
@@ -574,7 +651,14 @@ class ScriptBase
       #  orphaned winedevice.exe doesn't linger burning CPU after this).
       watchdog = Thread.new do
         sleep timeout_seconds
-        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        # See env_shell_out's identical comment - kill_process_tree's own
+        #  failure must never skip stdout.close below, or the main
+        #  thread's blocked readpartial loop has nothing left to unblock
+        #  it.
+        begin
+          kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        rescue StandardError
+        end
         stdout.close unless stdout.closed?
       rescue StandardError
       end
@@ -608,8 +692,9 @@ class ScriptBase
   end
 
   # DUMP_ENV_FILE - the file a lesson dumps its own environment to (see
-  #  env_shell_out) - a fixed, well-known name in the current directory,
-  #  same convention every language's n20.setvars.* lesson follows.
+  #  env_shell_out) - a fixed, well-known name, same convention every
+  #  language's n20.setvars.* lesson follows. No lesson script needs to
+  #  know or care where it actually ends up - see env_tmp_dir.
   DUMP_ENV_FILE = "dump_env.out"
 
   # env_shell_out(cmd_str, expected_env) - like shell_out, but for a
@@ -630,21 +715,26 @@ class ScriptBase
   #  that - reading it is plain file I/O, no OS-specific process
   #  introspection needed anywhere.
   #
-  #  Launches cmd_str in the background, waits for its prompt line (by
-  #  which point DUMP_ENV_FILE has already been written), reads it
-  #  directly, then writes a newline to unblock the lesson - which
-  #  deletes DUMP_ENV_FILE itself as part of its own exit. Returns a
-  #  hash of {key => actual_value} for every key expected_env asked
-  #  about - report() compares this against expected_env itself.
+  #  Launches cmd_str in the background (from a fresh env_tmp_dir - see
+  #  its own comment for why: two invocations of the same lesson, racing
+  #  or one left over from a prior crash, must never be able to collide
+  #  on the same DUMP_ENV_FILE), waits for its prompt line (by which
+  #  point DUMP_ENV_FILE has already been written), reads it directly,
+  #  then writes a newline to unblock the lesson - which deletes
+  #  DUMP_ENV_FILE itself as part of its own exit. Returns a hash of
+  #  {key => actual_value} for every key expected_env asked about -
+  #  report() compares this against expected_env itself.
   def self.env_shell_out(cmd_str, expected_env, timeout_seconds: 15)
     require 'open3'
+    require 'fileutils'
     actual_env = {}
+    tmp_dir = env_tmp_dir
 
     # See interactive_shell_out's identical popen_opts/watchdog comments -
     #  this "n2" test runs under every language (is_env_test isn't gated
     #  to any one @@language the way needs_interactive? is), so a stalled
     #  lesson here is reachable regardless of platform, not just :cmd.
-    popen_opts = native_unix? ? { pgroup: true } : {}
+    popen_opts = (native_unix? ? { pgroup: true } : {}).merge(chdir: tmp_dir)
     Open3.popen3(cmd_str, **popen_opts) do |stdin, stdout, _stderr, wait_thr|
       # See interactive_shell_out's identical watchdog comment - closing
       #  our own read end is what actually guarantees this unblocks, since
@@ -653,7 +743,22 @@ class ScriptBase
       #  Wine) that inherited its own copy of this same pipe's write end.
       watchdog = Thread.new do
         sleep timeout_seconds
-        kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        # kill_process_tree's own failure must never prevent stdout.close
+        #  below - confirmed directly this is a real gap, not just
+        #  theoretical: the outer `rescue StandardError` on this whole
+        #  thread body means an exception raised *inside*
+        #  kill_process_tree (taskkill failing/erroring for any reason -
+        #  e.g. racing a process that's mid-exit, or one it can't fully
+        #  reach, like a WSL-hosted grandchild) would otherwise skip
+        #  stdout.close entirely, leaving the main thread's blocked
+        #  stdout.readline below with nothing left to ever unblock it -
+        #  a permanent hang indistinguishable from the lesson itself
+        #  being stuck, and with no DUMP_ENV_FILE ever written since the
+        #  underlying process was never confirmed dead either way.
+        begin
+          kill_process_tree(wait_thr.pid) if wait_thr.alive?
+        rescue StandardError
+        end
         stdout.close unless stdout.closed?
       rescue StandardError
       end
@@ -665,7 +770,8 @@ class ScriptBase
         #  or flaky on a slow/loaded one.
         stdout.readline rescue nil
 
-        dump = File.exist?(DUMP_ENV_FILE) ? File.read(DUMP_ENV_FILE) : ""
+        dump_path = File.join(tmp_dir, DUMP_ENV_FILE)
+        dump = File.exist?(dump_path) ? File.read(dump_path) : ""
         expected_env.each_key do |key|
           actual_env[key] = dump[/^#{Regexp.escape(key)}=(.*)$/, 1]&.strip
         end
@@ -693,6 +799,21 @@ class ScriptBase
     end
 
     actual_env
+  ensure
+    # env_tmp_dir_disposable? guards this - Wsl1ShellScript's own
+    #  env_tmp_dir override returns a real, shared, pre-existing system
+    #  directory (see its own comment for why), not something owned
+    #  here; removing *that* would be catastrophic, not just messy.
+    # rescue-wrapped, not left to raise - a disposable temp dir that
+    #  fails to clean up (e.g. the lesson's own subprocess still has a
+    #  lingering handle on it after a timeout/kill) shouldn't turn a
+    #  real test result into a crash; it's just a leftover temp dir at
+    #  that point, same as any other orphaned-process leftover already
+    #  possible here.
+    begin
+      FileUtils.remove_entry(tmp_dir) if tmp_dir && env_tmp_dir_disposable? && Dir.exist?(tmp_dir)
+    rescue StandardError
+    end
   end
 
   # version() - human-readable version string for the language under test.
@@ -756,6 +877,36 @@ class ScriptBase
   #  environment's own executable-lookup facility.
   def self.find_executable(cmd)
     raise NotImplementedError, "#{name} must implement find_executable"
+  end
+
+  # wsl_bash_stub_paths() - every known real-world location Windows' own
+  #  "launch WSL" bash.exe stub can appear at - not a real POSIX bash at
+  #  all, confirmed directly running it launches WSL and silently
+  #  corrupts interactive input (a stray \r survives into string
+  #  comparisons) before eventually hanging outright, rather than
+  #  erroring out where find_executable could otherwise catch it.
+  #  %SystemRoot%\System32\bash.exe is the original, always-present
+  #  copy; %LocalAppData%\Microsoft\WindowsApps\bash.exe is a second,
+  #  separate one (a Store app-execution alias) - confirmed directly
+  #  both exist simultaneously on a real machine, and which one a given
+  #  lookup mechanism resolves to isn't consistent: `where.exe` and
+  #  PowerShell's `Get-Command` (without -All) picked *different* ones
+  #  of the two here, so both need excluding, not just whichever one a
+  #  single test happened to turn up.
+  def self.wsl_bash_stub_paths
+    system_root = ENV['SystemRoot'] || ENV['windir']
+    system_root = 'C:\Windows' if system_root.to_s.empty?
+    paths = [File.join(system_root, 'System32', 'bash.exe')]
+    local_app_data = ENV['LOCALAPPDATA']
+    paths << File.join(local_app_data, 'Microsoft', 'WindowsApps', 'bash.exe') unless local_app_data.to_s.empty?
+    paths.map { |p| p.tr('\\', '/').downcase }
+  end
+
+  # wsl_bash_stub?(path) - see wsl_bash_stub_paths above. Used by
+  #  CommandShellScript/PowerShellScript's own find_executable overrides
+  #  to filter cmd == "bash" lookups before taking the first match.
+  def self.wsl_bash_stub?(path)
+    wsl_bash_stub_paths.include?(path.to_s.tr('\\', '/').downcase)
   end
 
   # null_device() - where to redirect stderr to discard it.
@@ -1107,6 +1258,20 @@ class ScriptBase
 
     command # verifies the compiler itself is on PATH (see command())
 
+    # TESTBOX_SKIP_COMPILE - set by run_all_tests.rb's own --skip-compile
+    #  flag, for the "run compile_check.rb first (parallel, all five
+    #  languages at once), then run_all against what it already built"
+    #  workflow - rebuilding sequentially here on top of that would
+    #  throw away a build that already succeeded and pay the cost
+    #  twice. Trusts bin/ already has what this run needs rather than
+    #  verifying it - a lesson invoking a genuinely missing/stale
+    #  binary still fails, just as a normal per-test failure instead of
+    #  this method's own upfront error.
+    if ENV["TESTBOX_SKIP_COMPILE"]
+      @@compiled_ok = true
+      return
+    end
+
     if find_executable("make").to_s.empty?
       STDERR.puts "ERROR: Cannot find \"make\" on PATH (needed to build #{@@dirname}/ lessons). " \
                   "Check the setup instructions for this language."
@@ -1122,7 +1287,27 @@ class ScriptBase
     #  "Nothing to be done" instead of silently doing nothing as before.
     puts "Compiling #{language_name} lessons (one-time build)..."
     puts "-" * 63
-    success = stream_shell_out("make 2>&1")
+    # posix? (not native_windows_ruby? - MSYS2 has its own real POSIX
+    #  tooling and correctly reports posix? true, unlike a genuine
+    #  native Windows CommandShellScript/PowerShellScript session)
+    #  decides Makefile vs Makefile.win, same as compile_check.rb's own
+    #  identical choice - confirmed directly this method never made
+    #  that choice at all before, always running the plain (POSIX-only)
+    #  Makefile even on native Windows, unlike compile_check.rb which
+    #  already got this right.
+    makefile = posix? ? "Makefile" : "Makefile.win"
+    # make clean first - target/bin are a shared, persistent build cache
+    #  reachable (and built) from multiple environments (native Windows,
+    #  WSL1, WSL2, MSYS2, ...) on this same shared checkout, and an
+    #  object file from one environment's toolchain is binary-
+    #  incompatible with another's - confirmed directly: a stale Linux
+    #  ELF target/*.o left over from a WSL build crashed native
+    #  Windows's own linker ("section below image base"/"undefined
+    #  reference") rather than failing cleanly, when this method
+    #  trusted make's own timestamp check and skipped recompiling it.
+    #  See compile_check.rb's own identical fix.
+    `make -f #{makefile} clean < #{null_device} 2>&1`
+    success = stream_shell_out("make -f #{makefile} 2>&1")
     puts "==============================================================="
 
     unless success
@@ -1275,17 +1460,51 @@ class ScriptBase
               interpreter_line = runner
               arg_separator = ""
             end
-            command = "#{input} #{interpreter_line} #{prefix}#{invoked_name} #{arg_separator} #{args} #{redirect}"
-            #puts "DEBUG: RUNNING #{command}"
+            raw_target = "#{prefix}#{invoked_name}"
+            # Absolute *before* target_script_path, not after - its own
+            #  Wsl1ShellScript/CygwinShellScript overrides already
+            #  produce a Windows-form absolute path (via
+            #  windows_target_path's own File.expand_path call), and
+            #  running File.expand_path a *second* time on an
+            #  already-converted "C:\..." string, from a still-POSIX
+            #  Ruby, wouldn't recognize it as absolute at all - it'd try
+            #  to treat it as relative and mangle it. Only needed for
+            #  is_env_test: env_shell_out now runs its subprocess from a
+            #  fresh env_tmp_dir rather than the lesson's own directory
+            #  (see its own comment for why), so the interpreter needs
+            #  an absolute reference to actually find the script there;
+            #  every other test still runs from the lesson directory
+            #  itself, where the existing relative reference already
+            #  works fine.
+            raw_target = File.expand_path(raw_target) if is_env_test
+            target = target_script_path(raw_target)
+            command = "#{input} #{interpreter_line} #{target} #{arg_separator} #{args} #{redirect}"
+            # A plain shell_out invocation with no "in" data of its own
+            #  (is_env_test/needs_interactive? each manage their own stdin
+            #  via Open3 instead - see env_shell_out/interactive_shell_out -
+            #  so they're deliberately excluded here) has nothing to feed a
+            #  lesson that unexpectedly tries to read stdin anyway (e.g. a
+            #  cmd.exe builtin silently shadowing an external command of
+            #  the same name and falling back to its own interactive
+            #  prompt - confirmed directly with win_scripts/batch's i03).
+            #  Without this, that inherits whatever live terminal happens
+            #  to be behind the harness's own stdin and blocks on it
+            #  indefinitely; closing it here makes that fail fast (an
+            #  immediate EOF) instead.
+            shell_out_command = is_env_test || needs_interactive?(test) || !input.empty? ?
+              command : "#{command} < #{null_device}"
+            command = prepare_shell_command(command)
+            shell_out_command = prepare_shell_command(shell_out_command)
+            debug_log("RUNNING", shell_out_command)
             output = if is_env_test
               env_shell_out(command, expected)
             elsif needs_interactive?(test)
               interactive_shell_out(command, input_lines)
             else
-              shell_out(command)
+              shell_out(shell_out_command)
             end
-            #puts "EXPECT: |#{expected}|"
-            #puts "OUTPUT: |#{output}|"
+            debug_log("EXPECTED", expected.inspect)
+            debug_log("OUTPUT", output.inspect)
 
             if is_env_test
               test_result = expected == output
@@ -1419,7 +1638,7 @@ end
 class WineShellScript < PosixShellScript
   # the resolved binary names (see @@command) that actually need routing
   #  through wine, as opposed to @@language's raw extension-derived keys
-  WINE_TARGET_COMMANDS = %w[cmd cscript]
+  WINE_TARGET_COMMANDS = %w[cmd.exe cscript.exe]
 
   # debug_hang_log(msg) - opt-in diagnostic for tracking down an
   #  intermittent hang seen under `rake <single-category>` (e.g. `rake
@@ -1653,6 +1872,154 @@ class WineShellScript < PosixShellScript
 end
 
 # =============================================
+# Wsl1ShellScript - WSL1 running a :cmd/:js/:vbs lesson directory. Its Ruby
+# is a native Linux build, but the target interpreter is a native Windows
+# executable. Convert lesson paths with wslpath, normalize Windows CRLF, and
+# give the child a Windows-accessible cwd when the repository itself is on
+# WSL's Linux filesystem. No external wrapper is required.
+# =============================================
+class Wsl1ShellScript < PosixShellScript
+  def self.target_script_path(path)
+    windows_target_path(path, "wslpath", "-w")
+  end
+
+  # env_tmp_dir() - NOT a fresh Dir.mktmpdir subdirectory here, unlike
+  #  the base default or CygwinShellScript's own override - confirmed
+  #  directly that doesn't actually work for WSL1: prepare_shell_command
+  #  below unconditionally wraps every cmd/js/vbs command with
+  #  "(cd /mnt/c/Windows/Temp && ...)" *before* env_shell_out ever sees
+  #  the command string, and that wrap always wins over Open3's own
+  #  chdir: option (it's the first thing the spawned shell actually
+  #  executes) - so the real lesson script always runs from
+  #  /mnt/c/Windows/Temp regardless of what directory env_tmp_dir
+  #  chooses. Pointing this at that same shared location keeps
+  #  env_shell_out's own read in sync with where the file actually lands
+  #  - the trade-off is WSL1 doesn't get the same full collision
+  #  protection every other platform does here (two concurrent WSL1
+  #  invocations can still collide, same as before this existed) -
+  #  properly fixing that would mean making prepare_shell_command itself
+  #  aware of env_tmp_dir, a larger change than this one. See
+  #  env_tmp_dir_disposable? - this location must never be deleted.
+  def self.env_tmp_dir
+    "/mnt/c/Windows/Temp"
+  end
+
+  # env_tmp_dir_disposable?() - false here: env_tmp_dir above returns a
+  #  real, shared, pre-existing system directory, not something
+  #  env_shell_out created and owns - deleting it would be catastrophic.
+  #  See ScriptBase's own default (true) for the normal case, where
+  #  env_tmp_dir always returns a fresh Dir.mktmpdir of its own.
+  def self.env_tmp_dir_disposable?
+    false
+  end
+
+  def self.prepare_shell_command(cmd_str)
+    # A cwd already on a mounted Windows drive is safe and preserves the
+    # lesson's normal relative-file semantics. A Linux-only cwd cannot be
+    # inherited by cmd.exe/cscript.exe without a warning, so launch that
+    # child from a stable Windows directory instead. Parentheses keep any
+    # stdin pipeline/redirections inside the changed-directory subshell.
+    return cmd_str if Dir.pwd.match?(%r{\A/mnt/[a-z](?:/|\z)}i)
+    "(cd /mnt/c/Windows/Temp && #{cmd_str})"
+  end
+
+  # shell_out(cmd_str) - overridden (rather than using PosixShellScript's
+  #  plain Kernel#` version) for two reasons, both mirroring
+  #  WineShellScript#shell_out exactly:
+  #
+  #  1. cmd.exe/cscript.exe are real Windows binaries here too (launched
+  #     through WSL1's own interop, not Wine), and still emit CRLF line
+  #     endings that only a *native* Windows Ruby's Kernel#` would
+  #     translate away on its own - WSL1 Ruby is a real Linux build with
+  #     no such translation, so every plain out/err comparison would
+  #     otherwise fail on a trailing \r alone.
+  #
+  #  2. A real test invocation can hang indefinitely - confirmed directly
+  #     (a plain `rake` run left a real cmd.exe sitting alive, unread,
+  #     with its wrapping `cmd`/sh both still blocked in D, for 19+
+  #     minutes on lessons/win_scripts/batch's i03 implementation - it ran
+  #     fine standalone (`rake i0`) but hung under the full run, the same
+  #     intermittent-hang character WineShellScript's own comment
+  #     describes for wine on macOS). A bare Kernel#` has no way to give
+  #     up on a wedged child, so route through shell_out_with_timeout
+  #     instead, which force-closes the pipe (and kills the process tree)
+  #     after timeout_seconds.
+  def self.shell_out(cmd_str)
+    shell_out_with_timeout(cmd_str, timeout_seconds: 25).gsub("\r\n", "\n")
+  end
+
+  def self.special_version(lang)
+    case lang
+    when :cmd
+      shell_out(prepare_shell_command("cmd.exe /d /c ver 2>&1 < /dev/null"))[/Version ([\d.]+)/, 1].to_s
+    when :js, :vbs
+      shell_out(prepare_shell_command("cscript.exe 2>&1 < /dev/null"))[/Windows Script Host Version \S+/].to_s
+    else
+      super
+    end
+  end
+end
+
+# =============================================
+# Wsl2ShellScript - WSL2 running a :cmd/:js/:vbs lesson directory. WSL2 is a
+# real Linux VM (unlike WSL1's NT-kernel emulation), but Windows binary
+# interop (cmd.exe/cscript.exe) still goes through the same wslpath-
+# translatable /mnt/<drive> convention, still emits CRLF, and can still wedge
+# a spawned cmd.exe the same way Wsl1ShellScript's own comments above
+# describe - confirmed directly: under WSL2, `cmd.exe /c ./scripts/a00...cmd`
+# fails with "'.' is not recognized..." (a raw Linux path cmd.exe can't
+# resolve), while `cmd.exe /c $(wslpath -w ./scripts/a00...cmd)` works.
+# Everything Wsl1ShellScript already does applies unchanged, so this is a
+# thin subclass rather than a duplicate implementation.
+# =============================================
+class Wsl2ShellScript < Wsl1ShellScript
+end
+
+# =============================================
+# CygwinShellScript - genuine Cygwin Ruby running a :cmd/:js/:vbs lesson
+# directory. Kernel#` is POSIX-shell-backed, while the target interpreter is
+# native Windows. Convert the lesson filename with cygpath and normalize the
+# interpreter's CRLF output. No external wrapper is required.
+# =============================================
+class CygwinShellScript < PosixShellScript
+  def self.target_script_path(path)
+    windows_target_path(path, "cygpath", "-aw")
+  end
+
+  # env_tmp_dir() - same reasoning as Wsl1ShellScript's own override,
+  #  just Cygwin's own drive-mount convention (/cygdrive/c/... rather
+  #  than /mnt/c/...).
+  def self.env_tmp_dir
+    require 'tmpdir'
+    Dir.mktmpdir(nil, "/cygdrive/c/Windows/Temp")
+  end
+
+  # shell_out(cmd_str) - see Wsl1ShellScript#shell_out's identical CRLF
+  #  reasoning: cmd.exe/cscript.exe are real Windows binaries here too, and
+  #  a genuine Cygwin Ruby's Kernel#` has no native-Windows-Ruby-style CRLF
+  #  translation of its own, so every plain out/err comparison would
+  #  otherwise fail on a trailing \r alone. No shell_out_with_timeout
+  #  wrapping here unlike Wsl1ShellScript - that was a response to a
+  #  confirmed intermittent hang specific to WSL1's cross-kernel process
+  #  interop; nothing analogous has been observed for Cygwin's own, more
+  #  conventional native process spawning.
+  def self.shell_out(cmd_str)
+    `#{cmd_str}`.gsub("\r\n", "\n")
+  end
+
+  def self.special_version(lang)
+    case lang
+    when :cmd
+      shell_out("cmd.exe /d /c ver 2>&1 < /dev/null")[/Version ([\d.]+)/, 1].to_s
+    when :js, :vbs
+      shell_out("cscript.exe 2>&1 < /dev/null")[/Windows Script Host Version \S+/].to_s
+    else
+      super
+    end
+  end
+end
+
+# =============================================
 # CommandShellScript - native (non-MSYS) Windows Ruby, where Kernel#`
 # invokes cmd.exe. Uses only cmd.exe builtins/native binaries - no
 # posix/GNUWin32 tools required.
@@ -1662,7 +2029,12 @@ class CommandShellScript < ScriptBase
     # where.exe prints its own "INFO: Could not find files..." to stderr
     #  on a miss - silence it so command()'s own error message (see
     #  ScriptBase#command) is the only thing on screen when this fails.
-    `where "#{cmd}" 2>#{null_device}`.split("\n").first.to_s.chomp
+    # cmd == "bash": see ScriptBase#wsl_bash_stub_paths - where.exe's
+    #  plain first-match-wins order can just as easily turn up either
+    #  WSL launcher stub instead of a genuine MSYS2/Git-for-Windows bash.
+    matches = `where "#{cmd}" 2>#{null_device}`.split("\n").map(&:chomp)
+    matches = matches.reject { |m| wsl_bash_stub?(m) } if cmd == "bash"
+    matches.first.to_s
   end
 
   def self.null_device
@@ -1677,7 +2049,14 @@ class CommandShellScript < ScriptBase
   #  silently appends a stray trailing space to it.
   def self.input_redirect(value)
     lines = value.split("\n").map { |line| "echo #{line}" }
-    %Q{cmd /c "#{lines.join('&')}"|}
+    # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper script
+    #  (no .exe extension) on PATH, which shadows the real Windows
+    #  cmd.exe whenever MSYS2's own bin directory comes first - the
+    #  explicit .exe forces resolution to the real Windows binary
+    #  regardless of PATH order, since MSYS2's own stub never carries
+    #  that extension. Same fix as TestBox.psm1's identical bare-cmd
+    #  bug ("Cannot run a document in the middle of a pipeline").
+    %Q{cmd.exe /c "#{lines.join('&')}"|}
   end
 
   def self.special_version(lang)
@@ -1762,7 +2141,15 @@ class PowerShellScript < ScriptBase
   end
 
   def self.find_executable(cmd)
-    pwsh("(Get-Command #{cmd}).Source")
+    # -All: without it, Get-Command silently returns just one match for
+    #  an ambiguous external command, and confirmed directly that one
+    #  isn't reliably the same WSL launcher stub CommandShellScript's
+    #  own `where.exe`-based lookup happens to prefer either - see
+    #  ScriptBase#wsl_bash_stub_paths, both need to be visible here to
+    #  filter either one out.
+    matches = pwsh("(Get-Command #{cmd} -All -ErrorAction SilentlyContinue).Source").split("\n").map(&:strip).reject(&:empty?)
+    matches = matches.reject { |m| wsl_bash_stub?(m) } if cmd == "bash"
+    matches.first.to_s
   end
 
   def self.null_device
@@ -1773,7 +2160,14 @@ class PowerShellScript < ScriptBase
   #  cmd.exe here too, so the same nested-`cmd /c` trick applies.
   def self.input_redirect(value)
     lines = value.split("\n").map { |line| "echo #{line}" }
-    %Q{cmd /c "#{lines.join('&')}"|}
+    # cmd.exe, not bare "cmd" - MSYS2 puts its own "cmd" wrapper script
+    #  (no .exe extension) on PATH, which shadows the real Windows
+    #  cmd.exe whenever MSYS2's own bin directory comes first - the
+    #  explicit .exe forces resolution to the real Windows binary
+    #  regardless of PATH order, since MSYS2's own stub never carries
+    #  that extension. Same fix as TestBox.psm1's identical bare-cmd
+    #  bug ("Cannot run a document in the middle of a pipeline").
+    %Q{cmd.exe /c "#{lines.join('&')}"|}
   end
 
   def self.special_version(lang)
@@ -1816,6 +2210,20 @@ end
 # as our parent, walk up past any cmd.exe started with /c until we hit
 # either a non-wrapper cmd.exe (a real session) or a powershell/pwsh
 # ancestor.
+#
+# That walk-up needs to see past more than just a transient cmd.exe
+# wrapper, though - confirmed directly: run_all_tests.rb spawns `rake`
+# (rake.bat) as its own subprocess, so the real ancestry from inside
+# that rake run is rake.bat's own transient cmd.exe -> run_all_tests.rb's
+# *own* ruby.exe -> whatever shell the user actually typed
+# "ruby run_all_tests.rb" into. The original version here only knew how
+# to walk past cmd.exe specifically, hit "ruby.exe" (a name it didn't
+# recognize as either a shell or a known wrapper), and gave up - silently
+# defaulting to CommandShellScript even when the user's real, top-level
+# shell was pwsh. Walking past *any* unrecognized process name (not just
+# cmd.exe) fixes this generally, for any future intermediary, not just
+# this one - bounded by max_hops so a pathological/circular process tree
+# can't loop forever.
 # =============================================
 def win_process_info(pid)
   out = IO.popen(['powershell.exe', '-NoProfile', '-Command',
@@ -1828,25 +2236,43 @@ rescue StandardError
   nil
 end
 
-def windows_host_shell(pid)
-  loop do
+def windows_host_shell(pid, max_hops = 10)
+  max_hops.times do
     info = win_process_info(pid)
     return nil unless info
 
     name = info['Name'].to_s.downcase
     if name.include?('powershell') || name == 'pwsh.exe'
       return :powershell
-    elsif name == 'cmd.exe'
-      if info['CommandLine'].to_s =~ %r{/c\b}i
-        pid = info['ParentProcessId']
-        next
-      else
-        return :cmd
-      end
-    else
-      return nil
+    elsif name == 'cmd.exe' && info['CommandLine'].to_s !~ %r{/c\b}i
+      return :cmd
     end
+
+    pid = info['ParentProcessId']
   end
+  nil
+end
+
+# wsl1?()/wsl2?() - which WSL generation, if either, this is - distinguished
+#  from a real Linux box (and from each other) by the kernel release string
+#  alone: WSL1 reports the NT kernel's own Linux-syscall emulation build
+#  (generically "*-Microsoft"), WSL2 reports a real Linux kernel build that
+#  happens to say "*-microsoft-standard-WSL2". A plain `grep -q "microsoft"
+#  /proc/version` (as used ad hoc elsewhere) can't tell the two apart on its
+#  own - both contain "microsoft" - so both helpers key off osrelease and the
+#  presence/absence of "wsl2" specifically, same as each other's mirror.
+def wsl1?
+  release = File.read('/proc/sys/kernel/osrelease')
+  release =~ /microsoft/i && release !~ /wsl2/i
+rescue Errno::ENOENT
+  false
+end
+
+def wsl2?
+  release = File.read('/proc/sys/kernel/osrelease')
+  release =~ /microsoft/i && release =~ /wsl2/i
+rescue Errno::ENOENT
+  false
 end
 
 # =============================================
@@ -1868,12 +2294,31 @@ end
 #  PosixShellScript exactly as before, unaffected by any of this.
 WINE_LANGUAGES = %w[cmd js vbs].freeze
 
+# Native Windows languages handled directly by Wsl1ShellScript/Wsl2ShellScript.
+#  Every other language directory under WSL1 or WSL2 (bash, python, ...) has
+#  a real, native Linux build and keeps using plain PosixShellScript exactly
+#  as before, unaffected by any of this. Shared by both WSL generations -
+#  the split is which class handles them, not which languages need handling.
+WSL1_LANGUAGES = %w[cmd js vbs].freeze
+
+# Native Windows languages handled directly by CygwinShellScript. Every other
+#  language directory under Cygwin (bash,
+#  perl, ...) has a real Cygwin-native build and keeps using plain
+#  PosixShellScript exactly as before, unaffected by any of this.
+CYGWIN_LANGUAGES = %w[cmd js vbs].freeze
+
 Script = if ENV['MSYSTEM']
   Msys2ShellScript
 elsif RUBY_PLATFORM =~ /mingw|mswin/i
   windows_host_shell(Process.ppid) == :powershell ? PowerShellScript : CommandShellScript
 elsif RUBY_PLATFORM =~ /darwin/i && WINE_LANGUAGES.include?(ScriptBase.language)
   WineShellScript
+elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl1?
+  Wsl1ShellScript
+elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl2?
+  Wsl2ShellScript
+elsif RUBY_PLATFORM =~ /cygwin/i && CYGWIN_LANGUAGES.include?(ScriptBase.language)
+  CygwinShellScript
 else
   PosixShellScript
 end

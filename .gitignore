@@ -12,6 +12,7 @@ lessons/compiled_lang/*/bin/*
 !lessons/compiled_lang/*/bin/.gitkeep
 lessons/compiled_lang/*/target/*
 !lessons/compiled_lang/*/target/.gitkeep
+*.out
 
 # scriptbox/generated/ holds gen_installer.rb's output (<platform>_install.sh),
 # regenerated on demand from config/*.yml - see scriptbox/generated/README.md.
