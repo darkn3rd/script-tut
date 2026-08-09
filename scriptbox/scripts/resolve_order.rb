@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman].freeze
 
 # flatten - walks the macos.yml tree in document order and produces one
 #  array of "steps". A step is either a package (brew/cask/tap/cpan/cpanm/
@@ -22,6 +22,7 @@ def flatten(node, path = [])
         name: entry[type],
         meets: entry['meets'],
         needs: entry['needs'],
+        cmd: entry['cmd'],
         path: path.join('.')
       }
       if type != 'script' && entry['script']
@@ -35,6 +36,30 @@ def flatten(node, path = [])
     steps.concat(flatten(value, path + [key])) if value.is_a?(Hash)
   end
 
+  steps
+end
+
+# dedup! - drops a later step whose (type, name) already appeared
+#  earlier in the list, keeping the *first* occurrence and its position -
+#  confirmed directly this is needed: testbox's own `- rbenv: 4.0.6` and
+#  `- script: ubuntu22_powershell` each duplicate a step gen_scripts/win_scripts
+#  already installs elsewhere in the same file, running the same apt/curl
+#  work twice for no reason (each one individually is idempotent - rbenv
+#  install -s, apt-get install -y - just wasteful, not harmful, to run
+#  twice). A `script` step attached to a package (see attached_to) is
+#  keyed on its *own* name, not the package's, so an identical script
+#  reused by two different packages is still only ever run once too.
+def dedup!(steps)
+  seen = {}
+  steps.reject! do |step|
+    key = [step[:type], step[:name]]
+    if seen[key]
+      true
+    else
+      seen[key] = true
+      false
+    end
+  end
   steps
 end
 

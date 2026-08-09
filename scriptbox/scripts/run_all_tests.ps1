@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
   Runs Invoke-Psake -quiet across every lesson language directory,
@@ -134,6 +135,18 @@ while ($i -lt $Selectors.Count) {
     if ($i -lt $Selectors.Count) { $FormatName = $Selectors[$i] }
   } elseif ($token -like '--format=*') {
     $FormatName = $token.Substring('--format='.Length)
+  } elseif ($token -eq '--skip-compile') {
+    # For the "run compile_check.rb first, then run_all against what
+    #  it already built" workflow - Confirm-TestBoxCompiled
+    #  (testbox/TestBox.psm1) normally cleans and rebuilds a compiled
+    #  language's own lessons the first time psake reaches its
+    #  directory, wasteful right after compile_check.rb already built
+    #  all five in parallel. TESTBOX_SKIP_COMPILE, not a parameter
+    #  passed straight through: Invoke-PsakeRun calls Invoke-Psake
+    #  in-process (see its own comment - no subprocess at all), so
+    #  $env: here is already the same process Confirm-TestBoxCompiled
+    #  runs in - no extra plumbing needed to reach it.
+    $env:TESTBOX_SKIP_COMPILE = '1'
   } else {
     $remaining.Add($token)
   }
@@ -345,9 +358,21 @@ function Resolve-PackageInfo {
 
   $escapedPath = $Path -replace '\\', '\\\\' -replace "'", "\\'"
   $escapedName = $BinaryName -replace "'", "\\'"
+  # require, not require_relative: $verifyCommandsPath is already
+  #  absolute (built via Join-Path $PSScriptRoot above), and
+  #  require_relative needs to infer a base directory from the
+  #  *calling file*, which doesn't exist for code run via `ruby -e` -
+  #  confirmed directly, it raises "cannot infer basepath" (LoadError)
+  #  unconditionally there, regardless of whether its own argument is
+  #  itself absolute. Silently swallowed by the try/catch below, so this
+  #  surfaced as Resolve-DisplayVersion always falling through to the
+  #  weak/raw probe value instead of ever reaching a real package
+  #  version - which Ruby actually got resolved (system vs. rbenv)
+  #  happened to determine whether this broke, since not every Ruby
+  #  enforces require_relative's basepath check the same way.
   $rubyScript = @"
 require 'json'
-require_relative '$($verifyCommandsPath -replace '\\', '/')'
+require '$($verifyCommandsPath -replace '\\', '/')'
 info = package_info('$escapedPath', ['$escapedName'])
 puts(info ? info.to_json : 'null')
 "@
@@ -390,6 +415,35 @@ function Get-DisplayLanguage {
   return "$($Result.Language) ($name)"
 }
 
+# ConvertTo-CleanPackageVersion(version) - dpkg's own version syntax is
+#  [epoch:]upstream_version[-debian_revision] - Resolve-DisplayVersion
+#  falls back to this raw string only when Script.rb's own probe came
+#  back too weak to trust, and the raw packaging metadata is noisier
+#  than what a human wants in this table - confirmed directly: dash's
+#  own package answers "0.5.11+git20210903+057cd650a4ed-3build1" (a
+#  VCS-snapshot suffix glued onto the real upstream version, plus a
+#  distro packaging revision), and ksh93's own answers
+#  "1.0.0~beta.2-1ubuntu0.2" (a genuine upstream pre-release marker
+#  this time, still with the same kind of distro packaging revision
+#  tacked on) - same real-world values run_all_tests.rb's own
+#  clean_package_version already handles, ported here unchanged. The
+#  debian_revision (after the *last* hyphen - upstream versions here
+#  never contain one of their own) is always dropped; a "+"-prefixed
+#  VCS-snapshot suffix within the upstream version is dropped too;
+#  Debian's own "~" pre-release marker is kept but rewritten to "-",
+#  matching how a real pre-release tag looks everywhere else in this
+#  table (e.g. "1.0.0-beta.2", not "1.0.0~beta.2").
+function ConvertTo-CleanPackageVersion {
+  param($Version)
+  if (-not $Version) { return $Version }
+
+  $v = $Version -replace '^\d+:', ''
+  $v = $v -replace '-[^-]*$', ''
+  $v = $v -replace '\+.*$', ''
+  $v = $v -replace '~', '-'
+  return $v
+}
+
 # Resolve-DisplayVersion(result, pkg) - ConvertTo-TrimmedVersion's own
 #  answer, falling back to pkg's real package metadata whenever
 #  Script.rb's own probe came back weak or erroring - same "only the
@@ -403,7 +457,7 @@ function Resolve-DisplayVersion {
     return $v
   }
 
-  if ($Pkg -and $Pkg.version) { return $Pkg.version }
+  if ($Pkg -and $Pkg.version) { return (ConvertTo-CleanPackageVersion $Pkg.version) }
   if ($v) { return $v }
   return 'unknown'
 }
@@ -685,10 +739,22 @@ function Invoke-AllTests {
       Write-Host ('-' * $label.Length)
     }
 
+    # $entries - one per language in this area, deferred rather than
+    #  printed immediately (see the block below) so column widths can be
+    #  sized to what this *area* actually contains instead of a single
+    #  guessed-wide-enough constant shared by all ~22 languages in the
+    #  whole project - confirmed directly a fixed {0,-36}/{1,-26}/{2,-34}
+    #  left a huge ragged gap after a short row like "AWK (gawk)" (10
+    #  chars, padded to 36) while barely fitting a long one like
+    #  "JScript (WSH) (cscript)". Trades line-by-line live progress for
+    #  area-by-area - still shows progress as each section finishes,
+    #  just not language-by-language within it.
+    $entries = New-Object System.Collections.Generic.List[object]
+
     foreach ($lang in $selection[$area]) {
       if ($area -eq 'shell_scripts' -and $NativeWindowsShell -and -not $AllowNativeShell) {
         $message = 'needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override'
-        if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
+        $entries.Add([ordered]@{ Type = 'skip'; Name = $lang; Message = $message })
         $skippedNonPosix += $lang
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_non_posix' -Message $message))
         continue
@@ -697,7 +763,7 @@ function Invoke-AllTests {
       $dir = Join-Path (Join-Path $LessonRoot $area) $lang
       if (-not (Test-Path $dir)) {
         $message = "directory not found ($dir)"
-        if ($table) { Write-Host "${lang}: $message" }
+        $entries.Add([ordered]@{ Type = 'plain'; Text = "${lang}: $message" })
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'directory_not_found' -Message $message))
         continue
       }
@@ -717,7 +783,7 @@ function Invoke-AllTests {
         if ($output -match $NotInstalledPattern) {
           $notInstalledTool = $Matches[1]
           $message = "$notInstalledTool not found on PATH"
-          if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
+          $entries.Add([ordered]@{ Type = 'skip'; Name = $lang; Message = $message })
           $notInstalled += $lang
           $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_not_installed' -Message $message))
           continue
@@ -726,10 +792,9 @@ function Invoke-AllTests {
         $result = ConvertFrom-PsakeOutput $output
 
         if ($null -eq $result.Total) {
-          if ($table) {
-            Write-Host "${lang}: could not parse Invoke-Psake output"
-            $output -split "`n" | ForEach-Object { Write-Host "  $_" }
-          }
+          $text = "${lang}: could not parse Invoke-Psake output"
+          $output -split "`n" | ForEach-Object { $text += "`n  $_" }
+          $entries.Add([ordered]@{ Type = 'plain'; Text = $text })
           $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'parse_error' -Message 'could not parse Invoke-Psake output'))
           continue
         }
@@ -746,11 +811,10 @@ function Invoke-AllTests {
         #  environment's own pwsh-backed syntax check.
         $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
 
-        if ($table) {
-          Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
-            $displayLanguage, $displayVersion, $platformDisplay, `
-            $result.Total, $result.Pass, $result.Fail, $result.Skip)
-        }
+        $entries.Add([ordered]@{
+          Type = 'ok'; Name = $displayLanguage; Version = $displayVersion; Platform = $platformDisplay
+          Total = $result.Total; Pass = $result.Pass; Fail = $result.Fail; Skip = $result.Skip
+        })
 
         $totals.Total += $result.Total
         $totals.Pass += $result.Pass
@@ -761,8 +825,32 @@ function Invoke-AllTests {
           -Total $result.Total -Pass $result.Pass -Fail $result.Fail -Skip $result.Skip))
       } catch {
         $message = "$_"
-        if ($table) { Write-Host "${lang}: ERROR - $message" }
+        $entries.Add([ordered]@{ Type = 'plain'; Text = "${lang}: ERROR - $message" })
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'error' -Message $message))
+      }
+    }
+
+    if (-not $table) { continue }
+
+    $padded = $entries | Where-Object { $_.Type -eq 'skip' -or $_.Type -eq 'ok' }
+    $nameWidth = 0
+    foreach ($e in $padded) { if ($e.Name.Length -gt $nameWidth) { $nameWidth = $e.Name.Length } }
+    $okOnly = $entries | Where-Object { $_.Type -eq 'ok' }
+    $versionWidth = 0
+    $platformWidth = 0
+    foreach ($e in $okOnly) {
+      if ($e.Version.Length -gt $versionWidth) { $versionWidth = $e.Version.Length }
+      if ($e.Platform.Length -gt $platformWidth) { $platformWidth = $e.Platform.Length }
+    }
+
+    foreach ($e in $entries) {
+      switch ($e.Type) {
+        'skip' { Write-Host ("{0,-$nameWidth} SKIPPED ({1})" -f $e.Name, $e.Message) }
+        'plain' { Write-Host $e.Text }
+        'ok' {
+          Write-Host ("{0,-$nameWidth} {1,-$versionWidth} {2,-$platformWidth} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}" -f `
+            $e.Name, $e.Version, $e.Platform, $e.Total, $e.Pass, $e.Fail, $e.Skip)
+        }
       }
     }
   }

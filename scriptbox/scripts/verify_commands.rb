@@ -9,7 +9,7 @@
 #  needs to resolve *one* language for the directory it's sitting in the
 #  way Script.rb does - it enumerates all of them at once).
 #
-#  Usage: ruby verify.rb [--format table|json|yaml]
+#  Usage: ruby verify.rb [--format text|json|yaml|csv]
 
 require 'optparse'
 require 'json'
@@ -53,7 +53,14 @@ AREAS = [
       #  to a real Batch script, which runs under cmd.exe and never
       #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
       { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true },
-      { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell },
+      # :psake - the win_scripts/powershell lessons run through
+      #  Invoke-Psake (see run_all_tests.ps1) - unlike every other
+      #  "tools" entry, psake isn't a real executable at all (no
+      #  psake.exe/psake lands on PATH - Install-Module just drops
+      #  .psd1/.psm1 files under pwsh's own module path), so it can't be
+      #  found via find_on_path/resolve_entry the normal way - see
+      #  resolve_psake_module, dispatched on this exact symbol.
+      { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell, tools: [:psake] },
       { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
       { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
     ]
@@ -77,7 +84,7 @@ AREAS = [
       { name: 'PHP',     bin: %w[php],            version: :flag },
       { name: 'Python2', bin: %w[python2],        version: :flag },
       { name: 'Python3', bin: %w[python3 python], version: :flag },
-      { name: 'Ruby',    bin: %w[ruby],           version: :flag },
+      { name: 'Ruby',    bin: %w[ruby],           version: :flag, tools: %w[rake] },
       # "tcl" here is never actually found as a real executable (there's
       #  no tcl.exe on Windows) - it's included purely to widen the
       #  Chocolatey tag-search net (see chocolatey_owner/choco_tag_owner):
@@ -117,6 +124,26 @@ def native_windows_ruby?
   Gem.win_platform? && RUBY_PLATFORM !~ /cygwin/i
 end
 
+# WSL_LAUNCHER_SHIM_PATHS - C:\Windows\System32\bash.exe (and its
+#  SysWOW64 twin) isn't a real bash at all - it's WSL's own interactive
+#  launcher stub, silently proxying into *whichever* WSL distro happens
+#  to be marked default, and which distro that is isn't fixed -
+#  confirmed directly reporting it as "Bourne Again Shell (bash)" is
+#  actively misleading (its own probed dependents, bc/getopt, then show
+#  MISSING, since they're searched for on *this* Windows Ruby's own
+#  native PATH, not whatever's on the launched distro's PATH). Struck
+#  from candidacy outright, but only on native Windows - a genuine
+#  WSL1/WSL2 Ruby (Gem.win_platform? is false there) needs its own real
+#  bash to resolve completely normally.
+WSL_LAUNCHER_SHIM_PATHS = %w[
+  C:\Windows\System32\bash.exe
+  C:\Windows\SysWOW64\bash.exe
+].freeze
+
+def wsl_launcher_shim?(path)
+  Gem.win_platform? && WSL_LAUNCHER_SHIM_PATHS.any? { |shim| path.casecmp?(shim) }
+end
+
 # find_on_path(name) - a pure-Ruby PATH scan rather than shelling out to
 #  `which`/`where` - this project's whole investigation this session
 #  turned up just how inconsistent those external tools' own behavior is
@@ -136,7 +163,16 @@ def find_on_path(name, path_dirs = nil)
   #  RUBY_PLATFORM directly, not the fuller cygwin_environment? check -
   #  that shells out to `uname` via this same find_on_path, which would
   #  recurse right back into here resolving "uname" itself.
-  windows_fs = Gem.win_platform? || RUBY_PLATFORM =~ /cygwin/i
+  # !path_dirs.nil? - the only caller that ever passes path_dirs
+  #  explicitly is windows_native_path_dirs (Batch's own native_tools,
+  #  date/grep) - those directories are inherently Windows-native
+  #  regardless of what filesystem *Ruby itself* happens to live on, so
+  #  WSL1/WSL2/macOS-via-Wine all need the same PATHEXT-derived
+  #  extension search Gem.win_platform?/cygwin already get - confirmed
+  #  directly: under WSL2, a real cmd.exe-visible date.exe/grep.exe
+  #  (confirmed via `cmd.exe /c where date.exe`) was reported MISSING,
+  #  because only a bare "date"/"grep" (no extension) was ever tried.
+  windows_fs = Gem.win_platform? || RUBY_PLATFORM =~ /cygwin/i || !path_dirs.nil?
   # PATHEXT's own entries are conventionally uppercase (".EXE;.BAT;...")
   #  - NTFS is case-insensitive so this doesn't affect whether a file is
   #  actually found, but it would otherwise leak into the reported path
@@ -164,6 +200,8 @@ def find_on_path(name, path_dirs = nil)
       #  MSYS2-POSIX-form conversion, applied only to the report's own
       #  output, never to what actually gets shelled out to).
       candidate = candidate.tr('/', '\\') if Gem.win_platform?
+      next if wsl_launcher_shim?(candidate)
+
       return candidate if File.file?(candidate)
     end
   end
@@ -321,7 +359,10 @@ def package_info(path, candidates = nil)
   real = realpath(macos_java_home_binary(path) || path)
   return PACKAGE_CACHE[real] if PACKAGE_CACHE.key?(real)
 
-  PACKAGE_CACHE[real] = lookup_package_info(real, candidates)
+  # `path` (pre-realpath) is passed through too - see apt_owner's own
+  #  comment on Debian/Ubuntu's "usrmerge", where dpkg's database can
+  #  disagree with what realpath resolves to.
+  PACKAGE_CACHE[real] = lookup_package_info(real, candidates, path)
 end
 
 # realpath(path) - a package manager tracks the *real* file it
@@ -335,6 +376,33 @@ def realpath(path)
   File.realpath(path)
 rescue StandardError
   path
+end
+
+# USRMERGE_PREFIXES - modern Debian/Ubuntu ("usrmerge") replaces /bin
+#  and /sbin with directory-level symlinks into /usr/bin and /usr/sbin -
+#  realpath resolves straight through those, but dpkg's own database
+#  still records file ownership under whichever pre-merge form the
+#  package was actually built to install into. Confirmed directly with
+#  two different binaries: dash is recorded as "/bin/dash" (one
+#  symlink hop, /bin itself); ksh93u+m's own ksh93 binary is recorded
+#  as "/bin/ksh93", but reaching it via "ksh" goes through an
+#  update-alternatives symlink first (/bin/ksh -> /etc/alternatives/ksh
+#  -> /bin/ksh93) - realpath resolves *all* of that, landing on
+#  "/usr/bin/ksh93", two hops past what dpkg has on record rather than
+#  the usrmerge hop alone.
+USRMERGE_PREFIXES = {
+  '/usr/bin/' => '/bin/',
+  '/usr/sbin/' => '/sbin/'
+}.freeze
+
+# usrmerge_variant(path) - the pre-usrmerge form of `path` (see
+#  USRMERGE_PREFIXES), or nil if it doesn't start with one of the
+#  merged prefixes at all.
+def usrmerge_variant(path)
+  USRMERGE_PREFIXES.each do |merged, original|
+    return original + path.delete_prefix(merged) if path.start_with?(merged)
+  end
+  nil
 end
 
 # macos_java_home_binary(path) - macOS's own /usr/bin/java and
@@ -365,14 +433,16 @@ rescue StandardError
   nil
 end
 
-def lookup_package_info(real, candidates = nil)
+def lookup_package_info(real, candidates = nil, original = nil)
   owner =
     if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
       pacman_owner(pacman, real)
     elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
       cygcheck_owner(cygcheck, real)
     elsif (dpkg = find_on_path('dpkg'))
-      apt_owner(dpkg, real)
+      apt_owner(dpkg, real) ||
+        (original && original != real && apt_owner(dpkg, original)) ||
+        (variant = usrmerge_variant(real)) && apt_owner(dpkg, variant)
     else
       homebrew_owner(real) || macos_java_cask(real)
     end
@@ -669,7 +739,7 @@ end
 #  once, before build_report's own tree-walk, so every later
 #  package_info(path) call along the way is a cache hit.
 def prefetch_package_info!
-  paths = AREAS.flat_map { |area| area[:languages] }.flat_map do |lang|
+  originals = AREAS.flat_map { |area| area[:languages] }.flat_map do |lang|
     lang_path = resolve_binary(lang[:bin])[1]
     # Mirrors resolve_language's own "skip tools when the language
     #  itself isn't found" rule - no point prefetching package info for
@@ -678,13 +748,22 @@ def prefetch_package_info!
 
     dirs = lang[:native_tools] ? windows_native_path_dirs : nil
     [lang_path] + (lang[:tools] || []).map { |tool| resolve_binary(Array(tool), dirs)[1] }
-  end.compact.map { |p| realpath(p) }.uniq
-  return if paths.empty?
+  end.compact.uniq
+  return if originals.empty?
+
+  # real => original (pre-realpath) - kept as a Hash, not just the
+  #  realpath'd list alone, so prefetch_apt! can fall back to querying
+  #  dpkg with the original form too. See apt_owner's own comment: on a
+  #  Debian/Ubuntu "usrmerge" system, /bin is a directory-level symlink
+  #  to /usr/bin, so realpath("/bin/dash") => "/usr/bin/dash", but
+  #  dpkg's database still records ownership under the pre-merge
+  #  "/bin/dash" form dpkg -S actually recognizes.
+  real_to_original = originals.each_with_object({}) { |p, h| h[realpath(p)] = p }
 
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-    prefetch_pacman!(pacman, paths)
+    prefetch_pacman!(pacman, real_to_original.keys)
   elsif (dpkg = find_on_path('dpkg')) && !cygwin_environment?
-    prefetch_apt!(dpkg, paths)
+    prefetch_apt!(dpkg, real_to_original)
   end
   # Cygwin needs no batch prefetch here - cygcheck_owner's own
   #  cygcheck_installed_list memoization already avoids paying for the
@@ -784,26 +863,47 @@ rescue StandardError
   nil
 end
 
-# prefetch_apt!(dpkg, paths) - one `dpkg -S <path1> <path2> ...` batch
-#  call for ownership, then one more `dpkg -s <pkg1> <pkg2> ...` batch
-#  call for every version at once (dpkg -s accepts multiple package
-#  names, printing one "Package:"/"Version:" stanza per package) -
-#  instead of two round trips (see apt_owner) *per* path.
-def prefetch_apt!(dpkg, paths)
-  paths.each { |real| PACKAGE_CACHE[real] = nil }
+# prefetch_apt!(dpkg, real_to_original) - one `dpkg -S <path1> <path2>
+#  ...` batch call for ownership, then one more `dpkg -s <pkg1> <pkg2>
+#  ...` batch call for every version at once (dpkg -s accepts multiple
+#  package names, printing one "Package:"/"Version:" stanza per
+#  package) - instead of two round trips (see apt_owner) *per* path.
+#
+#  Queries the realpath'd form, the original pre-realpath form, and the
+#  realpath's own pre-usrmerge variant (see usrmerge_variant) for every
+#  binary, mapping any one hit back to the same `real` PACKAGE_CACHE
+#  key - confirmed directly this matters: dpkg -S "/usr/bin/dash" finds
+#  nothing on a system where /bin is a directory-level symlink to
+#  /usr/bin (dash genuinely is dpkg-managed, just recorded under the
+#  pre-merge "/bin/dash"), and "ksh" needs the variant specifically -
+#  realpath resolves it two hops past dpkg's own "/bin/ksh93" record
+#  (through an update-alternatives symlink *and* usrmerge together),
+#  so neither the original "/bin/ksh" nor the fully-resolved
+#  "/usr/bin/ksh93" alone is what dpkg has on record.
+def prefetch_apt!(dpkg, real_to_original)
+  real_to_original.each_key { |real| PACKAGE_CACHE[real] = nil }
 
-  raw = `"#{dpkg}" -S #{paths.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
+  real_for_queried = {}
+  real_to_original.each do |real, original|
+    real_for_queried[real] = real_for_queried[original] = real
+    if (variant = usrmerge_variant(real))
+      real_for_queried[variant] = real
+    end
+  end
+
+  raw = `"#{dpkg}" -S #{real_for_queried.keys.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
   names = []
   raw.each_line do |line|
     next unless line.include?(': ')
 
     pkgs, found_path = line.strip.split(': ', 2)
-    next unless paths.include?(found_path)
+    real = real_for_queried[found_path]
+    next unless real
 
     name = pkgs.to_s.split(',').first.to_s.strip
     next if name.empty?
 
-    PACKAGE_CACHE[found_path] = { name: name, version: nil }
+    PACKAGE_CACHE[real] = { name: name, version: nil }
     names << name
   end
   return if names.empty?
@@ -832,6 +932,15 @@ end
 #  line at all - `dpkg -s <pkgname>` gets that separately, straight from
 #  the local package database (no network/apt-cache-update dependency,
 #  unlike `apt show`).
+#
+#  Called with the realpath'd form first, then (see lookup_package_info)
+#  the original pre-realpath form as a fallback - confirmed directly
+#  this matters on a Debian/Ubuntu "usrmerge" system: /bin is a
+#  directory-level symlink to /usr/bin, so File.realpath("/bin/dash")
+#  returns "/usr/bin/dash", but dpkg's own database still records
+#  ownership under the pre-merge "/bin/dash" form - `dpkg -S
+#  /usr/bin/dash` answers "no path found matching pattern" even though
+#  dash is genuinely a dpkg-managed package.
 #
 #  A file dpkg doesn't manage at all (confirmed directly: any real
 #  Windows binary reached via /mnt/c under WSL1, or a manually-placed
@@ -888,18 +997,31 @@ def uname_string
   end
 end
 
+# os_release_fields(path) - {"ID" => "pop", "ID_LIKE" => "ubuntu debian",
+#  "VERSION_ID" => "22.04", ...} from a systemd-style os-release file -
+#  shared by linux_uname_string and match_platform's own ID_LIKE
+#  fallback, so there's exactly one place that knows how to parse it.
+def os_release_fields(path)
+  File.read(path).each_line.each_with_object({}) do |line, h|
+    k, _, v = line.strip.partition('=')
+    h[k] = v.delete('"')
+  end
+end
+
 # linux_uname_string(release) - `uname -s` alone is just "Linux", no
 #  distro info at all - env.yml keys Linux entries on distro+version
 #  instead (e.g. "linux_ubuntu.26_04"), which only /etc/os-release's
-#  ID/VERSION_ID actually carries.
+#  ID/VERSION_ID actually carries. Always built from the distro's own
+#  ID (e.g. "linux_pop.22_04" on Pop!_OS), never ID_LIKE - this is the
+#  string shown in the report header, and a derivative distro's own
+#  real identity is what a human reading it actually wants to see; see
+#  match_platform for where ID_LIKE comes in instead, purely as a
+#  matching fallback.
 def linux_uname_string(release)
   os_release = '/etc/os-release'
   return "linux.#{release.tr('.-', '__')}" unless File.exist?(os_release)
 
-  fields = File.read(os_release).each_line.each_with_object({}) do |line, h|
-    k, _, v = line.strip.partition('=')
-    h[k] = v.delete('"')
-  end
+  fields = os_release_fields(os_release)
   "linux_#{fields['ID'] || 'linux'}.#{(fields['VERSION_ID'] || release).tr('.', '_')}"
 end
 
@@ -921,12 +1043,51 @@ end
 # match_platform(uname) - which config/env.yml "platform" label
 #  (windows/macos/ubuntu26/ubuntu22/cygwin/msys) this uname string is
 #  listed under, or nil if env.yml doesn't know about it yet.
+#
+#  For a Linux uname whose own distro isn't listed anywhere (e.g.
+#  Pop!_OS's own "linux_pop.22_04"), falls back to /etc/os-release's
+#  own ID_LIKE field instead of asking every env.yml maintainer to
+#  enumerate every Ubuntu/Debian derivative (Pop!_OS, Mint, Zorin,
+#  elementary OS, ...) by name - Pop!_OS's os-release already declares
+#  "ID_LIKE=ubuntu debian", and this project's actual concerns (apt,
+#  dpkg, package availability) are identical to genuine Ubuntu at the
+#  same version. Tried in ID_LIKE's own listed order, first match wins -
+#  same "first listed provider" convention resolve_order.rb's own
+#  needs/meets resolution already uses.
 def match_platform(uname)
   env_file = File.join(__dir__, '..', 'config', 'env.yml')
   return nil unless File.exist?(env_file)
 
-  tree = YAML.load_file(env_file)
-  tree['environments']&.find { |e| Array(e['supports']).include?(uname) }&.fetch('platform', nil)
+  envs = YAML.load_file(env_file)['environments'] || []
+  found = envs.find { |e| Array(e['supports']).include?(uname) }
+  found ||= begin
+    fallback = fallback_platform_uname(uname, envs)
+    fallback && envs.find { |e| Array(e['supports']).include?(fallback) }
+  end
+  found && found['platform']
+end
+
+# fallback_platform_uname(uname, envs) - re-derives a "linux_<id>.<ver>"
+#  string using /etc/os-release's own ID_LIKE tokens in place of ID
+#  (keeping the same version suffix `uname` already carries), returning
+#  the first one env.yml actually lists - nil if `uname` isn't
+#  Linux-shaped, os-release has no ID_LIKE, or none of its tokens are
+#  recognized either.
+def fallback_platform_uname(uname, envs)
+  m = uname.match(/\Alinux_([^.]+)\.(.+)\z/)
+  return nil unless m
+
+  os_release = '/etc/os-release'
+  return nil unless File.exist?(os_release)
+
+  known = envs.flat_map { |e| Array(e['supports']) }
+  os_release_fields(os_release)['ID_LIKE'].to_s.split(' ').each do |like|
+    next if like == m[1]
+
+    candidate = "linux_#{like}.#{m[2]}"
+    return candidate if known.include?(candidate)
+  end
+  nil
 end
 
 # probe_version(name, path, mode) - best-effort version string. This is
@@ -992,7 +1153,30 @@ def probe_version(name, path, mode)
     #  to the variable for whichever implementation doesn't support it.
     raw = `"#{path}" --version < #{NULL_DEVICE} 2>&1`.strip
     raw = `"#{path}" -c "echo $KSH_VERSION" < #{NULL_DEVICE} 2>&1`.strip if error_output?(raw)
-    error_output?(raw) ? nil : raw
+    return nil if error_output?(raw)
+
+    # mksh's own $KSH_VERSION is an SCCS/what(1)-style ident stamp
+    #  ("@(#)MIRBSD KSH R59 2020/10/31" - confirmed directly), not a
+    #  usable version number at all: "R59" is only mksh's own internal
+    #  release counter, unrelated to (and far less precise than) the
+    #  real package version pacman reports for it ("59.c-2"). Neither
+    #  error_output? (this isn't a "bad flag" complaint) nor the
+    #  "bare value, nothing to extract" assumption below actually holds
+    #  for this specific shape - returning nil here routes it through
+    #  resolve_language's own `probe_version(...) || pkg[:version]`
+    #  fallback (see its own comment) instead of displaying this
+    #  confusing SCCS string as if it were "the version".
+    return nil if raw.start_with?('@(#)')
+
+    # AT&T ksh93's own --version banner ("version         sh (AT&T
+    #  Research) 93u+m/1.0.0-beta.2 2021-12-17") is a whole sentence,
+    #  not a version string - confirmed directly this was displaying
+    #  verbatim, "version" and all, in the report's Version column.
+    #  Pull out just the "1.0.0-beta.2" segment after "93u+m/"; the
+    #  $KSH_VERSION fallback above is already a bare value with nothing
+    #  to extract, so only re-parse when this is genuinely the banner
+    #  form.
+    raw[%r{93u\+m/(\S+)}, 1] || raw
   else # :flag - the common case, try --version then -version
     raw = `"#{path}" --version < #{NULL_DEVICE} 2>&1`
     raw = `"#{path}" -version < #{NULL_DEVICE} 2>&1` if error_output?(raw)
@@ -1001,7 +1185,25 @@ def probe_version(name, path, mode)
     # Search the *whole* output, not just the first line - some tools
     #  (confirmed directly with Strawberry Perl) print a banner/blank
     #  line before the actual version text.
-    raw.to_s[/\d+\.\d[\d.]*/] || raw.to_s.lines.first.to_s.strip
+    found = raw.to_s[/\d+\.\d[\d.]*/]
+    return found if found
+
+    # No digit-dotted-number anywhere in the whole output - a real
+    #  version banner almost always has one, so by this point
+    #  something's already gone wrong, not just "a versionless tool".
+    #  error_output? already catches every *known* shape of that
+    #  (bad flag, missing dependency, ...), but new ones keep turning
+    #  up one at a time (groovy's own "JAVA_HOME not set..." wrapper
+    #  complaint was the latest, mksh's SCCS ident stamp before that) -
+    #  rather than only ever reacting to the *next* one, cap the length
+    #  here as a general backstop: a real "no --version flag" answer
+    #  (dash, mksh's own non-error fallback shapes) is short, sentence-
+    #  length prose reads as an unrecognized error, not a version, and
+    #  should defer to package_info's own fallback (see
+    #  resolve_language) rather than ever display raw error text as if
+    #  it meant something.
+    first_line = raw.to_s.lines.first.to_s.strip
+    first_line.length <= 40 ? first_line : nil
   end
 rescue StandardError
   nil
@@ -1022,24 +1224,42 @@ def error_output?(text)
   #  Windows launcher found via /mnt/c under WSL1 that resolve_binary
   #  happily locates (it's a real file) but a Linux shell can't actually
   #  execute (wrong format entirely, not just a missing flag).
-  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized|not found|no such file/i ? true : false
+  # "\w+_HOME not set" - confirmed directly with groovy under WSL2: its
+  #  own wrapper script complains "JAVA_HOME not set and cannot find
+  #  javac to deduce location, please set JAVA_HOME." when probed
+  #  without a JVM configured, rather than a real version - not a "bad
+  #  flag" complaint at all, so none of the patterns above catch it,
+  #  and it doesn't contain a digit run either, so it fell all the way
+  #  through to probe_version's own "just use the first line" fallback
+  #  and got displayed as if it were the version. The *_HOME pattern is
+  #  generic (not hardcoded to JAVA_HOME) since this is a common shape
+  #  for JVM tool wrappers generally (GROOVY_HOME, MAVEN_HOME, ...), any
+  #  of which could plausibly hit the exact same wall.
+  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized|not found|no such file|\w+_HOME not set/i ? true : false
 end
 
-# tcl_version(path) - `echo "puts $tcl_version" | tclsh` is tempting but
-#  wrong: confirmed directly, piping through cmd.exe's own `echo` on
-#  native Windows Ruby hands tclsh a *single* pre-mangled token
-#  ("puts 9.0", i.e. $tcl_version already substituted and glued to
+# tcl_version(path) - `echo "puts $tcl_patchLevel" | tclsh` is tempting
+#  but wrong: confirmed directly, piping through cmd.exe's own `echo`
+#  on native Windows Ruby hands tclsh a *single* pre-mangled token
+#  ("puts 9.0.1", i.e. $tcl_patchLevel already substituted and glued to
 #  "puts" with no space) rather than the two separate words "puts" and
-#  "$tcl_version" tclsh needs to parse it as a command - cmd.exe's own
-#  echo/pipe handling isn't POSIX shell semantics. Writing the one-liner
-#  to a real temp file and running `tclsh thatfile` instead sidesteps the
-#  whole question of how "echo | tclsh" gets tokenized on any given
-#  shell, on any platform.
+#  "$tcl_patchLevel" tclsh needs to parse it as a command - cmd.exe's
+#  own echo/pipe handling isn't POSIX shell semantics. Writing the
+#  one-liner to a real temp file and running `tclsh thatfile` instead
+#  sidesteps the whole question of how "echo | tclsh" gets tokenized on
+#  any given shell, on any platform.
+#
+#  $tcl_patchLevel, not $tcl_version - confirmed directly $tcl_version
+#  only ever carries major.minor ("8.6"), silently dropping the patch
+#  level ("8.6.12") a distro package's own version string does include -
+#  showing the coarser variable here would make this report *less*
+#  precise than dpkg for no reason, defeating the whole point of
+#  preferring a tool's own self-report (see resolve_entry).
 def tcl_version(path)
   require 'tmpdir'
   Dir.mktmpdir do |dir|
     script = File.join(dir, 'tcl_version_probe.tcl')
-    File.write(script, "puts $tcl_version\n")
+    File.write(script, "puts $tcl_patchLevel\n")
     `"#{path}" "#{script}" < #{NULL_DEVICE} 2>&1`.strip
   end
 end
@@ -1087,6 +1307,8 @@ end
 #  common single-name case doesn't need to change shape at all.
 def resolve_tools(lang)
   (lang[:tools] || []).map do |tool|
+    next resolve_psake_module if tool == :psake
+
     names = Array(tool)
     # native_tools: true (Batch's own AREAS entry) means these tools
     #  need to be reachable via cmd.exe's real PATH specifically, not
@@ -1095,6 +1317,33 @@ def resolve_tools(lang)
     dirs = lang[:native_tools] ? windows_native_path_dirs : nil
     resolve_entry(names, :flag, dirs).merge(name: names.first)
   end
+end
+
+# resolve_psake_module - psake has no real executable to find via
+#  find_on_path/resolve_entry at all (see its own :psake dispatch
+#  comment on PowerShell's AREAS entry) - queries pwsh's own installed-
+#  module list directly instead, the same source PowerShell's own
+#  command auto-loading already relies on (see run_all_tests.ps1's
+#  Invoke-PsakeRun, which never Import-Modules it either). Returns the
+#  same {binaries:, found:, resolved_binary:, package_name:, path:,
+#  version:} shape resolve_entry does, so table_row/every formatter
+#  handles this row identically to a real tool's.
+def resolve_psake_module
+  pwsh = find_on_path('pwsh') || find_on_path('powershell')
+  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, path: nil, version: nil, name: 'psake' } unless pwsh
+
+  raw = `"#{pwsh}" -NoProfile -Command "(Get-Module -ListAvailable -Name psake | Select-Object -First 1).Version.ToString()" 2>#{NULL_DEVICE}`.strip
+  found = !raw.empty? && raw !~ /error|not recognized|exception/i
+
+  {
+    binaries: %w[psake],
+    found: found,
+    resolved_binary: found ? 'psake' : nil,
+    package_name: nil,
+    path: nil,
+    version: found ? raw : nil,
+    name: 'psake'
+  }
 end
 
 # ENTRY_CACHE - [real path, version_mode] -> the {resolved_binary:,
@@ -1111,16 +1360,40 @@ end
 #  the second time, not just a partial one.
 ENTRY_CACHE = {}
 
+# normalize_version(raw) - a distro package's own version string
+#  routinely carries packaging metadata a human just wants stripped for
+#  a quick "is this new enough" glance: an optional leading epoch
+#  ("1:"), then everything from the first character that isn't a digit
+#  or dot onward - a Debian upstream suffix like
+#  "+git20210903+057cd650a4ed", a pre-release marker like "~beta.2", or
+#  the packaging revision itself ("-3build1"/"-1ubuntu0.2"). Only ever
+#  applied to a *package's* own version (see resolve_entry) - a tool's
+#  own self-reported --version already comes back close to this shape
+#  (see probe_version), so this never touches it.
+def normalize_version(raw)
+  return raw unless raw
+
+  raw[/\A(?:\d+:)?(\d+(?:\.\d+)*)/, 1] || raw
+end
+
 # resolve_entry(candidates, version_mode) - shared by resolve_language
 #  (a language) and its own "tools" list (its dependent tooling) - both
 #  need the exact same resolve/package-lookup/version-fallback shape, so
 #  a formatter can treat a language row and a tool row identically (see
 #  table_row, which is handed either one without caring which).
 #  package_info (real package metadata, when a package manager is
-#  available) takes priority over probe_version (the binary's own
-#  self-reported --version, or a per-tool special case - see
-#  probe_version) for both name and version - see package_info's own
-#  comment for why that's preferred where it's available at all.
+#  available) still takes priority over probe_version for *naming* -
+#  see package_info's own comment for why that's preferred there (e.g.
+#  surfacing "ksh" -> "ksh93u+m"). Versions are the opposite priority:
+#  confirmed directly a distro package's version routinely carries
+#  packaging noise a tool's own --version never does (dash's
+#  "0.5.11+git20210903+057cd650a4ed-3build1" vs. bash's own clean
+#  "5.1.16" self-report, where dpkg would otherwise show
+#  "5.1-6ubuntu1.1") - so the tool's own self-reported version (or a
+#  per-tool special case - see probe_version) is tried first, falling
+#  back to the package's own (normalized - see normalize_version) only
+#  when nothing usable comes back at all (dash has no --version flag,
+#  so it has no other source).
 def resolve_entry(candidates, version_mode, path_dirs = nil)
   name, path = resolve_binary(candidates, path_dirs)
   real = path && realpath(path)
@@ -1138,7 +1411,7 @@ def resolve_entry(candidates, version_mode, path_dirs = nil)
       #  language's own display name.
       package_name: pkg && pkg[:name],
       path: to_posix(path),
-      version: (pkg && pkg[:version]) || probe_version(name, path, version_mode)
+      version: probe_version(name, path, version_mode) || (pkg && normalize_version(pkg[:version]))
     }
   end
   ENTRY_CACHE[[real, version_mode]] = computed if real && !cached
@@ -1151,6 +1424,8 @@ end
 # ---------------------------------------------------------------------
 
 def format_table(report)
+  widths = table_widths(report)
+
   lines = [
     "Platform: #{report[:platform] || 'unrecognized'} (#{report[:uname]})",
     "Ruby:     #{report[:ruby]}",
@@ -1159,15 +1434,59 @@ def format_table(report)
   report[:areas].each do |area|
     lines << "== #{area[:name]} =="
     area[:languages].each do |lang|
-      lines << table_row(lang[:name], lang, 0)
-      lang[:tools].each { |tool| lines << table_row(tool[:name], tool, 1) }
+      lines << table_row(lang[:name], lang, 0, widths)
+      lang[:tools].each { |tool| lines << table_row(tool[:name], tool, 1, widths) }
     end
     lines << ''
   end
   lines.join("\n")
 end
 
-def table_row(label, entry, indent)
+# table_widths(report) - [label_width, status_width, version_width],
+#  each sized to the longest value that will actually appear in that
+#  column across the whole report. A fixed guess (the previous
+#  approach) silently breaks alignment for every row after the first
+#  one whose content runs longer than the guess - confirmed directly
+#  with a Debian epoch version string ("1:5.1.0-1ubuntu0.2") and a
+#  bracketed package discovery ("Java [java-17-amazon-corretto-jdk:amd64]"),
+#  both of which routinely exceed a fixed 14/36-char guess. Recomputed
+#  from the already-built report (pure string ops on data already
+#  resolved by build_report), not by re-probing any binary.
+def table_widths(report)
+  parts = report[:areas].flat_map do |area|
+    area[:languages].flat_map do |lang|
+      [row_parts(lang[:name], lang, 0)] + lang[:tools].map { |tool| row_parts(tool[:name], tool, 1) }
+    end
+  end
+  (0..2).map { |i| parts.map { |p| p[i].length }.max || 0 }
+end
+
+# row_parts(label, entry, indent) - [label, status, version, path] as
+#  plain strings, no column padding applied yet - shared by
+#  table_widths (which only needs each string's length) and table_row
+#  (which pads them once the real widths are known).
+# display_path(path) - collapses a leading $HOME into "~", the
+#  universal POSIX shorthand for a user's own home directory - only
+#  ever used by the human-readable table (see row_parts); JSON/YAML/CSV/
+#  etc. keep the real absolute path, since those are for another tool
+#  to consume, not a person to read. Windows paths are left alone - "~"
+#  has no such meaning there.
+def display_path(path)
+  return path if path.nil? || Gem.win_platform?
+
+  home = ENV['HOME']
+  return path if home.nil? || home.empty?
+
+  if path == home
+    '~'
+  elsif path.start_with?("#{home}/")
+    "~#{path[home.length..]}"
+  else
+    path
+  end
+end
+
+def row_parts(label, entry, indent)
   status = entry[:found] ? 'OK' : 'MISSING'
   prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
   # Surface a genuine package-identity discovery, e.g. "ksh" actually
@@ -1180,7 +1499,11 @@ def table_row(label, entry, indent)
   #  otherwise still counts as a "discovery" and shows a redundant
   #  "Perl [perl]".
   shown = pkg_name && !label.downcase.include?(pkg_name.downcase) ? "#{label} [#{pkg_name}]" : label
-  format('%-36s %-8s %-14s %s', "#{prefix}#{shown}", status, entry[:version] || '-', entry[:path] || '-')
+  ["#{prefix}#{shown}", status, entry[:version] || '-', display_path(entry[:path]) || '-']
+end
+
+def table_row(label, entry, indent, widths)
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %s", *row_parts(label, entry, indent))
 end
 
 def format_json(report)
@@ -1231,17 +1554,22 @@ def format_csv(report)
   end
 end
 
+# 'text' - the plain stdout report format_table has always produced.
+#  Named for what it *is* (plain text to stdout), not how it's laid
+#  out, so a future interactive TUI formatter has an unambiguous name
+#  of its own to sit alongside it rather than overloading "table" to
+#  mean two different things.
 FORMATTERS = {
-  'table' => method(:format_table),
+  'text' => method(:format_table),
   'json' => method(:format_json),
   'yaml' => method(:format_yaml),
   'csv' => method(:format_csv)
 }.freeze
 
 if __FILE__ == $PROGRAM_NAME
-  format = 'table'
+  format = 'text'
   OptionParser.new do |opts|
-    opts.banner = 'Usage: verify.rb [--format table|json|yaml|csv]'
+    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv]'
     opts.on('-f FORMAT', '--format FORMAT', FORMATTERS.keys, "Output format (#{FORMATTERS.keys.join('|')})") do |f|
       format = f
     end

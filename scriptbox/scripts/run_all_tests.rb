@@ -319,6 +319,33 @@ def display_language(r, pkg)
   "#{r[:language]} (#{name})"
 end
 
+# clean_package_version(v) - dpkg's own version syntax is
+#  [epoch:]upstream_version[-debian_revision] - resolve_version falls
+#  back to this raw string only when Script.rb's own probe came back
+#  too weak to trust (see WEAK_VERSION/BARE_NUMBER), and the raw
+#  packaging metadata is noisier than what a human wants in this table -
+#  confirmed directly: dash's own package answers
+#  "0.5.11+git20210903+057cd650a4ed-3build1" (a VCS-snapshot suffix
+#  glued onto the real upstream version, plus a distro packaging
+#  revision), and ksh93's own answers "1.0.0~beta.2-1ubuntu0.2" (a
+#  genuine upstream pre-release marker this time, still with the same
+#  kind of distro packaging revision tacked on). The debian_revision -
+#  after the *last* hyphen, since none of the upstream versions seen
+#  here contain one of their own - is never useful, so it's always
+#  dropped; a "+"-prefixed VCS-snapshot suffix within the upstream
+#  version is dropped too (not a real version component); Debian's own
+#  "~" pre-release marker is kept but rewritten to "-", matching how a
+#  real pre-release tag looks everywhere else in this table (e.g.
+#  "1.0.0-beta.2", not "1.0.0~beta.2").
+def clean_package_version(v)
+  return v unless v
+
+  v.sub(/\A\d+:/, '')
+   .sub(/-[^-]*\z/, '')
+   .sub(/\+.*\z/, '')
+   .tr('~', '-')
+end
+
 # resolve_version(r, pkg) - trim_version's own answer, falling back to
 #  pkg's real package metadata whenever Script.rb's own probe came back
 #  weak (WEAK_VERSION) or erroring (trim_version's own "unknown") - the
@@ -330,7 +357,7 @@ def resolve_version(r, pkg)
   v = trim_version(r[:version])
   return v if v && v != 'unknown' && v !~ WEAK_VERSION && v !~ BARE_NUMBER
 
-  pkg && pkg[:version] ? pkg[:version] : (v || 'unknown')
+  pkg && pkg[:version] ? clean_package_version(pkg[:version]) : (v || 'unknown')
 end
 
 # expand_selection(argv) - {area => [lang, ...]} to actually run, from
@@ -462,6 +489,20 @@ def run_all(argv = ARGV)
   #  default skip below, stripped from argv before expand_selection
   #  ever sees it so it never gets mistaken for an AREA token.
   allow_native_shell = !argv.delete('--allow-native-shell').nil?
+  # --skip-compile - for the "run compile_check.rb first, then run_all
+  #  against what it already built" workflow: ensure_compiled!
+  #  (testbox/Script.rb) normally cleans and rebuilds a compiled
+  #  language's own lessons the first time `rake` reaches its
+  #  directory, which is exactly right on its own, but wasteful right
+  #  after compile_check.rb already built all five in parallel -
+  #  rebuilding sequentially here would throw that away and pay the
+  #  cost twice. TESTBOX_SKIP_COMPILE, not a CLI flag passed straight
+  #  through: run_rake spawns `rake` as its own subprocess (inheriting
+  #  this process's ENV automatically), so an env var is the one thing
+  #  that actually reaches ensure_compiled! there.
+  if argv.delete('--skip-compile')
+    ENV['TESTBOX_SKIP_COMPILE'] = '1'
+  end
   # --format=FORMAT - accepted as either "--format=X" or "--format X",
   #  stripped from argv the same way, before expand_selection sees it.
   format_name = 'table'
@@ -493,10 +534,22 @@ def run_all(argv = ARGV)
       puts "\n#{label}\n#{'-' * label.length}"
     end
 
+    # entries - one per language in this area, deferred rather than
+    #  printed immediately (see the loop below) so column widths can be
+    #  sized to what this *area* actually contains instead of a single
+    #  guessed-wide-enough constant shared by all ~22 languages in the
+    #  whole project - confirmed directly a fixed %-36s/%-26s/%-34s left
+    #  a huge ragged gap after a short row like "AWK (gawk)" (10 chars,
+    #  padded to 36) while barely fitting a long one like "JScript
+    #  (WSH) (cscript)". Trades line-by-line live progress for area-by-
+    #  area - still shows progress as each section finishes, just not
+    #  language-by-language within it.
+    entries = []
+
     langs.each do |lang|
       if area == 'shell_scripts' && NATIVE_WINDOWS_SHELL && !allow_native_shell
         message = 'needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override'
-        puts format('%-36s SKIPPED (%s)', lang, message) if table
+        entries << { type: :skip, name: lang, message: message }
         skipped_non_posix << lang
         records << new_record(area, lang, 'skipped_non_posix', message: message)
         next
@@ -505,7 +558,7 @@ def run_all(argv = ARGV)
       dir = File.join(LESSON_ROOT, area, lang)
       unless Dir.exist?(dir)
         message = "directory not found (#{dir})"
-        puts "#{lang}: #{message}" if table
+        entries << { type: :plain, text: "#{lang}: #{message}" }
         records << new_record(area, lang, 'directory_not_found', message: message)
         next
       end
@@ -523,7 +576,7 @@ def run_all(argv = ARGV)
 
         if (m = output.match(NOT_INSTALLED))
           message = "#{m[1]} not found on PATH"
-          puts format('%-36s SKIPPED (%s)', lang, message) if table
+          entries << { type: :skip, name: lang, message: message }
           not_installed << lang
           records << new_record(area, lang, 'skipped_not_installed', message: message)
           next
@@ -532,10 +585,9 @@ def run_all(argv = ARGV)
         r = parse_result(output)
 
         if r[:total].nil?
-          if table
-            puts "#{lang}: could not parse rake output"
-            output.each_line { |line| puts "  #{line}" }
-          end
+          text = String.new("#{lang}: could not parse rake output")
+          output.each_line { |line| text << "\n  #{line.chomp}" }
+          entries << { type: :plain, text: text }
           records << new_record(area, lang, 'parse_error', message: 'could not parse rake output')
           next
         end
@@ -544,8 +596,8 @@ def run_all(argv = ARGV)
         language = display_language(r, pkg) || lang
         version = resolve_version(r, pkg)
         platform = r[:platform] || '-'
-        puts format('%-36s %-26s %-34s Total=%-4d Pass=%-4d Fail=%-4d Skip=%d',
-                     language, version, platform, r[:total], r[:pass], r[:fail], r[:skip]) if table
+        entries << { type: :ok, name: language, version: version, platform: platform,
+                      total: r[:total], pass: r[:pass], fail: r[:fail], skip: r[:skip] }
 
         totals[:total] += r[:total]
         totals[:pass] += r[:pass]
@@ -555,8 +607,27 @@ def run_all(argv = ARGV)
                                                   total: r[:total], pass: r[:pass], fail: r[:fail], skip: r[:skip])
       rescue StandardError => e
         message = "#{e.class}: #{e.message}"
-        puts "#{lang}: ERROR - #{message}" if table
+        entries << { type: :plain, text: "#{lang}: ERROR - #{message}" }
         records << new_record(area, lang, 'error', message: message)
+      end
+    end
+
+    next unless table
+
+    padded = entries.select { |e| e[:type] == :skip || e[:type] == :ok }
+    name_width = padded.map { |e| e[:name].length }.max || 0
+    version_width = entries.select { |e| e[:type] == :ok }.map { |e| e[:version].length }.max || 0
+    platform_width = entries.select { |e| e[:type] == :ok }.map { |e| e[:platform].length }.max || 0
+
+    entries.each do |e|
+      case e[:type]
+      when :skip
+        puts format("%-#{name_width}s SKIPPED (%s)", e[:name], e[:message])
+      when :plain
+        puts e[:text]
+      when :ok
+        puts format("%-#{name_width}s %-#{version_width}s %-#{platform_width}s Total=%-4d Pass=%-4d Fail=%-4d Skip=%d",
+                     e[:name], e[:version], e[:platform], e[:total], e[:pass], e[:fail], e[:skip])
       end
     end
   end
