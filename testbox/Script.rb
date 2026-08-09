@@ -1927,6 +1927,21 @@ class Wsl1ShellScript < PosixShellScript
 end
 
 # =============================================
+# Wsl2ShellScript - WSL2 running a :cmd/:js/:vbs lesson directory. WSL2 is a
+# real Linux VM (unlike WSL1's NT-kernel emulation), but Windows binary
+# interop (cmd.exe/cscript.exe) still goes through the same wslpath-
+# translatable /mnt/<drive> convention, still emits CRLF, and can still wedge
+# a spawned cmd.exe the same way Wsl1ShellScript's own comments above
+# describe - confirmed directly: under WSL2, `cmd.exe /c ./scripts/a00...cmd`
+# fails with "'.' is not recognized..." (a raw Linux path cmd.exe can't
+# resolve), while `cmd.exe /c $(wslpath -w ./scripts/a00...cmd)` works.
+# Everything Wsl1ShellScript already does applies unchanged, so this is a
+# thin subclass rather than a duplicate implementation.
+# =============================================
+class Wsl2ShellScript < Wsl1ShellScript
+end
+
+# =============================================
 # CygwinShellScript - genuine Cygwin Ruby running a :cmd/:js/:vbs lesson
 # directory. Kernel#` is POSIX-shell-backed, while the target interpreter is
 # native Windows. Convert the lesson filename with cygpath and normalize the
@@ -2194,14 +2209,24 @@ def windows_host_shell(pid)
   end
 end
 
-# wsl1?() - true only under WSL1, distinguished from a real Linux box (and
-#  from WSL2, a genuine Linux VM) by the kernel release string alone: WSL1
-#  reports the NT kernel's own Linux-syscall emulation build (generically
-#  "*-Microsoft"), WSL2 reports a real Linux kernel build that happens to
-#  say "*-microsoft-standard-WSL2".
+# wsl1?()/wsl2?() - which WSL generation, if either, this is - distinguished
+#  from a real Linux box (and from each other) by the kernel release string
+#  alone: WSL1 reports the NT kernel's own Linux-syscall emulation build
+#  (generically "*-Microsoft"), WSL2 reports a real Linux kernel build that
+#  happens to say "*-microsoft-standard-WSL2". A plain `grep -q "microsoft"
+#  /proc/version` (as used ad hoc elsewhere) can't tell the two apart on its
+#  own - both contain "microsoft" - so both helpers key off osrelease and the
+#  presence/absence of "wsl2" specifically, same as each other's mirror.
 def wsl1?
   release = File.read('/proc/sys/kernel/osrelease')
   release =~ /microsoft/i && release !~ /wsl2/i
+rescue Errno::ENOENT
+  false
+end
+
+def wsl2?
+  release = File.read('/proc/sys/kernel/osrelease')
+  release =~ /microsoft/i && release =~ /wsl2/i
 rescue Errno::ENOENT
   false
 end
@@ -2225,10 +2250,11 @@ end
 #  PosixShellScript exactly as before, unaffected by any of this.
 WINE_LANGUAGES = %w[cmd js vbs].freeze
 
-# Native Windows languages handled directly by Wsl1ShellScript. Every other
-#  language directory on WSL1 (bash,
-#  python, ...) has a real, native Linux build and keeps using plain
-#  PosixShellScript exactly as before, unaffected by any of this.
+# Native Windows languages handled directly by Wsl1ShellScript/Wsl2ShellScript.
+#  Every other language directory under WSL1 or WSL2 (bash, python, ...) has
+#  a real, native Linux build and keeps using plain PosixShellScript exactly
+#  as before, unaffected by any of this. Shared by both WSL generations -
+#  the split is which class handles them, not which languages need handling.
 WSL1_LANGUAGES = %w[cmd js vbs].freeze
 
 # Native Windows languages handled directly by CygwinShellScript. Every other
@@ -2245,6 +2271,8 @@ elsif RUBY_PLATFORM =~ /darwin/i && WINE_LANGUAGES.include?(ScriptBase.language)
   WineShellScript
 elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl1?
   Wsl1ShellScript
+elsif RUBY_PLATFORM =~ /linux/i && WSL1_LANGUAGES.include?(ScriptBase.language) && wsl2?
+  Wsl2ShellScript
 elsif RUBY_PLATFORM =~ /cygwin/i && CYGWIN_LANGUAGES.include?(ScriptBase.language)
   CygwinShellScript
 else

@@ -53,7 +53,14 @@ AREAS = [
       #  to a real Batch script, which runs under cmd.exe and never
       #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
       { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true },
-      { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell },
+      # :psake - the win_scripts/powershell lessons run through
+      #  Invoke-Psake (see run_all_tests.ps1) - unlike every other
+      #  "tools" entry, psake isn't a real executable at all (no
+      #  psake.exe/psake lands on PATH - Install-Module just drops
+      #  .psd1/.psm1 files under pwsh's own module path), so it can't be
+      #  found via find_on_path/resolve_entry the normal way - see
+      #  resolve_psake_module, dispatched on this exact symbol.
+      { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell, tools: [:psake] },
       { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
       { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
     ]
@@ -77,7 +84,7 @@ AREAS = [
       { name: 'PHP',     bin: %w[php],            version: :flag },
       { name: 'Python2', bin: %w[python2],        version: :flag },
       { name: 'Python3', bin: %w[python3 python], version: :flag },
-      { name: 'Ruby',    bin: %w[ruby],           version: :flag },
+      { name: 'Ruby',    bin: %w[ruby],           version: :flag, tools: %w[rake] },
       # "tcl" here is never actually found as a real executable (there's
       #  no tcl.exe on Windows) - it's included purely to widen the
       #  Chocolatey tag-search net (see chocolatey_owner/choco_tag_owner):
@@ -136,7 +143,16 @@ def find_on_path(name, path_dirs = nil)
   #  RUBY_PLATFORM directly, not the fuller cygwin_environment? check -
   #  that shells out to `uname` via this same find_on_path, which would
   #  recurse right back into here resolving "uname" itself.
-  windows_fs = Gem.win_platform? || RUBY_PLATFORM =~ /cygwin/i
+  # !path_dirs.nil? - the only caller that ever passes path_dirs
+  #  explicitly is windows_native_path_dirs (Batch's own native_tools,
+  #  date/grep) - those directories are inherently Windows-native
+  #  regardless of what filesystem *Ruby itself* happens to live on, so
+  #  WSL1/WSL2/macOS-via-Wine all need the same PATHEXT-derived
+  #  extension search Gem.win_platform?/cygwin already get - confirmed
+  #  directly: under WSL2, a real cmd.exe-visible date.exe/grep.exe
+  #  (confirmed via `cmd.exe /c where date.exe`) was reported MISSING,
+  #  because only a bare "date"/"grep" (no extension) was ever tried.
+  windows_fs = Gem.win_platform? || RUBY_PLATFORM =~ /cygwin/i || !path_dirs.nil?
   # PATHEXT's own entries are conventionally uppercase (".EXE;.BAT;...")
   #  - NTFS is case-insensitive so this doesn't affect whether a file is
   #  actually found, but it would otherwise leak into the reported path
@@ -1117,6 +1133,19 @@ def probe_version(name, path, mode)
     raw = `"#{path}" -c "echo $KSH_VERSION" < #{NULL_DEVICE} 2>&1`.strip if error_output?(raw)
     return nil if error_output?(raw)
 
+    # mksh's own $KSH_VERSION is an SCCS/what(1)-style ident stamp
+    #  ("@(#)MIRBSD KSH R59 2020/10/31" - confirmed directly), not a
+    #  usable version number at all: "R59" is only mksh's own internal
+    #  release counter, unrelated to (and far less precise than) the
+    #  real package version pacman reports for it ("59.c-2"). Neither
+    #  error_output? (this isn't a "bad flag" complaint) nor the
+    #  "bare value, nothing to extract" assumption below actually holds
+    #  for this specific shape - returning nil here routes it through
+    #  resolve_language's own `probe_version(...) || pkg[:version]`
+    #  fallback (see its own comment) instead of displaying this
+    #  confusing SCCS string as if it were "the version".
+    return nil if raw.start_with?('@(#)')
+
     # AT&T ksh93's own --version banner ("version         sh (AT&T
     #  Research) 93u+m/1.0.0-beta.2 2021-12-17") is a whole sentence,
     #  not a version string - confirmed directly this was displaying
@@ -1134,7 +1163,25 @@ def probe_version(name, path, mode)
     # Search the *whole* output, not just the first line - some tools
     #  (confirmed directly with Strawberry Perl) print a banner/blank
     #  line before the actual version text.
-    raw.to_s[/\d+\.\d[\d.]*/] || raw.to_s.lines.first.to_s.strip
+    found = raw.to_s[/\d+\.\d[\d.]*/]
+    return found if found
+
+    # No digit-dotted-number anywhere in the whole output - a real
+    #  version banner almost always has one, so by this point
+    #  something's already gone wrong, not just "a versionless tool".
+    #  error_output? already catches every *known* shape of that
+    #  (bad flag, missing dependency, ...), but new ones keep turning
+    #  up one at a time (groovy's own "JAVA_HOME not set..." wrapper
+    #  complaint was the latest, mksh's SCCS ident stamp before that) -
+    #  rather than only ever reacting to the *next* one, cap the length
+    #  here as a general backstop: a real "no --version flag" answer
+    #  (dash, mksh's own non-error fallback shapes) is short, sentence-
+    #  length prose reads as an unrecognized error, not a version, and
+    #  should defer to package_info's own fallback (see
+    #  resolve_language) rather than ever display raw error text as if
+    #  it meant something.
+    first_line = raw.to_s.lines.first.to_s.strip
+    first_line.length <= 40 ? first_line : nil
   end
 rescue StandardError
   nil
@@ -1155,7 +1202,18 @@ def error_output?(text)
   #  Windows launcher found via /mnt/c under WSL1 that resolve_binary
   #  happily locates (it's a real file) but a Linux shell can't actually
   #  execute (wrong format entirely, not just a missing flag).
-  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized|not found|no such file/i ? true : false
+  # "\w+_HOME not set" - confirmed directly with groovy under WSL2: its
+  #  own wrapper script complains "JAVA_HOME not set and cannot find
+  #  javac to deduce location, please set JAVA_HOME." when probed
+  #  without a JVM configured, rather than a real version - not a "bad
+  #  flag" complaint at all, so none of the patterns above catch it,
+  #  and it doesn't contain a digit run either, so it fell all the way
+  #  through to probe_version's own "just use the first line" fallback
+  #  and got displayed as if it were the version. The *_HOME pattern is
+  #  generic (not hardcoded to JAVA_HOME) since this is a common shape
+  #  for JVM tool wrappers generally (GROOVY_HOME, MAVEN_HOME, ...), any
+  #  of which could plausibly hit the exact same wall.
+  text.to_s.lines.first.to_s =~ /illegal option|unknown option|unrecognized option|invalid option|not recognized|not found|no such file|\w+_HOME not set/i ? true : false
 end
 
 # tcl_version(path) - `echo "puts $tcl_patchLevel" | tclsh` is tempting
@@ -1227,6 +1285,8 @@ end
 #  common single-name case doesn't need to change shape at all.
 def resolve_tools(lang)
   (lang[:tools] || []).map do |tool|
+    next resolve_psake_module if tool == :psake
+
     names = Array(tool)
     # native_tools: true (Batch's own AREAS entry) means these tools
     #  need to be reachable via cmd.exe's real PATH specifically, not
@@ -1235,6 +1295,33 @@ def resolve_tools(lang)
     dirs = lang[:native_tools] ? windows_native_path_dirs : nil
     resolve_entry(names, :flag, dirs).merge(name: names.first)
   end
+end
+
+# resolve_psake_module - psake has no real executable to find via
+#  find_on_path/resolve_entry at all (see its own :psake dispatch
+#  comment on PowerShell's AREAS entry) - queries pwsh's own installed-
+#  module list directly instead, the same source PowerShell's own
+#  command auto-loading already relies on (see run_all_tests.ps1's
+#  Invoke-PsakeRun, which never Import-Modules it either). Returns the
+#  same {binaries:, found:, resolved_binary:, package_name:, path:,
+#  version:} shape resolve_entry does, so table_row/every formatter
+#  handles this row identically to a real tool's.
+def resolve_psake_module
+  pwsh = find_on_path('pwsh') || find_on_path('powershell')
+  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, path: nil, version: nil, name: 'psake' } unless pwsh
+
+  raw = `"#{pwsh}" -NoProfile -Command "(Get-Module -ListAvailable -Name psake | Select-Object -First 1).Version.ToString()" 2>#{NULL_DEVICE}`.strip
+  found = !raw.empty? && raw !~ /error|not recognized|exception/i
+
+  {
+    binaries: %w[psake],
+    found: found,
+    resolved_binary: found ? 'psake' : nil,
+    package_name: nil,
+    path: nil,
+    version: found ? raw : nil,
+    name: 'psake'
+  }
 end
 
 # ENTRY_CACHE - [real path, version_mode] -> the {resolved_binary:,

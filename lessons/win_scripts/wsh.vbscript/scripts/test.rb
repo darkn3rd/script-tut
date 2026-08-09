@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-cmd_str="cscript //NoLogo a00.output.vbs"
+cmd_str="cscript.exe //NoLogo a00.output.vbs"
 RESULT = `#{cmd_str}`
 
 puts RUBY_PLATFORM

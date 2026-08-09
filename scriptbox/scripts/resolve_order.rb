@@ -39,6 +39,30 @@ def flatten(node, path = [])
   steps
 end
 
+# dedup! - drops a later step whose (type, name) already appeared
+#  earlier in the list, keeping the *first* occurrence and its position -
+#  confirmed directly this is needed: testbox's own `- rbenv: 4.0.6` and
+#  `- script: ubuntu22_powershell` each duplicate a step gen_scripts/win_scripts
+#  already installs elsewhere in the same file, running the same apt/curl
+#  work twice for no reason (each one individually is idempotent - rbenv
+#  install -s, apt-get install -y - just wasteful, not harmful, to run
+#  twice). A `script` step attached to a package (see attached_to) is
+#  keyed on its *own* name, not the package's, so an identical script
+#  reused by two different packages is still only ever run once too.
+def dedup!(steps)
+  seen = {}
+  steps.reject! do |step|
+    key = [step[:type], step[:name]]
+    if seen[key]
+      true
+    else
+      seen[key] = true
+      false
+    end
+  end
+  steps
+end
+
 # unit_span - the contiguous [start, end] index range that must move
 #  together with the provider at `index`: any directly-preceding `tap`
 #  steps in the *same* package list (a cask's tap must stay right before

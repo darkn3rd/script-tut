@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
   Runs Invoke-Psake -quiet across every lesson language directory,
@@ -345,9 +346,21 @@ function Resolve-PackageInfo {
 
   $escapedPath = $Path -replace '\\', '\\\\' -replace "'", "\\'"
   $escapedName = $BinaryName -replace "'", "\\'"
+  # require, not require_relative: $verifyCommandsPath is already
+  #  absolute (built via Join-Path $PSScriptRoot above), and
+  #  require_relative needs to infer a base directory from the
+  #  *calling file*, which doesn't exist for code run via `ruby -e` -
+  #  confirmed directly, it raises "cannot infer basepath" (LoadError)
+  #  unconditionally there, regardless of whether its own argument is
+  #  itself absolute. Silently swallowed by the try/catch below, so this
+  #  surfaced as Resolve-DisplayVersion always falling through to the
+  #  weak/raw probe value instead of ever reaching a real package
+  #  version - which Ruby actually got resolved (system vs. rbenv)
+  #  happened to determine whether this broke, since not every Ruby
+  #  enforces require_relative's basepath check the same way.
   $rubyScript = @"
 require 'json'
-require_relative '$($verifyCommandsPath -replace '\\', '/')'
+require '$($verifyCommandsPath -replace '\\', '/')'
 info = package_info('$escapedPath', ['$escapedName'])
 puts(info ? info.to_json : 'null')
 "@
@@ -390,6 +403,35 @@ function Get-DisplayLanguage {
   return "$($Result.Language) ($name)"
 }
 
+# ConvertTo-CleanPackageVersion(version) - dpkg's own version syntax is
+#  [epoch:]upstream_version[-debian_revision] - Resolve-DisplayVersion
+#  falls back to this raw string only when Script.rb's own probe came
+#  back too weak to trust, and the raw packaging metadata is noisier
+#  than what a human wants in this table - confirmed directly: dash's
+#  own package answers "0.5.11+git20210903+057cd650a4ed-3build1" (a
+#  VCS-snapshot suffix glued onto the real upstream version, plus a
+#  distro packaging revision), and ksh93's own answers
+#  "1.0.0~beta.2-1ubuntu0.2" (a genuine upstream pre-release marker
+#  this time, still with the same kind of distro packaging revision
+#  tacked on) - same real-world values run_all_tests.rb's own
+#  clean_package_version already handles, ported here unchanged. The
+#  debian_revision (after the *last* hyphen - upstream versions here
+#  never contain one of their own) is always dropped; a "+"-prefixed
+#  VCS-snapshot suffix within the upstream version is dropped too;
+#  Debian's own "~" pre-release marker is kept but rewritten to "-",
+#  matching how a real pre-release tag looks everywhere else in this
+#  table (e.g. "1.0.0-beta.2", not "1.0.0~beta.2").
+function ConvertTo-CleanPackageVersion {
+  param($Version)
+  if (-not $Version) { return $Version }
+
+  $v = $Version -replace '^\d+:', ''
+  $v = $v -replace '-[^-]*$', ''
+  $v = $v -replace '\+.*$', ''
+  $v = $v -replace '~', '-'
+  return $v
+}
+
 # Resolve-DisplayVersion(result, pkg) - ConvertTo-TrimmedVersion's own
 #  answer, falling back to pkg's real package metadata whenever
 #  Script.rb's own probe came back weak or erroring - same "only the
@@ -403,7 +445,7 @@ function Resolve-DisplayVersion {
     return $v
   }
 
-  if ($Pkg -and $Pkg.version) { return $Pkg.version }
+  if ($Pkg -and $Pkg.version) { return (ConvertTo-CleanPackageVersion $Pkg.version) }
   if ($v) { return $v }
   return 'unknown'
 }

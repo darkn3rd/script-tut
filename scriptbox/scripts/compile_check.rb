@@ -60,6 +60,20 @@ def build_lesson(language_name, dir_name)
   puts '-' * 63
   output = String.new
   Dir.chdir(dir) do
+    # make clean first - target/ and bin/ are a shared, persistent build
+    #  cache on disk, not something this one run owns exclusively: the
+    #  same lessons/compiled_lang tree is reachable (and built) from
+    #  multiple environments (native Windows, WSL1, WSL2, MSYS2, ...) on
+    #  a shared /mnt/c checkout, and an object file from one
+    #  environment's toolchain is binary-incompatible with another's -
+    #  confirmed directly: a stale Windows/MinGW-format target/*.o,
+    #  left over from a native-Windows build, crashed Ubuntu's own `ld`
+    #  rather than failing cleanly when WSL2's make trusted its
+    #  timestamp and skipped recompiling it. This script's whole job is
+    #  to verify the toolchain actually works, not to build fast - it
+    #  must never let a leftover artifact from a different environment
+    #  stand in for that check.
+    system("\"#{make}\" -f #{makefile} clean < #{NULL_DEVICE} > #{NULL_DEVICE} 2>&1")
     IO.popen("\"#{make}\" -f #{makefile} < #{NULL_DEVICE} 2>&1") do |io|
       io.each_line do |line|
         print line

@@ -248,6 +248,17 @@ function Get-TestBoxCommand {
     if ($cmd -eq 'sh' -and -not $script:IsWindowsHost -and (Find-TestBoxExecutable -Command 'dash')) {
         $cmd = 'dash'
     }
+    # cmd/cscript resolve as bare names on native Windows only because
+    #  PowerShell's own command discovery honors PATHEXT there - under
+    #  WSL1/WSL2 interop the real files are only reachable by their full
+    #  name ("cmd.exe"/"cscript.exe"); a bare "cmd" finds nothing via
+    #  Get-Command *or* /bin/sh's own PATH lookup (see Invoke-ShellOut,
+    #  which runs this value through /bin/sh -c on a POSIX host) -
+    #  confirmed directly. Script.rb's own Wsl1ShellScript/Wsl2ShellScript
+    #  already always use the ".exe"-qualified name for this same reason.
+    if (($cmd -eq 'cmd' -or $cmd -eq 'cscript') -and -not $script:IsWindowsHost) {
+        $cmd = "$cmd.exe"
+    }
     # Fail once, loudly, and stop - ported from Script.rb's `command`. A
     #  missing interpreter/compiler would otherwise silently run every
     #  single lesson through a shell that immediately errors ("zsh: not
@@ -387,6 +398,22 @@ function Get-PathPrefix {
     return ".$sep$subdir"
 }
 
+# ConvertTo-WslWindowsPath(path) - translates a POSIX-side relative
+#  path to the equivalent absolute Windows path via wslpath -w, so a
+#  genuine Windows binary invoked through WSL interop (cmd.exe/
+#  cscript.exe - see Get-TestBoxCommand's own ".exe"-suffix fix) can
+#  actually resolve it. Only ever called on a POSIX host after
+#  Find-TestBoxExecutable already confirmed cmd.exe/cscript.exe are
+#  reachable at all, which itself only happens under WSL - wslpath
+#  won't exist anywhere else this could run, but fails soft (returns
+#  Path unchanged) rather than throwing either way.
+function ConvertTo-WslWindowsPath {
+    param([string]$Path)
+    $resolved = & wslpath -w $Path 2>$null
+    if ($LASTEXITCODE -eq 0 -and $resolved) { return $resolved.Trim() }
+    return $Path
+}
+
 # Get-BinaryExtension() - the real on-disk extension of the artifact
 #  `make` produces for the current compiled language (see
 #  lessons/compiled_lang/*/Makefile) - ported from Script.rb's binary_extension.
@@ -519,7 +546,11 @@ function Get-SpecialVersion {
             return $PSVersionTable.PSVersion.ToString()
         }
         { $_ -in 'js', 'vbs' } {
-            $raw = cscript 2>&1 | Out-String
+            # cscript.exe, not bare "cscript" - same PATHEXT-only-on-
+            #  native-Windows gap as the "cmd"/"cmd.exe" fix just above:
+            #  under WSL interop a bare name resolves nowhere at all
+            #  (confirmed directly), only the ".exe"-qualified one does.
+            $raw = cscript.exe 2>&1 | Out-String
             if ($raw -match 'Windows Script Host Version \S+') { return $Matches[0] }
             return ''
         }
@@ -681,8 +712,22 @@ function Invoke-InteractiveShellOut {
     param([string]$CommandStr, [string[]]$InputLines, [int]$TimeoutSeconds = 15)
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'cmd.exe'
-    $psi.Arguments = "/c $CommandStr"
+    # Same cmd.exe-direct (Windows) vs /bin/sh -c (POSIX) branch as
+    #  Invoke-ShellOut, for the same reason - this was missing here
+    #  before, so under WSL $CommandStr (which may embed a single-quoted,
+    #  wslpath-translated Windows path - see the invocation site) was
+    #  being handed straight to cmd.exe's own tokenizer instead of sh's.
+    #  cmd.exe has no concept of single-quote quoting at all, so the
+    #  quotes themselves became part of a now-nonexistent filename -
+    #  confirmed directly (F21 produced empty output, not a real answer).
+    if ($script:IsWindowsHost) {
+        $psi.FileName = 'cmd.exe'
+        $psi.Arguments = "/c $CommandStr"
+    } else {
+        $psi.FileName = '/bin/sh'
+        $psi.ArgumentList.Add('-c')
+        $psi.ArgumentList.Add($CommandStr)
+    }
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
@@ -719,7 +764,14 @@ function Invoke-InteractiveShellOut {
         $readTask = $proc.StandardOutput.ReadAsync($buffer, 0, $buffer.Length)
         if (-not $readTask.Wait([int]$remainingMs)) {
             if (-not $proc.HasExited) {
-                & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+                # taskkill.exe doesn't exist on a POSIX host - Kill($true)
+                #  (kill the whole process tree) is the portable
+                #  equivalent, available since .NET Core 3.0.
+                if ($script:IsWindowsHost) {
+                    & taskkill /F /T /PID $proc.Id 2>&1 | Out-Null
+                } else {
+                    $proc.Kill($true)
+                }
             }
             break
         }
@@ -1075,7 +1127,27 @@ function Invoke-TestBoxCategory {
             #  artifact runs itself, unlike an interpreted language's
             #  test file, which is handed to $runner as a data argument.
             $runner = if ($isCompiled) { '' } else { "$(Get-TestBoxCommand -Language $language) $($script:CommandOptions[$language])" }
-            $command = "$input $runner $prefix$invokedName $args $redirect"
+            $invokedPath = "$prefix$invokedName"
+            # cmd.exe/cscript.exe are genuine Windows binaries reached
+            #  through WSL interop (see the ".exe"-suffix fix in
+            #  Get-TestBoxCommand above) - a Linux-relative path like
+            #  "./a00.output.cmd" means nothing to them ("'.' is not
+            #  recognized as an internal or external command...",
+            #  confirmed directly), even though /bin/sh itself resolves
+            #  it just fine. Translating to the equivalent absolute
+            #  Windows path first is exactly what Script.rb's own
+            #  Wsl1ShellScript/Wsl2ShellScript already do (via wslpath
+            #  -w) for this identical reason.
+            if (($language -eq 'cmd' -or $language -eq 'js' -or $language -eq 'vbs') -and -not $script:IsWindowsHost) {
+                # Single-quoted, not bare: $command below is handed
+                #  unparsed to /bin/sh -c (see Invoke-ShellOut) - sh
+                #  treats an *unquoted* backslash as its own escape
+                #  character and strips it, mangling every backslash in
+                #  the translated Windows path ("C:\tools\..." becomes
+                #  "C:tools...", confirmed directly) unless quoted.
+                $invokedPath = "'$(ConvertTo-WslWindowsPath $invokedPath)'"
+            }
+            $command = "$input $runner $invokedPath $args $redirect"
 
             if ($isEnvTest) {
                 $output = Invoke-EnvShellOut -CommandStr $command -ExpectedEnv $expected

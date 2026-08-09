@@ -319,6 +319,33 @@ def display_language(r, pkg)
   "#{r[:language]} (#{name})"
 end
 
+# clean_package_version(v) - dpkg's own version syntax is
+#  [epoch:]upstream_version[-debian_revision] - resolve_version falls
+#  back to this raw string only when Script.rb's own probe came back
+#  too weak to trust (see WEAK_VERSION/BARE_NUMBER), and the raw
+#  packaging metadata is noisier than what a human wants in this table -
+#  confirmed directly: dash's own package answers
+#  "0.5.11+git20210903+057cd650a4ed-3build1" (a VCS-snapshot suffix
+#  glued onto the real upstream version, plus a distro packaging
+#  revision), and ksh93's own answers "1.0.0~beta.2-1ubuntu0.2" (a
+#  genuine upstream pre-release marker this time, still with the same
+#  kind of distro packaging revision tacked on). The debian_revision -
+#  after the *last* hyphen, since none of the upstream versions seen
+#  here contain one of their own - is never useful, so it's always
+#  dropped; a "+"-prefixed VCS-snapshot suffix within the upstream
+#  version is dropped too (not a real version component); Debian's own
+#  "~" pre-release marker is kept but rewritten to "-", matching how a
+#  real pre-release tag looks everywhere else in this table (e.g.
+#  "1.0.0-beta.2", not "1.0.0~beta.2").
+def clean_package_version(v)
+  return v unless v
+
+  v.sub(/\A\d+:/, '')
+   .sub(/-[^-]*\z/, '')
+   .sub(/\+.*\z/, '')
+   .tr('~', '-')
+end
+
 # resolve_version(r, pkg) - trim_version's own answer, falling back to
 #  pkg's real package metadata whenever Script.rb's own probe came back
 #  weak (WEAK_VERSION) or erroring (trim_version's own "unknown") - the
@@ -330,7 +357,7 @@ def resolve_version(r, pkg)
   v = trim_version(r[:version])
   return v if v && v != 'unknown' && v !~ WEAK_VERSION && v !~ BARE_NUMBER
 
-  pkg && pkg[:version] ? pkg[:version] : (v || 'unknown')
+  pkg && pkg[:version] ? clean_package_version(pkg[:version]) : (v || 'unknown')
 end
 
 # expand_selection(argv) - {area => [lang, ...]} to actually run, from
