@@ -71,8 +71,8 @@ part_2:
     title: Arguments from the Command Line
     lessons:
       J00: Usage Statement (Script Name and Arg Count) # NOTE: source README lists this and "Enumerate Arguments in Order" both as [J00]
-      J00_enumerate_order: Enumerate Arguments in Order
-      J10: Enumerate Arguments in Reverse Order
+      J10: Enumerate Arguments in Order
+      J20: Enumerate Arguments in Reverse Order
   parameters:
     title: Parameters
     lessons:

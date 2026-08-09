@@ -22,19 +22,19 @@ Designed both as a beginner's guide and a quick-reference handbook, these lesson
 
 ## CI-Box (Continuous Integration)
 
-The **CIBox** area are Continious Integration scripts currently supporting **[GHA](https://github.com/features/actions)** for automated testing, and local testing with **[Act](https://github.com/nektos/act)**. 
+The **CIBox** area are Continuous Integration scripts currently supporting **[GHA](https://github.com/features/actions)** for automated testing, and local testing with **[Act](https://github.com/nektos/act)**. 
 
 * [cibox/README.md](cibox/README.md)
 
 ## Script-Box 
 
-The **ScriptBox** area contains tools and scripts that may be useful in this tutorial.  Some hightlihgts include: 
+The **ScriptBox** area contains tools and scripts that may be useful in this tutorial.  Some highlights include: 
 
-* `generate_install_sh.rb` - generates an installer script for your environment, suuch as Ubuntu 22.04. 
+* `generate_install_sh.rb` - generates an installer script for your environment, such as Ubuntu 22.04. 
 * `validate_commands.rb` - validate installation or availability of all languages used in this guide 
 * `compile_check.rb` - will test the Makefiles in parallel (threads) for C++, C#, Java, Go, Rust.
-* `run_all_tests.ps1` - will run all the tets using the test harness (`TestBox.psm1`) with `psake`
-* `run_all_tests.rb` - will all the tests using the test harness (`Script.rb`) with `rake`
+* `run_all_tests.ps1` - will run all the tests using the test harness (`TestBox.psm1`) with `psake`
+* `run_all_tests.rb` - will run all the tests the test harness (`Script.rb`) with `rake`
 
 Further Information:
 
@@ -63,28 +63,28 @@ These are the languages supported.
 
 * **General Languages**:
   * 📜 AWK
-  * ☕ Groovy&sup1;
+  * ☕ Groovy¹
   * 🐫 Perl
   * 🐘 PHP
   * 🐍 Python
   * 💎 Ruby
   * 📜 TCL (Tool Command Language)
 * **Shell Languages**:
-  * 🐚 Bourne Again Shell (bash)&sup2;
-  * 🐚 C Shell (csh)&sup2;
-  * 🐚 Korn Shell (ksh)&sup2;
-  * 🐚 Shell, POSIX (sh)&sup2;
-  * 🐚 Z Shell (zsh)&sup2;
+  * 🐚 Bourne Again Shell (bash)²
+  * 🐚 C Shell (csh)²
+  * 🐚 Korn Shell (ksh)²
+  * 🐚 Shell, POSIX (sh)²
+  * 🐚 Z Shell (zsh)²
 * **Windows Languages**:
-  * 📜 Command Shell (BATCH)&sup3;
-  * 📜 JScript (WSH)&sup3;
-  * 📜 PowerShell
-  * 📜 VBScript (WSH)&sup3;
+  * 📜 Command Shell (BATCH)³
+  * 📜 JScript (WSH)³
+  * 📜 PowerShell (pwsh)
+  * 📜 VBScript (WSH)³
 * **Compiled Languages**:
   * ➕ C++
-  * 🎼 C#&sup4;
+  * 🎼 C#⁴
   * 🦫 Go
-  * ☕ Java&sup1;
+  * ☕ Java¹
   * 🦀 Rust
 
 1. Requires JDK environment to compile or run.
@@ -94,7 +94,7 @@ These are the languages supported.
 
 ### The Lessons
 
-These are the overall plan for 14 topics and about 47 lessons (varies per language support for functionality):
+This is the overall plan for 14 topics and about 47 lessons (varies per language support for functionality):
 
 #### Part I
 
@@ -149,14 +149,14 @@ This covers sub-routines and functions, passing values (parameters), and retriev
   * 📗 Local Variable (Scope) [I20]
 * 📚 Arguments from the Command Line
   * 📗 Usage Statement (Script Name and Arg Count) [J00]
-  * 📗 Enumerate Arguments in Order [J00]
-  * 📗 Enumerate Arguments in Reverse Order [J10]
+  * 📗 Enumerate Arguments in Order [J10]
+  * 📗 Enumerate Arguments in Reverse Order [J20]
 * 📚 Parameters
   * 📗 Pass a Single Parameters [K00]
   * 📗 Pass Variable Number of Parameters [K10]
 * 📚 Exit
   * 📗 Returning an Exit Status Code [L00]
-* 📚 Functions [M00]
+* 📚 Functions
   * 📗 Return an Integer [M00]
   * 📗 Return a String [M10]
   * 📗 Return an Array [M20]
