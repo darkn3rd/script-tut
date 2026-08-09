@@ -124,6 +124,26 @@ def native_windows_ruby?
   Gem.win_platform? && RUBY_PLATFORM !~ /cygwin/i
 end
 
+# WSL_LAUNCHER_SHIM_PATHS - C:\Windows\System32\bash.exe (and its
+#  SysWOW64 twin) isn't a real bash at all - it's WSL's own interactive
+#  launcher stub, silently proxying into *whichever* WSL distro happens
+#  to be marked default, and which distro that is isn't fixed -
+#  confirmed directly reporting it as "Bourne Again Shell (bash)" is
+#  actively misleading (its own probed dependents, bc/getopt, then show
+#  MISSING, since they're searched for on *this* Windows Ruby's own
+#  native PATH, not whatever's on the launched distro's PATH). Struck
+#  from candidacy outright, but only on native Windows - a genuine
+#  WSL1/WSL2 Ruby (Gem.win_platform? is false there) needs its own real
+#  bash to resolve completely normally.
+WSL_LAUNCHER_SHIM_PATHS = %w[
+  C:\Windows\System32\bash.exe
+  C:\Windows\SysWOW64\bash.exe
+].freeze
+
+def wsl_launcher_shim?(path)
+  Gem.win_platform? && WSL_LAUNCHER_SHIM_PATHS.any? { |shim| path.casecmp?(shim) }
+end
+
 # find_on_path(name) - a pure-Ruby PATH scan rather than shelling out to
 #  `which`/`where` - this project's whole investigation this session
 #  turned up just how inconsistent those external tools' own behavior is
@@ -180,6 +200,8 @@ def find_on_path(name, path_dirs = nil)
       #  MSYS2-POSIX-form conversion, applied only to the report's own
       #  output, never to what actually gets shelled out to).
       candidate = candidate.tr('/', '\\') if Gem.win_platform?
+      next if wsl_launcher_shim?(candidate)
+
       return candidate if File.file?(candidate)
     end
   end
@@ -1443,6 +1465,27 @@ end
 #  plain strings, no column padding applied yet - shared by
 #  table_widths (which only needs each string's length) and table_row
 #  (which pads them once the real widths are known).
+# display_path(path) - collapses a leading $HOME into "~", the
+#  universal POSIX shorthand for a user's own home directory - only
+#  ever used by the human-readable table (see row_parts); JSON/YAML/CSV/
+#  etc. keep the real absolute path, since those are for another tool
+#  to consume, not a person to read. Windows paths are left alone - "~"
+#  has no such meaning there.
+def display_path(path)
+  return path if path.nil? || Gem.win_platform?
+
+  home = ENV['HOME']
+  return path if home.nil? || home.empty?
+
+  if path == home
+    '~'
+  elsif path.start_with?("#{home}/")
+    "~#{path[home.length..]}"
+  else
+    path
+  end
+end
+
 def row_parts(label, entry, indent)
   status = entry[:found] ? 'OK' : 'MISSING'
   prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
@@ -1456,7 +1499,7 @@ def row_parts(label, entry, indent)
   #  otherwise still counts as a "discovery" and shows a redundant
   #  "Perl [perl]".
   shown = pkg_name && !label.downcase.include?(pkg_name.downcase) ? "#{label} [#{pkg_name}]" : label
-  ["#{prefix}#{shown}", status, entry[:version] || '-', entry[:path] || '-']
+  ["#{prefix}#{shown}", status, entry[:version] || '-', display_path(entry[:path]) || '-']
 end
 
 def table_row(label, entry, indent, widths)
