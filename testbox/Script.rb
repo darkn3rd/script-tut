@@ -1258,6 +1258,20 @@ class ScriptBase
 
     command # verifies the compiler itself is on PATH (see command())
 
+    # TESTBOX_SKIP_COMPILE - set by run_all_tests.rb's own --skip-compile
+    #  flag, for the "run compile_check.rb first (parallel, all five
+    #  languages at once), then run_all against what it already built"
+    #  workflow - rebuilding sequentially here on top of that would
+    #  throw away a build that already succeeded and pay the cost
+    #  twice. Trusts bin/ already has what this run needs rather than
+    #  verifying it - a lesson invoking a genuinely missing/stale
+    #  binary still fails, just as a normal per-test failure instead of
+    #  this method's own upfront error.
+    if ENV["TESTBOX_SKIP_COMPILE"]
+      @@compiled_ok = true
+      return
+    end
+
     if find_executable("make").to_s.empty?
       STDERR.puts "ERROR: Cannot find \"make\" on PATH (needed to build #{@@dirname}/ lessons). " \
                   "Check the setup instructions for this language."
@@ -1273,7 +1287,27 @@ class ScriptBase
     #  "Nothing to be done" instead of silently doing nothing as before.
     puts "Compiling #{language_name} lessons (one-time build)..."
     puts "-" * 63
-    success = stream_shell_out("make 2>&1")
+    # posix? (not native_windows_ruby? - MSYS2 has its own real POSIX
+    #  tooling and correctly reports posix? true, unlike a genuine
+    #  native Windows CommandShellScript/PowerShellScript session)
+    #  decides Makefile vs Makefile.win, same as compile_check.rb's own
+    #  identical choice - confirmed directly this method never made
+    #  that choice at all before, always running the plain (POSIX-only)
+    #  Makefile even on native Windows, unlike compile_check.rb which
+    #  already got this right.
+    makefile = posix? ? "Makefile" : "Makefile.win"
+    # make clean first - target/bin are a shared, persistent build cache
+    #  reachable (and built) from multiple environments (native Windows,
+    #  WSL1, WSL2, MSYS2, ...) on this same shared checkout, and an
+    #  object file from one environment's toolchain is binary-
+    #  incompatible with another's - confirmed directly: a stale Linux
+    #  ELF target/*.o left over from a WSL build crashed native
+    #  Windows's own linker ("section below image base"/"undefined
+    #  reference") rather than failing cleanly, when this method
+    #  trusted make's own timestamp check and skipped recompiling it.
+    #  See compile_check.rb's own identical fix.
+    `make -f #{makefile} clean < #{null_device} 2>&1`
+    success = stream_shell_out("make -f #{makefile} 2>&1")
     puts "==============================================================="
 
     unless success
@@ -2176,6 +2210,20 @@ end
 # as our parent, walk up past any cmd.exe started with /c until we hit
 # either a non-wrapper cmd.exe (a real session) or a powershell/pwsh
 # ancestor.
+#
+# That walk-up needs to see past more than just a transient cmd.exe
+# wrapper, though - confirmed directly: run_all_tests.rb spawns `rake`
+# (rake.bat) as its own subprocess, so the real ancestry from inside
+# that rake run is rake.bat's own transient cmd.exe -> run_all_tests.rb's
+# *own* ruby.exe -> whatever shell the user actually typed
+# "ruby run_all_tests.rb" into. The original version here only knew how
+# to walk past cmd.exe specifically, hit "ruby.exe" (a name it didn't
+# recognize as either a shell or a known wrapper), and gave up - silently
+# defaulting to CommandShellScript even when the user's real, top-level
+# shell was pwsh. Walking past *any* unrecognized process name (not just
+# cmd.exe) fixes this generally, for any future intermediary, not just
+# this one - bounded by max_hops so a pathological/circular process tree
+# can't loop forever.
 # =============================================
 def win_process_info(pid)
   out = IO.popen(['powershell.exe', '-NoProfile', '-Command',
@@ -2188,25 +2236,21 @@ rescue StandardError
   nil
 end
 
-def windows_host_shell(pid)
-  loop do
+def windows_host_shell(pid, max_hops = 10)
+  max_hops.times do
     info = win_process_info(pid)
     return nil unless info
 
     name = info['Name'].to_s.downcase
     if name.include?('powershell') || name == 'pwsh.exe'
       return :powershell
-    elsif name == 'cmd.exe'
-      if info['CommandLine'].to_s =~ %r{/c\b}i
-        pid = info['ParentProcessId']
-        next
-      else
-        return :cmd
-      end
-    else
-      return nil
+    elsif name == 'cmd.exe' && info['CommandLine'].to_s !~ %r{/c\b}i
+      return :cmd
     end
+
+    pid = info['ParentProcessId']
   end
+  nil
 end
 
 # wsl1?()/wsl2?() - which WSL generation, if either, this is - distinguished

@@ -135,6 +135,18 @@ while ($i -lt $Selectors.Count) {
     if ($i -lt $Selectors.Count) { $FormatName = $Selectors[$i] }
   } elseif ($token -like '--format=*') {
     $FormatName = $token.Substring('--format='.Length)
+  } elseif ($token -eq '--skip-compile') {
+    # For the "run compile_check.rb first, then run_all against what
+    #  it already built" workflow - Confirm-TestBoxCompiled
+    #  (testbox/TestBox.psm1) normally cleans and rebuilds a compiled
+    #  language's own lessons the first time psake reaches its
+    #  directory, wasteful right after compile_check.rb already built
+    #  all five in parallel. TESTBOX_SKIP_COMPILE, not a parameter
+    #  passed straight through: Invoke-PsakeRun calls Invoke-Psake
+    #  in-process (see its own comment - no subprocess at all), so
+    #  $env: here is already the same process Confirm-TestBoxCompiled
+    #  runs in - no extra plumbing needed to reach it.
+    $env:TESTBOX_SKIP_COMPILE = '1'
   } else {
     $remaining.Add($token)
   }
@@ -727,10 +739,22 @@ function Invoke-AllTests {
       Write-Host ('-' * $label.Length)
     }
 
+    # $entries - one per language in this area, deferred rather than
+    #  printed immediately (see the block below) so column widths can be
+    #  sized to what this *area* actually contains instead of a single
+    #  guessed-wide-enough constant shared by all ~22 languages in the
+    #  whole project - confirmed directly a fixed {0,-36}/{1,-26}/{2,-34}
+    #  left a huge ragged gap after a short row like "AWK (gawk)" (10
+    #  chars, padded to 36) while barely fitting a long one like
+    #  "JScript (WSH) (cscript)". Trades line-by-line live progress for
+    #  area-by-area - still shows progress as each section finishes,
+    #  just not language-by-language within it.
+    $entries = New-Object System.Collections.Generic.List[object]
+
     foreach ($lang in $selection[$area]) {
       if ($area -eq 'shell_scripts' -and $NativeWindowsShell -and -not $AllowNativeShell) {
         $message = 'needs a real POSIX host, not cmd.exe/PowerShell - pass --allow-native-shell to override'
-        if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
+        $entries.Add([ordered]@{ Type = 'skip'; Name = $lang; Message = $message })
         $skippedNonPosix += $lang
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_non_posix' -Message $message))
         continue
@@ -739,7 +763,7 @@ function Invoke-AllTests {
       $dir = Join-Path (Join-Path $LessonRoot $area) $lang
       if (-not (Test-Path $dir)) {
         $message = "directory not found ($dir)"
-        if ($table) { Write-Host "${lang}: $message" }
+        $entries.Add([ordered]@{ Type = 'plain'; Text = "${lang}: $message" })
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'directory_not_found' -Message $message))
         continue
       }
@@ -759,7 +783,7 @@ function Invoke-AllTests {
         if ($output -match $NotInstalledPattern) {
           $notInstalledTool = $Matches[1]
           $message = "$notInstalledTool not found on PATH"
-          if ($table) { Write-Host ('{0,-36} SKIPPED ({1})' -f $lang, $message) }
+          $entries.Add([ordered]@{ Type = 'skip'; Name = $lang; Message = $message })
           $notInstalled += $lang
           $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'skipped_not_installed' -Message $message))
           continue
@@ -768,10 +792,9 @@ function Invoke-AllTests {
         $result = ConvertFrom-PsakeOutput $output
 
         if ($null -eq $result.Total) {
-          if ($table) {
-            Write-Host "${lang}: could not parse Invoke-Psake output"
-            $output -split "`n" | ForEach-Object { Write-Host "  $_" }
-          }
+          $text = "${lang}: could not parse Invoke-Psake output"
+          $output -split "`n" | ForEach-Object { $text += "`n  $_" }
+          $entries.Add([ordered]@{ Type = 'plain'; Text = $text })
           $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'parse_error' -Message 'could not parse Invoke-Psake output'))
           continue
         }
@@ -788,11 +811,10 @@ function Invoke-AllTests {
         #  environment's own pwsh-backed syntax check.
         $platformDisplay = if ($result.Platform) { $result.Platform } else { '-' }
 
-        if ($table) {
-          Write-Host ('{0,-36} {1,-26} {2,-34} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}' -f `
-            $displayLanguage, $displayVersion, $platformDisplay, `
-            $result.Total, $result.Pass, $result.Fail, $result.Skip)
-        }
+        $entries.Add([ordered]@{
+          Type = 'ok'; Name = $displayLanguage; Version = $displayVersion; Platform = $platformDisplay
+          Total = $result.Total; Pass = $result.Pass; Fail = $result.Fail; Skip = $result.Skip
+        })
 
         $totals.Total += $result.Total
         $totals.Pass += $result.Pass
@@ -803,8 +825,32 @@ function Invoke-AllTests {
           -Total $result.Total -Pass $result.Pass -Fail $result.Fail -Skip $result.Skip))
       } catch {
         $message = "$_"
-        if ($table) { Write-Host "${lang}: ERROR - $message" }
+        $entries.Add([ordered]@{ Type = 'plain'; Text = "${lang}: ERROR - $message" })
         $records.Add((New-ResultRecord -Area $area -Lang $lang -Status 'error' -Message $message))
+      }
+    }
+
+    if (-not $table) { continue }
+
+    $padded = $entries | Where-Object { $_.Type -eq 'skip' -or $_.Type -eq 'ok' }
+    $nameWidth = 0
+    foreach ($e in $padded) { if ($e.Name.Length -gt $nameWidth) { $nameWidth = $e.Name.Length } }
+    $okOnly = $entries | Where-Object { $_.Type -eq 'ok' }
+    $versionWidth = 0
+    $platformWidth = 0
+    foreach ($e in $okOnly) {
+      if ($e.Version.Length -gt $versionWidth) { $versionWidth = $e.Version.Length }
+      if ($e.Platform.Length -gt $platformWidth) { $platformWidth = $e.Platform.Length }
+    }
+
+    foreach ($e in $entries) {
+      switch ($e.Type) {
+        'skip' { Write-Host ("{0,-$nameWidth} SKIPPED ({1})" -f $e.Name, $e.Message) }
+        'plain' { Write-Host $e.Text }
+        'ok' {
+          Write-Host ("{0,-$nameWidth} {1,-$versionWidth} {2,-$platformWidth} Total={3,-4} Pass={4,-4} Fail={5,-4} Skip={6}" -f `
+            $e.Name, $e.Version, $e.Platform, $e.Total, $e.Pass, $e.Fail, $e.Skip)
+        }
       }
     }
   }

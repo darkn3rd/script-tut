@@ -502,6 +502,20 @@ function Confirm-TestBoxCompiled {
         throw "Cannot find `"$cmdName`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
     }
 
+    # TESTBOX_SKIP_COMPILE - set by run_all_tests.ps1's own
+    #  --skip-compile flag, for the "run compile_check.rb first
+    #  (parallel, all five languages at once), then run_all against
+    #  what it already built" workflow - rebuilding sequentially here
+    #  on top of that would throw away a build that already succeeded
+    #  and pay the cost twice. Trusts bin/ already has what this run
+    #  needs rather than verifying it - a lesson invoking a genuinely
+    #  missing/stale binary still fails, just as a normal per-test
+    #  failure instead of this function's own upfront error.
+    if ($env:TESTBOX_SKIP_COMPILE) {
+        $script:CompiledOk = $true
+        return
+    }
+
     if (-not (Find-TestBoxExecutable -Command 'make')) {
         throw "Cannot find `"make`" on PATH (needed to build $($script:LanguageDirName)/ lessons). Check the setup instructions for this language."
     }
@@ -515,7 +529,27 @@ function Confirm-TestBoxCompiled {
     #  be done" instead of silently doing nothing.
     Write-Host "Compiling $($script:LanguageName[$Language]) lessons (one-time build)..."
     Write-Host ('=' * 63)
-    $success = Invoke-StreamShellOut -CommandStr 'make 2>&1'
+    # $script:IsWindowsHost, not just "always Makefile" - decides
+    #  Makefile vs Makefile.win, same as compile_check.rb's own
+    #  identical choice (no MSYS2-flavored pwsh build exists the way
+    #  Ruby has one, so this needs no extra nuance beyond native-
+    #  Windows-or-not). Confirmed directly this function never made
+    #  that choice at all before, always running the plain (POSIX-only)
+    #  Makefile even on native Windows, unlike compile_check.rb which
+    #  already got this right.
+    $makefile = if ($script:IsWindowsHost) { 'Makefile.win' } else { 'Makefile' }
+    # make clean first - target/bin are a shared, persistent build cache
+    #  reachable (and built) from multiple environments (native Windows,
+    #  WSL1, WSL2, MSYS2, ...) on this same shared checkout, and an
+    #  object file from one environment's toolchain is binary-
+    #  incompatible with another's - confirmed directly: a stale Linux
+    #  ELF target/*.o left over from a WSL build crashed native
+    #  Windows's own linker ("section below image base"/"undefined
+    #  reference") rather than failing cleanly, when this function
+    #  trusted make's own timestamp check and skipped recompiling it.
+    #  See compile_check.rb's own identical fix.
+    [void](Invoke-ShellOut -CommandStr "make -f $makefile clean 2>&1")
+    $success = Invoke-StreamShellOut -CommandStr "make -f $makefile 2>&1"
     Write-Host ('=' * 63)
 
     if (-not $success) {
