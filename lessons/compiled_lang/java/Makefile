@@ -50,8 +50,13 @@ bin/%$(WRAPEXT): src/%.java | bin target
 	  chmod +x $@; \
 	fi
 
+# -@mkdir, not "@mkdir -p" - see ../cpp/Makefile's own clean: for why
+#  (a bare cmd.exe recipe shell's built-in mkdir has no -p flag at
+#  all, and silently created a literal "-p" directory instead -
+#  confirmed directly, with a genuinely surprising downstream effect
+#  on argv parsing).
 clean:
 	rm -f $(BIN)
 	rm -rf target
-	@mkdir -p target
+	-@mkdir target
 	@touch target/.gitkeep
