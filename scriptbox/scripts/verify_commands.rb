@@ -2093,6 +2093,7 @@ def format_tui(report)
   groups = area_groups(report)
   total_rows = groups.sum { |_name, pairs| pairs.length }
   found_count = groups.sum { |_name, pairs| pairs.count { |entry, _prefix| entry[:found] } }
+  widths = tui_widths(groups)
 
   selected = 0
 
@@ -2102,7 +2103,7 @@ def format_tui(report)
     italic = tui.style(modifiers: [:italic])
 
     loop do
-      tui.draw { |frame| draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows) }
+      tui.draw { |frame| draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows, widths) }
 
       # poll_event with no timeout blocks indefinitely (confirmed
       #  directly against the gem's own Rust source, events.rs -
@@ -2163,7 +2164,7 @@ end
 #  single table would have behaved before this split. Only the area
 #  the globally-selected row actually falls in gets a `selected_row:`;
 #  every other area's table renders with none.
-def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows)
+def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows, widths)
   outer = tui.block(
     title: " #{report[:platform] || 'unrecognized'} (#{report[:uname]}) (q to quit, up/down to navigate) ",
     borders: [:all],
@@ -2199,14 +2200,21 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
     table = tui.table(
       header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
       rows: pairs.map { |entry, prefix| tui_row(tui, entry, prefix) },
-      # Package widened from 24 - confirmed directly 24 clips real
-      #  MSYS2/pacman package ids, e.g. "mingw-w64-ucrt-x86_64-gcc" (25
-      #  chars) or "-python" (28 chars), plus the manager icon prefix -
-      #  the underlying data was always correct (see pacman_owner/
-      #  prefetch_pacman!), only this fixed-width TUI column was cutting
-      #  it off; --format text's own dynamically-sized columns never had
-      #  this problem.
-      widths: [26, 34, 9, 12, 40],
+      # Name/Package/Status/Version sized to this report's own actual
+      #  content (tui_widths), not a fixed guess - confirmed directly a
+      #  fixed guess can't win: MSYS2/ucrt64's own package ids run
+      #  absurdly long ("mingw-w64-ucrt-x86_64-gcc"), needing a wide
+      #  Package column, while Windows' own full paths run long the same
+      #  way, needing that same width back for Path - a fixed Package
+      #  guess wide enough for ucrt64 left Path with nothing but wasted
+      #  blank space everywhere else, and pushed it off the right edge
+      #  entirely once a real Windows path showed up. Path gets a Fill
+      #  constraint instead of a computed width of its own - it always
+      #  absorbs whatever space is actually left after the other four
+      #  columns take only what their own content needs, rather than
+      #  needing a guess that's simultaneously right for every
+      #  platform's own path lengths.
+      widths: widths.map { |w| tui.constraint_length(w) } + [tui.constraint_fill(1)],
       column_spacing: 1,
       selected_row: local_selected,
       row_highlight_style: highlight,
@@ -2269,6 +2277,40 @@ def tui_row(tui, entry, prefix)
     entry[:version] || '-',
     display_path(entry[:path]) || '-'
   ]
+end
+
+# tui_widths(groups) - [name_width, package_width, status_width,
+#  version_width] for format_tui's own table, computed the same way
+#  table_widths does for the text formatter's fixed-width columns -
+#  except Package is measured from pkg_cell's icon-prefixed text, not
+#  the bare package name (row_parts/table_widths have no icon at all -
+#  text output never shows one), and Name is measured from the same
+#  prefix+name pairs draw_tui_frame itself renders (area_groups' own
+#  tree-branch glyphs), not a guessed constant. Confirmed directly this
+#  needed to be dynamic, not just nice-to-have: a fixed guess wide
+#  enough for MSYS2/ucrt64's own absurdly long package ids (e.g.
+#  "mingw-w64-ucrt-x86_64-gcc") left nothing but wasted blank space on
+#  every other platform, at the direct expense of Path - which needed
+#  that room back on Windows, where full paths run long. Path itself
+#  isn't included here - draw_tui_frame gives it a Fill constraint
+#  instead of a computed width, so it always takes whatever's left
+#  rather than needing a guess that's simultaneously right for every
+#  platform's own path lengths.
+def tui_widths(groups)
+  pairs = groups.flat_map { |_name, group_pairs| group_pairs }
+  name_width = ([TABLE_HEADERS[0].length] + pairs.map { |entry, prefix| "#{prefix}#{entry[:name]}".length }).max
+  # +1 per icon - confirmed directly this matters, not just theoretical:
+  #  every MANAGER_ICONS glyph is a single Unicode codepoint (String#length
+  #  1) that renders as a double-width terminal cell (2 columns), so
+  #  pkg_cell's own .length undercounts real display width by exactly 1 per
+  #  icon-bearing row - reproduced as the *last* character of the longest
+  #  package id silently clipped (off-by-one, not "too narrow").
+  package_width = ([TABLE_HEADERS[1].length] + pairs.map do |entry, _prefix|
+    pkg_cell(entry).length + (manager_icon(entry[:manager]).empty? ? 0 : 1)
+  end).max
+  status_width = ([TABLE_HEADERS[2].length] + pairs.map { |entry, _prefix| status_text(entry).length }).max
+  version_width = ([TABLE_HEADERS[3].length] + pairs.map { |entry, _prefix| (entry[:version] || '-').length }).max
+  [name_width, package_width, status_width, version_width]
 end
 
 # 'text' - the plain stdout report format_table has always produced.
