@@ -1829,7 +1829,23 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
   frame.render_widget(outer, frame.area)
   inner = outer.inner(frame.area)
 
-  constraints = groups.map { |_name, pairs| tui.constraint_length(pairs.length + 1) } + [tui.constraint_length(1)]
+  # Leftover vertical space (a terminal taller than the report actually
+  #  needs) split evenly across every area's own Length constraint,
+  #  rather than left as one unused block below the footer - confirmed
+  #  directly from a screenshot that plain content-sized Length
+  #  constraints left most of a tall terminal empty. Computed by hand
+  #  instead of switching each area to Constraint::Min and letting
+  #  ratatui's own solver grow them - confirmed directly that doesn't
+  #  distribute evenly either: with four Min constraints, one area
+  #  (arbitrarily, not first or last) absorbed 100% of the slack while
+  #  the other three stayed at their bare minimum.
+  needed = groups.map { |_name, pairs| pairs.length + 1 }
+  footer_height = 1
+  extra = [inner.height - needed.sum - footer_height, 0].max
+  base_extra = extra / groups.length
+  remainder = extra % groups.length
+  heights = needed.each_with_index.map { |h, i| h + base_extra + (i < remainder ? 1 : 0) }
+  constraints = heights.map { |h| tui.constraint_length(h) } + [tui.constraint_length(footer_height)]
   rects = tui.layout_split(inner, direction: :vertical, constraints: constraints)
 
   offset = 0
