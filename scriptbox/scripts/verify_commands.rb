@@ -9,7 +9,8 @@
 #  needs to resolve *one* language for the directory it's sitting in the
 #  way Script.rb does - it enumerates all of them at once).
 #
-#  Usage: ruby verify.rb [--format text|json|yaml|csv]
+#  Usage: ruby verify.rb [--format text|json|yaml|csv|tui]
+#  (defaults to tui when run at a terminal, text otherwise)
 
 require 'optparse'
 require 'json'
@@ -436,21 +437,33 @@ end
 def lookup_package_info(real, candidates = nil, original = nil)
   owner =
     if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-      pacman_owner(pacman, real)
+      tag_manager(pacman_owner(pacman, real), :pacman)
     elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
-      cygcheck_owner(cygcheck, real)
+      tag_manager(cygcheck_owner(cygcheck, real), :cygcheck)
     elsif (dpkg = find_on_path('dpkg'))
-      apt_owner(dpkg, real) ||
+      found = apt_owner(dpkg, real) ||
         (original && original != real && apt_owner(dpkg, original)) ||
         (variant = usrmerge_variant(real)) && apt_owner(dpkg, variant)
+      tag_manager(found, :apt)
     else
-      homebrew_owner(real) || macos_java_cask(real)
+      tag_manager(homebrew_owner(real), :homebrew) || tag_manager(macos_java_cask(real), :homebrew)
     end
   # SDKMAN and Chocolatey aren't tied to any one OS's own package
   #  manager the way pacman/cygcheck/dpkg/Homebrew above are, so both
   #  are tried as final catch-alls regardless of platform or which
   #  branch above ran, not as another elsif arm.
-  owner || chocolatey_owner(real, candidates) || sdkman_owner(real)
+  owner || tag_manager(chocolatey_owner(real, candidates), :chocolatey) || tag_manager(sdkman_owner(real), :sdkman)
+end
+
+# tag_manager(owner, manager) - nil-safe stamp of which package manager
+#  actually resolved `owner` (one of :pacman/:cygcheck/:apt/:homebrew/
+#  :chocolatey/:sdkman). lookup_package_info's own if/elsif dispatch is
+#  the only place that knows which owner_* function fired - callers
+#  further out (format_table, format_tui) just want the tag, not the
+#  dispatch logic that produced it. See MANAGER_ICONS for what a caller
+#  actually does with this.
+def tag_manager(owner, manager)
+  owner && owner.merge(manager: manager)
 end
 
 # brew_prefix - `brew --prefix`, memoized, once. Confirmed directly this
@@ -809,7 +822,7 @@ def prefetch_pacman!(pacman, paths)
     next unless m
 
     real = posix_map[m[1]]
-    PACKAGE_CACHE[real] = { name: m[2], version: m[3] } if real
+    PACKAGE_CACHE[real] = { name: m[2], version: m[3], manager: :pacman } if real
   end
 rescue StandardError
   nil
@@ -903,7 +916,7 @@ def prefetch_apt!(dpkg, real_to_original)
     name = pkgs.to_s.split(',').first.to_s.strip
     next if name.empty?
 
-    PACKAGE_CACHE[real] = { name: name, version: nil }
+    PACKAGE_CACHE[real] = { name: name, version: nil, manager: :apt }
     names << name
   end
   return if names.empty?
@@ -1330,7 +1343,7 @@ end
 #  handles this row identically to a real tool's.
 def resolve_psake_module
   pwsh = find_on_path('pwsh') || find_on_path('powershell')
-  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, path: nil, version: nil, name: 'psake' } unless pwsh
+  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, manager: nil, path: nil, version: nil, name: 'psake' } unless pwsh
 
   raw = `"#{pwsh}" -NoProfile -Command "(Get-Module -ListAvailable -Name psake | Select-Object -First 1).Version.ToString()" 2>#{NULL_DEVICE}`.strip
   found = !raw.empty? && raw !~ /error|not recognized|exception/i
@@ -1340,6 +1353,7 @@ def resolve_psake_module
     found: found,
     resolved_binary: found ? 'psake' : nil,
     package_name: nil,
+    manager: nil,
     path: nil,
     version: found ? raw : nil,
     name: 'psake'
@@ -1410,6 +1424,7 @@ def resolve_entry(candidates, version_mode, path_dirs = nil)
       #  the candidate name searched for isn't identical to the
       #  language's own display name.
       package_name: pkg && pkg[:name],
+      manager: pkg && pkg[:manager],
       path: to_posix(path),
       version: probe_version(name, path, version_mode) || (pkg && normalize_version(pkg[:version]))
     }
@@ -1433,6 +1448,7 @@ def format_table(report)
   ]
   report[:areas].each do |area|
     lines << "== #{area[:name]} =="
+    lines << table_header(widths)
     area[:languages].each do |lang|
       lines << table_row(lang[:name], lang, 0, widths)
       lang[:tools].each { |tool| lines << table_row(tool[:name], tool, 1, widths) }
@@ -1442,27 +1458,40 @@ def format_table(report)
   lines.join("\n")
 end
 
-# table_widths(report) - [label_width, status_width, version_width],
-#  each sized to the longest value that will actually appear in that
-#  column across the whole report. A fixed guess (the previous
-#  approach) silently breaks alignment for every row after the first
-#  one whose content runs longer than the guess - confirmed directly
-#  with a Debian epoch version string ("1:5.1.0-1ubuntu0.2") and a
-#  bracketed package discovery ("Java [java-17-amazon-corretto-jdk:amd64]"),
-#  both of which routinely exceed a fixed 14/36-char guess. Recomputed
-#  from the already-built report (pure string ops on data already
-#  resolved by build_report), not by re-probing any binary.
+# table_header(widths) - column header line, same layout table_row
+#  itself uses. Package became its own always-shown column (see
+#  row_parts) instead of a conditional "Label [pkg]" suffix - that older
+#  form was self-explanatory without a header; a bare extra column of
+#  text on every row isn't.
+TABLE_HEADERS = %w[Name Package Status Version].freeze
+
+def table_header(widths)
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *TABLE_HEADERS, 'Path')
+end
+
+# table_widths(report) - [label_width, package_width, status_width,
+#  version_width], each sized to the longest value that will actually
+#  appear in that column across the whole report *or* its own header
+#  label, whichever is longer - a short report (e.g. everything resolved
+#  to a 3-char package like "cmd") would otherwise misalign under a
+#  wider header like "Package". A fixed guess (the original approach)
+#  silently breaks alignment for every row after the first one whose
+#  content runs longer than the guess - confirmed directly with a Debian
+#  epoch version string ("1:5.1.0-1ubuntu0.2"), which exceeds a fixed
+#  14-char guess. Recomputed from the already-built report (pure string
+#  ops on data already resolved by build_report), not by re-probing any
+#  binary.
 def table_widths(report)
   parts = report[:areas].flat_map do |area|
     area[:languages].flat_map do |lang|
       [row_parts(lang[:name], lang, 0)] + lang[:tools].map { |tool| row_parts(tool[:name], tool, 1) }
     end
   end
-  (0..2).map { |i| parts.map { |p| p[i].length }.max || 0 }
+  (0..3).map { |i| ([TABLE_HEADERS[i].length] + parts.map { |p| p[i].length }).max }
 end
 
-# row_parts(label, entry, indent) - [label, status, version, path] as
-#  plain strings, no column padding applied yet - shared by
+# row_parts(label, entry, indent) - [label, package, status, version,
+#  path] as plain strings, no column padding applied yet - shared by
 #  table_widths (which only needs each string's length) and table_row
 #  (which pads them once the real widths are known).
 # display_path(path) - collapses a leading $HOME into "~", the
@@ -1489,21 +1518,16 @@ end
 def row_parts(label, entry, indent)
   status = entry[:found] ? 'OK' : 'MISSING'
   prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
-  # Surface a genuine package-identity discovery, e.g. "ksh" actually
-  #  provided by the "mksh" package on MSYS2 - not just an ordinary
-  #  every-day mismatch between the display label and whatever bare
-  #  command name was searched for (e.g. "Batch" vs "cmd"), which
-  #  package_name (unlike resolved_binary) is never set for at all.
-  pkg_name = entry[:package_name]
-  # Case-insensitive - confirmed directly, "Perl" vs. package "perl"
-  #  otherwise still counts as a "discovery" and shows a redundant
-  #  "Perl [perl]".
-  shown = pkg_name && !label.downcase.include?(pkg_name.downcase) ? "#{label} [#{pkg_name}]" : label
-  ["#{prefix}#{shown}", status, entry[:version] || '-', display_path(entry[:path]) || '-']
+  # Always its own column now, even when it's the same word as the
+  #  label (e.g. "Ruby" / "ruby") - previously this only showed at all
+  #  when it differed from label, folded into "Label [pkg]" inline. A
+  #  steady column position is worth the occasional redundant-looking
+  #  row; a column that silently vanishes depending on the data isn't.
+  ["#{prefix}#{label}", entry[:package_name] || '-', status, entry[:version] || '-', display_path(entry[:path]) || '-']
 end
 
 def table_row(label, entry, indent, widths)
-  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %s", *row_parts(label, entry, indent))
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *row_parts(label, entry, indent))
 end
 
 def format_json(report)
@@ -1542,38 +1566,214 @@ end
 def format_csv(report)
   require 'csv'
   CSV.generate do |csv|
-    csv << %w[Area Name Kind Parent Status Version Package Path]
+    csv << %w[Area Name Kind Parent Status Version Package Manager Path]
     report[:areas].each do |area|
       area[:languages].each do |lang|
-        csv << [area[:name], lang[:name], 'language', nil, lang[:found] ? 'OK' : 'MISSING', lang[:version], lang[:package_name], lang[:path]]
+        csv << [area[:name], lang[:name], 'language', nil, lang[:found] ? 'OK' : 'MISSING', lang[:version], lang[:package_name], lang[:manager], lang[:path]]
         lang[:tools].each do |tool|
-          csv << [area[:name], tool[:name], 'tool', lang[:name], tool[:found] ? 'OK' : 'MISSING', tool[:version], tool[:package_name], tool[:path]]
+          csv << [area[:name], tool[:name], 'tool', lang[:name], tool[:found] ? 'OK' : 'MISSING', tool[:version], tool[:package_name], tool[:manager], tool[:path]]
         end
       end
     end
   end
 end
 
+# MANAGER_ICONS - one glyph per :manager tag (see tag_manager) for
+#  format_tui's Package column. Only :pacman/:cygcheck/:apt/:homebrew/
+#  :chocolatey/:sdkman are wired to a real detector anywhere in this
+#  file (see lookup_package_info) - an ordinary PATH-only resolution (no
+#  package-manager owner found at all) gets no icon at all today, which
+#  is most tools - see MANAGER_ICON_FALLBACK. cpan/pip/gem/jar/composer
+#  detection doesn't exist yet; add a new tag_manager call site and a
+#  MANAGER_ICONS entry together if one gets built later, same pattern as
+#  every manager already here.
+MANAGER_ICONS = {
+  chocolatey: '🍫', # also stands in for a future plain NuGet-only detector
+  homebrew: '🍺',
+  apt: '📦',
+  cygcheck: '📦',
+  pacman: '📦', # also stands in for a future rpm/other-system-package detector
+  sdkman: '⚙️'  # version manager - the one category name already fits generically
+}.freeze
+# Blank, not a "?"/"unknown" glyph of any kind - an unmatched manager is
+#  the ordinary case (see MANAGER_ICONS's own comment), not an error
+#  condition worth calling attention to on every other row.
+MANAGER_ICON_FALLBACK = ''
+
+def manager_icon(manager)
+  MANAGER_ICONS.fetch(manager, MANAGER_ICON_FALLBACK)
+end
+
+# pkg_cell(entry) - the Package column's own text: icon prefixed
+#  directly onto the package name (not a separate column) - so the icon
+#  reads as "what kind of package is *this*", not as another fact about
+#  the language/tool row it happens to sit on. No leading space at all
+#  when there's no icon (MANAGER_ICON_FALLBACK is blank), rather than a
+#  permanent blank gutter character in front of every unmatched row.
+def pkg_cell(entry)
+  pkg = entry[:package_name] || '-'
+  icon = manager_icon(entry[:manager])
+  icon.empty? ? pkg : "#{icon} #{pkg}"
+end
+
+# format_tui(report) - interactive bordered-table view via the
+#  ratatui_ruby gem (https://rubygems.org/gems/ratatui_ruby, LGPL-3.0),
+#  a Rust-backed TUI library - not a default dependency of this project
+#  (see format_csv's own comment on why 'csv' is require'd lazily here
+#  rather than at file load time; same reasoning, doubly so for a gem
+#  that isn't even in Ruby's standard library). `gem install
+#  ratatui_ruby` first. No precompiled native gem exists for Intel
+#  macOS (x86_64-darwin) as of this writing - confirmed directly against
+#  rubygems.org's own version list, which has arm64-darwin, x86_64-
+#  linux, and x64-mingw-ucrt fat gems plus a source "ruby" platform gem
+#  - an Intel Mac falls through to that source gem and needs a local
+#  Rust toolchain (rustc/cargo) to compile it.
+#
+#  Arrow-key row selection (highlighted row, q/Esc to quit) plus a
+#  footer summary - matching ratatui.rs's own table example
+#  (https://ratatui.rs/examples/widgets/table/), per direct request
+#  after a screenshot of that example's actual rendered output. `rows:`
+#  and `selected` are plain values rebuilt every frame from a local
+#  `selected` index this method owns itself - ratatui_ruby's table
+#  factory takes `selected_row:` directly (a plain Integer), so there's
+#  no need for the separate TableState/render_stateful_widget path
+#  real ratatui's own Rust API requires for the same feature.
+def format_tui(report)
+  # Confirmed directly: with stdin redirected from /dev/null, this
+  #  still gets past init_terminal cleanly and just blocks forever on
+  #  the first poll_event, since no real key event can ever arrive -
+  #  no error, no output, nothing to Ctrl-C into from a script that
+  #  invoked this expecting "print and exit" like every other
+  #  formatter. Every other FORMATTERS entry is safe to run from a
+  #  pipe/CI job; this is the one exception, so it gets its own upfront
+  #  check rather than a silent hang discovered the hard way.
+  unless $stdout.tty?
+    raise "format_tui needs an interactive terminal (stdout isn't a TTY) - use --format text instead"
+  end
+
+  require 'ratatui_ruby'
+
+  # [entry, indent] pairs - kept together (rather than two separately
+  #  built lists) so rows/found_count below can't silently drift out of
+  #  sync with each other.
+  entries = report[:areas].flat_map do |area|
+    area[:languages].flat_map do |lang|
+      [[lang, 0]] + lang[:tools].map { |tool| [tool, 1] }
+    end
+  end
+  rows = entries.map { |entry, indent| tui_row(entry, indent) }
+  found_count = entries.count { |entry, _indent| entry[:found] }
+  footer = ["#{found_count}/#{entries.length} found", '', '', '', '']
+
+  selected = 0
+
+  RatatuiRuby.run do |tui|
+    # Bold header cells - confirmed directly the table factory's own
+    #  `header:` only accepts plain strings or full Paragraph widgets,
+    #  no header_style shortcut (see Widgets::Table's own signature), so
+    #  getting bold text means building each header cell as its own
+    #  styled Paragraph rather than a bare string - the same way
+    #  ratatui.rs's own table example does it. tui.style/tui.paragraph
+    #  are pure value-object factories, not I/O, but they need an
+    #  actual TUI instance to call them on - only exists once
+    #  RatatuiRuby.run has yielded one, hence built here and not above.
+    bold = tui.style(modifiers: [:bold])
+    header = %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) }
+    highlight = tui.style(fg: :black, bg: :yellow, modifiers: [:bold])
+    footer_style = tui.style(modifiers: [:italic])
+    footer_cells = footer.map { |text| tui.paragraph(text: text, style: footer_style) }
+
+    loop do
+      tui.draw do |frame|
+        table = tui.table(
+          header: header,
+          rows: rows,
+          footer: footer_cells,
+          widths: [26, 24, 9, 12, 40],
+          column_spacing: 1,
+          selected_row: selected,
+          row_highlight_style: highlight,
+          highlight_symbol: '👉 ',
+          block: tui.block(
+            title: " #{report[:platform] || 'unrecognized'} - #{report[:uname]} " \
+                   '(q to quit, up/down to navigate) ',
+            borders: [:all],
+            border_type: :rounded
+          )
+        )
+        frame.render_widget(table, frame.area)
+      end
+
+      # poll_event with no timeout blocks indefinitely (confirmed
+      #  directly against the gem's own Rust source, events.rs -
+      #  poll_data_accepts_none_timeout_for_indefinite_blocking) until a
+      #  real event arrives - no busy-wait/sleep needed.
+      event = tui.poll_event
+      next unless event.key?
+
+      break if event.esc? || event.char == 'q'
+
+      selected = (selected - 1) % rows.length if event.up?
+      selected = (selected + 1) % rows.length if event.down?
+    end
+  end
+  nil
+end
+
+# tui_row(entry, indent) - [name, package, status, version, path] for
+#  one format_tui row - the TUI's own equivalent of row_parts, kept
+#  separate rather than reused because the two have nothing but field
+#  names in common: row_parts returns pre-padded plain strings for a
+#  fixed-width text line, this returns raw values for ratatui_ruby's
+#  own table widget to lay out. Package carries its own manager icon
+#  (see pkg_cell) rather than a dedicated leading column - the icon
+#  describes the package, not the language/tool.
+def tui_row(entry, indent)
+  prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
+  [
+    "#{prefix}#{entry[:name]}",
+    pkg_cell(entry),
+    entry[:found] ? 'OK' : 'MISSING',
+    entry[:version] || '-',
+    display_path(entry[:path]) || '-'
+  ]
+end
+
 # 'text' - the plain stdout report format_table has always produced.
 #  Named for what it *is* (plain text to stdout), not how it's laid
-#  out, so a future interactive TUI formatter has an unambiguous name
-#  of its own to sit alongside it rather than overloading "table" to
-#  mean two different things.
+#  out, so 'tui' has an unambiguous name of its own to sit alongside it
+#  rather than overloading "table" to mean two different things.
 FORMATTERS = {
   'text' => method(:format_table),
   'json' => method(:format_json),
   'yaml' => method(:format_yaml),
-  'csv' => method(:format_csv)
+  'csv' => method(:format_csv),
+  'tui' => method(:format_tui)
 }.freeze
 
 if __FILE__ == $PROGRAM_NAME
-  format = 'text'
+  # Defaults to the interactive TUI when actually run by a person at a
+  #  terminal - the main way to play with this report now - and falls
+  #  back to the plain text report otherwise (piped, redirected, CI), so
+  #  nothing that invokes this non-interactively without an explicit
+  #  --format breaks. Confirmed directly nothing in this project
+  #  currently even could break either way: every caller
+  #  (run_all_tests.rb/.ps1, compile_check.rb, generate_install_sh.rb,
+  #  print_env_uname.rb) uses this file as a Ruby library
+  #  (require/require_relative straight into package_info etc.) or
+  #  shells out to a one-off `ruby -e`, never as a bare
+  #  `ruby verify_commands.rb` - but the tty-based fallback is still the
+  #  right default to have regardless, for whatever calls it that way
+  #  next.
+  format = $stdout.tty? ? 'tui' : 'text'
   OptionParser.new do |opts|
-    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv]'
+    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv|tui] ' \
+                  '(defaults to tui at a terminal, text otherwise)'
     opts.on('-f FORMAT', '--format FORMAT', FORMATTERS.keys, "Output format (#{FORMATTERS.keys.join('|')})") do |f|
       format = f
     end
   end.parse!
 
-  puts FORMATTERS.fetch(format).call(build_report)
+  result = FORMATTERS.fetch(format).call(build_report)
+  puts result unless result.nil?
 end
