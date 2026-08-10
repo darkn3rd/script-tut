@@ -107,7 +107,19 @@ AREAS = [
   {
     name: 'Compiled Languages',
     languages: [
-      { name: 'C++',   bin: %w[g++ clang++ cl],  version: :flag,    tools: %w[make] },
+      # "gcc" here is never actually found before g++/clang++/cl in
+      #  practice (a real gcc.exe usually does sit right alongside g++.exe
+      #  wherever a MinGW-style toolchain landed, so this can legitimately
+      #  resolve as a genuine last-resort binary too, unlike the "tcl"/
+      #  "jvm"/"rust" aliases elsewhere which never correspond to a real
+      #  file at all) - included mainly to widen the Chocolatey tag-search
+      #  net the same way: confirmed directly Strawberry Perl's own MinGW
+      #  toolchain (C:\Strawberry\c\bin\g++.exe) is otherwise invisible to
+      #  chocolatey_owner - none of "g++"/"clang++"/"cl" share a token or
+      #  tag with the "strawberryperl" package, but its own Tags do
+      #  include "gcc" (`choco list strawberryperl --by-tags-only` finds
+      #  it, unambiguously among what's actually installed).
+      { name: 'C++',   bin: %w[g++ clang++ cl gcc], version: :flag,  tools: %w[make] },
       { name: 'C#',    bin: %w[dotnet],          version: :flag,    tools: %w[make] },
       { name: 'Go',    bin: %w[go],              version: :go,      tools: %w[make] },
       # "jvm" here is never actually found as a real executable, same
@@ -117,7 +129,16 @@ AREAS = [
       #  own single-hit requirement), but `choco list jvm --by-tags-only`
       #  finds exactly "corretto17jdk", unambiguously.
       { name: 'Java',  bin: %w[javac java jvm],  version: :java,    tools: %w[make] },
-      { name: 'Rust',  bin: %w[rustc],           version: :flag,    tools: %w[make] },
+      # "rust" here is never actually found as a real executable (there's
+      #  no rust.exe) - same "tcl"/"jvm" trick, purely to widen the
+      #  Chocolatey tag-search net: confirmed directly `choco list rustc
+      #  --by-tags-only` matches nothing (the "rust" package's own Tags
+      #  are "rust cli portable programming language sdk" - no "rustc" in
+      #  there at all), but `choco list rust --by-tags-only` finds it
+      #  directly, unambiguously - resolve_binary already skips straight
+      #  past "rust" to "rustc" since that resolves first, at zero extra
+      #  cost.
+      { name: 'Rust',  bin: %w[rustc rust],      version: :flag,    tools: %w[make] },
     ]
   },
 ].freeze
@@ -442,19 +463,127 @@ rescue StandardError
   nil
 end
 
+# windows_shared_root?(dir) - true for a directory Chocolatey (or
+#  Windows itself) uses as one shared, multi-package location, never a
+#  single package's own install tree - confirmed directly this matters
+#  for directory_sibling_owner's own shared-root tier: "C:\tools" is
+#  $env:ChocolateyToolsLocation's own conventional default, the *parent*
+#  Ruby's own "C:\tools\ruby34" and Groovy's own "C:\tools\groovy-3.0.25"
+#  both sit under - two levels up from "C:\tools\ruby34\bin\rake.bat" is
+#  "C:\tools" itself, not anything Ruby-specific, so without this guard
+#  directory_sibling_owner's shared-root tier would just as happily
+#  attribute rake to Groovy (or whichever unrelated C:\tools\<pkg> entry
+#  PACKAGE_CACHE happened to resolve first) as to Ruby. Same reasoning
+#  covers $env:ChocolateyInstall's own bin/ shim directory (see
+#  chocolatey_owner's own comment: shims from dozens of unrelated
+#  packages sit side by side in it, indistinguishable by path alone) and
+#  %SystemRoot% (chocolatey_owner already excludes it outright for the
+#  same underlying reason - system directories are nobody's single
+#  install tree). Same normalized-comparison approach as chocolatey_owner
+#  's own %SystemRoot% guard (see its own comment on why a bare ENV
+#  lookup alone wasn't enough on at least one real machine).
+def windows_shared_root?(dir)
+  system_root = ENV['SystemRoot'] || ENV['windir']
+  system_root = 'C:\Windows' if system_root.to_s.empty?
+  choco_install = ENV['ChocolateyInstall']
+  choco_install = 'C:\ProgramData\chocolatey' if choco_install.to_s.empty?
+  choco_tools = ENV['ChocolateyToolsLocation']
+  choco_tools = 'C:\tools' if choco_tools.to_s.empty?
+
+  normalized = dir.to_s.downcase.tr('\\', '/')
+  [system_root, File.join(choco_install, 'bin'), choco_tools].any? do |root|
+    normalized == root.downcase.tr('\\', '/')
+  end
+end
+
+# directory_sibling_owner(real) - {name:, version:, manager:} copied
+#  straight from another binary already resolved (successfully) out of
+#  the same directory as `real`, or the same *shared install root* three
+#  levels up (.../root/component/bin/binary) - the last, most
+#  speculative fallback in the chain, tried only once everything more
+#  specific above has already declined. Confirmed directly both forms
+#  are needed, not just theoretical:
+#
+#  - Same directory: Ruby's own Chocolatey package places rake.bat in
+#    the identical bin/ directory as ruby.exe itself - a gem executable
+#    stub bundled straight into the interpreter's own install layout,
+#    not separately Chocolatey-tracked at all (ruby's own Tags carry
+#    nothing resembling "rake" to search for, so no alias trick like
+#    TCL's/Java's own can reach it).
+#  - Same shared root: Strawberry Perl's own install spreads across
+#    sibling subdirectories of one shared root - C:\Strawberry\perl\bin\
+#    perl.exe *and* C:\Strawberry\c\bin\g++.exe both three levels under
+#    C:\Strawberry itself (bin/ -> perl or c -> Strawberry) - so g++ is
+#    never in perl's own directory, but is under the same install root.
+#    A same-directory check alone can't reach this one; a tag alias (see
+#    C++'s own "gcc" candidate) doesn't reliably either - confirmed
+#    directly `choco list gcc --by-tags-only` returns *two* real hits on
+#    a machine with both MSYS2 and Strawberry Perl installed (both
+#    legitimately carry a "gcc" tag), so choco_tag_owner's own
+#    single-hit rule correctly declines rather than guess between them -
+#    the shared-root match is what actually disambiguates, from path
+#    structure Chocolatey's own tag metadata simply doesn't carry.
+#
+#  Reuses the sibling's whole owner hash verbatim, including its
+#  version - same "package identity of the shared install, not each
+#  individual bundled tool's own version" reasoning as rbenv_owner's own
+#  versions/ case; rake.bat/g++.exe are that same kind of bundled tool,
+#  just under Chocolatey instead of rbenv.
+#
+#  Gated to native_windows_ruby? - a single Chocolatey/installer-created
+#  directory tree genuinely being "one thing" is a safe enough
+#  assumption there (once windows_shared_root? has ruled out the
+#  directories that genuinely aren't), but nowhere near safe on a Unix
+#  system bin directory (/usr/bin holds hundreds of unrelated apt-owned
+#  binaries side by side); this only ever runs as a fallback after
+#  apt_owner/pacman_owner/homebrew_owner have already had their own, far
+#  more reliable per-file shot anyway, so restricting it to Windows here
+#  costs nothing there.
+def directory_sibling_owner(real)
+  return nil unless native_windows_ruby?
+
+  bin_dir = File.dirname(real.to_s)
+  shared_root = File.dirname(File.dirname(bin_dir))
+  # Each tier is gated independently, not both dropped together the
+  #  moment either one lands on a forbidden shared root - confirmed
+  #  directly this matters: Ruby's own "C:\tools\ruby34\bin" (rake's
+  #  same-directory anchor, entirely safe - no other package shares it)
+  #  sits three levels below the shared "C:\tools" root itself (rake's
+  #  shared-root anchor, correctly forbidden) - an early return the
+  #  moment *either* tier's anchor was forbidden would have silently
+  #  dropped the same-directory match too and left rake unresolved again.
+  try_bin_dir = !windows_shared_root?(bin_dir)
+  try_shared_root = !windows_shared_root?(shared_root)
+  return nil unless try_bin_dir || try_shared_root
+
+  _, owner = PACKAGE_CACHE.find do |cached_real, cached_owner|
+    next false unless cached_owner
+
+    cached_bin_dir = File.dirname(cached_real)
+    (try_bin_dir && cached_bin_dir == bin_dir) ||
+      (try_shared_root && File.dirname(File.dirname(cached_bin_dir)) == shared_root)
+  end
+  owner
+end
+
 # version_manager_owner(real, candidates, original) - the SDKMAN/
-#  Chocolatey/rbenv/rustup/pyenv catch-all chain, factored out of
-#  lookup_package_info so prefetch_pacman!/prefetch_apt! can also reach
-#  it (see their own comments) - none of these five are batch-listable
-#  the way pacman/apt are, so there's no bulk prefetch step for them
-#  either way; the only thing worth sharing is the chain itself, not
-#  when it runs.
+#  Chocolatey/rbenv/rustup/pyenv/directory-sibling catch-all chain,
+#  factored out of lookup_package_info so prefetch_pacman!/prefetch_apt!
+#  can also reach it (see their own comments) - none of these are
+#  batch-listable the way pacman/apt are, so there's no bulk prefetch
+#  step for them either way; the only thing worth sharing is the chain
+#  itself, not when it runs. directory_sibling_owner already returns a
+#  fully tag_manager-tagged hash (copied from whatever the sibling was
+#  itself tagged with) rather than a bare owner, so it's ORed in as-is,
+#  not wrapped in another tag_manager call the way every other link here
+#  is - that would stomp the sibling's real manager with the wrong one.
 def version_manager_owner(real, candidates = nil, original = nil)
   tag_manager(chocolatey_owner(real, candidates), :chocolatey) ||
     tag_manager(sdkman_owner(real), :sdkman) ||
     tag_manager(rbenv_owner(real), :rbenv) ||
     tag_manager(rustup_owner(real, original), :rustup) ||
-    tag_manager(pyenv_owner(real), :pyenv)
+    tag_manager(pyenv_owner(real), :pyenv) ||
+    directory_sibling_owner(real)
 end
 
 def lookup_package_info(real, candidates = nil, original = nil)
