@@ -1653,56 +1653,19 @@ def format_tui(report)
 
   require 'ratatui_ruby'
 
-  # [entry, indent] pairs - kept together (rather than two separately
-  #  built lists) so rows/found_count below can't silently drift out of
-  #  sync with each other.
-  entries = report[:areas].flat_map do |area|
-    area[:languages].flat_map do |lang|
-      [[lang, 0]] + lang[:tools].map { |tool| [tool, 1] }
-    end
-  end
-  rows = entries.map { |entry, indent| tui_row(entry, indent) }
-  found_count = entries.count { |entry, _indent| entry[:found] }
-  footer = ["#{found_count}/#{entries.length} found", '', '', '', '']
+  groups = area_groups(report)
+  total_rows = groups.sum { |_name, pairs| pairs.length }
+  found_count = groups.sum { |_name, pairs| pairs.count { |entry, _indent| entry[:found] } }
 
   selected = 0
 
   RatatuiRuby.run do |tui|
-    # Bold header cells - confirmed directly the table factory's own
-    #  `header:` only accepts plain strings or full Paragraph widgets,
-    #  no header_style shortcut (see Widgets::Table's own signature), so
-    #  getting bold text means building each header cell as its own
-    #  styled Paragraph rather than a bare string - the same way
-    #  ratatui.rs's own table example does it. tui.style/tui.paragraph
-    #  are pure value-object factories, not I/O, but they need an
-    #  actual TUI instance to call them on - only exists once
-    #  RatatuiRuby.run has yielded one, hence built here and not above.
     bold = tui.style(modifiers: [:bold])
-    header = %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) }
     highlight = tui.style(fg: :black, bg: :yellow, modifiers: [:bold])
-    footer_style = tui.style(modifiers: [:italic])
-    footer_cells = footer.map { |text| tui.paragraph(text: text, style: footer_style) }
+    italic = tui.style(modifiers: [:italic])
 
     loop do
-      tui.draw do |frame|
-        table = tui.table(
-          header: header,
-          rows: rows,
-          footer: footer_cells,
-          widths: [26, 24, 9, 12, 40],
-          column_spacing: 1,
-          selected_row: selected,
-          row_highlight_style: highlight,
-          highlight_symbol: '👉 ',
-          block: tui.block(
-            title: " #{report[:platform] || 'unrecognized'} - #{report[:uname]} " \
-                   '(q to quit, up/down to navigate) ',
-            borders: [:all],
-            border_type: :rounded
-          )
-        )
-        frame.render_widget(table, frame.area)
-      end
+      tui.draw { |frame| draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows) }
 
       # poll_event with no timeout blocks indefinitely (confirmed
       #  directly against the gem's own Rust source, events.rs -
@@ -1713,11 +1676,94 @@ def format_tui(report)
 
       break if event.esc? || event.char == 'q'
 
-      selected = (selected - 1) % rows.length if event.up?
-      selected = (selected + 1) % rows.length if event.down?
+      selected = (selected - 1) % total_rows if event.up? && total_rows.positive?
+      selected = (selected + 1) % total_rows if event.down? && total_rows.positive?
     end
   end
   nil
+end
+
+# area_groups(report) - [[area_name, [[entry, indent], ...]], ...],
+#  one group per AREA (Windows Scripts/Shell Scripts/General Scripts/
+#  Compiled Languages) rather than a single flattened list - see
+#  draw_tui_frame's own comment for why format_tui stopped flattening
+#  every area into one table.
+def area_groups(report)
+  report[:areas].map do |area|
+    pairs = area[:languages].flat_map do |lang|
+      [[lang, 0]] + lang[:tools].map { |tool| [tool, 1] }
+    end
+    [area[:name], pairs]
+  end
+end
+
+# draw_tui_frame(...) - one titled, bordered sub-block per area instead
+#  of a single table spanning the whole report - confirmed directly
+#  from a screenshot that a single flat table reads as one
+#  undifferentiated wall of rows, no visual seam between e.g. "Windows
+#  Scripts" and "Shell Scripts" at all. Each area keeps its own header
+#  row (ratatui's own column-width engine, computed per table) rather
+#  than one hand-aligned shared header pulled out separately above them
+#  all - a shared header's spacing would drift out of sync with each
+#  table's own internal column math the moment row content differs
+#  between areas, since nothing would keep the two in sync.
+#
+#  Borders are collapsed between adjacent areas: every area block draws
+#  only [:top, :left, :right] (never :bottom) - so the boundary between
+#  two stacked areas is drawn exactly once, by the area *below*, not
+#  twice as two independent full boxes touching would. The very last
+#  seam is closed by the outer platform-title block's own bottom border
+#  instead, the same way the first area's top seam is closed by the
+#  outer block's top border.
+#
+#  Selection stays a single flat index across every area (not one
+#  per-area selection) - see format_tui's own `selected`/up?/down?
+#  handling - so arrow-key navigation flows seamlessly from the last
+#  row of one area into the first row of the next, matching how a
+#  single table would have behaved before this split. Only the area
+#  the globally-selected row actually falls in gets a `selected_row:`;
+#  every other area's table renders with none.
+def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows)
+  outer = tui.block(
+    title: " #{report[:platform] || 'unrecognized'} (#{report[:uname]}) (q to quit, up/down to navigate) ",
+    borders: [:all],
+    border_type: :rounded
+  )
+  frame.render_widget(outer, frame.area)
+  inner = outer.inner(frame.area)
+
+  constraints = groups.map { |_name, pairs| tui.constraint_length(pairs.length + 1) } + [tui.constraint_length(1)]
+  rects = tui.layout_split(inner, direction: :vertical, constraints: constraints)
+
+  offset = 0
+  groups.each_with_index do |(name, pairs), i|
+    local_selected = selected - offset
+    local_selected = nil unless (0...pairs.length).cover?(local_selected)
+
+    table = tui.table(
+      header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
+      rows: pairs.map { |entry, indent| tui_row(entry, indent) },
+      widths: [26, 24, 9, 12, 40],
+      column_spacing: 1,
+      selected_row: local_selected,
+      row_highlight_style: highlight,
+      highlight_symbol: '👉 ',
+      # Default is :when_selected - confirmed directly that leaves each
+      #  area's own gutter width dependent on whether *that* table
+      #  currently happens to hold the selection, so every column across
+      #  every other (unselected) area visibly shifts left/right by the
+      #  highlight symbol's width as selection crosses an area boundary.
+      #  :always reserves the same gutter in every area's table
+      #  regardless of its own selection state, keeping columns aligned.
+      highlight_spacing: :always,
+      block: tui.block(title: " #{name} ", borders: %i[top left right])
+    )
+    frame.render_widget(table, rects[i])
+    offset += pairs.length
+  end
+
+  footer = tui.paragraph(text: "#{found_count}/#{total_rows} found", style: italic)
+  frame.render_widget(footer, rects.last)
 end
 
 # tui_row(entry, indent) - [name, package, status, version, path] for
