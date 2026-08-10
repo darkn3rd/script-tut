@@ -1493,12 +1493,24 @@ def format_table(report)
     lines << "== #{area[:name]} =="
     lines << table_header(widths)
     area[:languages].each do |lang|
-      lines << table_row(lang[:name], lang, 0, widths)
-      lang[:tools].each { |tool| lines << table_row(tool[:name], tool, 1, widths) }
+      lines << table_row(lang[:name], lang, '', widths)
+      lang[:tools].each_with_index { |tool, i| lines << table_row(tool[:name], tool, tool_prefix(lang[:tools], i), widths) }
     end
     lines << ''
   end
   lines.join("\n")
+end
+
+# tool_prefix(tools, index) - "  └─ " (tree-branch "last child")
+#  for the last entry in `tools`, "  ├─ " (tree-branch "more
+#  siblings follow") for every other one - real box-drawing characters
+#  instead of the plain-ASCII "\_" stand-in this used before, per direct
+#  request ("not very attractive"). A language row itself (top-level,
+#  not a tool) gets no prefix at all - callers pass '' for that case
+#  rather than calling this.
+def tool_prefix(tools, index)
+  glyph = index == tools.length - 1 ? '└─' : '├─'
+  "  #{glyph} "
 end
 
 # table_header(widths) - column header line, same layout table_row
@@ -1527,13 +1539,13 @@ end
 def table_widths(report)
   parts = report[:areas].flat_map do |area|
     area[:languages].flat_map do |lang|
-      [row_parts(lang[:name], lang, 0)] + lang[:tools].map { |tool| row_parts(tool[:name], tool, 1) }
+      [row_parts(lang[:name], lang, '')] + lang[:tools].each_with_index.map { |tool, i| row_parts(tool[:name], tool, tool_prefix(lang[:tools], i)) }
     end
   end
   (0..3).map { |i| ([TABLE_HEADERS[i].length] + parts.map { |p| p[i].length }).max }
 end
 
-# row_parts(label, entry, indent) - [label, package, status, version,
+# row_parts(label, entry, prefix) - [label, package, status, version,
 #  path] as plain strings, no column padding applied yet - shared by
 #  table_widths (which only needs each string's length) and table_row
 #  (which pads them once the real widths are known).
@@ -1596,9 +1608,8 @@ def status_text(entry)
   'MISSING'
 end
 
-def row_parts(label, entry, indent)
+def row_parts(label, entry, prefix)
   status = status_text(entry)
-  prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
   # Always its own column now, even when it's the same word as the
   #  label (e.g. "Ruby" / "ruby") - previously this only showed at all
   #  when it differed from label, folded into "Label [pkg]" inline. A
@@ -1607,8 +1618,8 @@ def row_parts(label, entry, indent)
   ["#{prefix}#{label}", entry[:package_name] || '-', status, entry[:version] || '-', display_path(entry[:path]) || '-']
 end
 
-def table_row(label, entry, indent, widths)
-  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *row_parts(label, entry, indent))
+def table_row(label, entry, prefix, widths)
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *row_parts(label, entry, prefix))
 end
 
 def format_json(report)
@@ -1738,7 +1749,7 @@ def format_tui(report)
 
   groups = area_groups(report)
   total_rows = groups.sum { |_name, pairs| pairs.length }
-  found_count = groups.sum { |_name, pairs| pairs.count { |entry, _indent| entry[:found] } }
+  found_count = groups.sum { |_name, pairs| pairs.count { |entry, _prefix| entry[:found] } }
 
   selected = 0
 
@@ -1766,15 +1777,18 @@ def format_tui(report)
   nil
 end
 
-# area_groups(report) - [[area_name, [[entry, indent], ...]], ...],
+# area_groups(report) - [[area_name, [[entry, prefix], ...]], ...],
 #  one group per AREA (Windows Scripts/Shell Scripts/General Scripts/
 #  Compiled Languages) rather than a single flattened list - see
 #  draw_tui_frame's own comment for why format_tui stopped flattening
-#  every area into one table.
+#  every area into one table. `prefix` is '' for a language row, or
+#  tool_prefix's tree-branch glyph for a tool row - computed once here
+#  rather than by every caller, same reasoning as table_widths/
+#  format_table sharing it on the text-table side.
 def area_groups(report)
   report[:areas].map do |area|
     pairs = area[:languages].flat_map do |lang|
-      [[lang, 0]] + lang[:tools].map { |tool| [tool, 1] }
+      [[lang, '']] + lang[:tools].each_with_index.map { |tool, i| [tool, tool_prefix(lang[:tools], i)] }
     end
     [area[:name], pairs]
   end
@@ -1825,7 +1839,7 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
 
     table = tui.table(
       header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
-      rows: pairs.map { |entry, indent| tui_row(tui, entry, indent) },
+      rows: pairs.map { |entry, prefix| tui_row(tui, entry, prefix) },
       widths: [26, 24, 9, 12, 40],
       column_spacing: 1,
       selected_row: local_selected,
@@ -1867,7 +1881,7 @@ def status_cell(tui, entry)
   tui.paragraph(text: text, style: tui.style(fg: STATUS_COLORS.fetch(text, :white)))
 end
 
-# tui_row(tui, entry, indent) - [name, package, status, version, path]
+# tui_row(tui, entry, prefix) - [name, package, status, version, path]
 #  for one format_tui row - the TUI's own equivalent of row_parts, kept
 #  separate rather than reused because the two have nothing but field
 #  names in common: row_parts returns pre-padded plain strings for a
@@ -1878,9 +1892,10 @@ end
 #  (unlike row_parts) only because status_cell does - building a
 #  styled Paragraph cell needs a live TUI instance, same reason the
 #  bold header Paragraphs get built inside RatatuiRuby.run and not
-#  before it (see format_tui's own comment).
-def tui_row(tui, entry, indent)
-  prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
+#  before it (see format_tui's own comment). `prefix` comes from
+#  area_groups (tool_prefix's tree-branch glyph, or '' for a language
+#  row) rather than being computed here, same as row_parts.
+def tui_row(tui, entry, prefix)
   [
     "#{prefix}#{entry[:name]}",
     pkg_cell(entry),
