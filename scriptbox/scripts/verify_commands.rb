@@ -434,6 +434,21 @@ rescue StandardError
   nil
 end
 
+# version_manager_owner(real, candidates, original) - the SDKMAN/
+#  Chocolatey/rbenv/rustup/pyenv catch-all chain, factored out of
+#  lookup_package_info so prefetch_pacman!/prefetch_apt! can also reach
+#  it (see their own comments) - none of these five are batch-listable
+#  the way pacman/apt are, so there's no bulk prefetch step for them
+#  either way; the only thing worth sharing is the chain itself, not
+#  when it runs.
+def version_manager_owner(real, candidates = nil, original = nil)
+  tag_manager(chocolatey_owner(real, candidates), :chocolatey) ||
+    tag_manager(sdkman_owner(real), :sdkman) ||
+    tag_manager(rbenv_owner(real), :rbenv) ||
+    tag_manager(rustup_owner(real, original), :rustup) ||
+    tag_manager(pyenv_owner(real), :pyenv)
+end
+
 def lookup_package_info(real, candidates = nil, original = nil)
   owner =
     if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
@@ -448,23 +463,20 @@ def lookup_package_info(real, candidates = nil, original = nil)
     else
       tag_manager(homebrew_owner(real), :homebrew) || tag_manager(macos_java_cask(real), :homebrew)
     end
-  # SDKMAN, Chocolatey, and pyenv aren't tied to any one OS's own
-  #  package manager the way pacman/cygcheck/dpkg/Homebrew above are,
-  #  so all three are tried as final catch-alls regardless of platform
-  #  or which branch above ran, not as another elsif arm.
-  owner ||
-    tag_manager(chocolatey_owner(real, candidates), :chocolatey) ||
-    tag_manager(sdkman_owner(real), :sdkman) ||
-    tag_manager(pyenv_owner(real), :pyenv)
+  # SDKMAN, Chocolatey, pyenv, rbenv, and rustup aren't tied to any one
+  #  OS's own package manager the way pacman/cygcheck/dpkg/Homebrew
+  #  above are, so all five are tried as final catch-alls regardless of
+  #  platform or which branch above ran, not as another elsif arm.
+  owner || version_manager_owner(real, candidates, original)
 end
 
 # tag_manager(owner, manager) - nil-safe stamp of which package manager
 #  actually resolved `owner` (one of :pacman/:cygcheck/:apt/:homebrew/
-#  :chocolatey/:sdkman/:pyenv). lookup_package_info's own if/elsif
-#  dispatch is the only place that knows which owner_* function fired -
-#  callers further out (format_table, format_tui) just want the tag,
-#  not the dispatch logic that produced it. See MANAGER_ICONS for what
-#  a caller actually does with this.
+#  :chocolatey/:sdkman/:rbenv/:rustup/:pyenv). lookup_package_info's own
+#  if/elsif dispatch is the only place that knows which owner_*
+#  function fired - callers further out (format_table, format_tui) just
+#  want the tag, not the dispatch logic that produced it. See
+#  MANAGER_ICONS for what a caller actually does with this.
 def tag_manager(owner, manager)
   owner && owner.merge(manager: manager)
 end
@@ -617,6 +629,94 @@ def pyenv_owner(real)
   return nil unless root && real.to_s.start_with?("#{root}/shims/")
 
   raw = `"#{real}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
+end
+
+# rbenv_root - $RBENV_ROOT if set, else the conventional ~/.rbenv - same
+#  override-then-default reasoning as pyenv_root/sdkman_dir.
+def rbenv_root
+  return @rbenv_root if defined?(@rbenv_root)
+
+  configured = ENV['RBENV_ROOT']
+  @rbenv_root = configured && !configured.empty? ? configured : File.join(Dir.home, '.rbenv')
+rescue StandardError
+  @rbenv_root = nil
+end
+
+# rbenv_owner(real) - {name:, version:} for an rbenv-managed Ruby/gem
+#  binary, tagged :rbenv (same version-manager category as :sdkman/
+#  :pyenv). "<root>/versions/<version>/bin/<name>" is parsed straight
+#  from the path - same reasoning as sdkman_owner, not pyenv_owner:
+#  every binary under one "versions/<version>/bin/" directory (ruby
+#  itself, but also every gem executable it ships or that's been
+#  `gem install`-ed into it - rake, bundle, irb, ...) belongs to that
+#  one rbenv-installed Ruby, the same way every tool under one SDKMAN
+#  candidate directory belongs to that one JDK - confirmed directly per
+#  direct correction: rake's own --version (its gem version, e.g.
+#  "13.3.1") is a real, different number from the Ruby it's bundled
+#  into, but the Package column is meant to answer "what did the version
+#  manager install here", not "what does this specific binary self-
+#  report" - shelling out per tool would answer the wrong question for
+#  every gem shim, correctly only for `ruby` itself. Also confirmed
+#  directly this is the form that actually shows up in practice: some
+#  rbenv setups (e.g. the Ubuntu rbenv package driving a user-populated
+#  $RBENV_ROOT) put the active version's own bin/ ahead of shims/ on
+#  PATH, so find_on_path/realpath land straight on the versioned binary
+#  and never see a shim path at all.
+#
+#  "<root>/shims/<name>" (the standard rbenv init layout, when it is
+#  what PATH resolves to) carries no version in the path at all - a shim
+#  is a single version-agnostic dispatcher, not tied to one installed
+#  Ruby the way the versions/ directory is - so that case still falls
+#  back to running `--version` directly, same as pyenv_owner; it can't
+#  answer the "which Ruby owns this gem" question either way without a
+#  real rbenv resolution (`rbenv which`/`rbenv version-name`) this
+#  doesn't attempt.
+def rbenv_owner(real)
+  root = rbenv_root
+  return nil unless root
+
+  m = real.to_s.match(%r{\A#{Regexp.escape(root)}/versions/([^/]+)/bin/})
+  return { name: m[1], version: m[1] } if m
+
+  return nil unless real.to_s.start_with?("#{root}/shims/")
+
+  raw = `"#{real}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
+end
+
+# cargo_home - $CARGO_HOME if set, else the conventional ~/.cargo - same
+#  override-then-default reasoning as rbenv_root/pyenv_root.
+def cargo_home
+  return @cargo_home if defined?(@cargo_home)
+
+  configured = ENV['CARGO_HOME']
+  @cargo_home = configured && !configured.empty? ? configured : File.join(Dir.home, '.cargo')
+rescue StandardError
+  @cargo_home = nil
+end
+
+# rustup_owner(real, original) - {name:, version:} for a rustup-managed
+#  toolchain proxy, tagged :rustup (same version-manager category as
+#  :sdkman/:pyenv/:rbenv). Unlike every other manager here, rustup has
+#  no per-tool versioned directory to match at all - confirmed directly,
+#  "rustc"/"cargo"/"rustfmt"/etc. under "$CARGO_HOME/bin/" are each a
+#  symlink to the exact same "rustup" multiplexer binary, so `real`
+#  (already realpath'd by package_info) is always just
+#  "$CARGO_HOME/bin/rustup" regardless of which tool was actually
+#  resolved - there's nothing tool- or version-specific left in the path
+#  to key off. `original` (the pre-realpath path package_info already
+#  carries for exactly this kind of case - see apt_owner's own usrmerge
+#  handling) is what still points at the real tool name, so that's what
+#  gets run for `--version`: invoking the "rustup" binary itself would
+#  only ever report rustup's own version, not the active toolchain's.
+def rustup_owner(real, original)
+  home = cargo_home
+  return nil unless home && original && real.to_s == File.join(home, 'bin', 'rustup')
+
+  raw = `"#{original}" --version < #{NULL_DEVICE} 2>&1`.strip
   version = raw[/(\d+(?:\.\d+)+)/, 1]
   version && { name: version, version: version }
 end
@@ -812,7 +912,7 @@ def prefetch_package_info!
   real_to_original = originals.each_with_object({}) { |p, h| h[realpath(p)] = p }
 
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-    prefetch_pacman!(pacman, real_to_original.keys)
+    prefetch_pacman!(pacman, real_to_original)
   elsif (dpkg = find_on_path('dpkg')) && !cygwin_environment?
     prefetch_apt!(dpkg, real_to_original)
   end
@@ -843,15 +943,23 @@ rescue StandardError
   false
 end
 
-# prefetch_pacman!(pacman, paths) - one `pacman -Qo <path1> <path2> ...`
-#  batch call instead of one per path - pacman prints one
-#  "<path> is owned by <pkgname> <pkgver>" line per *found* path (an
-#  unowned one just gets its own "error: No package owns <path>" line,
-#  confirmed directly - silently skipped by the match below), so every
-#  queried path gets marked "not owned" (nil) up front and only
-#  overwritten for the ones that actually match a line back.
-def prefetch_pacman!(pacman, paths)
-  posix_map = paths.each_with_object({}) { |p, h| h[to_posix(p)] = p }
+# prefetch_pacman!(pacman, real_to_original) - one
+#  `pacman -Qo <path1> <path2> ...` batch call instead of one per path -
+#  pacman prints one "<path> is owned by <pkgname> <pkgver>" line per
+#  *found* path (an unowned one just gets its own "error: No package
+#  owns <path>" line, confirmed directly - silently skipped by the
+#  match below), so every queried path gets marked "not owned" (nil) up
+#  front and only overwritten for the ones that actually match a line
+#  back. "Not owned by pacman" isn't the same as "not owned by
+#  anything", though - confirmed directly this is the common case for
+#  MSYS2 itself: pacman only tracks MSYS2's own packages, so anything a
+#  version manager placed under $HOME (pyenv/rbenv/rustup/SDKMAN, all
+#  routine on this same MSYS2 box) would otherwise sit permanently
+#  cached nil - the trailing pass below gives each of those its one
+#  shot, same as an ordinary lookup_package_info cache-miss would get
+#  outside of prefetch (see version_manager_owner).
+def prefetch_pacman!(pacman, real_to_original)
+  posix_map = real_to_original.each_key.each_with_object({}) { |p, h| h[to_posix(p)] = p }
   posix_map.each_value { |real| PACKAGE_CACHE[real] = nil }
 
   raw = `"#{pacman}" -Qo #{posix_map.keys.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
@@ -861,6 +969,12 @@ def prefetch_pacman!(pacman, paths)
 
     real = posix_map[m[1]]
     PACKAGE_CACHE[real] = { name: m[2], version: m[3], manager: :pacman } if real
+  end
+
+  real_to_original.each do |real, original|
+    next if PACKAGE_CACHE[real]
+
+    PACKAGE_CACHE[real] = version_manager_owner(real, nil, original)
   end
 rescue StandardError
   nil
@@ -957,19 +1071,33 @@ def prefetch_apt!(dpkg, real_to_original)
     PACKAGE_CACHE[real] = { name: name, version: nil, manager: :apt }
     names << name
   end
-  return if names.empty?
 
-  info = `"#{dpkg}" -s #{names.uniq.map { |n| "\"#{n}\"" }.join(' ')} 2>&1`
-  versions = {}
-  current = nil
-  info.each_line do |line|
-    if line.start_with?('Package:')
-      current = line.sub(/\APackage:\s*/, '').strip
-    elsif line.start_with?('Version:') && current
-      versions[current] = line.sub(/\AVersion:\s*/, '').strip
+  unless names.empty?
+    info = `"#{dpkg}" -s #{names.uniq.map { |n| "\"#{n}\"" }.join(' ')} 2>&1`
+    versions = {}
+    current = nil
+    info.each_line do |line|
+      if line.start_with?('Package:')
+        current = line.sub(/\APackage:\s*/, '').strip
+      elsif line.start_with?('Version:') && current
+        versions[current] = line.sub(/\AVersion:\s*/, '').strip
+      end
     end
+    PACKAGE_CACHE.each_value { |pkg| pkg[:version] = versions[pkg[:name]] if pkg && versions.key?(pkg[:name]) }
   end
-  PACKAGE_CACHE.each_value { |pkg| pkg[:version] = versions[pkg[:name]] if pkg && versions.key?(pkg[:name]) }
+
+  # apt not owning a path is the common case for anything a version
+  #  manager placed under $HOME instead (pyenv/rbenv/rustup/SDKMAN) -
+  #  each of those gets exactly one more shot per still-nil path here,
+  #  same as an ordinary lookup_package_info cache-miss would get
+  #  outside of prefetch (see version_manager_owner). Previously this
+  #  method just left every apt-less path cached nil for good - dpkg's
+  #  own batch answer was never the *whole* answer to begin with.
+  real_to_original.each do |real, original|
+    next if PACKAGE_CACHE[real]
+
+    PACKAGE_CACHE[real] = version_manager_owner(real, nil, original)
+  end
 rescue StandardError
   nil
 end
@@ -1672,14 +1800,15 @@ end
 
 # MANAGER_ICONS - one glyph per :manager tag (see tag_manager) for
 #  format_tui's Package column. Only :pacman/:cygcheck/:apt/:homebrew/
-#  :chocolatey/:sdkman/:pyenv are wired to a real detector anywhere in
-#  this file (see lookup_package_info) - an ordinary PATH-only
-#  resolution (no package-manager owner found at all) gets no icon at
-#  all today, which is most tools - see MANAGER_ICON_FALLBACK. cpan/
-#  gem/jar/composer detection doesn't exist yet; add a new tag_manager
-#  call site and a MANAGER_ICONS entry together if one gets built
-#  later, same pattern as every manager already here (pyenv itself is
-#  exactly that pattern applied to Python: see pyenv_owner).
+#  :chocolatey/:sdkman/:rbenv/:rustup/:pyenv are wired to a real
+#  detector anywhere in this file (see lookup_package_info) - an
+#  ordinary PATH-only resolution (no package-manager owner found at
+#  all) gets no icon at all today, which is most tools - see
+#  MANAGER_ICON_FALLBACK. cpan/gem/jar/composer detection doesn't exist
+#  yet; add a new tag_manager call site and a MANAGER_ICONS entry
+#  together if one gets built later, same pattern as every manager
+#  already here (pyenv itself is exactly that pattern applied to
+#  Python: see pyenv_owner).
 MANAGER_ICONS = {
   chocolatey: '🍫', # also stands in for a future plain NuGet-only detector
   homebrew: '🍺',
@@ -1687,7 +1816,9 @@ MANAGER_ICONS = {
   cygcheck: '📦',
   pacman: '📦', # also stands in for a future rpm/other-system-package detector
   sdkman: '⚙️', # version manager
-  pyenv: '⚙️'   # also a version manager - same icon as sdkman, same category
+  rbenv: '⚙️',  # also a version manager - same icon as sdkman, same category
+  rustup: '⚙️', # ditto
+  pyenv: '⚙️'   # ditto
 }.freeze
 # Blank, not a "?"/"unknown" glyph of any kind - an unmatched manager is
 #  the ordinary case (see MANAGER_ICONS's own comment), not an error
