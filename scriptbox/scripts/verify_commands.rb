@@ -80,7 +80,15 @@ AREAS = [
     name: 'General Scripts',
     languages: [
       { name: 'AWK',     bin: %w[gawk awk],       version: :flag },
-      { name: 'Groovy',  bin: %w[groovy],         version: :flag, tools: %w[java] },
+      # "jvm" is a second alias candidate for the java tool row, not a
+      #  real binary name - chocolatey_owner needs it in the candidates
+      #  list to reach corretto17jdk (see its own comment on choco_tag_owner
+      #  and Java's own "javac java jvm" bin: list above): "java" alone
+      #  tags 4 different installed packages, an ambiguity choco_tag_owner
+      #  correctly declines to guess through, so without "jvm" here this
+      #  row is stuck reporting no package at all, unlike the top-level
+      #  Java language entry right below it, which already carries "jvm".
+      { name: 'Groovy',  bin: %w[groovy],         version: :flag, tools: [%w[java jvm]] },
       { name: 'Perl',    bin: %w[perl],           version: :flag, tools: %w[cpanm] },
       { name: 'PHP',     bin: %w[php],            version: :flag },
       { name: 'Python2', bin: %w[python2],        version: :flag },
