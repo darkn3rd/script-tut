@@ -1847,19 +1847,32 @@ STATUS_UNAVAILABLE = 'N/A'
 # platform_inapplicable?(entry) - true if `entry`'s own windows_only/
 #  unix_only tag (set in AREAS, carried through by resolve_language)
 #  doesn't match the platform this report is actually running on.
-#  Gem.win_platform? is true for both a native and a Cygwin-hosted Ruby
-#  (see native_windows_ruby?'s own comment on that distinction) - the
-#  right line here, since cmd.exe/cscript.exe are equally reachable
-#  either way, and a POSIX shell is equally "not the default" either
-#  way. Doesn't special-case WSL1's own real-Windows-tools-via-/mnt/c
-#  reachability (see AREAS's own Batch comment) - a WSL1 Ruby that's
+#
+#  windows_only still keys off plain Gem.win_platform? alone (true for a
+#  native, MSYS2/MinGW, *and* a Cygwin-hosted Ruby - see
+#  native_windows_ruby?'s own comment on that distinction) - cmd.exe/
+#  cscript.exe are equally reachable from all three, a real Windows OS
+#  underneath regardless of which shell layer is on top.
+#
+#  unix_only is different - confirmed directly the old single `win`
+#  check got this backwards for MSYS2/Cygwin specifically: a POSIX shell
+#  genuinely *is* the default there (that's the entire point of either
+#  environment), so an actually-missing zsh reading N/A instead of
+#  MISSING on MSYS2 was actively misleading, not a neutral "not
+#  applicable here" the way it correctly is on plain cmd.exe/PowerShell/
+#  pwsh with no POSIX layer at all. unix_only is only ever inapplicable
+#  on that last, genuinely-native case - $MSYSTEM (set inside any MSYS2
+#  shell) or a real Cygwin session rules it back in. Doesn't
+#  special-case WSL1's own real-Windows-tools-via-/mnt/c reachability
+#  for windows_only (see AREAS's own Batch comment) - a WSL1 Ruby that's
 #  genuinely Linux-native reports Gem.win_platform? false, so a Batch
 #  entry that's actually unreachable there still reads MISSING, not
 #  N/A; a real find still overrides this either way (see status_text),
 #  so the only effect is which word an already-absent WSL1 Batch gets.
 def platform_inapplicable?(entry)
   win = Gem.win_platform?
-  (entry[:windows_only] && !win) || (entry[:unix_only] && win)
+  native_windows_only = win && !ENV['MSYSTEM'] && !cygwin_environment?
+  (entry[:windows_only] && !win) || (entry[:unix_only] && native_windows_only)
 end
 
 # status_text(entry) - 'OK' / 'MISSING' / STATUS_UNAVAILABLE, in that
@@ -1946,16 +1959,33 @@ end
 #  together if one gets built later, same pattern as every manager
 #  already here (pyenv itself is exactly that pattern applied to
 #  Python: see pyenv_owner).
+# "⚙️" (U+2699 GEAR + U+FE0F variation selector) was the original
+#  version-manager icon here, replaced after confirmed directly this
+#  isn't just a cosmetic misalignment: format_tui, under ratatui_ruby,
+#  visibly corrupted OTHER cells' text on any row using it the moment
+#  that row's selection state changed (arrow key up/down) - e.g. "ruby"
+#  rendered as "ubyy", "python2" as "pytho22", version numbers scrambled
+#  the same way - and the corruption persisted across later redraws
+#  instead of resetting. U+2699 alone is Unicode "ambiguous width" (not
+#  a standalone wide pictograph the way 🍫/🍺/📦 above are), so a real
+#  terminal rendering it as a 2-column emoji glyph while ratatui_ruby's
+#  own Rust-side layout math sizes it as 1 column is a plausible root
+#  cause: a live buffer-offset mismatch in native (non-Ruby) code, well
+#  outside anything this file can fix directly - swapping to a single
+#  unambiguous-width codepoint (no variation selector, same category as
+#  every other manager icon here) sidesteps triggering it at all. 🔧
+#  keeps the distinct "version manager, not package manager" meaning the
+#  gear was chosen for.
 MANAGER_ICONS = {
   chocolatey: '🍫', # also stands in for a future plain NuGet-only detector
   homebrew: '🍺',
   apt: '📦',
   cygcheck: '📦',
   pacman: '📦', # also stands in for a future rpm/other-system-package detector
-  sdkman: '⚙️', # version manager
-  rbenv: '⚙️',  # also a version manager - same icon as sdkman, same category
-  rustup: '⚙️', # ditto
-  pyenv: '⚙️'   # ditto
+  sdkman: '🔧', # version manager
+  rbenv: '🔧',  # also a version manager - same icon as sdkman, same category
+  rustup: '🔧', # ditto
+  pyenv: '🔧'   # ditto
 }.freeze
 # Blank, not a "?"/"unknown" glyph of any kind - an unmatched manager is
 #  the ordinary case (see MANAGER_ICONS's own comment), not an error
@@ -2124,7 +2154,14 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
     table = tui.table(
       header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
       rows: pairs.map { |entry, prefix| tui_row(tui, entry, prefix) },
-      widths: [26, 24, 9, 12, 40],
+      # Package widened from 24 - confirmed directly 24 clips real
+      #  MSYS2/pacman package ids, e.g. "mingw-w64-ucrt-x86_64-gcc" (25
+      #  chars) or "-python" (28 chars), plus the manager icon prefix -
+      #  the underlying data was always correct (see pacman_owner/
+      #  prefetch_pacman!), only this fixed-width TUI column was cutting
+      #  it off; --format text's own dynamically-sized columns never had
+      #  this problem.
+      widths: [26, 34, 9, 12, 40],
       column_spacing: 1,
       selected_row: local_selected,
       row_highlight_style: highlight,
