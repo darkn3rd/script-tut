@@ -448,20 +448,23 @@ def lookup_package_info(real, candidates = nil, original = nil)
     else
       tag_manager(homebrew_owner(real), :homebrew) || tag_manager(macos_java_cask(real), :homebrew)
     end
-  # SDKMAN and Chocolatey aren't tied to any one OS's own package
-  #  manager the way pacman/cygcheck/dpkg/Homebrew above are, so both
-  #  are tried as final catch-alls regardless of platform or which
-  #  branch above ran, not as another elsif arm.
-  owner || tag_manager(chocolatey_owner(real, candidates), :chocolatey) || tag_manager(sdkman_owner(real), :sdkman)
+  # SDKMAN, Chocolatey, and pyenv aren't tied to any one OS's own
+  #  package manager the way pacman/cygcheck/dpkg/Homebrew above are,
+  #  so all three are tried as final catch-alls regardless of platform
+  #  or which branch above ran, not as another elsif arm.
+  owner ||
+    tag_manager(chocolatey_owner(real, candidates), :chocolatey) ||
+    tag_manager(sdkman_owner(real), :sdkman) ||
+    tag_manager(pyenv_owner(real), :pyenv)
 end
 
 # tag_manager(owner, manager) - nil-safe stamp of which package manager
 #  actually resolved `owner` (one of :pacman/:cygcheck/:apt/:homebrew/
-#  :chocolatey/:sdkman). lookup_package_info's own if/elsif dispatch is
-#  the only place that knows which owner_* function fired - callers
-#  further out (format_table, format_tui) just want the tag, not the
-#  dispatch logic that produced it. See MANAGER_ICONS for what a caller
-#  actually does with this.
+#  :chocolatey/:sdkman/:pyenv). lookup_package_info's own if/elsif
+#  dispatch is the only place that knows which owner_* function fired -
+#  callers further out (format_table, format_tui) just want the tag,
+#  not the dispatch logic that produced it. See MANAGER_ICONS for what
+#  a caller actually does with this.
 def tag_manager(owner, manager)
   owner && owner.merge(manager: manager)
 end
@@ -581,6 +584,41 @@ def sdkman_owner(real)
 
   m = real.to_s.match(%r{\A#{Regexp.escape(dir)}/candidates/([^/]+)/([^/]+)/})
   m && { name: m[1], version: m[2] }
+end
+
+# pyenv_root - $PYENV_ROOT if set, else the conventional ~/.pyenv -
+#  same override-then-default reasoning as sdkman_dir, since pyenv
+#  itself honors this same env var for where its shims/versions live.
+def pyenv_root
+  return @pyenv_root if defined?(@pyenv_root)
+
+  configured = ENV['PYENV_ROOT']
+  @pyenv_root = configured && !configured.empty? ? configured : File.join(Dir.home, '.pyenv')
+rescue StandardError
+  @pyenv_root = nil
+end
+
+# pyenv_owner(real) - {name:, version:} for a pyenv-managed Python
+#  shim, tagged :pyenv (a version manager - same MANAGER_ICONS category
+#  as :sdkman). The "package name" shown is the interpreter's own
+#  resolved version string (e.g. "2.7.18"), not a package id at all -
+#  pyenv shims are real files, not symlinks (unlike SDKMAN's own
+#  versioned-directory symlink - see sdkman_owner's own comment), so
+#  realpath is a no-op on one and there's no version-bearing path
+#  segment to extract the way sdkman_owner does. Runs the shim's own
+#  --version directly rather than asking pyenv itself (`pyenv
+#  version-name`/`pyenv which`) - the shim already resolves
+#  PYENV_VERSION/.python-version internally the exact same way a normal
+#  invocation would, so this can't disagree with what the Version
+#  column (probe_version, run separately) reports, and doesn't need
+#  `pyenv` itself to be a separately resolvable binary on PATH.
+def pyenv_owner(real)
+  root = pyenv_root
+  return nil unless root && real.to_s.start_with?("#{root}/shims/")
+
+  raw = `"#{real}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
 end
 
 # choco_installed_list(choco) - {package id => version}, from one
@@ -1623,20 +1661,22 @@ end
 
 # MANAGER_ICONS - one glyph per :manager tag (see tag_manager) for
 #  format_tui's Package column. Only :pacman/:cygcheck/:apt/:homebrew/
-#  :chocolatey/:sdkman are wired to a real detector anywhere in this
-#  file (see lookup_package_info) - an ordinary PATH-only resolution (no
-#  package-manager owner found at all) gets no icon at all today, which
-#  is most tools - see MANAGER_ICON_FALLBACK. cpan/pip/gem/jar/composer
-#  detection doesn't exist yet; add a new tag_manager call site and a
-#  MANAGER_ICONS entry together if one gets built later, same pattern as
-#  every manager already here.
+#  :chocolatey/:sdkman/:pyenv are wired to a real detector anywhere in
+#  this file (see lookup_package_info) - an ordinary PATH-only
+#  resolution (no package-manager owner found at all) gets no icon at
+#  all today, which is most tools - see MANAGER_ICON_FALLBACK. cpan/
+#  gem/jar/composer detection doesn't exist yet; add a new tag_manager
+#  call site and a MANAGER_ICONS entry together if one gets built
+#  later, same pattern as every manager already here (pyenv itself is
+#  exactly that pattern applied to Python: see pyenv_owner).
 MANAGER_ICONS = {
   chocolatey: '🍫', # also stands in for a future plain NuGet-only detector
   homebrew: '🍺',
   apt: '📦',
   cygcheck: '📦',
   pacman: '📦', # also stands in for a future rpm/other-system-package detector
-  sdkman: '⚙️'  # version manager - the one category name already fits generically
+  sdkman: '⚙️', # version manager
+  pyenv: '⚙️'   # also a version manager - same icon as sdkman, same category
 }.freeze
 # Blank, not a "?"/"unknown" glyph of any kind - an unmatched manager is
 #  the ordinary case (see MANAGER_ICONS's own comment), not an error
