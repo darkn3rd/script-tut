@@ -57,6 +57,67 @@ narrow `ruby -e "..."` that `rb-sys-build`'s own Rust build script spawns just t
 `RbConfig` - a context with no RubyGems loaded at all. Without the rescue, that
 unrelated subprocess crashes and takes the whole build down.
 
+#### Interactive TUI (`--format tui`) on Cygwin
+
+The steps above get `gem install ratatui_ruby` and `require 'ratatui_ruby'` working,
+but the *interactive* TUI mode (arrow-key navigation, `q`/Esc to quit) needs one more
+fix, confirmed working end-to-end against a real `ruby verify_commands.rb --format tui`
+session: without it, the TUI draws its first frame fine but then completely freezes -
+no response to arrows, `q`, Esc, or even Ctrl-C (raw mode disables Ctrl-C's signal
+delivery by design; the freeze itself is the real symptom) - and has to be killed from
+another terminal. Confirmed this reproduces identically in both mintty and Windows
+Terminal, and is specific to the Cygwin build - the same script works fine via MSYS2,
+WSL2, and native Windows/PowerShell.
+
+Root cause: `ratatui_ruby`'s `crossterm` dependency defaults to reading input via
+`mio`'s `poll()`-based selector on Cygwin (grouped alongside far-less-tested targets
+like Solaris/QNX/Vita, not Linux's well-exercised epoll path), and that path doesn't
+reliably notice available input on a Cygwin tty. Forcing crossterm's alternate
+`use-dev-tty` feature - a much simpler direct blocking read on `/dev/tty`, bypassing
+`mio` entirely - fixes it. This has to be added directly to the installed gem's own
+`Cargo.toml` (no way to pass it through `gem install`/`extconf.rb` cleanly) and rebuilt:
+
+```bash
+cd "$(ruby -e 'puts Gem::Specification.find_by_name("ratatui_ruby").gem_dir')/ext/ratatui_ruby"
+
+cat >> Cargo.toml <<'EOF'
+
+[dependencies.crossterm]
+version = "0.29"
+features = ["use-dev-tty"]
+EOF
+
+export LIBCLANG_PATH=/usr/bin
+export BINDGEN_EXTRA_CLANG_ARGS="-D__wchar_t=__cygwin_wchar_t"
+export RUSTFLAGS="-C link-arg=-lruby400"
+export RUBYOPT="-I/path/to/scriptbox/patches -rrb_sys_cygwin_patch"
+make
+```
+
+`make` alone only rebuilds `ratatui_ruby.so` inside `ext/ratatui_ruby/` - that's not the
+copy Ruby's `require` actually loads. Find the real one and overwrite it:
+
+```bash
+find ~/.local/share/gem /usr/share/gems -name ratatui_ruby.so 2>/dev/null
+# copy ext/ratatui_ruby/ratatui_ruby.so over the one under
+# .../extensions/x86_64-cygwin/<version>/ratatui_ruby-1.5.0/ratatui_ruby/ratatui_ruby.so
+```
+
+This alone is *not* sufficient by itself, though - confirmed directly reverting just this
+change (keeping everything else) reproduced the freeze again. The other half of the fix
+already lives in `verify_commands.rb` itself: `cygwin_environment?` shells out to
+`uname` to detect a real Cygwin session, and was originally uncached - harmless
+normally, but `format_tui`'s `draw_tui_frame` calls it (via `status_text`/
+`platform_inapplicable?`) fresh for *every row on every redraw*, and the TUI redraws on
+every keypress. Cygwin's `fork()`/`CreateProcessW` emulation is dramatically slower
+than a real Linux fork, and `strace` against a live hang confirmed multiple seconds
+spent per redraw, sometimes stalling outright waiting on `subproc_ready` - compounding
+across every arrow-key press with no path back to responsiveness. `cygwin_environment?`
+is now memoized (the answer can't change during one run, so this is a pure win, not a
+tradeoff) - anyone writing a similar interactive script against this gem should treat
+"no subprocess calls from redraw-path code, ever" as a hard rule on Cygwin specifically,
+not just a nice-to-have.
+
 #### Ubuntu 22.04
 
 Ubuntu 22.04 uses a different GLIBC library than what the default package uses, so you'll need to compile your own version of the package.
@@ -66,11 +127,3 @@ gem update --system
 sudo apt update && sudo apt install -y clang libclang-dev
 gem install ratatui_ruby --platform ruby
 ```
-
-
-
-
-pacman -S --needed mingw-w64-ucrt-x86_64-clang
-MAKEFLAGS="-j1" gem install ratatui_ruby --platform ruby
-BINDGEN_EXTRA_CLANG_ARGS="-msse -mavx" gem install ratatui_ruby --platform ruby
-
