@@ -147,9 +147,13 @@ AREAS = [
 #  Windows Ruby, whose Kernel#` is cmd.exe-backed - false for a
 #  genuinely POSIX-backed Ruby (Cygwin, WSL1, Linux, macOS), even one
 #  running on Windows. Gem.win_platform? alone doesn't draw this line -
-#  confirmed directly, it's also true under Cygwin - and the two
-#  backtick backends need different quoting for anything with a literal
-#  "$" in it (see probe_version's :powershell case).
+#  confirmed directly, it's actually *false* under Cygwin (RubyGems'
+#  own WIN_PATTERNS - bccwin/djgpp/mingw/mswin/wince - has no cygwin
+#  entry at all, since RubyGems treats "cygwin" as its own platform,
+#  distinct from "mingw"/"mswin"), so the RUBY_PLATFORM check below is
+#  belt-and-suspenders here, not the thing actually doing the work -
+#  and the two backtick backends need different quoting for anything
+#  with a literal "$" in it (see probe_version's :powershell case).
 def native_windows_ruby?
   Gem.win_platform? && RUBY_PLATFORM !~ /cygwin/i
 end
@@ -1069,7 +1073,31 @@ end
 #  being set (Git Bash included) rules Cygwin out immediately - MSYS2
 #  and Cygwin are mutually exclusive runtimes; only `uname -s` actually
 #  reporting "CYGWIN..." confirms the real thing.
+#
+# Memoized - confirmed directly this matters a lot, not just as a nice-
+#  to-have: format_tui's draw_tui_frame calls status_text (hence this,
+#  via platform_inapplicable?) fresh for every row on every single
+#  redraw, and RatatuiRuby.run redraws on every keypress. Cygwin's own
+#  `uname` invocation goes through Cygwin's fork()/CreateProcessW
+#  emulation, which is dramatically slower than a real fork on Linux -
+#  confirmed directly via strace against a real hang: multiple seconds
+#  spent per redraw, sometimes stalling outright waiting on
+#  subproc_ready, with the delay compounding across every arrow-key
+#  press and no path back to responsiveness once it falls behind.
+#  Whether this process is running under Cygwin cannot change during
+#  its own lifetime, so this is a correctness-neutral, pure win: same
+#  answer, computed once instead of once-per-row-per-redraw. @cygwin_
+#  environment nil (not yet computed) is distinguished from false
+#  (computed, genuinely not Cygwin) rather than plain ||=, which would
+#  keep re-running the check forever on a real, correctly-computed
+#  false.
 def cygwin_environment?
+  return @cygwin_environment unless @cygwin_environment.nil?
+
+  @cygwin_environment = uncached_cygwin_environment?
+end
+
+def uncached_cygwin_environment?
   return false if ENV['MSYSTEM']
 
   uname = find_on_path('uname')
@@ -1848,11 +1876,27 @@ STATUS_UNAVAILABLE = 'N/A'
 #  unix_only tag (set in AREAS, carried through by resolve_language)
 #  doesn't match the platform this report is actually running on.
 #
-#  windows_only still keys off plain Gem.win_platform? alone (true for a
-#  native, MSYS2/MinGW, *and* a Cygwin-hosted Ruby - see
-#  native_windows_ruby?'s own comment on that distinction) - cmd.exe/
-#  cscript.exe are equally reachable from all three, a real Windows OS
-#  underneath regardless of which shell layer is on top.
+#  windows_only needs `win` true on a native, MSYS2/MinGW, *and* a
+#  Cygwin-hosted Ruby alike - cmd.exe/cscript.exe are equally reachable
+#  from all three, a real Windows OS underneath regardless of which
+#  shell layer is on top. Plain Gem.win_platform? alone does NOT cover
+#  this, though - confirmed directly it's actually *false* under
+#  Cygwin (see native_windows_ruby?'s comment: RubyGems' own
+#  WIN_PATTERNS has no cygwin entry), so without the explicit
+#  cygwin_environment? fallback below, a genuinely-missing cmd.exe/
+#  cscript.exe on Cygwin read N/A instead of MISSING - the opposite of
+#  what unix_only already gets right one paragraph down.
+#
+#  Same reasoning covers a Ruby built for MSYS2's base MSYS subsystem
+#  (as opposed to its MINGW64/UCRT64/CLANG64 subsystems) - that one is
+#  POSIX-like the same way Cygwin is, reports a RUBY_PLATFORM like
+#  "x86_64-pc-msys", and matches none of WIN_PATTERNS either. The
+#  mingw-hosted subsystems don't need this fallback (their platform
+#  string already contains "mingw", which Gem.win_platform? does
+#  match) - but ENV['MSYSTEM'] is set for every MSYS2 subsystem
+#  uniformly, unlike Gem.win_platform?, so it's the one signal that
+#  covers the base-MSYS gap without needing to special-case it
+#  separately from the already-working mingw subsystems.
 #
 #  unix_only is different - confirmed directly the old single `win`
 #  check got this backwards for MSYS2/Cygwin specifically: a POSIX shell
@@ -1865,12 +1909,13 @@ STATUS_UNAVAILABLE = 'N/A'
 #  shell) or a real Cygwin session rules it back in. Doesn't
 #  special-case WSL1's own real-Windows-tools-via-/mnt/c reachability
 #  for windows_only (see AREAS's own Batch comment) - a WSL1 Ruby that's
-#  genuinely Linux-native reports Gem.win_platform? false, so a Batch
-#  entry that's actually unreachable there still reads MISSING, not
-#  N/A; a real find still overrides this either way (see status_text),
-#  so the only effect is which word an already-absent WSL1 Batch gets.
+#  genuinely Linux-native reports Gem.win_platform? false and
+#  cygwin_environment? false, so a Batch entry that's actually
+#  unreachable there still reads MISSING, not N/A; a real find still
+#  overrides this either way (see status_text), so the only effect is
+#  which word an already-absent WSL1 Batch gets.
 def platform_inapplicable?(entry)
-  win = Gem.win_platform?
+  win = Gem.win_platform? || cygwin_environment? || !ENV['MSYSTEM'].nil?
   native_windows_only = win && !ENV['MSYSTEM'] && !cygwin_environment?
   (entry[:windows_only] && !win) || (entry[:unix_only] && native_windows_only)
 end
