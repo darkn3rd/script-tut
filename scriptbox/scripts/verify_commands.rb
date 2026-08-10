@@ -53,7 +53,7 @@ AREAS = [
       #  resolves fine from Ruby's own inherited PATH but is invisible
       #  to a real Batch script, which runs under cmd.exe and never
       #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
-      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true },
+      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true, windows_only: true },
       # :psake - the win_scripts/powershell lessons run through
       #  Invoke-Psake (see run_all_tests.ps1) - unlike every other
       #  "tools" entry, psake isn't a real executable at all (no
@@ -62,18 +62,18 @@ AREAS = [
       #  found via find_on_path/resolve_entry the normal way - see
       #  resolve_psake_module, dispatched on this exact symbol.
       { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell, tools: [:psake] },
-      { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
-      { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
+      { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript, windows_only: true },
+      { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript, windows_only: true },
     ]
   },
   {
     name: 'Shell Scripts',
     languages: [
-      { name: 'Bourne Again Shell (bash)', bin: %w[bash],      version: :flag, tools: %w[bc getopt] },
-      { name: 'C Shell (tcsh)',            bin: %w[tcsh csh],  version: :flag, tools: %w[bc] },
-      { name: 'Korn Shell (ksh)',          bin: %w[ksh],       version: :ksh_env, tools: %w[bc] },
-      { name: 'POSIX Shell (dash/sh)',     bin: %w[dash sh],   version: :flag, tools: %w[bc getopt perl] },
-      { name: 'Z Shell (zsh)',             bin: %w[zsh],       version: :flag, tools: %w[bc] },
+      { name: 'Bourne Again Shell (bash)', bin: %w[bash],      version: :flag, tools: %w[bc getopt], unix_only: true },
+      { name: 'C Shell (tcsh)',            bin: %w[tcsh csh],  version: :flag, tools: %w[bc], unix_only: true },
+      { name: 'Korn Shell (ksh)',          bin: %w[ksh],       version: :ksh_env, tools: %w[bc], unix_only: true },
+      { name: 'POSIX Shell (dash/sh)',     bin: %w[dash sh],   version: :flag, tools: %w[bc getopt perl], unix_only: true },
+      { name: 'Z Shell (zsh)',             bin: %w[zsh],       version: :flag, tools: %w[bc], unix_only: true },
     ]
   },
   {
@@ -1310,7 +1310,12 @@ def resolve_language(lang)
   #  Skipped rather than resolved-and-hidden, so no subprocess time is
   #  spent probing tools nothing can use anyway.
   tools = entry[:found] ? resolve_tools(lang) : []
-  entry.merge(name: lang[:name], binaries: lang[:bin], tools: tools)
+  # windows_only/unix_only carried through from the AREAS entry itself
+  #  (nil for the common case, e.g. PowerShell - genuinely cross-
+  #  platform, so a real MISSING is still the right word for it even
+  #  on macOS/Linux) - see status_text/platform_inapplicable? for what
+  #  reads these.
+  entry.merge(name: lang[:name], binaries: lang[:bin], tools: tools, windows_only: lang[:windows_only], unix_only: lang[:unix_only])
 end
 
 # resolve_tools(lang) - a tools: entry is normally a plain tool name
@@ -1515,8 +1520,46 @@ def display_path(path)
   end
 end
 
+# STATUS_UNAVAILABLE - shorter than "unavailable" itself, which is what
+#  this stood for originally - used in place of "MISSING" for a
+#  language that's expected to be absent given the current platform
+#  (Batch/WSH JScript/WSH VBScript on non-Windows; the Shell Scripts
+#  area's shells on native Windows - see platform_inapplicable?) rather
+#  than a real gap worth flagging. "MISSING" implies something's wrong;
+#  this doesn't.
+STATUS_UNAVAILABLE = 'N/A'
+
+# platform_inapplicable?(entry) - true if `entry`'s own windows_only/
+#  unix_only tag (set in AREAS, carried through by resolve_language)
+#  doesn't match the platform this report is actually running on.
+#  Gem.win_platform? is true for both a native and a Cygwin-hosted Ruby
+#  (see native_windows_ruby?'s own comment on that distinction) - the
+#  right line here, since cmd.exe/cscript.exe are equally reachable
+#  either way, and a POSIX shell is equally "not the default" either
+#  way. Doesn't special-case WSL1's own real-Windows-tools-via-/mnt/c
+#  reachability (see AREAS's own Batch comment) - a WSL1 Ruby that's
+#  genuinely Linux-native reports Gem.win_platform? false, so a Batch
+#  entry that's actually unreachable there still reads MISSING, not
+#  N/A; a real find still overrides this either way (see status_text),
+#  so the only effect is which word an already-absent WSL1 Batch gets.
+def platform_inapplicable?(entry)
+  win = Gem.win_platform?
+  (entry[:windows_only] && !win) || (entry[:unix_only] && win)
+end
+
+# status_text(entry) - 'OK' / 'MISSING' / STATUS_UNAVAILABLE, in that
+#  priority order: found always wins regardless of windows_only/
+#  unix_only (e.g. bash actually installed on Windows via Git-Bash/
+#  Cygwin/MSYS2 is still just OK, not something to second-guess).
+def status_text(entry)
+  return 'OK' if entry[:found]
+  return STATUS_UNAVAILABLE if platform_inapplicable?(entry)
+
+  'MISSING'
+end
+
 def row_parts(label, entry, indent)
-  status = entry[:found] ? 'OK' : 'MISSING'
+  status = status_text(entry)
   prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
   # Always its own column now, even when it's the same word as the
   #  label (e.g. "Ruby" / "ruby") - previously this only showed at all
@@ -1569,9 +1612,9 @@ def format_csv(report)
     csv << %w[Area Name Kind Parent Status Version Package Manager Path]
     report[:areas].each do |area|
       area[:languages].each do |lang|
-        csv << [area[:name], lang[:name], 'language', nil, lang[:found] ? 'OK' : 'MISSING', lang[:version], lang[:package_name], lang[:manager], lang[:path]]
+        csv << [area[:name], lang[:name], 'language', nil, status_text(lang), lang[:version], lang[:package_name], lang[:manager], lang[:path]]
         lang[:tools].each do |tool|
-          csv << [area[:name], tool[:name], 'tool', lang[:name], tool[:found] ? 'OK' : 'MISSING', tool[:version], tool[:package_name], tool[:manager], tool[:path]]
+          csv << [area[:name], tool[:name], 'tool', lang[:name], status_text(tool), tool[:version], tool[:package_name], tool[:manager], tool[:path]]
         end
       end
     end
@@ -1742,7 +1785,7 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
 
     table = tui.table(
       header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
-      rows: pairs.map { |entry, indent| tui_row(entry, indent) },
+      rows: pairs.map { |entry, indent| tui_row(tui, entry, indent) },
       widths: [26, 24, 9, 12, 40],
       column_spacing: 1,
       selected_row: local_selected,
@@ -1766,20 +1809,42 @@ def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic
   frame.render_widget(footer, rects.last)
 end
 
-# tui_row(entry, indent) - [name, package, status, version, path] for
-#  one format_tui row - the TUI's own equivalent of row_parts, kept
+# STATUS_COLORS - fg color per status_text value; anything not listed
+#  (there's nothing else status_text can return) falls back to :white,
+#  never reached in practice.
+STATUS_COLORS = {
+  'OK' => :green,
+  'MISSING' => :red,
+  STATUS_UNAVAILABLE => :dark_gray # neutral, not alarming - see STATUS_UNAVAILABLE's own comment
+}.freeze
+
+# status_cell(tui, entry) - the Status column's own colored Paragraph -
+#  color only exists in the TUI (row_parts/format_csv's plain-text
+#  status stays uncolored ANSI-free text, right for output another
+#  tool or a redirected file might consume).
+def status_cell(tui, entry)
+  text = status_text(entry)
+  tui.paragraph(text: text, style: tui.style(fg: STATUS_COLORS.fetch(text, :white)))
+end
+
+# tui_row(tui, entry, indent) - [name, package, status, version, path]
+#  for one format_tui row - the TUI's own equivalent of row_parts, kept
 #  separate rather than reused because the two have nothing but field
 #  names in common: row_parts returns pre-padded plain strings for a
 #  fixed-width text line, this returns raw values for ratatui_ruby's
 #  own table widget to lay out. Package carries its own manager icon
 #  (see pkg_cell) rather than a dedicated leading column - the icon
-#  describes the package, not the language/tool.
-def tui_row(entry, indent)
+#  describes the package, not the language/tool. Needs `tui` itself
+#  (unlike row_parts) only because status_cell does - building a
+#  styled Paragraph cell needs a live TUI instance, same reason the
+#  bold header Paragraphs get built inside RatatuiRuby.run and not
+#  before it (see format_tui's own comment).
+def tui_row(tui, entry, indent)
   prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
   [
     "#{prefix}#{entry[:name]}",
     pkg_cell(entry),
-    entry[:found] ? 'OK' : 'MISSING',
+    status_cell(tui, entry),
     entry[:version] || '-',
     display_path(entry[:path]) || '-'
   ]
