@@ -9,7 +9,8 @@
 #  needs to resolve *one* language for the directory it's sitting in the
 #  way Script.rb does - it enumerates all of them at once).
 #
-#  Usage: ruby verify.rb [--format text|json|yaml|csv]
+#  Usage: ruby verify.rb [--format text|json|yaml|csv|tui]
+#  (defaults to tui when run at a terminal, text otherwise)
 
 require 'optparse'
 require 'json'
@@ -27,20 +28,29 @@ AREAS = [
   {
     name: 'Windows Scripts',
     languages: [
-      # ".exe" candidates listed first and explicitly, not left to
-      #  find_on_path's own PATHEXT-driven extension search - confirmed
-      #  directly this matters under WSL1: a bare "cmd" there finds
-      #  /usr/local/bin/cmd (this project's own wsl1-run wrapper, not a
-      #  real interpreter to report on), while "cmd.exe" correctly finds
-      #  the real /mnt/c/Windows/system32/cmd.exe instead. cmd/cscript
-      #  have no native Linux port to prefer at all, so reaching for
-      #  the Windows one first is always right for them - PowerShell is
-      #  the one exception: confirmed directly, WSL1's Ubuntu has a
-      #  genuine native `pwsh` (`which pwsh` -> /usr/bin/pwsh, a real,
-      #  fully-functional PowerShell build, not any kind of wrapper), so
-      #  it gets the opposite order - bare name first, matching how
-      #  every other Shell/General Scripts tool already prefers native
-      #  over reaching into /mnt/c for the Windows one.
+      # ".exe" candidates listed explicitly, with no bare-name fallback
+      #  at all for cmd/cscript - confirmed directly this matters under
+      #  WSL1: a bare "cmd" there finds /usr/local/bin/cmd (this
+      #  project's own wsl1-run wrapper, not a real interpreter to
+      #  report on at all), while "cmd.exe" correctly finds the real
+      #  /mnt/c/Windows/system32/cmd.exe instead. Ordering "cmd.exe"
+      #  first only protects the common case where a real cmd.exe *is*
+      #  somewhere on PATH; reproduced directly the case that matters
+      #  here too - point PATH at nothing but an arbitrary unrelated
+      #  "cmd" executable (no real cmd.exe anywhere) and resolve_binary
+      #  still happily "finds" it, since a bare-name fallback exists for
+      #  it to fall through to. cmd/cscript have no legitimate native
+      #  POSIX port at all (unlike pwsh - see below), so there's no
+      #  right answer a bare-name match could ever be pointing at; only
+      #  the ".exe" form is trustworthy, and WSH JScript/WSH VBScript
+      #  get the identical treatment for cscript.exe. PowerShell is the
+      #  one exception: confirmed directly, WSL1's Ubuntu has a genuine
+      #  native `pwsh` (`which pwsh` -> /usr/bin/pwsh, a real, fully-
+      #  functional PowerShell build, not any kind of wrapper), so it
+      #  keeps its bare-name candidates and gets the opposite order -
+      #  bare name first, matching how every other Shell/General
+      #  Scripts tool already prefers native over reaching into /mnt/c
+      #  for the Windows one.
       # "coreutils" in each tool entry is a search-only hint, same
       #  reasoning as TCL's own "tcl"/Java's own "jvm" - confirmed
       #  directly neither "date" nor "grep" shares any substring with
@@ -52,7 +62,7 @@ AREAS = [
       #  resolves fine from Ruby's own inherited PATH but is invisible
       #  to a real Batch script, which runs under cmd.exe and never
       #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
-      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true },
+      { name: 'Batch',        bin: %w[cmd.exe],                                 version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true, windows_only: true },
       # :psake - the win_scripts/powershell lessons run through
       #  Invoke-Psake (see run_all_tests.ps1) - unlike every other
       #  "tools" entry, psake isn't a real executable at all (no
@@ -61,25 +71,33 @@ AREAS = [
       #  found via find_on_path/resolve_entry the normal way - see
       #  resolve_psake_module, dispatched on this exact symbol.
       { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell, tools: [:psake] },
-      { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript },
-      { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript },
+      { name: 'WSH JScript',  bin: %w[cscript.exe],                             version: :cscript, windows_only: true },
+      { name: 'WSH VBScript', bin: %w[cscript.exe],                             version: :cscript, windows_only: true },
     ]
   },
   {
     name: 'Shell Scripts',
     languages: [
-      { name: 'Bourne Again Shell (bash)', bin: %w[bash],      version: :flag, tools: %w[bc getopt] },
-      { name: 'C Shell (tcsh)',            bin: %w[tcsh csh],  version: :flag, tools: %w[bc] },
-      { name: 'Korn Shell (ksh)',          bin: %w[ksh],       version: :ksh_env, tools: %w[bc] },
-      { name: 'POSIX Shell (dash/sh)',     bin: %w[dash sh],   version: :flag, tools: %w[bc getopt perl] },
-      { name: 'Z Shell (zsh)',             bin: %w[zsh],       version: :flag, tools: %w[bc] },
+      { name: 'Bourne Again Shell (bash)', bin: %w[bash],      version: :flag, tools: %w[bc getopt], unix_only: true },
+      { name: 'C Shell (tcsh)',            bin: %w[tcsh csh],  version: :flag, tools: %w[bc], unix_only: true },
+      { name: 'Korn Shell (ksh)',          bin: %w[ksh],       version: :ksh_env, tools: %w[bc], unix_only: true },
+      { name: 'POSIX Shell (dash/sh)',     bin: %w[dash sh],   version: :flag, tools: %w[bc getopt perl], unix_only: true },
+      { name: 'Z Shell (zsh)',             bin: %w[zsh],       version: :flag, tools: %w[bc], unix_only: true },
     ]
   },
   {
     name: 'General Scripts',
     languages: [
       { name: 'AWK',     bin: %w[gawk awk],       version: :flag },
-      { name: 'Groovy',  bin: %w[groovy],         version: :flag, tools: %w[java] },
+      # "jvm" is a second alias candidate for the java tool row, not a
+      #  real binary name - chocolatey_owner needs it in the candidates
+      #  list to reach corretto17jdk (see its own comment on choco_tag_owner
+      #  and Java's own "javac java jvm" bin: list above): "java" alone
+      #  tags 4 different installed packages, an ambiguity choco_tag_owner
+      #  correctly declines to guess through, so without "jvm" here this
+      #  row is stuck reporting no package at all, unlike the top-level
+      #  Java language entry right below it, which already carries "jvm".
+      { name: 'Groovy',  bin: %w[groovy],         version: :flag, tools: [%w[java jvm]] },
       { name: 'Perl',    bin: %w[perl],           version: :flag, tools: %w[cpanm] },
       { name: 'PHP',     bin: %w[php],            version: :flag },
       { name: 'Python2', bin: %w[python2],        version: :flag },
@@ -98,7 +116,19 @@ AREAS = [
   {
     name: 'Compiled Languages',
     languages: [
-      { name: 'C++',   bin: %w[g++ clang++ cl],  version: :flag,    tools: %w[make] },
+      # "gcc" here is never actually found before g++/clang++/cl in
+      #  practice (a real gcc.exe usually does sit right alongside g++.exe
+      #  wherever a MinGW-style toolchain landed, so this can legitimately
+      #  resolve as a genuine last-resort binary too, unlike the "tcl"/
+      #  "jvm"/"rust" aliases elsewhere which never correspond to a real
+      #  file at all) - included mainly to widen the Chocolatey tag-search
+      #  net the same way: confirmed directly Strawberry Perl's own MinGW
+      #  toolchain (C:\Strawberry\c\bin\g++.exe) is otherwise invisible to
+      #  chocolatey_owner - none of "g++"/"clang++"/"cl" share a token or
+      #  tag with the "strawberryperl" package, but its own Tags do
+      #  include "gcc" (`choco list strawberryperl --by-tags-only` finds
+      #  it, unambiguously among what's actually installed).
+      { name: 'C++',   bin: %w[g++ clang++ cl gcc], version: :flag,  tools: %w[make] },
       { name: 'C#',    bin: %w[dotnet],          version: :flag,    tools: %w[make] },
       { name: 'Go',    bin: %w[go],              version: :go,      tools: %w[make] },
       # "jvm" here is never actually found as a real executable, same
@@ -108,7 +138,16 @@ AREAS = [
       #  own single-hit requirement), but `choco list jvm --by-tags-only`
       #  finds exactly "corretto17jdk", unambiguously.
       { name: 'Java',  bin: %w[javac java jvm],  version: :java,    tools: %w[make] },
-      { name: 'Rust',  bin: %w[rustc],           version: :flag,    tools: %w[make] },
+      # "rust" here is never actually found as a real executable (there's
+      #  no rust.exe) - same "tcl"/"jvm" trick, purely to widen the
+      #  Chocolatey tag-search net: confirmed directly `choco list rustc
+      #  --by-tags-only` matches nothing (the "rust" package's own Tags
+      #  are "rust cli portable programming language sdk" - no "rustc" in
+      #  there at all), but `choco list rust --by-tags-only` finds it
+      #  directly, unambiguously - resolve_binary already skips straight
+      #  past "rust" to "rustc" since that resolves first, at zero extra
+      #  cost.
+      { name: 'Rust',  bin: %w[rustc rust],      version: :flag,    tools: %w[make] },
     ]
   },
 ].freeze
@@ -117,9 +156,13 @@ AREAS = [
 #  Windows Ruby, whose Kernel#` is cmd.exe-backed - false for a
 #  genuinely POSIX-backed Ruby (Cygwin, WSL1, Linux, macOS), even one
 #  running on Windows. Gem.win_platform? alone doesn't draw this line -
-#  confirmed directly, it's also true under Cygwin - and the two
-#  backtick backends need different quoting for anything with a literal
-#  "$" in it (see probe_version's :powershell case).
+#  confirmed directly, it's actually *false* under Cygwin (RubyGems'
+#  own WIN_PATTERNS - bccwin/djgpp/mingw/mswin/wince - has no cygwin
+#  entry at all, since RubyGems treats "cygwin" as its own platform,
+#  distinct from "mingw"/"mswin"), so the RUBY_PLATFORM check below is
+#  belt-and-suspenders here, not the thing actually doing the work -
+#  and the two backtick backends need different quoting for anything
+#  with a literal "$" in it (see probe_version's :powershell case).
 def native_windows_ruby?
   Gem.win_platform? && RUBY_PLATFORM !~ /cygwin/i
 end
@@ -278,7 +321,17 @@ def windows_native_path_dirs
     if native_windows_ruby?
       ENV['PATH'].to_s.split(File::PATH_SEPARATOR)
     else
-      cmd = find_on_path('cmd.exe') || find_on_path('cmd')
+      # No bare "cmd" fallback here either - same reasoning as AREAS'
+      #  own Batch candidate list (see its own comment): this function
+      #  is only ever reached once Batch's own entry has already been
+      #  found via a real "cmd.exe" (resolve_tools only calls it when
+      #  entry[:found] is true), so a second, separate bare-name
+      #  fallback here would only ever matter by finding something
+      #  *different* from what was already confirmed real - and if it
+      #  did, running "/c echo %PATH%" against some unrelated "cmd"
+      #  binary would silently corrupt dirs with garbage output instead
+      #  of failing loudly.
+      cmd = find_on_path('cmd.exe')
       raw = cmd ? `"#{cmd}" /c echo %PATH% 2>&1`.strip : ''
       # Strips any trailing backslash(es) - confirmed directly a
       #  Windows %PATH% entry commonly ends with one (e.g.
@@ -433,24 +486,159 @@ rescue StandardError
   nil
 end
 
+# windows_shared_root?(dir) - true for a directory Chocolatey (or
+#  Windows itself) uses as one shared, multi-package location, never a
+#  single package's own install tree - confirmed directly this matters
+#  for directory_sibling_owner's own shared-root tier: "C:\tools" is
+#  $env:ChocolateyToolsLocation's own conventional default, the *parent*
+#  Ruby's own "C:\tools\ruby34" and Groovy's own "C:\tools\groovy-3.0.25"
+#  both sit under - two levels up from "C:\tools\ruby34\bin\rake.bat" is
+#  "C:\tools" itself, not anything Ruby-specific, so without this guard
+#  directory_sibling_owner's shared-root tier would just as happily
+#  attribute rake to Groovy (or whichever unrelated C:\tools\<pkg> entry
+#  PACKAGE_CACHE happened to resolve first) as to Ruby. Same reasoning
+#  covers $env:ChocolateyInstall's own bin/ shim directory (see
+#  chocolatey_owner's own comment: shims from dozens of unrelated
+#  packages sit side by side in it, indistinguishable by path alone) and
+#  %SystemRoot% (chocolatey_owner already excludes it outright for the
+#  same underlying reason - system directories are nobody's single
+#  install tree). Same normalized-comparison approach as chocolatey_owner
+#  's own %SystemRoot% guard (see its own comment on why a bare ENV
+#  lookup alone wasn't enough on at least one real machine).
+def windows_shared_root?(dir)
+  system_root = ENV['SystemRoot'] || ENV['windir']
+  system_root = 'C:\Windows' if system_root.to_s.empty?
+  choco_install = ENV['ChocolateyInstall']
+  choco_install = 'C:\ProgramData\chocolatey' if choco_install.to_s.empty?
+  choco_tools = ENV['ChocolateyToolsLocation']
+  choco_tools = 'C:\tools' if choco_tools.to_s.empty?
+
+  normalized = dir.to_s.downcase.tr('\\', '/')
+  [system_root, File.join(choco_install, 'bin'), choco_tools].any? do |root|
+    normalized == root.downcase.tr('\\', '/')
+  end
+end
+
+# directory_sibling_owner(real) - {name:, version:, manager:} copied
+#  straight from another binary already resolved (successfully) out of
+#  the same directory as `real`, or the same *shared install root* three
+#  levels up (.../root/component/bin/binary) - the last, most
+#  speculative fallback in the chain, tried only once everything more
+#  specific above has already declined. Confirmed directly both forms
+#  are needed, not just theoretical:
+#
+#  - Same directory: Ruby's own Chocolatey package places rake.bat in
+#    the identical bin/ directory as ruby.exe itself - a gem executable
+#    stub bundled straight into the interpreter's own install layout,
+#    not separately Chocolatey-tracked at all (ruby's own Tags carry
+#    nothing resembling "rake" to search for, so no alias trick like
+#    TCL's/Java's own can reach it).
+#  - Same shared root: Strawberry Perl's own install spreads across
+#    sibling subdirectories of one shared root - C:\Strawberry\perl\bin\
+#    perl.exe *and* C:\Strawberry\c\bin\g++.exe both three levels under
+#    C:\Strawberry itself (bin/ -> perl or c -> Strawberry) - so g++ is
+#    never in perl's own directory, but is under the same install root.
+#    A same-directory check alone can't reach this one; a tag alias (see
+#    C++'s own "gcc" candidate) doesn't reliably either - confirmed
+#    directly `choco list gcc --by-tags-only` returns *two* real hits on
+#    a machine with both MSYS2 and Strawberry Perl installed (both
+#    legitimately carry a "gcc" tag), so choco_tag_owner's own
+#    single-hit rule correctly declines rather than guess between them -
+#    the shared-root match is what actually disambiguates, from path
+#    structure Chocolatey's own tag metadata simply doesn't carry.
+#
+#  Reuses the sibling's whole owner hash verbatim, including its
+#  version - same "package identity of the shared install, not each
+#  individual bundled tool's own version" reasoning as rbenv_owner's own
+#  versions/ case; rake.bat/g++.exe are that same kind of bundled tool,
+#  just under Chocolatey instead of rbenv.
+#
+#  Gated to native_windows_ruby? - a single Chocolatey/installer-created
+#  directory tree genuinely being "one thing" is a safe enough
+#  assumption there (once windows_shared_root? has ruled out the
+#  directories that genuinely aren't), but nowhere near safe on a Unix
+#  system bin directory (/usr/bin holds hundreds of unrelated apt-owned
+#  binaries side by side); this only ever runs as a fallback after
+#  apt_owner/pacman_owner/homebrew_owner have already had their own, far
+#  more reliable per-file shot anyway, so restricting it to Windows here
+#  costs nothing there.
+def directory_sibling_owner(real)
+  return nil unless native_windows_ruby?
+
+  bin_dir = File.dirname(real.to_s)
+  shared_root = File.dirname(File.dirname(bin_dir))
+  # Each tier is gated independently, not both dropped together the
+  #  moment either one lands on a forbidden shared root - confirmed
+  #  directly this matters: Ruby's own "C:\tools\ruby34\bin" (rake's
+  #  same-directory anchor, entirely safe - no other package shares it)
+  #  sits three levels below the shared "C:\tools" root itself (rake's
+  #  shared-root anchor, correctly forbidden) - an early return the
+  #  moment *either* tier's anchor was forbidden would have silently
+  #  dropped the same-directory match too and left rake unresolved again.
+  try_bin_dir = !windows_shared_root?(bin_dir)
+  try_shared_root = !windows_shared_root?(shared_root)
+  return nil unless try_bin_dir || try_shared_root
+
+  _, owner = PACKAGE_CACHE.find do |cached_real, cached_owner|
+    next false unless cached_owner
+
+    cached_bin_dir = File.dirname(cached_real)
+    (try_bin_dir && cached_bin_dir == bin_dir) ||
+      (try_shared_root && File.dirname(File.dirname(cached_bin_dir)) == shared_root)
+  end
+  owner
+end
+
+# version_manager_owner(real, candidates, original) - the SDKMAN/
+#  Chocolatey/rbenv/rustup/pyenv/directory-sibling catch-all chain,
+#  factored out of lookup_package_info so prefetch_pacman!/prefetch_apt!
+#  can also reach it (see their own comments) - none of these are
+#  batch-listable the way pacman/apt are, so there's no bulk prefetch
+#  step for them either way; the only thing worth sharing is the chain
+#  itself, not when it runs. directory_sibling_owner already returns a
+#  fully tag_manager-tagged hash (copied from whatever the sibling was
+#  itself tagged with) rather than a bare owner, so it's ORed in as-is,
+#  not wrapped in another tag_manager call the way every other link here
+#  is - that would stomp the sibling's real manager with the wrong one.
+def version_manager_owner(real, candidates = nil, original = nil)
+  tag_manager(chocolatey_owner(real, candidates), :chocolatey) ||
+    tag_manager(sdkman_owner(real), :sdkman) ||
+    tag_manager(rbenv_owner(real), :rbenv) ||
+    tag_manager(rustup_owner(real, original), :rustup) ||
+    tag_manager(pyenv_owner(real), :pyenv) ||
+    directory_sibling_owner(real)
+end
+
 def lookup_package_info(real, candidates = nil, original = nil)
   owner =
     if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-      pacman_owner(pacman, real)
+      tag_manager(pacman_owner(pacman, real), :pacman)
     elsif cygwin_environment? && (cygcheck = find_on_path('cygcheck'))
-      cygcheck_owner(cygcheck, real)
+      tag_manager(cygcheck_owner(cygcheck, real), :cygcheck)
     elsif (dpkg = find_on_path('dpkg'))
-      apt_owner(dpkg, real) ||
+      found = apt_owner(dpkg, real) ||
         (original && original != real && apt_owner(dpkg, original)) ||
         (variant = usrmerge_variant(real)) && apt_owner(dpkg, variant)
+      tag_manager(found, :apt)
     else
-      homebrew_owner(real) || macos_java_cask(real)
+      tag_manager(homebrew_owner(real), :homebrew) || tag_manager(macos_java_cask(real), :homebrew)
     end
-  # SDKMAN and Chocolatey aren't tied to any one OS's own package
-  #  manager the way pacman/cygcheck/dpkg/Homebrew above are, so both
-  #  are tried as final catch-alls regardless of platform or which
-  #  branch above ran, not as another elsif arm.
-  owner || chocolatey_owner(real, candidates) || sdkman_owner(real)
+  # SDKMAN, Chocolatey, pyenv, rbenv, and rustup aren't tied to any one
+  #  OS's own package manager the way pacman/cygcheck/dpkg/Homebrew
+  #  above are, so all five are tried as final catch-alls regardless of
+  #  platform or which branch above ran, not as another elsif arm.
+  owner || version_manager_owner(real, candidates, original)
+end
+
+# tag_manager(owner, manager) - nil-safe stamp of which package manager
+#  actually resolved `owner` (one of :pacman/:cygcheck/:apt/:homebrew/
+#  :chocolatey/:sdkman/:rbenv/:rustup/:pyenv). lookup_package_info's own
+#  if/elsif dispatch is the only place that knows which owner_*
+#  function fired - callers further out (format_table, format_tui) just
+#  want the tag, not the dispatch logic that produced it. See
+#  MANAGER_ICONS for what a caller actually does with this.
+def tag_manager(owner, manager)
+  owner && owner.merge(manager: manager)
 end
 
 # brew_prefix - `brew --prefix`, memoized, once. Confirmed directly this
@@ -568,6 +756,129 @@ def sdkman_owner(real)
 
   m = real.to_s.match(%r{\A#{Regexp.escape(dir)}/candidates/([^/]+)/([^/]+)/})
   m && { name: m[1], version: m[2] }
+end
+
+# pyenv_root - $PYENV_ROOT if set, else the conventional ~/.pyenv -
+#  same override-then-default reasoning as sdkman_dir, since pyenv
+#  itself honors this same env var for where its shims/versions live.
+def pyenv_root
+  return @pyenv_root if defined?(@pyenv_root)
+
+  configured = ENV['PYENV_ROOT']
+  @pyenv_root = configured && !configured.empty? ? configured : File.join(Dir.home, '.pyenv')
+rescue StandardError
+  @pyenv_root = nil
+end
+
+# pyenv_owner(real) - {name:, version:} for a pyenv-managed Python
+#  shim, tagged :pyenv (a version manager - same MANAGER_ICONS category
+#  as :sdkman). The "package name" shown is the interpreter's own
+#  resolved version string (e.g. "2.7.18"), not a package id at all -
+#  pyenv shims are real files, not symlinks (unlike SDKMAN's own
+#  versioned-directory symlink - see sdkman_owner's own comment), so
+#  realpath is a no-op on one and there's no version-bearing path
+#  segment to extract the way sdkman_owner does. Runs the shim's own
+#  --version directly rather than asking pyenv itself (`pyenv
+#  version-name`/`pyenv which`) - the shim already resolves
+#  PYENV_VERSION/.python-version internally the exact same way a normal
+#  invocation would, so this can't disagree with what the Version
+#  column (probe_version, run separately) reports, and doesn't need
+#  `pyenv` itself to be a separately resolvable binary on PATH.
+def pyenv_owner(real)
+  root = pyenv_root
+  return nil unless root && real.to_s.start_with?("#{root}/shims/")
+
+  raw = `"#{real}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
+end
+
+# rbenv_root - $RBENV_ROOT if set, else the conventional ~/.rbenv - same
+#  override-then-default reasoning as pyenv_root/sdkman_dir.
+def rbenv_root
+  return @rbenv_root if defined?(@rbenv_root)
+
+  configured = ENV['RBENV_ROOT']
+  @rbenv_root = configured && !configured.empty? ? configured : File.join(Dir.home, '.rbenv')
+rescue StandardError
+  @rbenv_root = nil
+end
+
+# rbenv_owner(real) - {name:, version:} for an rbenv-managed Ruby/gem
+#  binary, tagged :rbenv (same version-manager category as :sdkman/
+#  :pyenv). "<root>/versions/<version>/bin/<name>" is parsed straight
+#  from the path - same reasoning as sdkman_owner, not pyenv_owner:
+#  every binary under one "versions/<version>/bin/" directory (ruby
+#  itself, but also every gem executable it ships or that's been
+#  `gem install`-ed into it - rake, bundle, irb, ...) belongs to that
+#  one rbenv-installed Ruby, the same way every tool under one SDKMAN
+#  candidate directory belongs to that one JDK - confirmed directly per
+#  direct correction: rake's own --version (its gem version, e.g.
+#  "13.3.1") is a real, different number from the Ruby it's bundled
+#  into, but the Package column is meant to answer "what did the version
+#  manager install here", not "what does this specific binary self-
+#  report" - shelling out per tool would answer the wrong question for
+#  every gem shim, correctly only for `ruby` itself. Also confirmed
+#  directly this is the form that actually shows up in practice: some
+#  rbenv setups (e.g. the Ubuntu rbenv package driving a user-populated
+#  $RBENV_ROOT) put the active version's own bin/ ahead of shims/ on
+#  PATH, so find_on_path/realpath land straight on the versioned binary
+#  and never see a shim path at all.
+#
+#  "<root>/shims/<name>" (the standard rbenv init layout, when it is
+#  what PATH resolves to) carries no version in the path at all - a shim
+#  is a single version-agnostic dispatcher, not tied to one installed
+#  Ruby the way the versions/ directory is - so that case still falls
+#  back to running `--version` directly, same as pyenv_owner; it can't
+#  answer the "which Ruby owns this gem" question either way without a
+#  real rbenv resolution (`rbenv which`/`rbenv version-name`) this
+#  doesn't attempt.
+def rbenv_owner(real)
+  root = rbenv_root
+  return nil unless root
+
+  m = real.to_s.match(%r{\A#{Regexp.escape(root)}/versions/([^/]+)/bin/})
+  return { name: m[1], version: m[1] } if m
+
+  return nil unless real.to_s.start_with?("#{root}/shims/")
+
+  raw = `"#{real}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
+end
+
+# cargo_home - $CARGO_HOME if set, else the conventional ~/.cargo - same
+#  override-then-default reasoning as rbenv_root/pyenv_root.
+def cargo_home
+  return @cargo_home if defined?(@cargo_home)
+
+  configured = ENV['CARGO_HOME']
+  @cargo_home = configured && !configured.empty? ? configured : File.join(Dir.home, '.cargo')
+rescue StandardError
+  @cargo_home = nil
+end
+
+# rustup_owner(real, original) - {name:, version:} for a rustup-managed
+#  toolchain proxy, tagged :rustup (same version-manager category as
+#  :sdkman/:pyenv/:rbenv). Unlike every other manager here, rustup has
+#  no per-tool versioned directory to match at all - confirmed directly,
+#  "rustc"/"cargo"/"rustfmt"/etc. under "$CARGO_HOME/bin/" are each a
+#  symlink to the exact same "rustup" multiplexer binary, so `real`
+#  (already realpath'd by package_info) is always just
+#  "$CARGO_HOME/bin/rustup" regardless of which tool was actually
+#  resolved - there's nothing tool- or version-specific left in the path
+#  to key off. `original` (the pre-realpath path package_info already
+#  carries for exactly this kind of case - see apt_owner's own usrmerge
+#  handling) is what still points at the real tool name, so that's what
+#  gets run for `--version`: invoking the "rustup" binary itself would
+#  only ever report rustup's own version, not the active toolchain's.
+def rustup_owner(real, original)
+  home = cargo_home
+  return nil unless home && original && real.to_s == File.join(home, 'bin', 'rustup')
+
+  raw = `"#{original}" --version < #{NULL_DEVICE} 2>&1`.strip
+  version = raw[/(\d+(?:\.\d+)+)/, 1]
+  version && { name: version, version: version }
 end
 
 # choco_installed_list(choco) - {package id => version}, from one
@@ -761,7 +1072,7 @@ def prefetch_package_info!
   real_to_original = originals.each_with_object({}) { |p, h| h[realpath(p)] = p }
 
   if ENV['MSYSTEM'] && (pacman = find_on_path('pacman'))
-    prefetch_pacman!(pacman, real_to_original.keys)
+    prefetch_pacman!(pacman, real_to_original)
   elsif (dpkg = find_on_path('dpkg')) && !cygwin_environment?
     prefetch_apt!(dpkg, real_to_original)
   end
@@ -781,7 +1092,31 @@ end
 #  being set (Git Bash included) rules Cygwin out immediately - MSYS2
 #  and Cygwin are mutually exclusive runtimes; only `uname -s` actually
 #  reporting "CYGWIN..." confirms the real thing.
+#
+# Memoized - confirmed directly this matters a lot, not just as a nice-
+#  to-have: format_tui's draw_tui_frame calls status_text (hence this,
+#  via platform_inapplicable?) fresh for every row on every single
+#  redraw, and RatatuiRuby.run redraws on every keypress. Cygwin's own
+#  `uname` invocation goes through Cygwin's fork()/CreateProcessW
+#  emulation, which is dramatically slower than a real fork on Linux -
+#  confirmed directly via strace against a real hang: multiple seconds
+#  spent per redraw, sometimes stalling outright waiting on
+#  subproc_ready, with the delay compounding across every arrow-key
+#  press and no path back to responsiveness once it falls behind.
+#  Whether this process is running under Cygwin cannot change during
+#  its own lifetime, so this is a correctness-neutral, pure win: same
+#  answer, computed once instead of once-per-row-per-redraw. @cygwin_
+#  environment nil (not yet computed) is distinguished from false
+#  (computed, genuinely not Cygwin) rather than plain ||=, which would
+#  keep re-running the check forever on a real, correctly-computed
+#  false.
 def cygwin_environment?
+  return @cygwin_environment unless @cygwin_environment.nil?
+
+  @cygwin_environment = uncached_cygwin_environment?
+end
+
+def uncached_cygwin_environment?
   return false if ENV['MSYSTEM']
 
   uname = find_on_path('uname')
@@ -792,15 +1127,23 @@ rescue StandardError
   false
 end
 
-# prefetch_pacman!(pacman, paths) - one `pacman -Qo <path1> <path2> ...`
-#  batch call instead of one per path - pacman prints one
-#  "<path> is owned by <pkgname> <pkgver>" line per *found* path (an
-#  unowned one just gets its own "error: No package owns <path>" line,
-#  confirmed directly - silently skipped by the match below), so every
-#  queried path gets marked "not owned" (nil) up front and only
-#  overwritten for the ones that actually match a line back.
-def prefetch_pacman!(pacman, paths)
-  posix_map = paths.each_with_object({}) { |p, h| h[to_posix(p)] = p }
+# prefetch_pacman!(pacman, real_to_original) - one
+#  `pacman -Qo <path1> <path2> ...` batch call instead of one per path -
+#  pacman prints one "<path> is owned by <pkgname> <pkgver>" line per
+#  *found* path (an unowned one just gets its own "error: No package
+#  owns <path>" line, confirmed directly - silently skipped by the
+#  match below), so every queried path gets marked "not owned" (nil) up
+#  front and only overwritten for the ones that actually match a line
+#  back. "Not owned by pacman" isn't the same as "not owned by
+#  anything", though - confirmed directly this is the common case for
+#  MSYS2 itself: pacman only tracks MSYS2's own packages, so anything a
+#  version manager placed under $HOME (pyenv/rbenv/rustup/SDKMAN, all
+#  routine on this same MSYS2 box) would otherwise sit permanently
+#  cached nil - the trailing pass below gives each of those its one
+#  shot, same as an ordinary lookup_package_info cache-miss would get
+#  outside of prefetch (see version_manager_owner).
+def prefetch_pacman!(pacman, real_to_original)
+  posix_map = real_to_original.each_key.each_with_object({}) { |p, h| h[to_posix(p)] = p }
   posix_map.each_value { |real| PACKAGE_CACHE[real] = nil }
 
   raw = `"#{pacman}" -Qo #{posix_map.keys.map { |p| "\"#{p}\"" }.join(' ')} 2>&1`
@@ -809,7 +1152,13 @@ def prefetch_pacman!(pacman, paths)
     next unless m
 
     real = posix_map[m[1]]
-    PACKAGE_CACHE[real] = { name: m[2], version: m[3] } if real
+    PACKAGE_CACHE[real] = { name: m[2], version: m[3], manager: :pacman } if real
+  end
+
+  real_to_original.each do |real, original|
+    next if PACKAGE_CACHE[real]
+
+    PACKAGE_CACHE[real] = version_manager_owner(real, nil, original)
   end
 rescue StandardError
   nil
@@ -903,22 +1252,36 @@ def prefetch_apt!(dpkg, real_to_original)
     name = pkgs.to_s.split(',').first.to_s.strip
     next if name.empty?
 
-    PACKAGE_CACHE[real] = { name: name, version: nil }
+    PACKAGE_CACHE[real] = { name: name, version: nil, manager: :apt }
     names << name
   end
-  return if names.empty?
 
-  info = `"#{dpkg}" -s #{names.uniq.map { |n| "\"#{n}\"" }.join(' ')} 2>&1`
-  versions = {}
-  current = nil
-  info.each_line do |line|
-    if line.start_with?('Package:')
-      current = line.sub(/\APackage:\s*/, '').strip
-    elsif line.start_with?('Version:') && current
-      versions[current] = line.sub(/\AVersion:\s*/, '').strip
+  unless names.empty?
+    info = `"#{dpkg}" -s #{names.uniq.map { |n| "\"#{n}\"" }.join(' ')} 2>&1`
+    versions = {}
+    current = nil
+    info.each_line do |line|
+      if line.start_with?('Package:')
+        current = line.sub(/\APackage:\s*/, '').strip
+      elsif line.start_with?('Version:') && current
+        versions[current] = line.sub(/\AVersion:\s*/, '').strip
+      end
     end
+    PACKAGE_CACHE.each_value { |pkg| pkg[:version] = versions[pkg[:name]] if pkg && versions.key?(pkg[:name]) }
   end
-  PACKAGE_CACHE.each_value { |pkg| pkg[:version] = versions[pkg[:name]] if pkg && versions.key?(pkg[:name]) }
+
+  # apt not owning a path is the common case for anything a version
+  #  manager placed under $HOME instead (pyenv/rbenv/rustup/SDKMAN) -
+  #  each of those gets exactly one more shot per still-nil path here,
+  #  same as an ordinary lookup_package_info cache-miss would get
+  #  outside of prefetch (see version_manager_owner). Previously this
+  #  method just left every apt-less path cached nil for good - dpkg's
+  #  own batch answer was never the *whole* answer to begin with.
+  real_to_original.each do |real, original|
+    next if PACKAGE_CACHE[real]
+
+    PACKAGE_CACHE[real] = version_manager_owner(real, nil, original)
+  end
 rescue StandardError
   nil
 end
@@ -1297,7 +1660,12 @@ def resolve_language(lang)
   #  Skipped rather than resolved-and-hidden, so no subprocess time is
   #  spent probing tools nothing can use anyway.
   tools = entry[:found] ? resolve_tools(lang) : []
-  entry.merge(name: lang[:name], binaries: lang[:bin], tools: tools)
+  # windows_only/unix_only carried through from the AREAS entry itself
+  #  (nil for the common case, e.g. PowerShell - genuinely cross-
+  #  platform, so a real MISSING is still the right word for it even
+  #  on macOS/Linux) - see status_text/platform_inapplicable? for what
+  #  reads these.
+  entry.merge(name: lang[:name], binaries: lang[:bin], tools: tools, windows_only: lang[:windows_only], unix_only: lang[:unix_only])
 end
 
 # resolve_tools(lang) - a tools: entry is normally a plain tool name
@@ -1330,7 +1698,7 @@ end
 #  handles this row identically to a real tool's.
 def resolve_psake_module
   pwsh = find_on_path('pwsh') || find_on_path('powershell')
-  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, path: nil, version: nil, name: 'psake' } unless pwsh
+  return { binaries: %w[psake], found: false, resolved_binary: nil, package_name: nil, manager: nil, path: nil, version: nil, name: 'psake' } unless pwsh
 
   raw = `"#{pwsh}" -NoProfile -Command "(Get-Module -ListAvailable -Name psake | Select-Object -First 1).Version.ToString()" 2>#{NULL_DEVICE}`.strip
   found = !raw.empty? && raw !~ /error|not recognized|exception/i
@@ -1340,6 +1708,7 @@ def resolve_psake_module
     found: found,
     resolved_binary: found ? 'psake' : nil,
     package_name: nil,
+    manager: nil,
     path: nil,
     version: found ? raw : nil,
     name: 'psake'
@@ -1410,6 +1779,7 @@ def resolve_entry(candidates, version_mode, path_dirs = nil)
       #  the candidate name searched for isn't identical to the
       #  language's own display name.
       package_name: pkg && pkg[:name],
+      manager: pkg && pkg[:manager],
       path: to_posix(path),
       version: probe_version(name, path, version_mode) || (pkg && normalize_version(pkg[:version]))
     }
@@ -1433,36 +1803,62 @@ def format_table(report)
   ]
   report[:areas].each do |area|
     lines << "== #{area[:name]} =="
+    lines << table_header(widths)
     area[:languages].each do |lang|
-      lines << table_row(lang[:name], lang, 0, widths)
-      lang[:tools].each { |tool| lines << table_row(tool[:name], tool, 1, widths) }
+      lines << table_row(lang[:name], lang, '', widths)
+      lang[:tools].each_with_index { |tool, i| lines << table_row(tool[:name], tool, tool_prefix(lang[:tools], i), widths) }
     end
     lines << ''
   end
   lines.join("\n")
 end
 
-# table_widths(report) - [label_width, status_width, version_width],
-#  each sized to the longest value that will actually appear in that
-#  column across the whole report. A fixed guess (the previous
-#  approach) silently breaks alignment for every row after the first
-#  one whose content runs longer than the guess - confirmed directly
-#  with a Debian epoch version string ("1:5.1.0-1ubuntu0.2") and a
-#  bracketed package discovery ("Java [java-17-amazon-corretto-jdk:amd64]"),
-#  both of which routinely exceed a fixed 14/36-char guess. Recomputed
-#  from the already-built report (pure string ops on data already
-#  resolved by build_report), not by re-probing any binary.
+# tool_prefix(tools, index) - "  └─ " (tree-branch "last child")
+#  for the last entry in `tools`, "  ├─ " (tree-branch "more
+#  siblings follow") for every other one - real box-drawing characters
+#  instead of the plain-ASCII "\_" stand-in this used before, per direct
+#  request ("not very attractive"). A language row itself (top-level,
+#  not a tool) gets no prefix at all - callers pass '' for that case
+#  rather than calling this.
+def tool_prefix(tools, index)
+  glyph = index == tools.length - 1 ? '└─' : '├─'
+  "  #{glyph} "
+end
+
+# table_header(widths) - column header line, same layout table_row
+#  itself uses. Package became its own always-shown column (see
+#  row_parts) instead of a conditional "Label [pkg]" suffix - that older
+#  form was self-explanatory without a header; a bare extra column of
+#  text on every row isn't.
+TABLE_HEADERS = %w[Name Package Status Version].freeze
+
+def table_header(widths)
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *TABLE_HEADERS, 'Path')
+end
+
+# table_widths(report) - [label_width, package_width, status_width,
+#  version_width], each sized to the longest value that will actually
+#  appear in that column across the whole report *or* its own header
+#  label, whichever is longer - a short report (e.g. everything resolved
+#  to a 3-char package like "cmd") would otherwise misalign under a
+#  wider header like "Package". A fixed guess (the original approach)
+#  silently breaks alignment for every row after the first one whose
+#  content runs longer than the guess - confirmed directly with a Debian
+#  epoch version string ("1:5.1.0-1ubuntu0.2"), which exceeds a fixed
+#  14-char guess. Recomputed from the already-built report (pure string
+#  ops on data already resolved by build_report), not by re-probing any
+#  binary.
 def table_widths(report)
   parts = report[:areas].flat_map do |area|
     area[:languages].flat_map do |lang|
-      [row_parts(lang[:name], lang, 0)] + lang[:tools].map { |tool| row_parts(tool[:name], tool, 1) }
+      [row_parts(lang[:name], lang, '')] + lang[:tools].each_with_index.map { |tool, i| row_parts(tool[:name], tool, tool_prefix(lang[:tools], i)) }
     end
   end
-  (0..2).map { |i| parts.map { |p| p[i].length }.max || 0 }
+  (0..3).map { |i| ([TABLE_HEADERS[i].length] + parts.map { |p| p[i].length }).max }
 end
 
-# row_parts(label, entry, indent) - [label, status, version, path] as
-#  plain strings, no column padding applied yet - shared by
+# row_parts(label, entry, prefix) - [label, package, status, version,
+#  path] as plain strings, no column padding applied yet - shared by
 #  table_widths (which only needs each string's length) and table_row
 #  (which pads them once the real widths are known).
 # display_path(path) - collapses a leading $HOME into "~", the
@@ -1486,24 +1882,86 @@ def display_path(path)
   end
 end
 
-def row_parts(label, entry, indent)
-  status = entry[:found] ? 'OK' : 'MISSING'
-  prefix = ('  ' * indent) + (indent.positive? ? '\_ ' : '')
-  # Surface a genuine package-identity discovery, e.g. "ksh" actually
-  #  provided by the "mksh" package on MSYS2 - not just an ordinary
-  #  every-day mismatch between the display label and whatever bare
-  #  command name was searched for (e.g. "Batch" vs "cmd"), which
-  #  package_name (unlike resolved_binary) is never set for at all.
-  pkg_name = entry[:package_name]
-  # Case-insensitive - confirmed directly, "Perl" vs. package "perl"
-  #  otherwise still counts as a "discovery" and shows a redundant
-  #  "Perl [perl]".
-  shown = pkg_name && !label.downcase.include?(pkg_name.downcase) ? "#{label} [#{pkg_name}]" : label
-  ["#{prefix}#{shown}", status, entry[:version] || '-', display_path(entry[:path]) || '-']
+# STATUS_UNAVAILABLE - shorter than "unavailable" itself, which is what
+#  this stood for originally - used in place of "MISSING" for a
+#  language that's expected to be absent given the current platform
+#  (Batch/WSH JScript/WSH VBScript on non-Windows; the Shell Scripts
+#  area's shells on native Windows - see platform_inapplicable?) rather
+#  than a real gap worth flagging. "MISSING" implies something's wrong;
+#  this doesn't.
+STATUS_UNAVAILABLE = 'N/A'
+
+# platform_inapplicable?(entry) - true if `entry`'s own windows_only/
+#  unix_only tag (set in AREAS, carried through by resolve_language)
+#  doesn't match the platform this report is actually running on.
+#
+#  windows_only needs `win` true on a native, MSYS2/MinGW, *and* a
+#  Cygwin-hosted Ruby alike - cmd.exe/cscript.exe are equally reachable
+#  from all three, a real Windows OS underneath regardless of which
+#  shell layer is on top. Plain Gem.win_platform? alone does NOT cover
+#  this, though - confirmed directly it's actually *false* under
+#  Cygwin (see native_windows_ruby?'s comment: RubyGems' own
+#  WIN_PATTERNS has no cygwin entry), so without the explicit
+#  cygwin_environment? fallback below, a genuinely-missing cmd.exe/
+#  cscript.exe on Cygwin read N/A instead of MISSING - the opposite of
+#  what unix_only already gets right one paragraph down.
+#
+#  Same reasoning covers a Ruby built for MSYS2's base MSYS subsystem
+#  (as opposed to its MINGW64/UCRT64/CLANG64 subsystems) - that one is
+#  POSIX-like the same way Cygwin is, reports a RUBY_PLATFORM like
+#  "x86_64-pc-msys", and matches none of WIN_PATTERNS either. The
+#  mingw-hosted subsystems don't need this fallback (their platform
+#  string already contains "mingw", which Gem.win_platform? does
+#  match) - but ENV['MSYSTEM'] is set for every MSYS2 subsystem
+#  uniformly, unlike Gem.win_platform?, so it's the one signal that
+#  covers the base-MSYS gap without needing to special-case it
+#  separately from the already-working mingw subsystems.
+#
+#  unix_only is different - confirmed directly the old single `win`
+#  check got this backwards for MSYS2/Cygwin specifically: a POSIX shell
+#  genuinely *is* the default there (that's the entire point of either
+#  environment), so an actually-missing zsh reading N/A instead of
+#  MISSING on MSYS2 was actively misleading, not a neutral "not
+#  applicable here" the way it correctly is on plain cmd.exe/PowerShell/
+#  pwsh with no POSIX layer at all. unix_only is only ever inapplicable
+#  on that last, genuinely-native case - $MSYSTEM (set inside any MSYS2
+#  shell) or a real Cygwin session rules it back in. Doesn't
+#  special-case WSL1's own real-Windows-tools-via-/mnt/c reachability
+#  for windows_only (see AREAS's own Batch comment) - a WSL1 Ruby that's
+#  genuinely Linux-native reports Gem.win_platform? false and
+#  cygwin_environment? false, so a Batch entry that's actually
+#  unreachable there still reads MISSING, not N/A; a real find still
+#  overrides this either way (see status_text), so the only effect is
+#  which word an already-absent WSL1 Batch gets.
+def platform_inapplicable?(entry)
+  win = Gem.win_platform? || cygwin_environment? || !ENV['MSYSTEM'].nil?
+  native_windows_only = win && !ENV['MSYSTEM'] && !cygwin_environment?
+  (entry[:windows_only] && !win) || (entry[:unix_only] && native_windows_only)
 end
 
-def table_row(label, entry, indent, widths)
-  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %s", *row_parts(label, entry, indent))
+# status_text(entry) - 'OK' / 'MISSING' / STATUS_UNAVAILABLE, in that
+#  priority order: found always wins regardless of windows_only/
+#  unix_only (e.g. bash actually installed on Windows via Git-Bash/
+#  Cygwin/MSYS2 is still just OK, not something to second-guess).
+def status_text(entry)
+  return 'OK' if entry[:found]
+  return STATUS_UNAVAILABLE if platform_inapplicable?(entry)
+
+  'MISSING'
+end
+
+def row_parts(label, entry, prefix)
+  status = status_text(entry)
+  # Always its own column now, even when it's the same word as the
+  #  label (e.g. "Ruby" / "ruby") - previously this only showed at all
+  #  when it differed from label, folded into "Label [pkg]" inline. A
+  #  steady column position is worth the occasional redundant-looking
+  #  row; a column that silently vanishes depending on the data isn't.
+  ["#{prefix}#{label}", entry[:package_name] || '-', status, entry[:version] || '-', display_path(entry[:path]) || '-']
+end
+
+def table_row(label, entry, prefix, widths)
+  format("%-#{widths[0]}s %-#{widths[1]}s %-#{widths[2]}s %-#{widths[3]}s %s", *row_parts(label, entry, prefix))
 end
 
 def format_json(report)
@@ -1542,38 +2000,373 @@ end
 def format_csv(report)
   require 'csv'
   CSV.generate do |csv|
-    csv << %w[Area Name Kind Parent Status Version Package Path]
+    csv << %w[Area Name Kind Parent Status Version Package Manager Path]
     report[:areas].each do |area|
       area[:languages].each do |lang|
-        csv << [area[:name], lang[:name], 'language', nil, lang[:found] ? 'OK' : 'MISSING', lang[:version], lang[:package_name], lang[:path]]
+        csv << [area[:name], lang[:name], 'language', nil, status_text(lang), lang[:version], lang[:package_name], lang[:manager], lang[:path]]
         lang[:tools].each do |tool|
-          csv << [area[:name], tool[:name], 'tool', lang[:name], tool[:found] ? 'OK' : 'MISSING', tool[:version], tool[:package_name], tool[:path]]
+          csv << [area[:name], tool[:name], 'tool', lang[:name], status_text(tool), tool[:version], tool[:package_name], tool[:manager], tool[:path]]
         end
       end
     end
   end
 end
 
+# MANAGER_ICONS - one glyph per :manager tag (see tag_manager) for
+#  format_tui's Package column. Only :pacman/:cygcheck/:apt/:homebrew/
+#  :chocolatey/:sdkman/:rbenv/:rustup/:pyenv are wired to a real
+#  detector anywhere in this file (see lookup_package_info) - an
+#  ordinary PATH-only resolution (no package-manager owner found at
+#  all) gets no icon at all today, which is most tools - see
+#  MANAGER_ICON_FALLBACK. cpan/gem/jar/composer detection doesn't exist
+#  yet; add a new tag_manager call site and a MANAGER_ICONS entry
+#  together if one gets built later, same pattern as every manager
+#  already here (pyenv itself is exactly that pattern applied to
+#  Python: see pyenv_owner).
+# "⚙️" (U+2699 GEAR + U+FE0F variation selector) was the original
+#  version-manager icon here, replaced after confirmed directly this
+#  isn't just a cosmetic misalignment: format_tui, under ratatui_ruby,
+#  visibly corrupted OTHER cells' text on any row using it the moment
+#  that row's selection state changed (arrow key up/down) - e.g. "ruby"
+#  rendered as "ubyy", "python2" as "pytho22", version numbers scrambled
+#  the same way - and the corruption persisted across later redraws
+#  instead of resetting. U+2699 alone is Unicode "ambiguous width" (not
+#  a standalone wide pictograph the way 🍫/🍺/📦 above are), so a real
+#  terminal rendering it as a 2-column emoji glyph while ratatui_ruby's
+#  own Rust-side layout math sizes it as 1 column is a plausible root
+#  cause: a live buffer-offset mismatch in native (non-Ruby) code, well
+#  outside anything this file can fix directly - swapping to a single
+#  unambiguous-width codepoint (no variation selector, same category as
+#  every other manager icon here) sidesteps triggering it at all. 🔧
+#  keeps the distinct "version manager, not package manager" meaning the
+#  gear was chosen for.
+MANAGER_ICONS = {
+  chocolatey: '🍫', # also stands in for a future plain NuGet-only detector
+  homebrew: '🍺',
+  apt: '📦',
+  cygcheck: '📦',
+  pacman: '📦', # also stands in for a future rpm/other-system-package detector
+  sdkman: '🔧', # version manager
+  rbenv: '🔧',  # also a version manager - same icon as sdkman, same category
+  rustup: '🔧', # ditto
+  pyenv: '🔧'   # ditto
+}.freeze
+# Blank, not a "?"/"unknown" glyph of any kind - an unmatched manager is
+#  the ordinary case (see MANAGER_ICONS's own comment), not an error
+#  condition worth calling attention to on every other row.
+MANAGER_ICON_FALLBACK = ''
+
+def manager_icon(manager)
+  MANAGER_ICONS.fetch(manager, MANAGER_ICON_FALLBACK)
+end
+
+# pkg_cell(entry) - the Package column's own text: icon prefixed
+#  directly onto the package name (not a separate column) - so the icon
+#  reads as "what kind of package is *this*", not as another fact about
+#  the language/tool row it happens to sit on. No leading space at all
+#  when there's no icon (MANAGER_ICON_FALLBACK is blank), rather than a
+#  permanent blank gutter character in front of every unmatched row.
+def pkg_cell(entry)
+  pkg = entry[:package_name] || '-'
+  icon = manager_icon(entry[:manager])
+  icon.empty? ? pkg : "#{icon} #{pkg}"
+end
+
+# format_tui(report) - interactive bordered-table view via the
+#  ratatui_ruby gem (https://rubygems.org/gems/ratatui_ruby, LGPL-3.0),
+#  a Rust-backed TUI library - not a default dependency of this project
+#  (see format_csv's own comment on why 'csv' is require'd lazily here
+#  rather than at file load time; same reasoning, doubly so for a gem
+#  that isn't even in Ruby's standard library). `gem install
+#  ratatui_ruby` first. No precompiled native gem exists for Intel
+#  macOS (x86_64-darwin) as of this writing - confirmed directly against
+#  rubygems.org's own version list, which has arm64-darwin, x86_64-
+#  linux, and x64-mingw-ucrt fat gems plus a source "ruby" platform gem
+#  - an Intel Mac falls through to that source gem and needs a local
+#  Rust toolchain (rustc/cargo) to compile it.
+#
+#  Arrow-key row selection (highlighted row, q/Esc to quit) plus a
+#  footer summary - matching ratatui.rs's own table example
+#  (https://ratatui.rs/examples/widgets/table/), per direct request
+#  after a screenshot of that example's actual rendered output. `rows:`
+#  and `selected` are plain values rebuilt every frame from a local
+#  `selected` index this method owns itself - ratatui_ruby's table
+#  factory takes `selected_row:` directly (a plain Integer), so there's
+#  no need for the separate TableState/render_stateful_widget path
+#  real ratatui's own Rust API requires for the same feature.
+def format_tui(report)
+  # Confirmed directly: with stdin redirected from /dev/null, this
+  #  still gets past init_terminal cleanly and just blocks forever on
+  #  the first poll_event, since no real key event can ever arrive -
+  #  no error, no output, nothing to Ctrl-C into from a script that
+  #  invoked this expecting "print and exit" like every other
+  #  formatter. Every other FORMATTERS entry is safe to run from a
+  #  pipe/CI job; this is the one exception, so it gets its own upfront
+  #  check rather than a silent hang discovered the hard way.
+  unless $stdout.tty?
+    raise "format_tui needs an interactive terminal (stdout isn't a TTY) - use --format text instead"
+  end
+
+  require 'ratatui_ruby'
+
+  groups = area_groups(report)
+  total_rows = groups.sum { |_name, pairs| pairs.length }
+  found_count = groups.sum { |_name, pairs| pairs.count { |entry, _prefix| entry[:found] } }
+  widths = tui_widths(groups)
+
+  selected = 0
+
+  RatatuiRuby.run do |tui|
+    bold = tui.style(modifiers: [:bold])
+    highlight = tui.style(fg: :black, bg: :yellow, modifiers: [:bold])
+    italic = tui.style(modifiers: [:italic])
+
+    loop do
+      tui.draw { |frame| draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows, widths) }
+
+      # poll_event with no timeout blocks indefinitely (confirmed
+      #  directly against the gem's own Rust source, events.rs -
+      #  poll_data_accepts_none_timeout_for_indefinite_blocking) until a
+      #  real event arrives - no busy-wait/sleep needed.
+      event = tui.poll_event
+      next unless event.key?
+
+      break if event.esc? || event.char == 'q'
+
+      selected = (selected - 1) % total_rows if event.up? && total_rows.positive?
+      selected = (selected + 1) % total_rows if event.down? && total_rows.positive?
+    end
+  end
+  nil
+end
+
+# area_groups(report) - [[area_name, [[entry, prefix], ...]], ...],
+#  one group per AREA (Windows Scripts/Shell Scripts/General Scripts/
+#  Compiled Languages) rather than a single flattened list - see
+#  draw_tui_frame's own comment for why format_tui stopped flattening
+#  every area into one table. `prefix` is '' for a language row, or
+#  tool_prefix's tree-branch glyph for a tool row - computed once here
+#  rather than by every caller, same reasoning as table_widths/
+#  format_table sharing it on the text-table side.
+def area_groups(report)
+  report[:areas].map do |area|
+    pairs = area[:languages].flat_map do |lang|
+      [[lang, '']] + lang[:tools].each_with_index.map { |tool, i| [tool, tool_prefix(lang[:tools], i)] }
+    end
+    [area[:name], pairs]
+  end
+end
+
+# draw_tui_frame(...) - one titled, bordered sub-block per area instead
+#  of a single table spanning the whole report - confirmed directly
+#  from a screenshot that a single flat table reads as one
+#  undifferentiated wall of rows, no visual seam between e.g. "Windows
+#  Scripts" and "Shell Scripts" at all. Each area keeps its own header
+#  row (ratatui's own column-width engine, computed per table) rather
+#  than one hand-aligned shared header pulled out separately above them
+#  all - a shared header's spacing would drift out of sync with each
+#  table's own internal column math the moment row content differs
+#  between areas, since nothing would keep the two in sync.
+#
+#  Borders are collapsed between adjacent areas: every area block draws
+#  only [:top, :left, :right] (never :bottom) - so the boundary between
+#  two stacked areas is drawn exactly once, by the area *below*, not
+#  twice as two independent full boxes touching would. The very last
+#  seam is closed by the outer platform-title block's own bottom border
+#  instead, the same way the first area's top seam is closed by the
+#  outer block's top border.
+#
+#  Selection stays a single flat index across every area (not one
+#  per-area selection) - see format_tui's own `selected`/up?/down?
+#  handling - so arrow-key navigation flows seamlessly from the last
+#  row of one area into the first row of the next, matching how a
+#  single table would have behaved before this split. Only the area
+#  the globally-selected row actually falls in gets a `selected_row:`;
+#  every other area's table renders with none.
+def draw_tui_frame(tui, frame, report, groups, selected, bold, highlight, italic, found_count, total_rows, widths)
+  outer = tui.block(
+    title: " #{report[:platform] || 'unrecognized'} (#{report[:uname]}) (q to quit, up/down to navigate) ",
+    borders: [:all],
+    border_type: :rounded
+  )
+  frame.render_widget(outer, frame.area)
+  inner = outer.inner(frame.area)
+
+  # Leftover vertical space (a terminal taller than the report actually
+  #  needs) split evenly across every area's own Length constraint,
+  #  rather than left as one unused block below the footer - confirmed
+  #  directly from a screenshot that plain content-sized Length
+  #  constraints left most of a tall terminal empty. Computed by hand
+  #  instead of switching each area to Constraint::Min and letting
+  #  ratatui's own solver grow them - confirmed directly that doesn't
+  #  distribute evenly either: with four Min constraints, one area
+  #  (arbitrarily, not first or last) absorbed 100% of the slack while
+  #  the other three stayed at their bare minimum.
+  needed = groups.map { |_name, pairs| pairs.length + 1 }
+  footer_height = 1
+  extra = [inner.height - needed.sum - footer_height, 0].max
+  base_extra = extra / groups.length
+  remainder = extra % groups.length
+  heights = needed.each_with_index.map { |h, i| h + base_extra + (i < remainder ? 1 : 0) }
+  constraints = heights.map { |h| tui.constraint_length(h) } + [tui.constraint_length(footer_height)]
+  rects = tui.layout_split(inner, direction: :vertical, constraints: constraints)
+
+  offset = 0
+  groups.each_with_index do |(name, pairs), i|
+    local_selected = selected - offset
+    local_selected = nil unless (0...pairs.length).cover?(local_selected)
+
+    table = tui.table(
+      header: %w[Name Package Status Version Path].map { |text| tui.paragraph(text: text, style: bold) },
+      rows: pairs.map { |entry, prefix| tui_row(tui, entry, prefix) },
+      # Name/Package/Status/Version sized to this report's own actual
+      #  content (tui_widths), not a fixed guess - confirmed directly a
+      #  fixed guess can't win: MSYS2/ucrt64's own package ids run
+      #  absurdly long ("mingw-w64-ucrt-x86_64-gcc"), needing a wide
+      #  Package column, while Windows' own full paths run long the same
+      #  way, needing that same width back for Path - a fixed Package
+      #  guess wide enough for ucrt64 left Path with nothing but wasted
+      #  blank space everywhere else, and pushed it off the right edge
+      #  entirely once a real Windows path showed up. Path gets a Fill
+      #  constraint instead of a computed width of its own - it always
+      #  absorbs whatever space is actually left after the other four
+      #  columns take only what their own content needs, rather than
+      #  needing a guess that's simultaneously right for every
+      #  platform's own path lengths.
+      widths: widths.map { |w| tui.constraint_length(w) } + [tui.constraint_fill(1)],
+      column_spacing: 1,
+      selected_row: local_selected,
+      row_highlight_style: highlight,
+      highlight_symbol: '👉 ',
+      # Default is :when_selected - confirmed directly that leaves each
+      #  area's own gutter width dependent on whether *that* table
+      #  currently happens to hold the selection, so every column across
+      #  every other (unselected) area visibly shifts left/right by the
+      #  highlight symbol's width as selection crosses an area boundary.
+      #  :always reserves the same gutter in every area's table
+      #  regardless of its own selection state, keeping columns aligned.
+      highlight_spacing: :always,
+      block: tui.block(title: " #{name} ", borders: %i[top left right])
+    )
+    frame.render_widget(table, rects[i])
+    offset += pairs.length
+  end
+
+  footer = tui.paragraph(text: "#{found_count}/#{total_rows} found", style: italic)
+  frame.render_widget(footer, rects.last)
+end
+
+# STATUS_COLORS - fg color per status_text value; anything not listed
+#  (there's nothing else status_text can return) falls back to :white,
+#  never reached in practice.
+STATUS_COLORS = {
+  'OK' => :green,
+  'MISSING' => :red,
+  STATUS_UNAVAILABLE => :dark_gray # neutral, not alarming - see STATUS_UNAVAILABLE's own comment
+}.freeze
+
+# status_cell(tui, entry) - the Status column's own colored Paragraph -
+#  color only exists in the TUI (row_parts/format_csv's plain-text
+#  status stays uncolored ANSI-free text, right for output another
+#  tool or a redirected file might consume).
+def status_cell(tui, entry)
+  text = status_text(entry)
+  tui.paragraph(text: text, style: tui.style(fg: STATUS_COLORS.fetch(text, :white)))
+end
+
+# tui_row(tui, entry, prefix) - [name, package, status, version, path]
+#  for one format_tui row - the TUI's own equivalent of row_parts, kept
+#  separate rather than reused because the two have nothing but field
+#  names in common: row_parts returns pre-padded plain strings for a
+#  fixed-width text line, this returns raw values for ratatui_ruby's
+#  own table widget to lay out. Package carries its own manager icon
+#  (see pkg_cell) rather than a dedicated leading column - the icon
+#  describes the package, not the language/tool. Needs `tui` itself
+#  (unlike row_parts) only because status_cell does - building a
+#  styled Paragraph cell needs a live TUI instance, same reason the
+#  bold header Paragraphs get built inside RatatuiRuby.run and not
+#  before it (see format_tui's own comment). `prefix` comes from
+#  area_groups (tool_prefix's tree-branch glyph, or '' for a language
+#  row) rather than being computed here, same as row_parts.
+def tui_row(tui, entry, prefix)
+  [
+    "#{prefix}#{entry[:name]}",
+    pkg_cell(entry),
+    status_cell(tui, entry),
+    entry[:version] || '-',
+    display_path(entry[:path]) || '-'
+  ]
+end
+
+# tui_widths(groups) - [name_width, package_width, status_width,
+#  version_width] for format_tui's own table, computed the same way
+#  table_widths does for the text formatter's fixed-width columns -
+#  except Package is measured from pkg_cell's icon-prefixed text, not
+#  the bare package name (row_parts/table_widths have no icon at all -
+#  text output never shows one), and Name is measured from the same
+#  prefix+name pairs draw_tui_frame itself renders (area_groups' own
+#  tree-branch glyphs), not a guessed constant. Confirmed directly this
+#  needed to be dynamic, not just nice-to-have: a fixed guess wide
+#  enough for MSYS2/ucrt64's own absurdly long package ids (e.g.
+#  "mingw-w64-ucrt-x86_64-gcc") left nothing but wasted blank space on
+#  every other platform, at the direct expense of Path - which needed
+#  that room back on Windows, where full paths run long. Path itself
+#  isn't included here - draw_tui_frame gives it a Fill constraint
+#  instead of a computed width, so it always takes whatever's left
+#  rather than needing a guess that's simultaneously right for every
+#  platform's own path lengths.
+def tui_widths(groups)
+  pairs = groups.flat_map { |_name, group_pairs| group_pairs }
+  name_width = ([TABLE_HEADERS[0].length] + pairs.map { |entry, prefix| "#{prefix}#{entry[:name]}".length }).max
+  # +1 per icon - confirmed directly this matters, not just theoretical:
+  #  every MANAGER_ICONS glyph is a single Unicode codepoint (String#length
+  #  1) that renders as a double-width terminal cell (2 columns), so
+  #  pkg_cell's own .length undercounts real display width by exactly 1 per
+  #  icon-bearing row - reproduced as the *last* character of the longest
+  #  package id silently clipped (off-by-one, not "too narrow").
+  package_width = ([TABLE_HEADERS[1].length] + pairs.map do |entry, _prefix|
+    pkg_cell(entry).length + (manager_icon(entry[:manager]).empty? ? 0 : 1)
+  end).max
+  status_width = ([TABLE_HEADERS[2].length] + pairs.map { |entry, _prefix| status_text(entry).length }).max
+  version_width = ([TABLE_HEADERS[3].length] + pairs.map { |entry, _prefix| (entry[:version] || '-').length }).max
+  [name_width, package_width, status_width, version_width]
+end
+
 # 'text' - the plain stdout report format_table has always produced.
 #  Named for what it *is* (plain text to stdout), not how it's laid
-#  out, so a future interactive TUI formatter has an unambiguous name
-#  of its own to sit alongside it rather than overloading "table" to
-#  mean two different things.
+#  out, so 'tui' has an unambiguous name of its own to sit alongside it
+#  rather than overloading "table" to mean two different things.
 FORMATTERS = {
   'text' => method(:format_table),
   'json' => method(:format_json),
   'yaml' => method(:format_yaml),
-  'csv' => method(:format_csv)
+  'csv' => method(:format_csv),
+  'tui' => method(:format_tui)
 }.freeze
 
 if __FILE__ == $PROGRAM_NAME
-  format = 'text'
+  # Defaults to the interactive TUI when actually run by a person at a
+  #  terminal - the main way to play with this report now - and falls
+  #  back to the plain text report otherwise (piped, redirected, CI), so
+  #  nothing that invokes this non-interactively without an explicit
+  #  --format breaks. Confirmed directly nothing in this project
+  #  currently even could break either way: every caller
+  #  (run_all_tests.rb/.ps1, compile_check.rb, generate_install_sh.rb,
+  #  print_env_uname.rb) uses this file as a Ruby library
+  #  (require/require_relative straight into package_info etc.) or
+  #  shells out to a one-off `ruby -e`, never as a bare
+  #  `ruby verify_commands.rb` - but the tty-based fallback is still the
+  #  right default to have regardless, for whatever calls it that way
+  #  next.
+  format = $stdout.tty? ? 'tui' : 'text'
   OptionParser.new do |opts|
-    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv]'
+    opts.banner = 'Usage: verify.rb [--format text|json|yaml|csv|tui] ' \
+                  '(defaults to tui at a terminal, text otherwise)'
     opts.on('-f FORMAT', '--format FORMAT', FORMATTERS.keys, "Output format (#{FORMATTERS.keys.join('|')})") do |f|
       format = f
     end
   end.parse!
 
-  puts FORMATTERS.fetch(format).call(build_report)
+  result = FORMATTERS.fetch(format).call(build_report)
+  puts result unless result.nil?
 end

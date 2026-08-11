@@ -205,7 +205,7 @@ gsudo choco install -y choco.config
 
 ```bash
 # Launch Cygwin from Windows Terminal
-& "C:\cygwin64\bin\bash.exe" --login -i
+& "C:\tools\cygwin\bin\bash.exe" --login -i
 # Bash Shell: Install Packages
 apt-cyg update
 for PKG in $(cat cygwin_pkgs.txt); do apt-cyg install $PKG; done
@@ -215,7 +215,7 @@ for PKG in $(cat cygwin_pkgs.txt); do apt-cyg install $PKG; done
 
 ```bash
 # Launch MSYS2 from Windows Terminal
-& "C:\msys64\msys2_shell.cmd" -ucrt64 -defterm -no-start -where .
+& "C:\tools\msys64\msys2_shell.cmd" -ucrt64 -defterm -no-start -where .
 # Bash Shell: Install Packages
 pacman -Syu --noconfirm
 for PKG in $(cat msys2_pkgs.txt); do pacman -Sy --noconfirm $PKG; done
