@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg feature gem pacman path cyg].freeze
 
 # flatten - walks the macos.yml tree in document order and produces one
 #  array of "steps". A step is either a package (brew/cask/tap/cpan/cpanm/
@@ -23,6 +23,7 @@ def flatten(node, path = [])
         meets: entry['meets'],
         needs: entry['needs'],
         cmd: entry['cmd'],
+        reboot: entry['reboot'],
         path: path.join('.')
       }
       if type != 'script' && entry['script']

@@ -1,0 +1,98 @@
+windows:
+  shell: powershell
+  global:
+    packages:
+      - script: windows_chocolatey
+      - choco: gsudo
+      - choco: make
+    lessons:
+      gen_scripts:
+        awk:
+          packages:
+            - choco: gawk
+        groovy:
+          packages:
+            - choco: groovy
+              needs: java
+        perl:
+          packages:
+            - choco: strawberryperl
+              meets: perl
+        php:
+          packages:
+            - choco: php
+        python2:
+          packages:
+            - choco: python2
+        python3:
+          packages:
+            - choco: python3
+        ruby:
+          packages:
+            - choco: ruby
+        tcl:
+          packages:
+            - choco: magicsplat-tcl-tk
+      shell_scripts:
+        packages: 
+          - choco: cygwin
+          - choco: cyg-get
+          - choco_cyg: wget
+          - choco: apt-cyg
+          - choco: msys2
+      compiled_lang:
+        cs:
+          packages:
+            - choco: dotnet-sdk
+        go:
+          packages:
+            - choco: go
+        java:
+          packages:
+            - choco: corretto17jdk
+              meets: java
+        rust:
+          packages:
+            - choco: rust
+      win_scripts:
+        powershell:
+          packages:
+            - choco: powershell-core
+      cibox:
+        packages:
+          - feature: Microsoft-Windows-Subsystem-Linux
+            reboot: no
+          - feature: VirtualMachinePlatform
+            reboot: yes
+          - choco: docker-desktop
+          - choco: act-cli
+      testbox:
+        packages:
+          - choco: powershell-core
+          - choco: ruby
+          - choco: psake
+      scriptbox:
+        packages:
+          - choco: powershell-core
+          - choco: ruby
+          - script: windows_update_gems
+          - gem: ratatui_ruby      
+scripts:
+  windows_chocolatey:
+    type: powershell
+    elevated: true
+    cmd: |
+      Set-ExecutionPolicy Bypass -Scope Process -Force
+      [System.Net.ServicePointManager]::SecurityProtocol = `
+        [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+      $WebClient = New-Object System.Net.WebClient
+      $ScriptUrl = 'https://community.chocolatey.org/install.ps1'
+      Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
+  windows_gsudo_config:
+    type: powershell
+    elevated: true
+    cmd: gsudo config CacheMode Auto
+  windows_update_gems:
+    type: powershell
+    elevated: true
+    cmd: gem update --system
