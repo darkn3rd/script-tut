@@ -30,8 +30,10 @@ apt-cyg install ruby-devel
 apt-cyg install libclang-devel
 apt-cyg install clang
 
-# clang.dll must match your installed clang version - check with: cygcheck -c clang
-ln -sf /usr/bin/cygclang-20.1.dll /usr/bin/clang.dll
+# clang.dll must match your installed clang version - derived dynamically
+# rather than hardcoded, since it drifts with whatever clang apt-cyg installs
+CLANG_VER=$(cygcheck -c clang | awk '/^clang / {print $2}' | cut -d. -f1,2)
+ln -sf "/usr/bin/cygclang-${CLANG_VER}.dll" /usr/bin/clang.dll
 export LIBCLANG_PATH=/usr/bin
 
 # without this, bindgen's clang run fails with: error: 'short __wchar_t' is invalid
@@ -46,21 +48,35 @@ export RUBYOPT="-I$(pwd)/patches -rrb_sys_cygwin_patch"
 gem install ratatui_ruby
 
 # fix interactive freezing
-cd "$(ruby -e 'puts Gem::Specification.find_by_name("ratatui_ruby").gem_dir')/ext/ratatui_ruby"
+RATATUI_RUBY_GEM_PATH="$(ruby -e 'puts Gem::Specification.find_by_name("ratatui_ruby").gem_dir')"
+cd "$RATATUI_RUBY_GEM_PATH/ext/ratatui_ruby"
 
-cat >> Cargo.toml <<'EOF'
+# Must match whatever ratatui-crossterm actually pulled in on the install
+# above (from Cargo.lock, not guessed) - otherwise Cargo resolves a second,
+# separate crossterm instance instead of unifying features onto the one
+# ratatui-crossterm actually uses, and use-dev-tty never takes effect.
+CROSSTERM_VER=$(grep -A1 'name = "crossterm"' Cargo.lock \
+  | grep version \
+  | sed -E 's/.*"([0-9]+\.[0-9]+)\.[0-9]+"/\1/'
+)
+
+grep -q '\[dependencies.crossterm\]' Cargo.toml || cat >> Cargo.toml <<EOF
 
 [dependencies.crossterm]
-version = "0.29"
+version = "$CROSSTERM_VER"
 features = ["use-dev-tty"]
 EOF
 
 make
 # `make` alone only rebuilds `ratatui_ruby.so` inside `ext/ratatui_ruby/` - that's not the
-#  copy Ruby's `require` actually loads. Find the real one and overwrite it:
-find ~/.local/share/gem /usr/share/gems -name ratatui_ruby.so 2>/dev/null
-# copy ext/ratatui_ruby/ratatui_ruby.so over the one under
-# .../extensions/x86_64-cygwin/<version>/ratatui_ruby-1.5.0/ratatui_ruby/ratatui_ruby.so
+#  copy Ruby's `require` actually loads. Find the real one (the `/extensions/` path
+#  segment is what distinguishes it from the just-built one sitting right here) and
+#  overwrite it:
+RATATUI_RUBY_SO_EXT_DEST=$(find ~/.local/share/gem /usr/share/gems \
+  -path "*/extensions/*/ratatui_ruby.so" 2>/dev/null \
+  | head -1
+)
+cp ratatui_ruby.so "$RATATUI_RUBY_SO_EXT_DEST"
 ```
 
 **NOTES**:
@@ -80,7 +96,7 @@ unrelated subprocess crashes and takes the whole build down.
   * **root cause**: ratatui_ruby's `crossterm` dependency defaults to reading input via `mio`'s `poll()`-based selector on Cygwin (grouped alongside far-less-tested targets like Solaris/QNX/Vita, not Linux's well-exercised epoll path), which doesn't reliably notice available input on a Cygwin tty.
   * **solution**: force crossterm's alternate `use-dev-tty` feature, a much simpler direct blocking read on `/dev/tty`, bypassing `mio` entirely, fixes it. This has to be added directly to the installed gem's own `Cargo.toml` (no way to pass it through `gem install`/`extconf.rb` cleanly)
 * **Performance**: TUI is redrawn for every keypress.  As Cygwin's `fork()`/`CreateProcessW` emulation is dramatically slower than a real Linux fork, each redraw takes several seconds (confirmed iwth `strace`), sometimes stalling outright waiting on `subproc_ready`, compounding across every arrow-key press with no path back to responsiveness. 
-  * **Solution**: The `cygwin_environment?` is now memoized.  Any similar interactive script against this gem should treat should treat "no subprocess calls from redraw-path code, ever" as a hard rule on Cygwin specifically,
+  * **Solution**: The `cygwin_environment?` is now memoized.  Any similar interactive script against this gem should treat "no subprocess calls from redraw-path code, ever" as a hard rule on Cygwin specifically,
 not just a nice-to-have.
 
 #### Ubuntu 22.04
