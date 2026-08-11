@@ -28,20 +28,29 @@ AREAS = [
   {
     name: 'Windows Scripts',
     languages: [
-      # ".exe" candidates listed first and explicitly, not left to
-      #  find_on_path's own PATHEXT-driven extension search - confirmed
-      #  directly this matters under WSL1: a bare "cmd" there finds
-      #  /usr/local/bin/cmd (this project's own wsl1-run wrapper, not a
-      #  real interpreter to report on), while "cmd.exe" correctly finds
-      #  the real /mnt/c/Windows/system32/cmd.exe instead. cmd/cscript
-      #  have no native Linux port to prefer at all, so reaching for
-      #  the Windows one first is always right for them - PowerShell is
-      #  the one exception: confirmed directly, WSL1's Ubuntu has a
-      #  genuine native `pwsh` (`which pwsh` -> /usr/bin/pwsh, a real,
-      #  fully-functional PowerShell build, not any kind of wrapper), so
-      #  it gets the opposite order - bare name first, matching how
-      #  every other Shell/General Scripts tool already prefers native
-      #  over reaching into /mnt/c for the Windows one.
+      # ".exe" candidates listed explicitly, with no bare-name fallback
+      #  at all for cmd/cscript - confirmed directly this matters under
+      #  WSL1: a bare "cmd" there finds /usr/local/bin/cmd (this
+      #  project's own wsl1-run wrapper, not a real interpreter to
+      #  report on at all), while "cmd.exe" correctly finds the real
+      #  /mnt/c/Windows/system32/cmd.exe instead. Ordering "cmd.exe"
+      #  first only protects the common case where a real cmd.exe *is*
+      #  somewhere on PATH; reproduced directly the case that matters
+      #  here too - point PATH at nothing but an arbitrary unrelated
+      #  "cmd" executable (no real cmd.exe anywhere) and resolve_binary
+      #  still happily "finds" it, since a bare-name fallback exists for
+      #  it to fall through to. cmd/cscript have no legitimate native
+      #  POSIX port at all (unlike pwsh - see below), so there's no
+      #  right answer a bare-name match could ever be pointing at; only
+      #  the ".exe" form is trustworthy, and WSH JScript/WSH VBScript
+      #  get the identical treatment for cscript.exe. PowerShell is the
+      #  one exception: confirmed directly, WSL1's Ubuntu has a genuine
+      #  native `pwsh` (`which pwsh` -> /usr/bin/pwsh, a real, fully-
+      #  functional PowerShell build, not any kind of wrapper), so it
+      #  keeps its bare-name candidates and gets the opposite order -
+      #  bare name first, matching how every other Shell/General
+      #  Scripts tool already prefers native over reaching into /mnt/c
+      #  for the Windows one.
       # "coreutils" in each tool entry is a search-only hint, same
       #  reasoning as TCL's own "tcl"/Java's own "jvm" - confirmed
       #  directly neither "date" nor "grep" shares any substring with
@@ -53,7 +62,7 @@ AREAS = [
       #  resolves fine from Ruby's own inherited PATH but is invisible
       #  to a real Batch script, which runs under cmd.exe and never
       #  sees Cygwin's /usr/bin at all. See windows_native_path_dirs.
-      { name: 'Batch',        bin: %w[cmd.exe cmd],                             version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true, windows_only: true },
+      { name: 'Batch',        bin: %w[cmd.exe],                                 version: :cmd, tools: [%w[date coreutils], %w[grep coreutils]], native_tools: true, windows_only: true },
       # :psake - the win_scripts/powershell lessons run through
       #  Invoke-Psake (see run_all_tests.ps1) - unlike every other
       #  "tools" entry, psake isn't a real executable at all (no
@@ -62,8 +71,8 @@ AREAS = [
       #  found via find_on_path/resolve_entry the normal way - see
       #  resolve_psake_module, dispatched on this exact symbol.
       { name: 'PowerShell',   bin: %w[pwsh powershell pwsh.exe powershell.exe], version: :powershell, tools: [:psake] },
-      { name: 'WSH JScript',  bin: %w[cscript.exe cscript],                     version: :cscript, windows_only: true },
-      { name: 'WSH VBScript', bin: %w[cscript.exe cscript],                     version: :cscript, windows_only: true },
+      { name: 'WSH JScript',  bin: %w[cscript.exe],                             version: :cscript, windows_only: true },
+      { name: 'WSH VBScript', bin: %w[cscript.exe],                             version: :cscript, windows_only: true },
     ]
   },
   {
@@ -312,7 +321,17 @@ def windows_native_path_dirs
     if native_windows_ruby?
       ENV['PATH'].to_s.split(File::PATH_SEPARATOR)
     else
-      cmd = find_on_path('cmd.exe') || find_on_path('cmd')
+      # No bare "cmd" fallback here either - same reasoning as AREAS'
+      #  own Batch candidate list (see its own comment): this function
+      #  is only ever reached once Batch's own entry has already been
+      #  found via a real "cmd.exe" (resolve_tools only calls it when
+      #  entry[:found] is true), so a second, separate bare-name
+      #  fallback here would only ever matter by finding something
+      #  *different* from what was already confirmed real - and if it
+      #  did, running "/c echo %PATH%" against some unrelated "cmd"
+      #  binary would silently corrupt dirs with garbage output instead
+      #  of failing loudly.
+      cmd = find_on_path('cmd.exe')
       raw = cmd ? `"#{cmd}" /c echo %PATH% 2>&1`.strip : ''
       # Strips any trailing backslash(es) - confirmed directly a
       #  Windows %PATH% entry commonly ends with one (e.g.
