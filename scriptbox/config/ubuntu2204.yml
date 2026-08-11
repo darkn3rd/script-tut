@@ -5,6 +5,7 @@ ubuntu22:
         script: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
       - script: ubuntu22_sdkman
+        tags: [sdkman]
       - apt: ['curl','git','make','wget']
     lessons:
       gen_scripts:
@@ -32,11 +33,14 @@ ubuntu22:
               - tk-dev
               - xz-utils
               - zlib1g-dev
+            tags: [pyenv,rbenv]
           - apt: 
               - rbenv
               - ruby-build
+            tags: [rbenv]
             script: ubuntu22_post_rbenv
           - script: ubuntu22_pyenv
+            tags: [pyenv]
         awk:
           packages:
             - apt: gawk
@@ -44,6 +48,7 @@ ubuntu22:
           packages:
             - sdkman: groovy
               needs: java
+              tags: [sdkman]
         perl:
           packages:
             - system: perl
@@ -59,17 +64,20 @@ ubuntu22:
             - pyenv: 2.7.18
               cmd: pyenv global 3.14.7 2.7.18
               needs: pyenv3
+              tags: [pyenv,python2]
         python3:
           packages:
             - system: python # 3.10.x
             - pyenv: 3.14.7
               cmd: pyenv global 3.14.7
               meets: pyenv3
+              tags: [pyenv]
         ruby:
           packages:
             - system: ruby # 3.0.x
             - rbenv: 4.0.6
               cmd: rbenv global 4.0.6
+              tags: [rbenv]
         tcl:
           packages:
             - apt: tcl8.6
