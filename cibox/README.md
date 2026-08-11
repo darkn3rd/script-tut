@@ -20,7 +20,7 @@ In order to run elevated privileges without ambiguity in the instructions, insta
   ```
 * Install using **[Winget](https://learn.microsoft.com/windows/package-manager/)**
   ```powershell
-  winget install gerardog.gsudo
+  winget install geardog.gsudo
   ```
 
 After you can enable caching, so you don't have to elevate privileges for every command.  Not this is considered a security risk. 
