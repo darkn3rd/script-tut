@@ -2,7 +2,7 @@ require 'yaml'
 require 'optparse'
 require 'fileutils'
 require_relative 'resolve_order'
-require_relative 'generate_install_sh' # for command_for/write_install_script/dialect_for
+require_relative 'generate_install_script' # for command_for/write_install_script/dialect_for
 require_relative 'verify_commands' # for uname_string/match_platform - see system_info's own comment
 
 CONFIG_DIR = File.join(__dir__, '..', 'config')

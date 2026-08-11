@@ -41,6 +41,37 @@ def bash_install(step)
   #  non-interactive mechanism, not a per-command flag.
   when 'sdkman' then "sdk install #{step[:name]}"
   when 'gem'    then "gem install #{step[:name]}"
+  # --noconfirm - same non-interactive reasoning as apt's own -y. The
+  #  one-time `pacman -Syu` refresh this needs before the *first* pacman
+  #  step isn't here - it's a property of the whole script, not any one
+  #  step, so write_install_script injects it directly.
+  when 'pacman' then "pacman -S --noconfirm #{Array(step[:name]).join(' ')}"
+  # apt-cyg - the Cygwin apt-get equivalent already used throughout this
+  #  project's own README (see cygwin_ratatui_ruby_gem's own apt-cyg
+  #  install lines) - not choco_cyg, which is a completely different
+  #  thing (choco_cyg installs Cygwin packages *from PowerShell/Windows*,
+  #  for windows.yml's own shell_scripts entry; this is Cygwin installing
+  #  its own packages from *inside* a Cygwin bash session).
+  when 'cyg' then "apt-cyg install #{Array(step[:name]).join(' ')}"
+  # Tested, then appended to whichever startup files actually exist,
+  #  rather than assumed present/blindly appended to both - confirmed
+  #  directly this matters: .zshrc in particular is often just absent
+  #  (zsh not installed/never run), and appending to a file that isn't
+  #  actually anyone's shell startup file yet accomplishes nothing.
+  #  `export PATH=...` prepends (not appends) the path within the line
+  #  itself, same convention msys2_cpan_local_setup's own PATH line
+  #  already uses - a later line in the same startup file should still
+  #  be able to win.
+  when 'path'
+    path = step[:name]
+    <<~BASH.strip
+      if [ -d "#{path}" ]; then
+        [ -f ~/.bashrc ] && echo 'export PATH="#{path}:$PATH"' >> ~/.bashrc
+        [ -f ~/.zshrc ] && echo 'export PATH="#{path}:$PATH"' >> ~/.zshrc
+      else
+        echo "WARNING: expected path not found: #{path}" >&2
+      fi
+    BASH
   end
 end
 
@@ -93,7 +124,7 @@ end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
 #  header_lines) - writes generated/<name>_install.<ext> in the given
-#  dialect, shared by generate_install_sh.rb's and gen_installer.rb's
+#  dialect, shared by generate_install_script.rb's and gen_installer.rb's
 #  own entry points so the two never drift into writing the file header/
 #  footer two different ways. PowerShell gets a real self-elevation
 #  check up front rather than a comment reminding the user to run it as
@@ -137,7 +168,19 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts ''
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
+      # Sync/refresh the package database exactly once, right before the
+      #  *first* pacman step - not per step, which would just re-sync
+      #  needlessly before every single package - and not unconditionally
+      #  up front either, on a platform with no pacman steps at all
+      #  (ubuntu22/macos share this same bash branch).
+      pacman_synced = false
       steps.each do |step|
+        if step[:type] == 'pacman' && !pacman_synced
+          f.puts "echo '==> pacman -Syu (refresh package database)'"
+          f.puts 'pacman -Syu --noconfirm'
+          f.puts ''
+          pacman_synced = true
+        end
         f.puts "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
         f.puts command_for(step, scripts, dialect)
         f.puts ''

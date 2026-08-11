@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg feature gem].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg feature gem pacman path cyg].freeze
 
 # flatten - walks the macos.yml tree in document order and produces one
 #  array of "steps". A step is either a package (brew/cask/tap/cpan/cpanm/
