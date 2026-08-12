@@ -20,6 +20,10 @@ def bash_install(step)
   #  the config also uses a YAML list for a whole group of packages in
   #  one entry (e.g. the compiled-toolchain dev-header list) - Array()
   #  handles both without the caller needing to know which shape it got.
+  # The one-time `apt-get update` this needs before the *first* apt
+  #  step isn't here - same as pacman's own -Syu refresh below, it's a
+  #  property of the whole script, not any one step, so
+  #  write_install_script injects it directly.
   when 'apt'    then "sudo apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
@@ -169,12 +173,30 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
       # Sync/refresh the package database exactly once, right before the
-      #  *first* pacman step - not per step, which would just re-sync
-      #  needlessly before every single package - and not unconditionally
-      #  up front either, on a platform with no pacman steps at all
-      #  (ubuntu22/macos share this same bash branch).
+      #  *first* apt/pacman step of each kind - not per step, which
+      #  would just re-sync needlessly before every single package - and
+      #  not unconditionally up front either, on a platform with no
+      #  apt/pacman steps at all (ubuntu22/macos share this same bash
+      #  branch). Confirmed directly apt needed this too, the same as
+      #  pacman already got: generating ubuntu2204.yml's full install
+      #  script, the very first `apt-get install -y zsh` had nothing
+      #  before it at all - on a fresh system (a minimal cloud image,
+      #  a fresh container) with a stale/empty local package index,
+      #  that install can fail outright. The two existing `apt-get
+      #  update` lines already in this config (ahead of the dotnet-sdk
+      #  and PowerShell steps) are a different thing entirely - each is
+      #  a repo-specific refresh baked into that one script step's own
+      #  body, right after *that* step adds a new APT source, not a
+      #  general safeguard for every plain `apt:` step.
+      apt_updated = false
       pacman_synced = false
       steps.each do |step|
+        if step[:type] == 'apt' && !apt_updated
+          f.puts "echo '==> apt-get update (refresh package index)'"
+          f.puts 'sudo apt-get update'
+          f.puts ''
+          apt_updated = true
+        end
         if step[:type] == 'pacman' && !pacman_synced
           f.puts "echo '==> pacman -Syu (refresh package database)'"
           f.puts 'pacman -Syu --noconfirm'
