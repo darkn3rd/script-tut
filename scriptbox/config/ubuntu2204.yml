@@ -34,8 +34,9 @@ ubuntu22:
               - xz-utils
               - zlib1g-dev
             tags: [pyenv,rbenv]
-          - script: ubuntu22_post_rbenv
+          - script: ubuntu22_rbenv
             tags: [rbenv]
+            meets: rbenv
           - script: ubuntu22_pyenv
             tags: [pyenv]
         awk:
@@ -75,6 +76,7 @@ ubuntu22:
             - rbenv: 4.0.6
               cmd: rbenv global 4.0.6
               tags: [rbenv]
+              meets: ruby
         tcl:
           packages:
             - apt: tcl8.6
@@ -120,13 +122,43 @@ ubuntu22:
     cibox:
     scriptbox:
       packages:
-        - cmd: gem update --system
-        - gem: ratatui_ruby 
+        # A bare `cmd:` with no recognized package type alongside it
+        # isn't a step `flatten` (resolve_order.rb) knows how to handle
+        # - it's silently dropped, never even reaching bash_for/
+        # command_for to produce a "TODO: unsupported type" line the
+        # way an unrecognized *type* would - confirmed directly this
+        # never appeared anywhere in generated output. `script:` is the
+        # right shape for a standalone command with no package
+        # attached, same as every other platform's own *_update_gems.
+        - script: ubuntu22_update_gems
+          needs: ruby
+          tags: [rbenv]
+        - script: ubuntu22_ratatui_ruby_gem
+          tags: [rbenv]
     testbox:
       packages:
         - script: ubuntu22_powershell
         - rbenv: 4.0.6
+          needs: rbenv
+          tags: [rbenv]
+
 scripts:
+  ubuntu22_update_gems:
+    type: bash
+    cmd: gem update --system
+  ubuntu22_ratatui_ruby_gem:
+    type: bash
+    cmd: |
+      # Ubuntu 22.04's glibc (2.35) is older than what ratatui_ruby's
+      # precompiled x86_64-linux gem was built against (needs
+      # GLIBC_2.39+) - confirmed directly against a real failure:
+      # "/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.39' not
+      # found". --platform ruby forces RubyGems to skip the
+      # incompatible precompiled binary and compile from source
+      # instead - matches this project's own already-documented
+      # scriptbox/README.md Ubuntu 22.04 section.
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y clang libclang-dev
+      gem install ratatui_ruby --platform ruby
   ubuntu22_rust:
     type: bash
     cmd: |
@@ -210,7 +242,7 @@ scripts:
 
       # Update List
       pyenv update
-  ubuntu22_post_rbenv:
+  ubuntu22_rbenv:
     type: bash
     cmd: |
       # rbenv/ruby-build come from rbenv's own official installer, not
