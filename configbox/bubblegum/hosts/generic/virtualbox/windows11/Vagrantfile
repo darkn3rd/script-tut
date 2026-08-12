@@ -1,0 +1,4 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "gusztavvargadr/windows-11"
+  config.vm.box_version = "2607.1.0"
+end
