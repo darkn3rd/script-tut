@@ -1,7 +1,5 @@
 # macOS Virtualization Solutions
 
-
-
 ## Parallels
 
 These have not been tested
