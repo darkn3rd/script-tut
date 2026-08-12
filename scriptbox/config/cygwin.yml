@@ -128,7 +128,13 @@ scripts:
       # add this itself on Cygwin)
       export RUSTFLAGS="-C link-arg=-lruby400"
 
-      export RUBYOPT="-I$(pwd)/patches -rrb_sys_cygwin_patch"
+      # Derived from this script's own location, not $(pwd) - confirmed
+      # directly this matters: invoked non-interactively (e.g. `bash -lc
+      # "/path/to/cygwin_install.sh"` from a login shell), the working
+      # directory is $HOME, not scriptbox/, so $(pwd)/patches silently
+      # pointed at a directory that doesn't exist.
+      SCRIPTBOX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+      export RUBYOPT="-I${SCRIPTBOX_DIR}/patches -rrb_sys_cygwin_patch"
       gem install ratatui_ruby
 
       # fix interactive freezing
