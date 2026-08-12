@@ -85,4 +85,5 @@ scripts:
         echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH

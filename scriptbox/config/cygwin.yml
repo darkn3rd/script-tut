@@ -94,7 +94,13 @@ scripts:
         echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      # Direct, not `source ~/.bashrc` - a script run non-interactively
+      # (any provisioner, or even a human running this file with `bash
+      # script.sh`) hits nearly every default .bashrc's own "return if
+      # not interactive" guard before ever reaching the lines just
+      # appended above, so they'd never take effect in this process.
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH
   cygwin_update_gems:
     type: bash
     cmd: gem update --system

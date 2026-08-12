@@ -159,10 +159,19 @@ scripts:
     cmd: |
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
         | sh -s -- -y --profile minimal --no-modify-path
-      echo 'source "$HOME/.cargo/env' >> ~/.bashrc
-      echo 'source "$HOME/.cargo/env' >> ~/.zshrc
+      # Missing closing quote here previously - wrote a genuinely
+      # malformed line to .bashrc/.zshrc (`source "$HOME/.cargo/env`,
+      # unterminated string), breaking parsing of the whole profile the
+      # next time it was actually sourced interactively.
+      echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
+      [[ -f $HOME/.zshrc ]] && echo 'source "$HOME/.cargo/env"' >> ~/.zshrc
 
-      source ~/.bashrc
+      # Direct, not `source ~/.bashrc` - a script run non-interactively
+      # (any provisioner, or even a human running this file with `bash
+      # script.sh`) hits nearly every default .bashrc's own "return if
+      # not interactive" guard before ever reaching the lines just
+      # appended above, so they'd never take effect in this process.
+      source "$HOME/.cargo/env"
   wsl1_php_wrapper:
     type: bash
     cmd: |

@@ -152,7 +152,9 @@ scripts:
       mkdir -p "$HOME/.config/powershell"
       echo '. "$HOME/.cargo/env.ps1"' >> "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
 
-      source ~/.bashrc
+      # Direct, not `source ~/.bashrc` - see ubuntu22_pyenv's own comment
+      # for why that doesn't work under a non-interactive provisioner.
+      source "$HOME/.cargo/env"
   ubuntu22_powershell:
     type: bash
     cmd: |
@@ -184,15 +186,17 @@ scripts:
       # Profile Setup
       echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
       echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+      echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
 
       if [[ -f $HOME/.zshrc ]]; then
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
         echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+        echo 'eval "$(pyenv init - zsh)"' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init - bash)"
 
       # Update List
       pyenv update
@@ -201,13 +205,14 @@ scripts:
     cmd: |
       # Profile Setup
       echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+      echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
         echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(rbenv init -)"' >> ~/.zshrc
+        echo 'eval "$(rbenv init - zsh)"' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      export PATH="$HOME/.rbenv/bin:$PATH"
+      eval "$(rbenv init - bash)"
 
       # Get latest list
       if [[ -d "$HOME/.rbenv/plugins/ruby-build" ]]; then
@@ -229,8 +234,9 @@ scripts:
         echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
         echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
       fi
-      
-      source ~/.bashrc
+
+      export GOPATH=$(go env GOPATH)
+      export PATH=$GOPATH/bin:$PATH
   ubuntu22_cpan_local_setup:
     type: bash
     cmd: |
@@ -244,7 +250,8 @@ scripts:
         echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH
   ubuntu22_coretto_17:
     type: bash
     cmd:  |
@@ -257,7 +264,7 @@ scripts:
         sudo DEBIAN_FRONTEND=noninteractive apt install -y java-17-amazon-corretto-jdk
 
       echo "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" >> ~/.bashrc
-      source ~/.bashrc
+      export JAVA_HOME=$(readlink -f /usr/bin/java | sed 's|/bin/java||')
   unbuntu22_wsl2_clean:
     type: sh
     cmd: |
