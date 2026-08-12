@@ -7,6 +7,7 @@ ubuntu22:
       - script: ubuntu22_sdkman
         tags: [sdkman]
       - apt: ['curl','git','make','wget']
+        meets: make
     lessons:
       gen_scripts:
         packages:
@@ -52,6 +53,7 @@ ubuntu22:
             - system: perl
               meets: perl
               script: ubuntu22_cpan_local_setup
+              needs: make
             - cpan: App::cpanminus
             - cpanm: Switch
         php:

@@ -10,6 +10,7 @@ cygwin:
             - cyg: perl_base
               meets: perl
             - script: cygwin_cpan_local_setup
+              needs: make
             - cpan: App::cpanminus
             - cpanm: Switch
         php:
@@ -40,6 +41,7 @@ cygwin:
           - cyg:
               - make
               - git
+            meets: make
         cpp:
           packages:
             - cyg:
