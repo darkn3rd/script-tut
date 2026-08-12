@@ -121,16 +121,24 @@ end
 #  handled once here rather than duplicated in bash_install/
 #  powershell_install, since the lookup itself doesn't differ by
 #  dialect, only the script *body* someone else already wrote does.
-#  A `cmd:` sibling key (e.g. "pyenv global 3.14.6" right after
-#  installing a pyenv version) runs immediately after the install
-#  itself, in the same generated script - see resolve_order.rb's own
-#  step[:cmd].
+#  `cmd:` used *alone* (no other package type alongside it) is the
+#  same idea as `script:` for a one-liner that doesn't need its own
+#  named entry in the scripts: block - e.g. `- cmd: gem update
+#  --system`. Dialect-agnostic like `script:`, not routed through
+#  bash_install/powershell_install: the author writes one command
+#  that works verbatim in both shells (same reasoning `gem update
+#  --system` itself relies on - identical spelling either way), rather
+#  than this generator trying to translate it per dialect.
+#  A `cmd:` *sibling* key alongside some other type (e.g. "pyenv
+#  global 3.14.6" right after installing a pyenv version) is a
+#  different thing - runs immediately after that other install, in
+#  the same generated script - see resolve_order.rb's own step[:cmd].
 def command_for(step, scripts, dialect)
   install =
-    if step[:type] == 'script'
-      scripts.dig(step[:name], 'cmd')&.rstrip
-    else
-      dialect == 'powershell' ? powershell_install(step) : bash_install(step)
+    case step[:type]
+    when 'script' then scripts.dig(step[:name], 'cmd')&.rstrip
+    when 'cmd' then step[:name]
+    else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
   #  this fallback existed, an unhandled type (e.g. 'choco'/'feature'
@@ -138,7 +146,10 @@ def command_for(step, scripts, dialect)
   #  the generated script instead of an error anywhere - a step that
   #  looked present in the output but installed nothing at all.
   install ||= "# TODO: unsupported package type '#{step[:type]}' for '#{step[:name]}' (dialect: #{dialect})"
-  step[:cmd] ? "#{install}\n#{step[:cmd]}" : install
+  # Not for type 'cmd' - step[:name] and step[:cmd] are the same string
+  # there (both read from the same YAML key), so appending it again
+  # would just duplicate the one line.
+  step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
 end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
