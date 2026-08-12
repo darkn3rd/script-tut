@@ -4,6 +4,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder "../../../../../..", 
     "/var/script-tut"
-  config.vm.provision "shell", 
-    path: "../../../../../../scriptbox/generated/ubuntu22_install.sh"
+  config.vm.provision "shell",
+    path: "../../../../../../scriptbox/generated/ubuntu22_install.sh",
+    privileged: false
 end

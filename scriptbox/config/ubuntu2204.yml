@@ -249,9 +249,20 @@ scripts:
 
       # https://github.com/rbenv/rbenv-installer - officially
       # idempotent (installs fresh or updates in place under
-      # $HOME/.rbenv) and installs ruby-build alongside it in the same
-      # call, so no separate plugin clone step is needed.
+      # $HOME/.rbenv). Despite what its own docs imply, this does NOT
+      # reliably install ruby-build alongside it - confirmed directly
+      # against a real provision where `rbenv install` came back
+      # "no such command" after this curl line ran on its own.
       curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
+
+      # ruby-build itself is an rbenv plugin, not part of rbenv proper -
+      # clone it fresh or pull latest definitions on re-provision so
+      # `rbenv install 4.0.6` actually recognizes that version.
+      if [[ -d "$HOME/.rbenv/plugins/ruby-build" ]]; then
+        pushd "$HOME/.rbenv/plugins/ruby-build" && git pull && popd
+      else
+        git clone https://github.com/rbenv/ruby-build.git "$HOME/.rbenv/plugins/ruby-build"
+      fi
 
       # Profile Setup - grep-guarded rather than skipped-if-first-run:
       # the installer itself runs on every re-provision (to pick up
