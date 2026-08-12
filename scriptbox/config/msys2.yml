@@ -10,7 +10,8 @@ msys2:
             - pacman: perl
               meets: perl
             - script: msys2_cpan_local_setup
-            - script: msys2_cpanm_bootstrap
+              needs: make
+            - cpan: App::cpanminus
             - cpanm: Switch
         python3:
           packages:
@@ -40,6 +41,7 @@ msys2:
       compiled_lang:
         packages:
           - pacman: base-devel
+            meets: make
           - pacman: mingw-w64-x86_64-toolchain
         cs:
           packages:
@@ -87,12 +89,3 @@ scripts:
 
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       export PATH=$HOME/perl5/bin:$PATH
-  msys2_cpanm_bootstrap:
-    type: bash
-    # `cpan -i App::cpanminus` is flaky non-interactively - CPAN.pm's own
-    #  mirror/config wizard has no TTY to answer, and confirmed directly
-    #  it still exits 0 even when the install silently failed, so `set -e`
-    #  never caught it and later `cpanm` calls just weren't found. The
-    #  cpanmin.us bootstrapper is a single self-contained script that
-    #  skips CPAN.pm's config machinery entirely.
-    cmd: curl -L https://cpanmin.us | perl - App::cpanminus
