@@ -129,19 +129,22 @@ scripts:
   ubuntu22_rust:
     type: bash
     cmd: |
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-        | sh -s -- -y --profile minimal --no-modify-path
-      echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
-      [[ -f $HOME/.zshrc ]] && echo 'source "$HOME/.cargo/env"' >> ~/.zshrc
+      # Skip if already installed - re-provisioning shouldn't re-run this
+      # or duplicate the profile lines below on every pass.
+      if [ ! -d "$HOME/.cargo" ]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+          | sh -s -- -y --profile minimal --no-modify-path
+        echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
+        [[ -f $HOME/.zshrc ]] && echo 'source "$HOME/.cargo/env"' >> ~/.zshrc
 
-      # PowerShell - rustup's own post-install message tells PowerShell
-      #  users to source $HOME/.cargo/env.ps1, but never actually
-      #  generates it (only env/env.fish/env.tcsh land in ~/.cargo/) -
-      #  confirmed directly. Write the missing file ourselves, a direct
-      #  translation of env's own colon-affixed PATH check, then source
-      #  it from the profile exactly the way .bashrc/.zshrc already
-      #  source the real env above.
-      cat <<'EOF' > "$HOME/.cargo/env.ps1"
+        # PowerShell - rustup's own post-install message tells PowerShell
+        #  users to source $HOME/.cargo/env.ps1, but never actually
+        #  generates it (only env/env.fish/env.tcsh land in ~/.cargo/) -
+        #  confirmed directly. Write the missing file ourselves, a direct
+        #  translation of env's own colon-affixed PATH check, then source
+        #  it from the profile exactly the way .bashrc/.zshrc already
+        #  source the real env above.
+        cat <<'EOF' > "$HOME/.cargo/env.ps1"
       # rustup shell setup
       # affix colons on either side of $env:PATH to simplify matching
       if (":${env:PATH}:" -notlike "*:$HOME/.cargo/bin:*") {
@@ -149,8 +152,9 @@ scripts:
           $env:PATH = "$HOME/.cargo/bin:$env:PATH"
       }
       EOF
-      mkdir -p "$HOME/.config/powershell"
-      echo '. "$HOME/.cargo/env.ps1"' >> "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
+        mkdir -p "$HOME/.config/powershell"
+        echo '. "$HOME/.cargo/env.ps1"' >> "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
+      fi
 
       # Direct, not `source ~/.bashrc` - see ubuntu22_pyenv's own comment
       # for why that doesn't work under a non-interactive provisioner.
@@ -180,18 +184,23 @@ scripts:
   ubuntu22_pyenv:
     type: bash
     cmd: |
-      # Install Pyenv
-      curl https://pyenv.run | bash 
+      # pyenv.run refuses to run again once $HOME/.pyenv exists ("Kindly
+      # remove the '/root/.pyenv' directory first") - confirmed directly
+      # against a real re-provision failure - so skip it entirely rather
+      # than just catching the error.
+      if [ ! -d "$HOME/.pyenv" ]; then
+        curl https://pyenv.run | bash
 
-      # Profile Setup
-      echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-      echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
+        # Profile Setup
+        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+        echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
 
-      if [[ -f $HOME/.zshrc ]]; then
-        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
-        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(pyenv init - zsh)"' >> ~/.zshrc
+        if [[ -f $HOME/.zshrc ]]; then
+          echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+          echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+          echo 'eval "$(pyenv init - zsh)"' >> ~/.zshrc
+        fi
       fi
 
       export PYENV_ROOT="$HOME/.pyenv"
@@ -203,12 +212,16 @@ scripts:
   ubuntu22_post_rbenv:
     type: bash
     cmd: |
-      # Profile Setup
-      echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
+      # Profile Setup - grep-guarded, not just appended: rbenv itself is
+      # already installed via apt (idempotent on its own), so unlike
+      # pyenv/rustup there's no "does $HOME/.rbenv exist yet" signal to
+      # skip this whole block on - only the append lines themselves would
+      # otherwise duplicate on every re-provision.
+      grep -qxF 'export PATH="$HOME/.rbenv/bin:$PATH"' ~/.bashrc 2>/dev/null || echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+      grep -qxF 'eval "$(rbenv init - bash)"' ~/.bashrc 2>/dev/null || echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(rbenv init - zsh)"' >> ~/.zshrc
+        grep -qxF 'export PATH="$HOME/.rbenv/bin:$PATH"' ~/.zshrc 2>/dev/null || echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.zshrc
+        grep -qxF 'eval "$(rbenv init - zsh)"' ~/.zshrc 2>/dev/null || echo 'eval "$(rbenv init - zsh)"' >> ~/.zshrc
       fi
 
       export PATH="$HOME/.rbenv/bin:$PATH"
@@ -228,11 +241,13 @@ scripts:
       sudo apt update \
         && sudo DEBIAN_FRONTEND=noninteractive apt install -y golang-go
       
-      echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
-      echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why
+      # (go itself is already installed idempotently via apt).
+      grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.bashrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
+      grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
-        echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.zshrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
+        grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
       fi
 
       export GOPATH=$(go env GOPATH)
@@ -243,11 +258,12 @@ scripts:
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why.
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
@@ -263,26 +279,32 @@ scripts:
       sudo apt update && \
         sudo DEBIAN_FRONTEND=noninteractive apt install -y java-17-amazon-corretto-jdk
 
-      echo "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" >> ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why.
+      grep -qxF "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" ~/.bashrc 2>/dev/null || echo "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" >> ~/.bashrc
       export JAVA_HOME=$(readlink -f /usr/bin/java | sed 's|/bin/java||')
   unbuntu22_wsl2_clean:
     type: sh
     cmd: |
       if grep -q "microsoft" /proc/version; then
         CLEAN_PATH="$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c/' | tr '\n' ':' | sed 's/:$//')"
-        printf "\nexport PATH=$CLEAN_PATH:/mnt/c/Windows/system32\n" >> ~/.bashrc
-        [[ -f $HOME/.zshrc ]] && printf "\nexport PATH=$CLEAN_PATH:/mnt/c/Windows/system32\n" >> ~/.zshrc
+        CLEAN_LINE="export PATH=$CLEAN_PATH:/mnt/c/Windows/system32"
+        grep -qxF "$CLEAN_LINE" ~/.bashrc 2>/dev/null || printf "\n%s\n" "$CLEAN_LINE" >> ~/.bashrc
+        [[ -f $HOME/.zshrc ]] && { grep -qxF "$CLEAN_LINE" ~/.zshrc 2>/dev/null || printf "\n%s\n" "$CLEAN_LINE" >> ~/.zshrc; }
       fi
   ubuntu22_sdkman:
     type: bash
     cmd: |
-      curl -s "https://get.sdkman.io" | bash
-      sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' "$HOME/.sdkman/etc/config" 
-      source "$HOME/.sdkman/bin/sdkman-init.sh"
-      echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.bashrc
-      if [[ -f $HOME/.zshrc ]]; then
-        echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.zshrc 
+      # Skip if already installed - see ubuntu22_pyenv's own comment on why.
+      if [ ! -d "$HOME/.sdkman" ]; then
+        curl -s "https://get.sdkman.io" | bash
+        sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' "$HOME/.sdkman/etc/config"
+        echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.zshrc
+        fi
       fi
+
+      source "$HOME/.sdkman/bin/sdkman-init.sh"
   ubuntu22_dotnet_10:
     type: bash
     cmd: |

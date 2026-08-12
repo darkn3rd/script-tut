@@ -156,7 +156,19 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
 
-  File.open(out_path, 'w') do |f|
+  # 'wb', not 'w' - confirmed directly against a real, serious failure:
+  # Ruby's text-mode file writing on Windows auto-translates \n to \r\n
+  # on write, which silently corrupts every bash script this generates
+  # whenever it's run from Windows (this project explicitly generates
+  # scripts *from* Windows *for* other platforms - see #7 - so this
+  # isn't a hypothetical). CRLF breaks heredoc terminator matching
+  # (`EOF\r` != `EOF`, so bash reads to end-of-file looking for a match
+  # that never comes, silently swallowing the rest of the script as
+  # heredoc body) and corrupts `set -e` itself (`$'\r': command not
+  # found`). Binary mode disables the translation outright, regardless
+  # of host OS - safe for the powershell dialect too, since modern
+  # PowerShell tolerates LF-only scripts fine.
+  File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
       f.puts '#Requires -Version 5.1'
       f.puts "$ErrorActionPreference = 'Stop'"
