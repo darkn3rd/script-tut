@@ -87,6 +87,7 @@ There are tools built within the community that can facility boostrapping a syst
 
   * [knife-solo](https://matschaffer.github.io/knife-solo/) for chef
   * [knife-zero](https://knife-zero.github.io/) for chef
+    * [Use cinc-client instead?](https://knife-zero.github.io/tips/use_cinc-client_instead/) can install [cinc-client](https://cinc.sh/docs/client/) instead 
   * [bolt](https://voxpupuli.org/blog/2025/12/17/openbolt-packages-available/) for puppet
   * [mcollective](https://github.com/Unity-Technologies/puppetlabs-mcollective) or [choria](https://choria.io)
 
