@@ -34,11 +34,8 @@ ubuntu22:
               - xz-utils
               - zlib1g-dev
             tags: [pyenv,rbenv]
-          - apt: 
-              - rbenv
-              - ruby-build
+          - script: ubuntu22_post_rbenv
             tags: [rbenv]
-            script: ubuntu22_post_rbenv
           - script: ubuntu22_pyenv
             tags: [pyenv]
         awk:
@@ -121,6 +118,10 @@ ubuntu22:
           packages:
             - script: ubuntu22_powershell
     cibox:
+    scriptbox:
+      packages:
+        - cmd: gem update --system
+        - gem: ratatui_ruby 
     testbox:
       packages:
         - script: ubuntu22_powershell
@@ -212,11 +213,30 @@ scripts:
   ubuntu22_post_rbenv:
     type: bash
     cmd: |
-      # Profile Setup - grep-guarded, not just appended: rbenv itself is
-      # already installed via apt (idempotent on its own), so unlike
-      # pyenv/rustup there's no "does $HOME/.rbenv exist yet" signal to
-      # skip this whole block on - only the append lines themselves would
-      # otherwise duplicate on every re-provision.
+      # rbenv/ruby-build come from rbenv's own official installer, not
+      # apt - confirmed directly against a real failure this matters,
+      # not just a style preference: Ubuntu's own rbenv/ruby-build apt
+      # packages install to /usr/bin, a completely different,
+      # incompatible layout than the ~/.rbenv/ this whole script
+      # assumes - and ruby-build's apt package is frozen at an April
+      # 2020 snapshot (`ruby-build 20200401-1build1`, only knows Ruby
+      # versions up to 2.7.1), so `rbenv install 4.0.6` fails outright
+      # with "ruby-build: definition not found: 4.0.6". Remove them if
+      # a previous provision installed them, so nothing is left
+      # shadowed-but-confusing on `dpkg -l`.
+      sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true
+
+      # https://github.com/rbenv/rbenv-installer - officially
+      # idempotent (installs fresh or updates in place under
+      # $HOME/.rbenv) and installs ruby-build alongside it in the same
+      # call, so no separate plugin clone step is needed.
+      curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
+
+      # Profile Setup - grep-guarded rather than skipped-if-first-run:
+      # the installer itself runs on every re-provision (to pick up
+      # updates), so there's no single "already done" signal to skip
+      # this block on - only the append lines themselves would
+      # otherwise duplicate.
       grep -qxF 'export PATH="$HOME/.rbenv/bin:$PATH"' ~/.bashrc 2>/dev/null || echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
       grep -qxF 'eval "$(rbenv init - bash)"' ~/.bashrc 2>/dev/null || echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
@@ -226,13 +246,6 @@ scripts:
 
       export PATH="$HOME/.rbenv/bin:$PATH"
       eval "$(rbenv init - bash)"
-
-      # Get latest list
-      if [[ -d "$HOME/.rbenv/plugins/ruby-build" ]]; then
-        pushd "$HOME/.rbenv/plugins/ruby-build" && git pull && popd
-      else
-        git clone https://github.com/rbenv/ruby-build.git "$HOME/.rbenv/plugins/ruby-build"
-      fi
   ubuntu22_go:
     type: bash
     cmd: |
