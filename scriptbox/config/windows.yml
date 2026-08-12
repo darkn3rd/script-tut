@@ -24,9 +24,11 @@ windows:
         python2:
           packages:
             - choco: python2
+              script: windows_python2
         python3:
           packages:
             - choco: python3
+              script: windows_python3
         ruby:
           packages:
             - choco: ruby
@@ -55,6 +57,8 @@ windows:
           packages:
             - choco: rust
       win_scripts:
+        packages:
+          - choco: mscoreutils
         powershell:
           packages:
             - choco: powershell-core
@@ -70,7 +74,7 @@ windows:
         packages:
           - choco: powershell-core
           - choco: ruby
-          - choco: psake
+          - script: windows_psake
       scriptbox:
         packages:
           - choco: powershell-core
@@ -96,3 +100,28 @@ scripts:
     type: powershell
     elevated: true
     cmd: gem update --system
+  windows_python2:
+    type: powershell
+    elevated: true
+    cmd: |
+      Copy-Item "C:\Python27\python.exe" "C:\Python27\python2.exe"
+      Copy-Item "C:\Python27\pythonw.exe" "C:\Python27\python2w.exe"
+
+      $sysPath = [Environment]::GetEnvironmentVariable("PATH", "Machine") -split ';' `
+        | Where-Object { $_ -ne '' }
+      $python2Entries = $sysPath | Where-Object { $_ -like '*Python27*' }
+      $otherEntries   = $sysPath | Where-Object { $_ -notlike '*Python27*' }
+      $newPath = ($otherEntries + $python2Entries) -join ';'
+      [Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
+  windows_python3:
+    type: powershell
+    elevated: true
+    cmd: |
+      Copy-Item "C:\Python314\python.exe" "C:\Python314\python3.exe"
+      Copy-Item "C:\Python314\pythonw.exe" "C:\Python314\python3w.exe"
+  windows_psake:
+    type: powershell
+    elevated: true
+    cmd: |
+      Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+      Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber

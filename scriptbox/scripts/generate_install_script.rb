@@ -197,6 +197,21 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       steps.each do |step|
         f.puts "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
         f.puts command_for(step, scripts, dialect)
+        # choco install does not reliably propagate PATH/PSModulePath
+        #  changes to the *calling* script's own process - confirmed
+        #  directly against a real provision where `gem install
+        #  ratatui_ruby` and `choco install psake` both ran without
+        #  error later in this same script, yet neither was visible
+        #  afterward (ratatui_ruby resolved against a stale Ruby;
+        #  psake's module path never showed up at all). Re-import
+        #  Chocolatey's own profile module and refresh right after every
+        #  choco step so later steps in this same process see it, the
+        #  same fix community.chocolatey.org/install.ps1 itself applies
+        #  to its own single process after installing choco.
+        if step[:type] == 'choco'
+          f.puts 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
+          f.puts 'Update-SessionEnvironment'
+        end
         f.puts ''
       end
       unless reboot_steps.empty?
