@@ -20,7 +20,22 @@ def bash_install(step)
   #  the config also uses a YAML list for a whole group of packages in
   #  one entry (e.g. the compiled-toolchain dev-header list) - Array()
   #  handles both without the caller needing to know which shape it got.
-  when 'apt'    then "sudo apt-get install -y #{Array(step[:name]).join(' ')}"
+  # DEBIAN_FRONTEND=noninteractive - confirmed directly needed: without
+  #  it, debconf's dpkg-preconfigure hook tries to open a real terminal
+  #  to ask package-configuration questions (timezone, etc.), which fails
+  #  under Vagrant's shell provisioner (no real tty) with "unable to
+  #  re-open stdin: No such file or directory" - once per apt-get call,
+  #  harmless (falls back to defaults either way) but noisy across a
+  #  whole install script. `sudo env VAR=value cmd`, not `sudo VAR=value
+  #  cmd` - the latter depends on the box's sudoers env_reset/env_keep
+  #  policy actually letting VAR through, which isn't guaranteed across
+  #  every Ubuntu image; `env` is the actual command sudo grants root to
+  #  run here, so it sets the variable for its own child (apt-get)
+  #  regardless of sudo's own environment filtering. Scoped to just this
+  #  command rather than exported for the whole script, same reasoning
+  #  as -y being local to this one line rather than a global apt config
+  #  change.
+  when 'apt'    then "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
   #  rebuild from source unnecessarily).
