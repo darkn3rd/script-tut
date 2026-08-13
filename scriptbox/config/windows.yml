@@ -3,6 +3,7 @@ windows:
   global:
     packages:
       - script: windows_chocolatey
+      - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
     lessons:
@@ -86,12 +87,36 @@ scripts:
     type: powershell
     elevated: true
     cmd: |
+      # Some boxes (confirmed on gusztavvargadr/windows-11) inject
+      # HOME=%USERPROFILE% fresh into every process, outside the normal
+      # User/Machine env var scopes. Cleared before anything installs,
+      # not just before our own later msys2/cygwin steps - choco's own
+      # msys2/cygwin packages can invoke bash internally during install
+      # (MSYS2's first-run filesystem bootstrap, Cygwin's postinstall.sh
+      # scripts), and either would silently inherit the wrong HOME and
+      # bootstrap the user's home directory in the wrong place before we
+      # ever get a chance to fix it ourselves.
+      Remove-Item Env:\HOME -ErrorAction SilentlyContinue
       Set-ExecutionPolicy Bypass -Scope Process -Force
       [System.Net.ServicePointManager]::SecurityProtocol = `
         [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
       $WebClient = New-Object System.Net.WebClient
       $ScriptUrl = 'https://community.chocolatey.org/install.ps1'
       Invoke-Expression ($WebClient.DownloadString($ScriptUrl))
+  windows_fix_ssh_home:
+    type: powershell
+    elevated: true
+    cmd: |
+      # `vagrant ssh` lands in cmd.exe with HOME already set to
+      # %USERPROFILE% (same injected value seen in every process on this
+      # box - see windows_chocolatey's own comment). cmd.exe's AutoRun key
+      # runs automatically at the start of every new cmd.exe session,
+      # including ones reached over SSH, so clearing HOME there makes an
+      # interactive `vagrant ssh` session behave the same as provisioning
+      # (which clears it directly) without requiring it to be done by hand
+      # each time.
+      New-Item -Path 'HKCU:\Software\Microsoft\Command Processor' -Force | Out-Null
+      Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value 'set HOME='
   windows_gsudo_config:
     type: powershell
     elevated: true

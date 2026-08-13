@@ -51,7 +51,7 @@ msys2:
             - pacman: mingw-w64-ucrt-x86_64-go
         java:
           packages:
-            - path:  /c/Program Files/Amazon Corretto/jdk17.0.19_10/bin/
+            - script: msys2_corretto_path
         rust:
           packages:
             - pacman: mingw-w64-ucrt-x86_64-rust
@@ -80,12 +80,45 @@ scripts:
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+
+      # local::lib's own perl -Mlocal::lib=... invocation decides its OUTPUT
+      #  SYNTAX (bash `export` vs Windows batch `@if`/`@set`) by checking
+      #  $ENV{SHELL}'s basename BEFORE even looking at $^O (see
+      #  guess_shelltype in local/lib.pm) - confirmed directly against a
+      #  real failure on the cygwin side of this same setup: this chain
+      #  (pwsh -> bash.exe) inherits SHELL=cmd.exe from sshd's own default
+      #  shell further up, and nothing normally resets it, so local::lib
+      #  silently emits Windows batch syntax that `eval` then tries to run
+      #  as bash commands.
+      grep -qxF 'export SHELL=/usr/bin/bash' ~/.bashrc 2>/dev/null || echo 'export SHELL=/usr/bin/bash' >> ~/.bashrc
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'export SHELL=/usr/bin/zsh' ~/.zshrc 2>/dev/null || echo 'export SHELL=/usr/bin/zsh' >> ~/.zshrc
+        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
+      export SHELL=/usr/bin/bash
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       export PATH=$HOME/perl5/bin:$PATH
+  msys2_corretto_path:
+    type: bash
+    # Globs for whatever jdk17.0.* build is actually installed rather than
+    #  a hardcoded build number - confirmed directly this matters, not just
+    #  future-proofing: Chocolatey's corretto17jdk package already drifted
+    #  from the jdk17.0.19_10 this used to be hardcoded to (now 17.0.20_8),
+    #  silently failing the old `[ -d ... ]` check and leaving Java entirely
+    #  off PATH. `sort -V | tail -1` picks the newest if more than one
+    #  build happens to coexist.
+    cmd: |
+      CORRETTO_BIN=$(ls -d "/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$CORRETTO_BIN" ]; then
+        grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$CORRETTO_BIN:$PATH"
+      else
+        echo "WARNING: no Amazon Corretto jdk17.* found under /c/Program Files/Amazon Corretto/" >&2
+      fi

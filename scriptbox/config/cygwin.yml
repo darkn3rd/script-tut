@@ -63,7 +63,7 @@ cygwin:
             - path: /cygdrive/c/Program Files/dotnet/
         java:
           packages:
-            - path:  /cygdrive/c/Program Files/Amazon Corretto/jdk17.0.19_10/bin/
+            - script: cygwin_corretto_path
         rust:
           packages:
             - cyg: rust
@@ -94,11 +94,25 @@ scripts:
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+
+      # local::lib's own perl -Mlocal::lib=... invocation decides its OUTPUT
+      #  SYNTAX (bash `export` vs Windows batch `@if`/`@set`) by checking
+      #  $ENV{SHELL}'s basename BEFORE even looking at $^O (see
+      #  guess_shelltype in local/lib.pm) - confirmed directly against a
+      #  real failure: this whole chain (pwsh -> bash.exe) inherits
+      #  SHELL=cmd.exe from sshd's own default shell further up, and
+      #  nothing normally resets it, so local::lib silently emits
+      #  Windows batch syntax that `eval` then tries to run as bash
+      #  commands. Exported (not just set) so child processes - and this
+      #  same line re-run from ~/.bashrc on every future interactive
+      #  session - see the correct value too.
+      grep -qxF 'export SHELL=/bin/bash' ~/.bashrc 2>/dev/null || echo 'export SHELL=/bin/bash' >> ~/.bashrc
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'export SHELL=/bin/zsh' ~/.zshrc 2>/dev/null || echo 'export SHELL=/bin/zsh' >> ~/.zshrc
+        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
       # Direct, not `source ~/.bashrc` - a script run non-interactively
@@ -106,8 +120,24 @@ scripts:
       # script.sh`) hits nearly every default .bashrc's own "return if
       # not interactive" guard before ever reaching the lines just
       # appended above, so they'd never take effect in this process.
+      export SHELL=/bin/bash
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       export PATH=$HOME/perl5/bin:$PATH
+  cygwin_corretto_path:
+    type: bash
+    # See msys2_corretto_path's own comment - same fix, same reason
+    # (Chocolatey's corretto17jdk build number already drifted once).
+    cmd: |
+      CORRETTO_BIN=$(ls -d "/cygdrive/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$CORRETTO_BIN" ]; then
+        grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$CORRETTO_BIN:$PATH"
+      else
+        echo "WARNING: no Amazon Corretto jdk17.* found under /cygdrive/c/Program Files/Amazon Corretto/" >&2
+      fi
   cygwin_update_gems:
     type: bash
     cmd: gem update --system
