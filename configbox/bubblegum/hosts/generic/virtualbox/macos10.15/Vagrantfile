@@ -1,4 +1,4 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "Dexsidius/MacOS10.15.3"
-  config.vm.box_version = "1"
+  config.vm.box = "apscommode/macos-10.15"
+  config.vm.box_version = "10.15.7"
 end

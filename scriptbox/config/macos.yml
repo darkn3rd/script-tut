@@ -3,7 +3,7 @@ macos:
     packages:
       - script: macos_xcode_cli_tools
       - script: macos_homebrew
-    lessions:
+    lessons:
       gen_scripts:
         awk:
           packages:
@@ -15,10 +15,9 @@ macos:
         perl:
           packages:
             - system: perl
-              meets: perl
             - brew: perl
               meets: perl
-              script: cpan_local_setup
+              script: macos_cpan_local_setup
             - cpan: App::cpanminus
             - cpanm: Switch
         php:
@@ -75,9 +74,9 @@ macos:
         packages:
           - cask: wine-stable
             script: macos_wine_fix
-          - brew: wintricks
+          - brew: winetricks
             script: macos_winetricks_wsh57
-          - script: wine_coreutils
+          - script: macos_wine_coreutils
         powershell:
           packages:
             - brew: powershell
@@ -97,34 +96,63 @@ scripts:
       script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
       /bin/bash -c "$(curl -fsSL "$script_url")"
 
+      # Applied before the PATH check below, not after - Homebrew's own
+      #  installer does not add itself to the *current* process's PATH, and
+      #  on Apple Silicon (/opt/homebrew) unlike Intel (/usr/local) that
+      #  directory isn't on the default PATH either way, so `command -v
+      #  brew` would otherwise fail here even on a successful install.
+      eval "$(brew --prefix)/bin/brew shellenv"
+
       if ! command -v brew >/dev/null 2>&1; then
         echo "macos_homebrew: brew not found on PATH after install - stopping" >&2
         exit 1
       fi
 
-      echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.bashrc
-      echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.zshrc
-  cpan_local_setup:
+      grep -qxF 'eval "$(brew --prefix)/bin/brew shellenv"' ~/.bashrc 2>/dev/null || echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.bashrc
+      grep -qxF 'eval "$(brew --prefix)/bin/brew shellenv"' ~/.zshrc 2>/dev/null || echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.zshrc
+  macos_cpan_local_setup:
     type: bash
     cmd: |
-      PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+      #  Force ExtUtils::MakeMaker's own prompt() to silently accept
+      #    every default answer instead of blocking on stdin.
+      PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+
+      # Direct, not `source ~/.bashrc` - a script run non-interactively
+      # (any provisioner, or even a human running this file with `bash
+      # script.sh`) hits nearly every default .bashrc's own "return if
+      # not interactive" guard before ever reaching the lines just
+      # appended above, so they'd never take effect in this process -
+      # and the very next steps in this same script (cpan:
+      # App::cpanminus, cpanm: Switch) need cpanm on PATH already.
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH
   macos_wine_fix:
     type: bash
     cmd: |
       ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/share/wine" /usr/local/share/wine
       ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine" /usr/local/lib/wine
-      echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.bashrc
-      echo 'export WINEDEBUG=-all' >> ~/.bashrc
-      echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.zshrc
-      echo 'export WINEDEBUG=-all' >> ~/.zshrc
+      grep -qxF 'export MVK_CONFIG_LOG_LEVEL=0' ~/.bashrc 2>/dev/null || echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.bashrc
+      grep -qxF 'export WINEDEBUG=-all' ~/.bashrc 2>/dev/null || echo 'export WINEDEBUG=-all' >> ~/.bashrc
+      grep -qxF 'export MVK_CONFIG_LOG_LEVEL=0' ~/.zshrc 2>/dev/null || echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.zshrc
+      grep -qxF 'export WINEDEBUG=-all' ~/.zshrc 2>/dev/null || echo 'export WINEDEBUG=-all' >> ~/.zshrc
+
+      # Applied immediately too - macos_winetricks_wsh57 runs wine-based
+      #  commands later in this same script and benefits from the
+      #  quieter debug output just as much as a future session would.
+      export MVK_CONFIG_LOG_LEVEL=0
+      export WINEDEBUG=-all
   macos_setup_homebrew_bash:
     type: bash
-    cmd: echo "$(brew --prefix)/bin/bash" | sudo tee -a /etc/shells
+    cmd: |
+      grep -qxF "$(brew --prefix)/bin/bash" /etc/shells 2>/dev/null || echo "$(brew --prefix)/bin/bash" | sudo tee -a /etc/shells
   macos_setup_homebrew_zsh:
     type: bash
-    cmd: echo "$(brew --prefix)/bin/zsh" | sudo tee -a /etc/shells
+    cmd: |
+      grep -qxF "$(brew --prefix)/bin/zsh" /etc/shells 2>/dev/null || echo "$(brew --prefix)/bin/zsh" | sudo tee -a /etc/shells
   macos_xcode_cli_tools:
     type: bash
     cmd: |
@@ -139,8 +167,15 @@ scripts:
   macos_java_17_home:
     type: bash
     cmd: |
-      echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.bashrc
-      echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+      grep -qxF 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' ~/.bashrc 2>/dev/null || echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.bashrc
+      grep -qxF 'export PATH=$JAVA_HOME/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.bashrc
+      grep -qxF 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' ~/.zshrc 2>/dev/null || echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+      grep -qxF 'export PATH=$JAVA_HOME/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.zshrc
+
+      # Applied immediately too - groovy (needs: java) installs right
+      #  after this in the same script and needs java on PATH already.
+      export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+      export PATH=$JAVA_HOME/bin:$PATH
   macos_winetricks_wsh57:
     type: bash
     cmd: |
@@ -152,7 +187,7 @@ scripts:
 
       cp "${SYSWOW64}/cscript.exe" "${SYS32}/cscript.exe"
       cp "${SYSWOW64}/wscript.exe" "${SYS32}/wscript.exe"
-  wine_coreutils:
+  macos_wine_coreutils:
     type: bash
     cmd: |
         pushd $HOME/Downloads
