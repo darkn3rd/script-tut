@@ -5,6 +5,9 @@ cygwin:
         awk:
           packages:
             - cyg: gawk
+        groovy:
+          packages:
+            - script: cygwin_groovy_path
         perl:
           packages:
             # perl_base (Cygwin's minimal runtime-only package) doesn't
@@ -137,6 +140,22 @@ scripts:
         export PATH="$CORRETTO_BIN:$PATH"
       else
         echo "WARNING: no Amazon Corretto jdk17.* found under /cygdrive/c/Program Files/Amazon Corretto/" >&2
+      fi
+  cygwin_groovy_path:
+    type: bash
+    # See msys2_corretto_path's own comment - same fix, same reason
+    # (Chocolatey's groovy package embeds its version number in the
+    # install directory, which drifts on every package update).
+    cmd: |
+      GROOVY_BIN=$(ls -d "/cygdrive/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$GROOVY_BIN" ]; then
+        grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$GROOVY_BIN:$PATH"
+      else
+        echo "WARNING: no groovy-* found under /cygdrive/c/tools/" >&2
       fi
   cygwin_update_gems:
     type: bash

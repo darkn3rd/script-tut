@@ -5,6 +5,9 @@ msys2:
         awk:
           packages:
             - pacman: gawk
+        groovy:
+          packages:
+            - script: msys2_groovy_path
         perl:
           packages:
             - pacman: perl
@@ -121,4 +124,20 @@ scripts:
         export PATH="$CORRETTO_BIN:$PATH"
       else
         echo "WARNING: no Amazon Corretto jdk17.* found under /c/Program Files/Amazon Corretto/" >&2
+      fi
+  msys2_groovy_path:
+    type: bash
+    # Same reasoning as msys2_corretto_path - Chocolatey's groovy package
+    #  embeds its version number in the install directory
+    #  (C:\tools\groovy-3.0.25), which drifts on every package update.
+    cmd: |
+      GROOVY_BIN=$(ls -d "/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$GROOVY_BIN" ]; then
+        grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$GROOVY_BIN:$PATH"
+      else
+        echo "WARNING: no groovy-* found under /c/tools/" >&2
       fi

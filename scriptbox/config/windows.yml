@@ -150,3 +150,19 @@ scripts:
     cmd: |
       Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
       Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+
+      # Under an elevated session, Install-Module -Scope CurrentUser has
+      #  been observed writing into the Windows PowerShell 5.1-style
+      #  modules directory instead of PowerShell Core's own, even when
+      #  $PSVersionTable.PSEdition is genuinely 'Core' - confirmed
+      #  directly (module files present, manifest valid, yet
+      #  undiscoverable via Get-Module -ListAvailable from pwsh, in
+      #  either the same session or a brand new one). Copy it into
+      #  Core's own modules directory explicitly so it's discoverable
+      #  regardless of which PowerShellGet actually handled the install.
+      $corePSModules = Join-Path $HOME 'Documents\PowerShell\Modules'
+      $winPSakeModule = Join-Path $HOME 'Documents\WindowsPowerShell\Modules\psake'
+      if ((Test-Path $winPSakeModule) -and -not (Test-Path (Join-Path $corePSModules 'psake'))) {
+        New-Item -ItemType Directory -Path $corePSModules -Force | Out-Null
+        Copy-Item -Path $winPSakeModule -Destination $corePSModules -Recurse -Force
+      }
