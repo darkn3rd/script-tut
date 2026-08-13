@@ -13,9 +13,12 @@ This boxen will use the Virtualbox Provider (x86) on Windows, macOS, and Linux.
 * macOS
     * macOS 10.12: [`jhcook/macos-sierra`](https://portal.cloud.hashicorp.com/vagrant/discover/jhcook/macos-sierra)
     * Untested
-      * macOS 10.15 [`Dexsidius/MacOS10.15.3`](https://portal.cloud.hashicorp.com/vagrant/discover/Dexsidius/MacOS10.15.3)
-      * macOS 10.15 [`apscommode/macos-10.15`](https://portal.cloud.hashicorp.com/vagrant/discover/apscommode/macos-10.15)
+      * FAILED macOS 10.15 [`Dexsidius/MacOS10.15.3`](https://portal.cloud.hashicorp.com/vagrant/discover/Dexsidius/MacOS10.15.3)
+      * FAILED macOS 10.15 [`apscommode/macos-10.15`](https://portal.cloud.hashicorp.com/vagrant/discover/apscommode/macos-10.15)
 https://portal.cloud.hashicorp.com/vagrant/discover/rubenpjove/macOS_10.15
+      * https://github.com/kfinley/macos-on-virtualbox
+      * https://github.com/myspaghetti/macos-virtualbox
+      
 
 ## Box Builds 
 
