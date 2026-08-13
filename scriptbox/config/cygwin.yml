@@ -1,5 +1,7 @@
 cygwin:
   global:
+    packages:
+      - script: cygwin_purge_windows_path
     lessons:
       gen_scripts:
         awk:
@@ -44,6 +46,10 @@ cygwin:
           packages:
             - cyg: dash
               needs: perl
+        zsh:
+          packages:
+            - cyg: zsh
+              script: cygwin_zsh_setup
       compiled_lang:
         packages:
           - cyg:
@@ -91,6 +97,29 @@ cygwin:
         - script: cygwin_update_gems
         - script: cygwin_ratatui_ruby_gem
 scripts:
+  cygwin_purge_windows_path:
+    type: bash
+    # See msys2_purge_windows_path's own comment - same fix, same reason.
+    # Cygwin's own Windows-mapped prefix is /cygdrive/, not /c/ - the
+    # single generalized pattern msys2 uses doesn't apply here.
+    cmd: |
+      grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
+      EOF
+
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
+  cygwin_zsh_setup:
+    type: bash
+    # See msys2_zsh_setup's own comment - same fix, same reason (zsh's own
+    # skel .zshrc only gets created on first interactive launch, which
+    # never happens during non-interactive provisioning).
+    cmd: |
+      touch ~/.zshrc
+      grep -qxF '# purge-windows-path' ~/.zshrc 2>/dev/null || cat >> ~/.zshrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
+      EOF
   cygwin_cpan_local_setup:
     type: bash
     cmd: |

@@ -10,8 +10,6 @@ vagrant up --no-provision
 ## Provision VM
 
 ```bash
-# run scripts
-
 ##############################
 # provision windows - 32m33s
 ##############################

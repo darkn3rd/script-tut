@@ -1,5 +1,7 @@
 msys2:
   global:
+    packages:
+      - script: msys2_purge_windows_path
     lessons:
       gen_scripts:
         awk:
@@ -41,6 +43,7 @@ msys2:
         zsh:
           packages:
             - pacman: zsh
+              script: msys2_zsh_setup
       compiled_lang:
         packages:
           - pacman: base-devel
@@ -74,6 +77,35 @@ msys2:
         - script: msys2_update_gems
         - gem: ratatui_ruby
 scripts:
+  msys2_purge_windows_path:
+    type: bash
+    # Strips drive-letter (/c/, /d/, ...) entries out of PATH before any of
+    #  our own explicit re-additions (Corretto, php, groovy, ...) run, so
+    #  the base PATH is POSIX-only and the only Windows tools reachable
+    #  from this shell are ones we deliberately put there - not whatever
+    #  happened to already be on the inherited Windows PATH. Positioned in
+    #  global.packages (runs before every lessons.* PATH addition) so this
+    #  lands first in ~/.bashrc too, ahead of anything that re-adds a
+    #  specific directory on top of the now-clean base.
+    cmd: |
+      grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+      EOF
+
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+  msys2_zsh_setup:
+    type: bash
+    # zsh's own skel .zshrc only gets created on a user's FIRST interactive
+    #  zsh launch, which never happens during non-interactive provisioning -
+    #  touch it into existence so the purge line below actually has
+    #  somewhere to land.
+    cmd: |
+      touch ~/.zshrc
+      grep -qxF '# purge-windows-path' ~/.zshrc 2>/dev/null || cat >> ~/.zshrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+      EOF
   msys2_update_gems:
     type: bash
     cmd: gem update --system
