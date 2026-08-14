@@ -226,6 +226,119 @@ def indent_body(body, indent)
   end.join
 end
 
+# render_step(step, scripts, dialect, state) - one step's full output
+#  block (status line + install command + any dialect-specific follow-
+#  up), as a single un-indented string ending in a blank line - the same
+#  shape write_install_script used to emit directly into the file
+#  before steps were grouped into functions, now built once here so
+#  provider/section function bodies (see emit_provider_functions/
+#  emit_section_functions) and the file-header case all use exactly one
+#  implementation. `state` is a shared, mutable {apt_updated:,
+#  pacman_synced:} - the one-time package-index refresh has to happen
+#  before the very first apt/pacman step *anywhere in the whole script*,
+#  which can now end up inside any of several different functions, not
+#  just the top of one flat loop - a plain local boolean wouldn't see
+#  across those calls the way this shared hash does.
+def render_step(step, scripts, dialect, state)
+  lines = []
+  if dialect == 'powershell'
+    lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    lines << command_for(step, scripts, dialect)
+    if step[:type] == 'choco'
+      lines << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
+      lines << 'Update-SessionEnvironment'
+    end
+  else
+    if step[:type] == 'apt' && !state[:apt_updated]
+      lines << "echo '==> apt-get update (refresh package index)'"
+      lines << 'sudo apt-get update'
+      lines << ''
+      state[:apt_updated] = true
+    end
+    if step[:type] == 'pacman' && !state[:pacman_synced]
+      lines << "echo '==> pacman -Syu (refresh package database)'"
+      lines << 'pacman -Syu --noconfirm'
+      lines << ''
+      state[:pacman_synced] = true
+    end
+    lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    lines << command_for(step, scripts, dialect)
+  end
+  "#{lines.join("\n")}\n\n"
+end
+
+# emit_provider_functions(f, shared_groups, scripts, dialect, state) -
+#  defines each shared_groups entry (see resolve_order.rb's split_shared)
+#  as its own function, up front - the whole reason these exist: a step
+#  whose `meets:` crosses a section-function boundary can't just live
+#  inside whichever section happens to declare it, because a *different*
+#  section may need it to have already run first. Called from
+#  write_install_script before any section function is even defined.
+def emit_provider_functions(f, shared_groups, scripts, dialect, state)
+  shared_groups.each do |group|
+    f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
+    body = group[:steps].map { |s| render_step(s, scripts, dialect, state) }.join
+    f.puts indent_body(body, '  ')
+    f.puts '}'
+    f.puts ''
+  end
+end
+
+# section_tree(local_steps) - groups local_steps (the leftover half of
+#  split_shared, after shared providers are pulled out) by
+#  owning_function, and records which function calls which. A step's own
+#  path, e.g. "global.lessons.gen_scripts.groovy", filtered down to just
+#  its FUNCTION_SECTIONS segments ("global", "lessons", "gen_scripts")
+#  and taken pairwise, says lessons is gen_scripts' own parent - derived
+#  from each file's actual tree shape, not hardcoded, so this comes out
+#  right even for windows.yml's own quirk of nesting cibox/scriptbox/
+#  testbox under lessons instead of directly under global like every
+#  other platform's config (reflects the manifest as actually written,
+#  rather than silently reshaping it to match the others).
+def section_tree(local_steps)
+  children = Hash.new { |h, k| h[k] = [] }
+  own_steps = Hash.new { |h, k| h[k] = [] }
+
+  local_steps.each do |step|
+    boundaries = step[:path].split('.').select { |seg| FUNCTION_SECTIONS.include?(seg) }
+    boundaries.each_cons(2) { |parent, child| children[parent] << child unless children[parent].include?(child) }
+    own_steps[boundaries.last] << step if boundaries.last
+  end
+
+  [children, own_steps]
+end
+
+# emit_section_functions(f, node, children, own_steps, ...) - depth-first
+#  defines `node`'s own function (its own local steps, in original
+#  relative order, then a call to each child that actually ended up with
+#  something to do), recursing into children first so a would-be-empty
+#  node - every one of its children turned out empty too, and it has no
+#  local steps of its own - is detected and skipped rather than emitted
+#  as a no-op function or, worse, called by its own parent as a dangling
+#  reference to a function that was never defined. Returns whether it
+#  emitted itself, which is exactly what the caller (its parent, or
+#  write_install_script for the root) needs to decide that.
+def emit_section_functions(f, node, children, own_steps, scripts, dialect, state, visited = {})
+  return visited[node] if visited.key?(node)
+
+  emitted_children = children[node].select do |child|
+    emit_section_functions(f, child, children, own_steps, scripts, dialect, state, visited)
+  end
+
+  will_emit = !own_steps[node].empty? || !emitted_children.empty?
+  visited[node] = will_emit
+  return false unless will_emit
+
+  body = own_steps[node].map { |s| render_step(s, scripts, dialect, state) }.join
+  body += emitted_children.map { |c| "#{c}\n" }.join
+
+  f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
+  f.puts indent_body(body, '  ')
+  f.puts '}'
+  f.puts ''
+  true
+end
+
 # write_install_script(name, steps, scripts, dialect, generated_dir,
 #  header_lines) - writes generated/<name>_install.<ext> in the given
 #  dialect, shared by generate_install_script.rb's and gen_installer.rb's
@@ -253,6 +366,21 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   # found`). Binary mode disables the translation outright, regardless
   # of host OS - safe for the powershell dialect too, since modern
   # PowerShell tolerates LF-only scripts fine.
+  # Every generated function - a named script:, a shared provider_<meets>,
+  #  or a section like gen_scripts()/lessons() - is defined up front, in
+  #  that order, before any of them are actually called: a provider can
+  #  call a script: function, and a section can call both a script:
+  #  function and a provider, so whichever ran last still has to already
+  #  exist. Actually *calling* them happens only at the very end (see
+  #  below), in the one order that's always safe regardless of which
+  #  functions call which internally - every provider first (each one's
+  #  own unit is already dependency-correct - see split_shared), then the
+  #  root section (global), which reaches every remaining step through
+  #  its own nested calls.
+  shared_groups, local_steps = split_shared(steps)
+  children, own_steps = section_tree(local_steps)
+  state = { apt_updated: false, pacman_synced: false }
+
   File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
       f.puts '#Requires -Version 5.1'
@@ -269,26 +397,11 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '}'
       f.puts ''
       emit_script_functions(f, steps, scripts, dialect)
-      steps.each do |step|
-        f.puts "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-        f.puts command_for(step, scripts, dialect)
-        # choco install does not reliably propagate PATH/PSModulePath
-        #  changes to the *calling* script's own process - confirmed
-        #  directly against a real provision where `gem install
-        #  ratatui_ruby` and `choco install psake` both ran without
-        #  error later in this same script, yet neither was visible
-        #  afterward (ratatui_ruby resolved against a stale Ruby;
-        #  psake's module path never showed up at all). Re-import
-        #  Chocolatey's own profile module and refresh right after every
-        #  choco step so later steps in this same process see it, the
-        #  same fix community.chocolatey.org/install.ps1 itself applies
-        #  to its own single process after installing choco.
-        if step[:type] == 'choco'
-          f.puts 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
-          f.puts 'Update-SessionEnvironment'
-        end
-        f.puts ''
-      end
+      emit_provider_functions(f, shared_groups, scripts, dialect, state)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state)
+      shared_groups.each { |g| f.puts g[:name] }
+      f.puts 'global' if global_emitted
+      f.puts ''
       unless reboot_steps.empty?
         f.puts "Write-Host ''"
         f.puts "Write-Host 'The following require a restart to take effect:'"
@@ -301,41 +414,10 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
       emit_script_functions(f, steps, scripts, dialect)
-      # Sync/refresh the package database exactly once, right before the
-      #  *first* apt/pacman step of each kind - not per step, which
-      #  would just re-sync needlessly before every single package - and
-      #  not unconditionally up front either, on a platform with no
-      #  apt/pacman steps at all (ubuntu22/macos share this same bash
-      #  branch). Confirmed directly apt needed this too, the same as
-      #  pacman already got: generating ubuntu2204.yml's full install
-      #  script, the very first `apt-get install -y zsh` had nothing
-      #  before it at all - on a fresh system (a minimal cloud image,
-      #  a fresh container) with a stale/empty local package index,
-      #  that install can fail outright. The two existing `apt-get
-      #  update` lines already in this config (ahead of the dotnet-sdk
-      #  and PowerShell steps) are a different thing entirely - each is
-      #  a repo-specific refresh baked into that one script step's own
-      #  body, right after *that* step adds a new APT source, not a
-      #  general safeguard for every plain `apt:` step.
-      apt_updated = false
-      pacman_synced = false
-      steps.each do |step|
-        if step[:type] == 'apt' && !apt_updated
-          f.puts "echo '==> apt-get update (refresh package index)'"
-          f.puts 'sudo apt-get update'
-          f.puts ''
-          apt_updated = true
-        end
-        if step[:type] == 'pacman' && !pacman_synced
-          f.puts "echo '==> pacman -Syu (refresh package database)'"
-          f.puts 'pacman -Syu --noconfirm'
-          f.puts ''
-          pacman_synced = true
-        end
-        f.puts "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-        f.puts command_for(step, scripts, dialect)
-        f.puts ''
-      end
+      emit_provider_functions(f, shared_groups, scripts, dialect, state)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state)
+      shared_groups.each { |g| f.puts g[:name] }
+      f.puts 'global' if global_emitted
     end
   end
   File.chmod(0o755, out_path) if dialect != 'powershell'

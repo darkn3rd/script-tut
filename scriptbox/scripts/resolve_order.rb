@@ -111,6 +111,101 @@ def resolve!(steps)
   steps
 end
 
+# FUNCTION_SECTIONS - the tree keys that become their own generated
+#  function (see generate_install_script.rb's own section-function
+#  emission). Everything else - an individual lesson topic like "groovy"
+#  or "posix" - inlines into its nearest ancestor from this list instead
+#  of getting a function of its own, matching what was actually asked
+#  for: "lessons would call gen_scripts(), shell_scripts()... at this
+#  level they'll just call what is necessary to install the packages" -
+#  one function per organizational section, not one per topic.
+FUNCTION_SECTIONS = %w[global lessons cibox scriptbox testbox gen_scripts shell_scripts compiled_lang win_scripts].freeze
+
+# owning_function(step) - the name of the generated function step's own
+#  install command ends up inside: the last of step's own path segments
+#  that names a real function boundary (see FUNCTION_SECTIONS). A step
+#  several levels deeper than any boundary (e.g. "global.lessons.
+#  gen_scripts.groovy") still resolves to its nearest ancestor
+#  ("gen_scripts"), not itself - "groovy" isn't a function.
+def owning_function(step)
+  step[:path].split('.').reverse.find { |seg| FUNCTION_SECTIONS.include?(seg) }
+end
+
+# shared_providers(steps) - every step whose `meets:` must run before
+#  more than one generated function, so no single section function can
+#  locally guarantee it already ran by the time it's needed. Walked from
+#  the `needs:` side and resolved to `steps.find { meets == needs }` -
+#  the exact same first-match tie-break resolve! itself uses - rather
+#  than from the `meets:` side, because more than one step can carry the
+#  same `meets:` value (confirmed directly in ubuntu2204.yml: both
+#  global's own `apt: [...] meets: make` and compiled_lang's `apt:
+#  build-essential meets: make` exist, but only the first is ever the
+#  real provider any `needs: make` consumer actually resolves to) -
+#  walking from `meets:` independently would wrongly flag *both* as
+#  shared and emit the same provider_make twice.
+#  Caught two ways: directly, a consumer's resolved provider lives in a
+#  *different* owning_function than the consumer itself; or
+#  transitively, the consumer is itself already shared, so whatever it
+#  needs must now also run before any section function, regardless of
+#  where that provider's own owning_function happens to be. The
+#  transitive case is a real one, not hypothetical - confirmed directly
+#  in ubuntu2204.yml: testbox's own `meets: ruby` step also `needs:
+#  rbenv`, whose provider lives in gen_scripts. Both must run before any
+#  section function, not just the ruby one, since testbox's step no
+#  longer runs adjacent to its normal neighbors once it's hoisted out.
+#  Return order is arbitrary (Hash iteration order) - see split_shared,
+#  which walks `steps` itself (already resolve!-ordered, so already
+#  dependency-correct) to decide what order to actually emit these in.
+def shared_providers(steps)
+  shared = {}
+  loop do
+    added = false
+    steps.each do |consumer|
+      next unless consumer[:needs]
+
+      provider = steps.find { |s| s[:meets] == consumer[:needs] }
+      next unless provider
+      next if shared[provider]
+
+      crosses = shared[consumer] || owning_function(consumer) != owning_function(provider)
+      next unless crosses
+
+      shared[provider] = true
+      added = true
+    end
+    break unless added
+  end
+  steps.select { |s| shared[s] }
+end
+
+# split_shared(steps) - partitions steps (already flatten + resolve! +
+#  dedup'd) into [shared_groups, local]. shared_groups is one entry per
+#  shared_providers step, each carrying its own unit (see unit_span - a
+#  preceding tap, or an attached follow-up script) since a provider's
+#  unit must move as one block or its post-install script would run in
+#  the wrong place - named "provider_<meets>" for generate_install_
+#  script.rb to define as its own function, called before any section
+#  function. local is everything left, still in original relative
+#  order, destined for whichever function owning_function says it
+#  belongs in. shared_groups is already in dependency-correct call order
+#  - a subsequence of resolve!'s own already-correct full ordering stays
+#  correct on its own, without needing a second resolve pass just over
+#  the subset.
+def split_shared(steps)
+  primary = shared_providers(steps)
+  claimed = Array.new(steps.length, false)
+
+  groups = primary.map do |provider_step|
+    idx = steps.index(provider_step)
+    start, finish = unit_span(steps, idx)
+    (start..finish).each { |i| claimed[i] = true }
+    { name: "provider_#{provider_step[:meets]}", steps: steps[start..finish] }
+  end
+
+  local = steps.each_index.reject { |i| claimed[i] }.map { |i| steps[i] }
+  [groups, local]
+end
+
 if __FILE__ == $PROGRAM_NAME
   tree = YAML.load_file(File.join(__dir__, '..', 'config', 'macos.yml'))
   steps = flatten(tree['macos'])
