@@ -1,15 +1,21 @@
 msys2:
   global:
+    packages:
+      - script: msys2_purge_windows_path
     lessons:
       gen_scripts:
         awk:
           packages:
             - pacman: gawk
+        groovy:
+          packages:
+            - script: msys2_groovy_path
         perl:
           packages:
             - pacman: perl
               meets: perl
             - script: msys2_cpan_local_setup
+              needs: make
             - cpan: App::cpanminus
             - cpanm: Switch
         python3:
@@ -37,9 +43,11 @@ msys2:
         zsh:
           packages:
             - pacman: zsh
+              script: msys2_zsh_setup
       compiled_lang:
         packages:
           - pacman: base-devel
+            meets: make
           - pacman: mingw-w64-x86_64-toolchain
         cs:
           packages:
@@ -49,7 +57,7 @@ msys2:
             - pacman: mingw-w64-ucrt-x86_64-go
         java:
           packages:
-            - path:  /c/Program Files/Amazon Corretto/jdk17.0.19_10/bin/
+            - script: msys2_corretto_path
         rust:
           packages:
             - pacman: mingw-w64-ucrt-x86_64-rust
@@ -69,6 +77,35 @@ msys2:
         - script: msys2_update_gems
         - gem: ratatui_ruby
 scripts:
+  msys2_purge_windows_path:
+    type: bash
+    # Strips drive-letter (/c/, /d/, ...) entries out of PATH before any of
+    #  our own explicit re-additions (Corretto, php, groovy, ...) run, so
+    #  the base PATH is POSIX-only and the only Windows tools reachable
+    #  from this shell are ones we deliberately put there - not whatever
+    #  happened to already be on the inherited Windows PATH. Positioned in
+    #  global.packages (runs before every lessons.* PATH addition) so this
+    #  lands first in ~/.bashrc too, ahead of anything that re-adds a
+    #  specific directory on top of the now-clean base.
+    cmd: |
+      grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+      EOF
+
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+  msys2_zsh_setup:
+    type: bash
+    # zsh's own skel .zshrc only gets created on a user's FIRST interactive
+    #  zsh launch, which never happens during non-interactive provisioning -
+    #  touch it into existence so the purge line below actually has
+    #  somewhere to land.
+    cmd: |
+      touch ~/.zshrc
+      grep -qxF '# purge-windows-path' ~/.zshrc 2>/dev/null || cat >> ~/.zshrc <<'EOF'
+      # purge-windows-path
+      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -vE '^/[a-zA-Z]/' | paste -sd ':')
+      EOF
   msys2_update_gems:
     type: bash
     cmd: gem update --system
@@ -78,11 +115,61 @@ scripts:
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+
+      # local::lib's own perl -Mlocal::lib=... invocation decides its OUTPUT
+      #  SYNTAX (bash `export` vs Windows batch `@if`/`@set`) by checking
+      #  $ENV{SHELL}'s basename BEFORE even looking at $^O (see
+      #  guess_shelltype in local/lib.pm) - confirmed directly against a
+      #  real failure on the cygwin side of this same setup: this chain
+      #  (pwsh -> bash.exe) inherits SHELL=cmd.exe from sshd's own default
+      #  shell further up, and nothing normally resets it, so local::lib
+      #  silently emits Windows batch syntax that `eval` then tries to run
+      #  as bash commands.
+      grep -qxF 'export SHELL=/usr/bin/bash' ~/.bashrc 2>/dev/null || echo 'export SHELL=/usr/bin/bash' >> ~/.bashrc
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'export SHELL=/usr/bin/zsh' ~/.zshrc 2>/dev/null || echo 'export SHELL=/usr/bin/zsh' >> ~/.zshrc
+        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      export SHELL=/usr/bin/bash
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH
+  msys2_corretto_path:
+    type: bash
+    # Globs for whatever jdk17.0.* build is actually installed rather than
+    #  a hardcoded build number - confirmed directly this matters, not just
+    #  future-proofing: Chocolatey's corretto17jdk package already drifted
+    #  from the jdk17.0.19_10 this used to be hardcoded to (now 17.0.20_8),
+    #  silently failing the old `[ -d ... ]` check and leaving Java entirely
+    #  off PATH. `sort -V | tail -1` picks the newest if more than one
+    #  build happens to coexist.
+    cmd: |
+      CORRETTO_BIN=$(ls -d "/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$CORRETTO_BIN" ]; then
+        grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$CORRETTO_BIN:$PATH"
+      else
+        echo "WARNING: no Amazon Corretto jdk17.* found under /c/Program Files/Amazon Corretto/" >&2
+      fi
+  msys2_groovy_path:
+    type: bash
+    # Same reasoning as msys2_corretto_path - Chocolatey's groovy package
+    #  embeds its version number in the install directory
+    #  (C:\tools\groovy-3.0.25), which drifts on every package update.
+    cmd: |
+      GROOVY_BIN=$(ls -d "/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$GROOVY_BIN" ]; then
+        grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.zshrc
+        fi
+        export PATH="$GROOVY_BIN:$PATH"
+      else
+        echo "WARNING: no groovy-* found under /c/tools/" >&2
+      fi

@@ -1,0 +1,32 @@
+SCRIPT_TUT_PATH="../../../../.."
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "gusztavvargadr/windows-11"
+  config.vm.box_version = "2607.1.0"
+
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "C:/script-tut"
+
+  config.vm.provision "shell",
+    name: "windows",
+    path: "#{SCRIPT_TUT_PATH}/scriptbox/generated/windows_install.ps1",
+    privileged: true
+
+  config.vm.provision "shell", name: "msys2", inline: <<-'SHELL'
+    $env:MSYSTEM = "UCRT64"
+    # Remove invalid $HOME environment variable
+    # MSYS2 sets HOME to C:\tools\msys64\home\$env:USERNAME (/home/$USER)
+    Remove-Item Env:\HOME -ErrorAction SilentlyContinue
+    & "C:\tools\msys64\usr\bin\bash.exe" `
+        -lc "/c/script-tut/scriptbox/generated/msys2_install.sh"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  SHELL
+
+  config.vm.provision "shell", name: "cygwin", inline: <<-'SHELL'
+    # Remove invalid $HOME environment variable
+    # Cygwin sets HOME to C:\tools\cygwin\home\$env:USERNAME (/home/$USER)
+    Remove-Item Env:\HOME -ErrorAction SilentlyContinue
+    & "C:\tools\cygwin\bin\bash.exe" `
+        -lc "/cygdrive/c/script-tut/scriptbox/generated/cygwin_install.sh"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  SHELL
+end

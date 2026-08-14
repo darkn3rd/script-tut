@@ -252,15 +252,15 @@ For [MSYS2](https://www.msys2.org/), you can run this, depending on desired envi
 
 * UCRT64 (recommended default for mondern C++):
   ```pwsh
-  & "C:\msys64\msys2_shell.cmd" -ucrt64 -defterm -no-start -where .
+  & "C:\tools\msys64\msys2_shell.cmd" -ucrt64 -defterm -no-start -where .
   ```
 * MINGW64 (older native environment):
   ```pwsh
-  & "C:\msys64\msys2_shell.cmd" -mingw64 -defterm -no-start -where .
+  & "C:\tools\msys64\msys2_shell.cmd" -mingw64 -defterm -no-start -where .
   ```
 * MSYS (POSIX emualtion environment)
   ```pwsh
-  & "C:\msys64\msys2_shell.cmd" -msys -defterm -no-start -where .
+  & "C:\tools\msys64\msys2_shell.cmd" -msys -defterm -no-start -where .
   ```
 
 ## NTFS Symbolic Links

@@ -5,7 +5,9 @@ ubuntu22:
         script: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
       - script: ubuntu22_sdkman
+        tags: [sdkman]
       - apt: ['curl','git','make','wget']
+        meets: make
     lessons:
       gen_scripts:
         packages:
@@ -32,11 +34,12 @@ ubuntu22:
               - tk-dev
               - xz-utils
               - zlib1g-dev
-          - apt: 
-              - rbenv
-              - ruby-build
-            script: ubuntu22_post_rbenv
+            tags: [pyenv,rbenv]
+          - script: ubuntu22_rbenv
+            tags: [rbenv]
+            meets: rbenv
           - script: ubuntu22_pyenv
+            tags: [pyenv]
         awk:
           packages:
             - apt: gawk
@@ -44,11 +47,13 @@ ubuntu22:
           packages:
             - sdkman: groovy
               needs: java
+              tags: [sdkman]
         perl:
           packages:
             - system: perl
               meets: perl
               script: ubuntu22_cpan_local_setup
+              needs: make
             - cpan: App::cpanminus
             - cpanm: Switch
         php:
@@ -59,17 +64,22 @@ ubuntu22:
             - pyenv: 2.7.18
               cmd: pyenv global 3.14.7 2.7.18
               needs: pyenv3
+              tags: [pyenv,python2]
         python3:
           packages:
             - system: python # 3.10.x
             - pyenv: 3.14.7
               cmd: pyenv global 3.14.7
               meets: pyenv3
+              tags: [pyenv]
         ruby:
           packages:
             - system: ruby # 3.0.x
             - rbenv: 4.0.6
               cmd: rbenv global 4.0.6
+              tags: [rbenv]
+              meets: ruby
+              needs: rbenv
         tcl:
           packages:
             - apt: tcl8.6
@@ -113,27 +123,52 @@ ubuntu22:
           packages:
             - script: ubuntu22_powershell
     cibox:
+    scriptbox:
+      packages:
+        # A bare `cmd:` with no recognized package type alongside it
+        # isn't a step `flatten` (resolve_order.rb) knows how to handle
+        # - it's silently dropped, never even reaching bash_for/
+        # command_for to produce a "TODO: unsupported type" line the
+        # way an unrecognized *type* would - confirmed directly this
+        # never appeared anywhere in generated output. `script:` is the
+        # right shape for a standalone command with no package
+        # attached, same as every other platform's own *_update_gems.
+        - cmd: gem update --system
+          needs: ruby
+          tags: [rbenv]
+        - apt: [clang, libclang-dev]
+          # Skip incompatible precompiled binary with glibc 2.39
+          # and compile from source using glibc 2.35
+        - gem: ratatui_ruby --platform ruby
     testbox:
       packages:
         - script: ubuntu22_powershell
         - rbenv: 4.0.6
+          cmd: rbenv global 4.0.6
+          tags: [rbenv]
+          meets: ruby
+          needs: rbenv
+
 scripts:
   ubuntu22_rust:
     type: bash
     cmd: |
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-        | sh -s -- -y --profile minimal --no-modify-path
-      echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
-      [[ -f $HOME/.zshrc ]] && echo 'source "$HOME/.cargo/env"' >> ~/.zshrc
+      # Skip if already installed - re-provisioning shouldn't re-run this
+      # or duplicate the profile lines below on every pass.
+      if [ ! -d "$HOME/.cargo" ]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+          | sh -s -- -y --profile minimal --no-modify-path
+        echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
+        [[ -f $HOME/.zshrc ]] && echo 'source "$HOME/.cargo/env"' >> ~/.zshrc
 
-      # PowerShell - rustup's own post-install message tells PowerShell
-      #  users to source $HOME/.cargo/env.ps1, but never actually
-      #  generates it (only env/env.fish/env.tcsh land in ~/.cargo/) -
-      #  confirmed directly. Write the missing file ourselves, a direct
-      #  translation of env's own colon-affixed PATH check, then source
-      #  it from the profile exactly the way .bashrc/.zshrc already
-      #  source the real env above.
-      cat <<'EOF' > "$HOME/.cargo/env.ps1"
+        # PowerShell - rustup's own post-install message tells PowerShell
+        #  users to source $HOME/.cargo/env.ps1, but never actually
+        #  generates it (only env/env.fish/env.tcsh land in ~/.cargo/) -
+        #  confirmed directly. Write the missing file ourselves, a direct
+        #  translation of env's own colon-affixed PATH check, then source
+        #  it from the profile exactly the way .bashrc/.zshrc already
+        #  source the real env above.
+        cat <<'EOF' > "$HOME/.cargo/env.ps1"
       # rustup shell setup
       # affix colons on either side of $env:PATH to simplify matching
       if (":${env:PATH}:" -notlike "*:$HOME/.cargo/bin:*") {
@@ -141,10 +176,13 @@ scripts:
           $env:PATH = "$HOME/.cargo/bin:$env:PATH"
       }
       EOF
-      mkdir -p "$HOME/.config/powershell"
-      echo '. "$HOME/.cargo/env.ps1"' >> "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
+        mkdir -p "$HOME/.config/powershell"
+        echo '. "$HOME/.cargo/env.ps1"' >> "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
+      fi
 
-      source ~/.bashrc
+      # Direct, not `source ~/.bashrc` - see ubuntu22_pyenv's own comment
+      # for why that doesn't work under a non-interactive provisioner.
+      source "$HOME/.cargo/env"
   ubuntu22_powershell:
     type: bash
     cmd: |
@@ -170,43 +208,78 @@ scripts:
   ubuntu22_pyenv:
     type: bash
     cmd: |
-      # Install Pyenv
-      curl https://pyenv.run | bash 
+      # pyenv.run refuses to run again once $HOME/.pyenv exists ("Kindly
+      # remove the '/root/.pyenv' directory first") - confirmed directly
+      # against a real re-provision failure - so skip it entirely rather
+      # than just catching the error.
+      if [ ! -d "$HOME/.pyenv" ]; then
+        curl https://pyenv.run | bash
 
-      # Profile Setup
-      echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-      echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+        # Profile Setup
+        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+        echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
 
-      if [[ -f $HOME/.zshrc ]]; then
-        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
-        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+        if [[ -f $HOME/.zshrc ]]; then
+          echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+          echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+          echo 'eval "$(pyenv init - zsh)"' >> ~/.zshrc
+        fi
       fi
 
-      source ~/.bashrc
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init - bash)"
 
       # Update List
       pyenv update
-  ubuntu22_post_rbenv:
+  ubuntu22_rbenv:
     type: bash
     cmd: |
-      # Profile Setup
-      echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-      if [[ -f $HOME/.zshrc ]]; then
-        echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.zshrc
-        echo 'eval "$(rbenv init -)"' >> ~/.zshrc
-      fi
+      # rbenv/ruby-build come from rbenv's own official installer, not
+      # apt - confirmed directly against a real failure this matters,
+      # not just a style preference: Ubuntu's own rbenv/ruby-build apt
+      # packages install to /usr/bin, a completely different,
+      # incompatible layout than the ~/.rbenv/ this whole script
+      # assumes - and ruby-build's apt package is frozen at an April
+      # 2020 snapshot (`ruby-build 20200401-1build1`, only knows Ruby
+      # versions up to 2.7.1), so `rbenv install 4.0.6` fails outright
+      # with "ruby-build: definition not found: 4.0.6". Remove them if
+      # a previous provision installed them, so nothing is left
+      # shadowed-but-confusing on `dpkg -l`.
+      sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true
 
-      source ~/.bashrc
+      # https://github.com/rbenv/rbenv-installer - officially
+      # idempotent (installs fresh or updates in place under
+      # $HOME/.rbenv). Despite what its own docs imply, this does NOT
+      # reliably install ruby-build alongside it - confirmed directly
+      # against a real provision where `rbenv install` came back
+      # "no such command" after this curl line ran on its own.
+      curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
 
-      # Get latest list
+      # ruby-build itself is an rbenv plugin, not part of rbenv proper -
+      # clone it fresh or pull latest definitions on re-provision so
+      # `rbenv install 4.0.6` actually recognizes that version.
       if [[ -d "$HOME/.rbenv/plugins/ruby-build" ]]; then
         pushd "$HOME/.rbenv/plugins/ruby-build" && git pull && popd
       else
         git clone https://github.com/rbenv/ruby-build.git "$HOME/.rbenv/plugins/ruby-build"
       fi
+
+      # Profile Setup - grep-guarded rather than skipped-if-first-run:
+      # the installer itself runs on every re-provision (to pick up
+      # updates), so there's no single "already done" signal to skip
+      # this block on - only the append lines themselves would
+      # otherwise duplicate.
+      grep -qxF 'export PATH="$HOME/.rbenv/bin:$PATH"' ~/.bashrc 2>/dev/null || echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+      grep -qxF 'eval "$(rbenv init - bash)"' ~/.bashrc 2>/dev/null || echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
+      if [[ -f $HOME/.zshrc ]]; then
+        grep -qxF 'export PATH="$HOME/.rbenv/bin:$PATH"' ~/.zshrc 2>/dev/null || echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.zshrc
+        grep -qxF 'eval "$(rbenv init - zsh)"' ~/.zshrc 2>/dev/null || echo 'eval "$(rbenv init - zsh)"' >> ~/.zshrc
+      fi
+
+      export PATH="$HOME/.rbenv/bin:$PATH"
+      eval "$(rbenv init - bash)"
   ubuntu22_go:
     type: bash
     cmd: |
@@ -215,28 +288,33 @@ scripts:
       sudo apt update \
         && sudo DEBIAN_FRONTEND=noninteractive apt install -y golang-go
       
-      echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
-      echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why
+      # (go itself is already installed idempotently via apt).
+      grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.bashrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
+      grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
-        echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.zshrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
+        grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
       fi
-      
-      source ~/.bashrc
+
+      export GOPATH=$(go env GOPATH)
+      export PATH=$GOPATH/bin:$PATH
   ubuntu22_cpan_local_setup:
     type: bash
     cmd: |
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why.
+      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
+      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
       if [[ -f $HOME/.zshrc ]]; then
-        echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
+        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
+        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
       fi
 
-      source ~/.bashrc
+      eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      export PATH=$HOME/perl5/bin:$PATH
   ubuntu22_coretto_17:
     type: bash
     cmd:  |
@@ -248,26 +326,32 @@ scripts:
       sudo apt update && \
         sudo DEBIAN_FRONTEND=noninteractive apt install -y java-17-amazon-corretto-jdk
 
-      echo "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" >> ~/.bashrc
-      source ~/.bashrc
+      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why.
+      grep -qxF "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" ~/.bashrc 2>/dev/null || echo "export JAVA_HOME=\$(readlink -f /usr/bin/java | sed 's|/bin/java||')" >> ~/.bashrc
+      export JAVA_HOME=$(readlink -f /usr/bin/java | sed 's|/bin/java||')
   unbuntu22_wsl2_clean:
     type: sh
     cmd: |
       if grep -q "microsoft" /proc/version; then
         CLEAN_PATH="$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c/' | tr '\n' ':' | sed 's/:$//')"
-        printf "\nexport PATH=$CLEAN_PATH:/mnt/c/Windows/system32\n" >> ~/.bashrc
-        [[ -f $HOME/.zshrc ]] && printf "\nexport PATH=$CLEAN_PATH:/mnt/c/Windows/system32\n" >> ~/.zshrc
+        CLEAN_LINE="export PATH=$CLEAN_PATH:/mnt/c/Windows/system32"
+        grep -qxF "$CLEAN_LINE" ~/.bashrc 2>/dev/null || printf "\n%s\n" "$CLEAN_LINE" >> ~/.bashrc
+        [[ -f $HOME/.zshrc ]] && { grep -qxF "$CLEAN_LINE" ~/.zshrc 2>/dev/null || printf "\n%s\n" "$CLEAN_LINE" >> ~/.zshrc; }
       fi
   ubuntu22_sdkman:
     type: bash
     cmd: |
-      curl -s "https://get.sdkman.io" | bash
-      sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' "$HOME/.sdkman/etc/config" 
-      source "$HOME/.sdkman/bin/sdkman-init.sh"
-      echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.bashrc
-      if [[ -f $HOME/.zshrc ]]; then
-        echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.zshrc 
+      # Skip if already installed - see ubuntu22_pyenv's own comment on why.
+      if [ ! -d "$HOME/.sdkman" ]; then
+        curl -s "https://get.sdkman.io" | bash
+        sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' "$HOME/.sdkman/etc/config"
+        echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.bashrc
+        if [[ -f $HOME/.zshrc ]]; then
+          echo '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"' >> ~/.zshrc
+        fi
       fi
+
+      source "$HOME/.sdkman/bin/sdkman-init.sh"
   ubuntu22_dotnet_10:
     type: bash
     cmd: |

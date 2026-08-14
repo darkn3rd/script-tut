@@ -20,7 +20,26 @@ def bash_install(step)
   #  the config also uses a YAML list for a whole group of packages in
   #  one entry (e.g. the compiled-toolchain dev-header list) - Array()
   #  handles both without the caller needing to know which shape it got.
-  when 'apt'    then "sudo apt-get install -y #{Array(step[:name]).join(' ')}"
+  # DEBIAN_FRONTEND=noninteractive - confirmed directly needed: without
+  #  it, debconf's dpkg-preconfigure hook tries to open a real terminal
+  #  to ask package-configuration questions (timezone, etc.), which fails
+  #  under Vagrant's shell provisioner (no real tty) with "unable to
+  #  re-open stdin: No such file or directory" - once per apt-get call,
+  #  harmless (falls back to defaults either way) but noisy across a
+  #  whole install script. `sudo env VAR=value cmd`, not `sudo VAR=value
+  #  cmd` - the latter depends on the box's sudoers env_reset/env_keep
+  #  policy actually letting VAR through, which isn't guaranteed across
+  #  every Ubuntu image; `env` is the actual command sudo grants root to
+  #  run here, so it sets the variable for its own child (apt-get)
+  #  regardless of sudo's own environment filtering. Scoped to just this
+  #  command rather than exported for the whole script, same reasoning
+  #  as -y being local to this one line rather than a global apt config
+  #  change.
+  # The one-time `apt-get update` this needs before the *first* apt
+  #  step isn't here either - same as pacman's own -Syu refresh below,
+  #  it's a property of the whole script, not any one step, so
+  #  write_install_script injects it directly.
+  when 'apt'    then "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
   #  rebuild from source unnecessarily).
@@ -102,16 +121,24 @@ end
 #  handled once here rather than duplicated in bash_install/
 #  powershell_install, since the lookup itself doesn't differ by
 #  dialect, only the script *body* someone else already wrote does.
-#  A `cmd:` sibling key (e.g. "pyenv global 3.14.6" right after
-#  installing a pyenv version) runs immediately after the install
-#  itself, in the same generated script - see resolve_order.rb's own
-#  step[:cmd].
+#  `cmd:` used *alone* (no other package type alongside it) is the
+#  same idea as `script:` for a one-liner that doesn't need its own
+#  named entry in the scripts: block - e.g. `- cmd: gem update
+#  --system`. Dialect-agnostic like `script:`, not routed through
+#  bash_install/powershell_install: the author writes one command
+#  that works verbatim in both shells (same reasoning `gem update
+#  --system` itself relies on - identical spelling either way), rather
+#  than this generator trying to translate it per dialect.
+#  A `cmd:` *sibling* key alongside some other type (e.g. "pyenv
+#  global 3.14.6" right after installing a pyenv version) is a
+#  different thing - runs immediately after that other install, in
+#  the same generated script - see resolve_order.rb's own step[:cmd].
 def command_for(step, scripts, dialect)
   install =
-    if step[:type] == 'script'
-      scripts.dig(step[:name], 'cmd')&.rstrip
-    else
-      dialect == 'powershell' ? powershell_install(step) : bash_install(step)
+    case step[:type]
+    when 'script' then scripts.dig(step[:name], 'cmd')&.rstrip
+    when 'cmd' then step[:name]
+    else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
   #  this fallback existed, an unhandled type (e.g. 'choco'/'feature'
@@ -119,7 +146,10 @@ def command_for(step, scripts, dialect)
   #  the generated script instead of an error anywhere - a step that
   #  looked present in the output but installed nothing at all.
   install ||= "# TODO: unsupported package type '#{step[:type]}' for '#{step[:name]}' (dialect: #{dialect})"
-  step[:cmd] ? "#{install}\n#{step[:cmd]}" : install
+  # Not for type 'cmd' - step[:name] and step[:cmd] are the same string
+  # there (both read from the same YAML key), so appending it again
+  # would just duplicate the one line.
+  step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
 end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
@@ -137,7 +167,19 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
 
-  File.open(out_path, 'w') do |f|
+  # 'wb', not 'w' - confirmed directly against a real, serious failure:
+  # Ruby's text-mode file writing on Windows auto-translates \n to \r\n
+  # on write, which silently corrupts every bash script this generates
+  # whenever it's run from Windows (this project explicitly generates
+  # scripts *from* Windows *for* other platforms - see #7 - so this
+  # isn't a hypothetical). CRLF breaks heredoc terminator matching
+  # (`EOF\r` != `EOF`, so bash reads to end-of-file looking for a match
+  # that never comes, silently swallowing the rest of the script as
+  # heredoc body) and corrupts `set -e` itself (`$'\r': command not
+  # found`). Binary mode disables the translation outright, regardless
+  # of host OS - safe for the powershell dialect too, since modern
+  # PowerShell tolerates LF-only scripts fine.
+  File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
       f.puts '#Requires -Version 5.1'
       f.puts "$ErrorActionPreference = 'Stop'"
@@ -155,6 +197,21 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       steps.each do |step|
         f.puts "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
         f.puts command_for(step, scripts, dialect)
+        # choco install does not reliably propagate PATH/PSModulePath
+        #  changes to the *calling* script's own process - confirmed
+        #  directly against a real provision where `gem install
+        #  ratatui_ruby` and `choco install psake` both ran without
+        #  error later in this same script, yet neither was visible
+        #  afterward (ratatui_ruby resolved against a stale Ruby;
+        #  psake's module path never showed up at all). Re-import
+        #  Chocolatey's own profile module and refresh right after every
+        #  choco step so later steps in this same process see it, the
+        #  same fix community.chocolatey.org/install.ps1 itself applies
+        #  to its own single process after installing choco.
+        if step[:type] == 'choco'
+          f.puts 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
+          f.puts 'Update-SessionEnvironment'
+        end
         f.puts ''
       end
       unless reboot_steps.empty?
@@ -169,12 +226,30 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
       # Sync/refresh the package database exactly once, right before the
-      #  *first* pacman step - not per step, which would just re-sync
-      #  needlessly before every single package - and not unconditionally
-      #  up front either, on a platform with no pacman steps at all
-      #  (ubuntu22/macos share this same bash branch).
+      #  *first* apt/pacman step of each kind - not per step, which
+      #  would just re-sync needlessly before every single package - and
+      #  not unconditionally up front either, on a platform with no
+      #  apt/pacman steps at all (ubuntu22/macos share this same bash
+      #  branch). Confirmed directly apt needed this too, the same as
+      #  pacman already got: generating ubuntu2204.yml's full install
+      #  script, the very first `apt-get install -y zsh` had nothing
+      #  before it at all - on a fresh system (a minimal cloud image,
+      #  a fresh container) with a stale/empty local package index,
+      #  that install can fail outright. The two existing `apt-get
+      #  update` lines already in this config (ahead of the dotnet-sdk
+      #  and PowerShell steps) are a different thing entirely - each is
+      #  a repo-specific refresh baked into that one script step's own
+      #  body, right after *that* step adds a new APT source, not a
+      #  general safeguard for every plain `apt:` step.
+      apt_updated = false
       pacman_synced = false
       steps.each do |step|
+        if step[:type] == 'apt' && !apt_updated
+          f.puts "echo '==> apt-get update (refresh package index)'"
+          f.puts 'sudo apt-get update'
+          f.puts ''
+          apt_updated = true
+        end
         if step[:type] == 'pacman' && !pacman_synced
           f.puts "echo '==> pacman -Syu (refresh package database)'"
           f.puts 'pacman -Syu --noconfirm'

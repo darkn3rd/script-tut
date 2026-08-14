@@ -1,0 +1,12 @@
+SCRIPT_TUT_PATH="../../../../.."
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+  
+  config.vm.provision "shell",
+    path: "#{SCRIPT_TUT_PATH}/scriptbox/generated/ubuntu22_install.sh",
+    privileged: false
+end
