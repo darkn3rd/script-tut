@@ -158,11 +158,14 @@ scripts:
     cmd: |
       touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
       label=$(softwareupdate -l 2>&1 \
-        | grep -B1 -E 'Command Line Tools' \
-        | awk -F'\* Label: ' '{print $2}' \
-        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+        | grep -E '^[[:space:]]*\* Command Line Tools' \
+        | sed 's/^[[:space:]]*\* //' \
         | head -1)
-      sudo softwareupdate -i "$label" --agree-to-license --verbose
+      if softwareupdate --help 2>&1 | grep -q -- '--agree-to-license'; then
+        sudo softwareupdate -i "$label" --agree-to-license --verbose
+      else
+        sudo softwareupdate -i "$label" --verbose
+      fi
       rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
   macos_java_17_home:
     type: bash
