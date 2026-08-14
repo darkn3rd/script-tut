@@ -136,7 +136,13 @@ end
 def command_for(step, scripts, dialect)
   install =
     case step[:type]
-    when 'script' then scripts.dig(step[:name], 'cmd')&.rstrip
+    # A bare function *call*, not the body - write_install_script's own
+    #  emit_script_functions already defined it, once, up front. Still
+    #  gated on the body actually existing (not just `step[:name]`
+    #  unconditionally), so a typo'd/missing scripts: entry still falls
+    #  through to the "unsupported" TODO below instead of generating a
+    #  call to a function that was never defined.
+    when 'script' then (scripts.dig(step[:name], 'cmd') ? step[:name] : nil)
     when 'cmd' then step[:name]
     else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
     end
@@ -150,6 +156,74 @@ def command_for(step, scripts, dialect)
   # there (both read from the same YAML key), so appending it again
   # would just duplicate the one line.
   step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
+end
+
+# emit_script_functions(f, steps, scripts, dialect) - defines every
+#  unique `script`-type step referenced anywhere in `steps` as a real,
+#  named function up front (bash: `name() { ... }`, PowerShell:
+#  `function name { ... }`), instead of splicing its body inline at
+#  every call site the way this used to work - command_for's own
+#  'script' case now just emits a call to the name defined here. First-
+#  appearance order, deduped by name (a script referenced from more
+#  than one place in the manifest - e.g. attached to two different
+#  packages via a sibling `script:` key - only needs defining once;
+#  dedup! already collapses repeat *steps*, but two distinct packages
+#  each attaching the same script produces two distinct steps that
+#  legitimately both call it).
+#
+#  A bare `cmd:` package type (see command_for) deliberately isn't
+#  included here - it has no name of its own to define a function
+#  under (step[:name] and step[:cmd] are the same string - see
+#  command_for's own comment), so there's nothing to name it.
+def emit_script_functions(f, steps, scripts, dialect)
+  steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
+    body = scripts.dig(sname, 'cmd')&.rstrip
+    next unless body
+
+    if dialect == 'powershell'
+      f.puts "function #{sname} {"
+    else
+      f.puts "#{sname}() {"
+    end
+    f.puts indent_body(body, '  ')
+    f.puts '}'
+    f.puts ''
+  end
+end
+
+# indent_body(body, indent) - `body`'s own lines each prefixed with
+#  `indent`, except heredoc payload lines (and the heredoc's own
+#  terminator line), which are left exactly as they are. Two different
+#  reasons that's not optional: bash requires a heredoc terminator
+#  unindented at column 0 unless the opener used `<<-` (none of these
+#  do - confirmed directly, every heredoc across config/*.yml is a
+#  plain `<<EOF`/`<<'EOF'`), so an indented terminator would just never
+#  match and the heredoc would run away to EOF; and the payload lines
+#  themselves aren't script logic at all, they're literal file content
+#  (e.g. cygwin_purge_windows_path's heredoc *is* the real text written
+#  into ~/.bashrc) - indenting them would inject extra leading
+#  whitespace directly into that file, not just the generated script.
+#  Only recognizes bash's own `<<`/`<<-` heredoc syntax - PowerShell's
+#  here-strings (`@"..."@`/`@'...'@`) have the identical column-0-
+#  terminator hazard but aren't detected here, since none of the
+#  windows.yml scripts currently use one (confirmed directly - no `@"`/
+#  `@'` anywhere in config/*.yml). Extend this the same way if one ever
+#  gets added.
+def indent_body(body, indent)
+  heredoc_terminator = nil
+  body.each_line.map do |line|
+    if heredoc_terminator
+      heredoc_terminator = nil if line.chomp == heredoc_terminator
+      line
+    elsif (m = line.match(/<<-?\s*(['"]?)(\w+)\1/))
+      heredoc_terminator = m[2]
+      "#{indent}#{line}"
+    elsif line.strip.empty?
+      line
+    else
+      "#{indent}#{line}"
+    end
+  end.join
 end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
@@ -194,6 +268,7 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '    exit'
       f.puts '}'
       f.puts ''
+      emit_script_functions(f, steps, scripts, dialect)
       steps.each do |step|
         f.puts "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
         f.puts command_for(step, scripts, dialect)
@@ -225,6 +300,7 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts ''
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
+      emit_script_functions(f, steps, scripts, dialect)
       # Sync/refresh the package database exactly once, right before the
       #  *first* apt/pacman step of each kind - not per step, which
       #  would just re-sync needlessly before every single package - and
