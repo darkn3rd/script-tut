@@ -13,17 +13,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", name: "msys2", inline: <<-'SHELL'
     $env:MSYSTEM = "UCRT64"
-    # This box image (gusztavvargadr/windows-11) injects HOME=%USERPROFILE%
-    # as a process-level env var on every session (confirmed directly -
-    # present in both cmd.exe and PowerShell, but absent from both the User
-    # and Machine registry scopes, so it isn't a normal persisted env var -
-    # something in the box's own build/session-init sets it fresh each
-    # time). Bash honors an already-set HOME without ever consulting
-    # Cygwin/MSYS2's own user database, so it never gets the chance to
-    # compute its real default (/home/vagrant, confirmed against
-    # nsswitch.conf's db_home: cygwin desc). Clearing it here - not
-    # replacing it with a guessed value - lets MSYS2 fall through to that
-    # real default itself, the same as it already does on the host.
+    # Remove invalid $HOME environment variable
+    # MSYS2 sets HOME to C:\tools\msys64\home\$env:USERNAME (/home/$USER)
     Remove-Item Env:\HOME -ErrorAction SilentlyContinue
     & "C:\tools\msys64\usr\bin\bash.exe" `
         -lc "/c/script-tut/scriptbox/generated/msys2_install.sh"
@@ -31,7 +22,8 @@ Vagrant.configure("2") do |config|
   SHELL
 
   config.vm.provision "shell", name: "cygwin", inline: <<-'SHELL'
-    # See the msys2 provisioner's own comment - same fix, same reason.
+    # Remove invalid $HOME environment variable
+    # Cygwin sets HOME to C:\tools\cygwin\home\$env:USERNAME (/home/$USER)
     Remove-Item Env:\HOME -ErrorAction SilentlyContinue
     & "C:\tools\cygwin\bin\bash.exe" `
         -lc "/cygdrive/c/script-tut/scriptbox/generated/cygwin_install.sh"
