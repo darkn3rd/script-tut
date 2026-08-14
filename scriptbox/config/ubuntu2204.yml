@@ -35,9 +35,11 @@ ubuntu22:
               - xz-utils
               - zlib1g-dev
             tags: [pyenv,rbenv]
+            meets: build_essential
           - script: ubuntu22_rbenv
             tags: [rbenv]
             meets: rbenv
+            needs: build_essential
           - script: ubuntu22_pyenv
             tags: [pyenv]
         awk:

@@ -239,8 +239,9 @@ end
 #  which can now end up inside any of several different functions, not
 #  just the top of one flat loop - a plain local boolean wouldn't see
 #  across those calls the way this shared hash does.
-def render_step(step, scripts, dialect, state)
+def render_step(step, scripts, dialect, state, insert_before = {})
   lines = []
+  Array(insert_before[step.object_id]).each { |name| lines << name }
   if dialect == 'powershell'
     lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
     lines << command_for(step, scripts, dialect)
@@ -267,15 +268,17 @@ def render_step(step, scripts, dialect, state)
   "#{lines.join("\n")}\n\n"
 end
 
-# emit_provider_functions(f, shared_groups, scripts, dialect, state) -
-#  defines each shared_groups entry (see resolve_order.rb's split_shared)
-#  as its own function, up front - the whole reason these exist: a step
-#  whose `meets:` crosses a section-function boundary can't just live
-#  inside whichever section happens to declare it, because a *different*
-#  section may need it to have already run first. Called from
-#  write_install_script before any section function is even defined.
-def emit_provider_functions(f, shared_groups, scripts, dialect, state)
-  shared_groups.each do |group|
+# emit_provider_functions(f, groups, scripts, dialect, state) - defines
+#  each relocate_cross_cutting group as its own function, up front -
+#  *defines* only. Nothing here calls one: a relocated provider is only
+#  ever called from the specific consumer(s) that actually needed it
+#  moved (see render_step's own insert_before, wired up inside
+#  emit_section_functions) - never a separate "run every provider first"
+#  pre-phase, which would just reintroduce the same implicit-ordering
+#  break this whole mechanism exists to avoid (see resolve_order.rb's
+#  own relocate_cross_cutting comment).
+def emit_provider_functions(f, groups, scripts, dialect, state)
+  groups.each do |group|
     f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
     body = group[:steps].map { |s| render_step(s, scripts, dialect, state) }.join
     f.puts indent_body(body, '  ')
@@ -284,22 +287,25 @@ def emit_provider_functions(f, shared_groups, scripts, dialect, state)
   end
 end
 
-# section_tree(local_steps) - groups local_steps (the leftover half of
-#  split_shared, after shared providers are pulled out) by
-#  owning_function, and records which function calls which. A step's own
-#  path, e.g. "global.lessons.gen_scripts.groovy", filtered down to just
-#  its FUNCTION_SECTIONS segments ("global", "lessons", "gen_scripts")
-#  and taken pairwise, says lessons is gen_scripts' own parent - derived
+# section_tree(steps, claimed) - groups every not-claimed step (see
+#  resolve_order.rb's relocate_cross_cutting - a claimed step has been
+#  pulled out to run somewhere else entirely) by owning_function, and
+#  records which function calls which. A step's own path, e.g. "global.
+#  lessons.gen_scripts.groovy", filtered down to just its
+#  FUNCTION_SECTIONS segments ("global", "lessons", "gen_scripts") and
+#  taken pairwise, says lessons is gen_scripts' own parent - derived
 #  from each file's actual tree shape, not hardcoded, so this comes out
 #  right even for windows.yml's own quirk of nesting cibox/scriptbox/
 #  testbox under lessons instead of directly under global like every
 #  other platform's config (reflects the manifest as actually written,
 #  rather than silently reshaping it to match the others).
-def section_tree(local_steps)
+def section_tree(steps, claimed)
   children = Hash.new { |h, k| h[k] = [] }
   own_steps = Hash.new { |h, k| h[k] = [] }
 
-  local_steps.each do |step|
+  steps.each_with_index do |step, i|
+    next if claimed[i]
+
     boundaries = step[:path].split('.').select { |seg| FUNCTION_SECTIONS.include?(seg) }
     boundaries.each_cons(2) { |parent, child| children[parent] << child unless children[parent].include?(child) }
     own_steps[boundaries.last] << step if boundaries.last
@@ -308,28 +314,31 @@ def section_tree(local_steps)
   [children, own_steps]
 end
 
-# emit_section_functions(f, node, children, own_steps, ...) - depth-first
-#  defines `node`'s own function (its own local steps, in original
-#  relative order, then a call to each child that actually ended up with
-#  something to do), recursing into children first so a would-be-empty
-#  node - every one of its children turned out empty too, and it has no
-#  local steps of its own - is detected and skipped rather than emitted
-#  as a no-op function or, worse, called by its own parent as a dangling
-#  reference to a function that was never defined. Returns whether it
-#  emitted itself, which is exactly what the caller (its parent, or
-#  write_install_script for the root) needs to decide that.
-def emit_section_functions(f, node, children, own_steps, scripts, dialect, state, visited = {})
+# emit_section_functions(f, node, children, own_steps, ..., insert_before,
+#  ...) - depth-first defines `node`'s own function (its own local
+#  steps, in original relative order - each one preceded by a call to
+#  whatever relocate_cross_cutting says must run immediately before it,
+#  see render_step's own insert_before - then a call to each child that
+#  actually ended up with something to do), recursing into children
+#  first so a would-be-empty node - every one of its children turned out
+#  empty too, and it has no local steps of its own - is detected and
+#  skipped rather than emitted as a no-op function or, worse, called by
+#  its own parent as a dangling reference to a function that was never
+#  defined. Returns whether it emitted itself, which is exactly what the
+#  caller (its parent, or write_install_script for the root) needs to
+#  decide that.
+def emit_section_functions(f, node, children, own_steps, scripts, dialect, state, insert_before, visited = {})
   return visited[node] if visited.key?(node)
 
   emitted_children = children[node].select do |child|
-    emit_section_functions(f, child, children, own_steps, scripts, dialect, state, visited)
+    emit_section_functions(f, child, children, own_steps, scripts, dialect, state, insert_before, visited)
   end
 
   will_emit = !own_steps[node].empty? || !emitted_children.empty?
   visited[node] = will_emit
   return false unless will_emit
 
-  body = own_steps[node].map { |s| render_step(s, scripts, dialect, state) }.join
+  body = own_steps[node].map { |s| render_step(s, scripts, dialect, state, insert_before) }.join
   body += emitted_children.map { |c| "#{c}\n" }.join
 
   f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
@@ -340,16 +349,21 @@ def emit_section_functions(f, node, children, own_steps, scripts, dialect, state
 end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
-#  header_lines) - writes generated/<name>_install.<ext> in the given
-#  dialect, shared by generate_install_script.rb's and gen_installer.rb's
-#  own entry points so the two never drift into writing the file header/
-#  footer two different ways. PowerShell gets a real self-elevation
-#  check up front rather than a comment reminding the user to run it as
-#  Administrator - confirmed directly every choco/feature step in
-#  practice needs it, and Start-Process -Verb RunAs relaunching itself
-#  once at the top is simpler and more reliable than trying to elevate
-#  per step. Returns the path written.
-def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines)
+#  header_lines, natural_steps) - writes generated/<name>_install.<ext>
+#  in the given dialect, shared by generate_install_script.rb's and
+#  gen_installer.rb's own entry points so the two never drift into
+#  writing the file header/footer two different ways. `natural_steps` -
+#  a flatten() snapshot taken *before* resolve! reorders anything - has
+#  to come from the caller: resolve! has already mutated `steps` in
+#  place by the time it reaches here, and relocate_cross_cutting needs
+#  the tree's original, undisturbed document order (see its own comment,
+#  and resolve_order.rb's natural_function_order). PowerShell gets a
+#  real self-elevation check up front rather than a comment reminding
+#  the user to run it as Administrator - confirmed directly every
+#  choco/feature step in practice needs it, and Start-Process -Verb
+#  RunAs relaunching itself once at the top is simpler and more reliable
+#  than trying to elevate per step. Returns the path written.
+def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
@@ -366,19 +380,18 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   # found`). Binary mode disables the translation outright, regardless
   # of host OS - safe for the powershell dialect too, since modern
   # PowerShell tolerates LF-only scripts fine.
-  # Every generated function - a named script:, a shared provider_<meets>,
-  #  or a section like gen_scripts()/lessons() - is defined up front, in
-  #  that order, before any of them are actually called: a provider can
-  #  call a script: function, and a section can call both a script:
-  #  function and a provider, so whichever ran last still has to already
-  #  exist. Actually *calling* them happens only at the very end (see
-  #  below), in the one order that's always safe regardless of which
-  #  functions call which internally - every provider first (each one's
-  #  own unit is already dependency-correct - see split_shared), then the
-  #  root section (global), which reaches every remaining step through
-  #  its own nested calls.
-  shared_groups, local_steps = split_shared(steps)
-  children, own_steps = section_tree(local_steps)
+  # Every generated function - a named script:, a relocated
+  #  provider_<meets>, or a section like gen_scripts()/lessons() - is
+  #  defined up front, in that order, before any of them are actually
+  #  called, since any of them can call any other. Actually *calling*
+  #  one only happens in two places: a relocated provider is called from
+  #  inside whichever specific consumer needed it moved (see
+  #  emit_section_functions' own insert_before), and the root section
+  #  (global) is called once at the very end, reaching every other step
+  #  through its own nested calls.
+  natural_order = natural_function_order(natural_steps)
+  groups, claimed, insert_before = relocate_cross_cutting(steps, natural_steps, natural_order)
+  children, own_steps = section_tree(steps, claimed)
   state = { apt_updated: false, pacman_synced: false }
 
   File.open(out_path, 'wb') do |f|
@@ -397,9 +410,8 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '}'
       f.puts ''
       emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, shared_groups, scripts, dialect, state)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state)
-      shared_groups.each { |g| f.puts g[:name] }
+      emit_provider_functions(f, groups, scripts, dialect, state)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state, insert_before)
       f.puts 'global' if global_emitted
       f.puts ''
       unless reboot_steps.empty?
@@ -414,9 +426,8 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
       emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, shared_groups, scripts, dialect, state)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state)
-      shared_groups.each { |g| f.puts g[:name] }
+      emit_provider_functions(f, groups, scripts, dialect, state)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state, insert_before)
       f.puts 'global' if global_emitted
     end
   end
@@ -563,6 +574,9 @@ if __FILE__ == $PROGRAM_NAME
   #  entirely if dedup! had already kept some *other*, unselected
   #  section's identical step as the "first" occurrence instead.
   steps = flatten(tree[name])
+  # Snapshotted before resolve! mutates steps' own order - see
+  #  write_install_script's own comment on why.
+  natural_steps = steps.dup
   resolve!(steps)
   steps = select_sections(steps, expand_selectors(ARGV[1..]))
   dedup!(steps)
@@ -573,6 +587,6 @@ if __FILE__ == $PROGRAM_NAME
   out_path = write_install_script(name, steps, scripts, dialect, generated_dir, [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
-  ])
+  ], natural_steps)
   puts "wrote #{out_path}"
 end

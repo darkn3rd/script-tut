@@ -131,79 +131,170 @@ def owning_function(step)
   step[:path].split('.').reverse.find { |seg| FUNCTION_SECTIONS.include?(seg) }
 end
 
-# shared_providers(steps) - every step whose `meets:` must run before
-#  more than one generated function, so no single section function can
-#  locally guarantee it already ran by the time it's needed. Walked from
-#  the `needs:` side and resolved to `steps.find { meets == needs }` -
-#  the exact same first-match tie-break resolve! itself uses - rather
-#  than from the `meets:` side, because more than one step can carry the
-#  same `meets:` value (confirmed directly in ubuntu2204.yml: both
-#  global's own `apt: [...] meets: make` and compiled_lang's `apt:
-#  build-essential meets: make` exist, but only the first is ever the
-#  real provider any `needs: make` consumer actually resolves to) -
-#  walking from `meets:` independently would wrongly flag *both* as
-#  shared and emit the same provider_make twice.
-#  Caught two ways: directly, a consumer's resolved provider lives in a
-#  *different* owning_function than the consumer itself; or
-#  transitively, the consumer is itself already shared, so whatever it
-#  needs must now also run before any section function, regardless of
-#  where that provider's own owning_function happens to be. The
-#  transitive case is a real one, not hypothetical - confirmed directly
-#  in ubuntu2204.yml: testbox's own `meets: ruby` step also `needs:
-#  rbenv`, whose provider lives in gen_scripts. Both must run before any
-#  section function, not just the ruby one, since testbox's step no
-#  longer runs adjacent to its normal neighbors once it's hoisted out.
-#  Return order is arbitrary (Hash iteration order) - see split_shared,
-#  which walks `steps` itself (already resolve!-ordered, so already
-#  dependency-correct) to decide what order to actually emit these in.
-def shared_providers(steps)
-  shared = {}
-  loop do
-    added = false
-    steps.each do |consumer|
-      next unless consumer[:needs]
-
-      provider = steps.find { |s| s[:meets] == consumer[:needs] }
-      next unless provider
-      next if shared[provider]
-
-      crosses = shared[consumer] || owning_function(consumer) != owning_function(provider)
-      next unless crosses
-
-      shared[provider] = true
-      added = true
+# natural_function_order(raw_steps) - the order function boundaries are
+#  first encountered in the *original*, pre-resolve! document order -
+#  i.e. the order the underlying tree's own hash keys were actually
+#  written in, which is what the generated call tree (see
+#  generate_install_script.rb's section_tree/emit_section_functions)
+#  actually calls its own children in. Deliberately computed from
+#  flatten()'s own raw output, not the post-resolve! steps list -
+#  resolve! moves *individual* steps earlier (e.g. compiled_lang's own
+#  `meets: java` step gets moved to sit right before gen_scripts's own
+#  `needs: java` consumer), which would make compiled_lang look like it
+#  starts early even though the rest of its own content still runs much
+#  later - only the raw, undisturbed document order reflects where a
+#  whole function's content actually lives in the call tree.
+def natural_function_order(raw_steps)
+  order = []
+  raw_steps.each do |step|
+    step[:path].split('.').each do |seg|
+      order << seg if FUNCTION_SECTIONS.include?(seg) && !order.include?(seg)
     end
-    break unless added
   end
-  steps.select { |s| shared[s] }
+  order
 end
 
-# split_shared(steps) - partitions steps (already flatten + resolve! +
-#  dedup'd) into [shared_groups, local]. shared_groups is one entry per
-#  shared_providers step, each carrying its own unit (see unit_span - a
-#  preceding tap, or an attached follow-up script) since a provider's
-#  unit must move as one block or its post-install script would run in
-#  the wrong place - named "provider_<meets>" for generate_install_
-#  script.rb to define as its own function, called before any section
-#  function. local is everything left, still in original relative
-#  order, destined for whichever function owning_function says it
-#  belongs in. shared_groups is already in dependency-correct call order
-#  - a subsequence of resolve!'s own already-correct full ordering stays
-#  correct on its own, without needing a second resolve pass just over
-#  the subset.
-def split_shared(steps)
-  primary = shared_providers(steps)
-  claimed = Array.new(steps.length, false)
+# needs_relocation?(provider, consumer, natural_order) - true if the
+#  generated call tree can't be trusted to already run `provider` before
+#  `consumer` on its own, so generate_install_script.rb has to actually
+#  move it. Same owning_function: false - resolve! already puts them in
+#  the right relative order within that one function's own local body
+#  (see relocate_cross_cutting). Different owning_function, but
+#  provider's whole function is a strictly earlier sibling/ancestor in
+#  the natural call tree: also false - it's already guaranteed to have
+#  completely finished by the time the consumer's function is even
+#  entered (confirmed directly: ubuntu2204.yml's own `rbenv`/`ruby`/
+#  `make`/`perl` steps all fall in this case - gen_scripts is lessons'
+#  *first* child, so nothing about scriptbox or shell_scripts needing
+#  them ever required moving anything). True only for a genuine
+#  cross-cutting case, like the same file's own `groovy` (in
+#  gen_scripts, lessons' first child) needing `java` (in compiled_lang,
+#  lessons' *third* child) - the natural call order runs gen_scripts
+#  before compiled_lang even starts, so nothing short of actually moving
+#  java's own install earlier fixes it.
+def needs_relocation?(provider, consumer, natural_order)
+  fp = owning_function(provider)
+  fc = owning_function(consumer)
+  return false if fp == fc
 
-  groups = primary.map do |provider_step|
-    idx = steps.index(provider_step)
+  fp_index = natural_order.index(fp)
+  fc_index = natural_order.index(fc)
+  fp_index.nil? || fc_index.nil? || fp_index > fc_index
+end
+
+# relocate_cross_cutting(steps, natural_steps, natural_order) - handles
+#  the genuine cross-cutting needs:/meets: pairs (see needs_relocation?)
+#  the way the ordinary call tree can't fix on its own: pulls each such
+#  provider - along with its own unit (see unit_span) *and* whatever of
+#  its own owning function's local steps naturally precede it - out of
+#  its natural position, and arranges for a call to it to run
+#  immediately before the consumer, inside the consumer's *own*
+#  function. The precedes-it prefix matters because those steps aren't
+#  necessarily tagged with their own meets: at all - e.g. compiled_lang's
+#  own `apt: curl` isn't declared as anything java needs, but it does
+#  sit before java in compiled_lang's own local sequence, so it has to
+#  go along too or java's relocated call would run without it. Found by
+#  walking backward through `natural_steps` - the *pre-resolve!* snapshot
+#  (see natural_function_order) - specifically because `steps` itself
+#  can't answer this anymore: resolve! has already physically moved
+#  `provider` away from those very neighbors (that's the whole reason it
+#  needs relocating at all), so looking at what's immediately before it
+#  in `steps` would find whatever resolve! happened to splice in next to
+#  it instead, not its real local siblings.
+#  Placing the call inside the *consumer's* function, rather than some
+#  separate pre-phase, is what keeps this correct without having to
+#  separately re-derive the provider's own ancestor chain: the
+#  consumer's own function is already guaranteed (by the ordinary call
+#  tree) to run after everything *its* ancestors do, so a relocated
+#  provider inserted right there inherits that guarantee for free.
+#  Transitive case (a relocated provider that itself `needs:` something
+#  also needing relocation) is handled the same way, recursively - its
+#  own relocated prerequisite gets inserted right before *it*, wherever
+#  it itself ends up.
+#  Returns [groups, claimed, insert_before]: groups is the ordered list
+#  of {name:, steps:} provider bundles to define as their own function
+#  (see generate_install_script.rb's emit_provider_functions) - defined,
+#  but not called from anywhere but the insertion points below. claimed
+#  flags every original steps[] index pulled out of its natural local
+#  position, for section_tree to exclude. insert_before maps a step's
+#  object_id to the ordered array of group names that must be called
+#  immediately before it, wherever *it* ends up.
+def relocate_cross_cutting(steps, natural_steps, natural_order)
+  claimed = Array.new(steps.length, false)
+  insert_before = Hash.new { |h, k| h[k] = [] }
+  groups = []
+  group_for = {} # provider step's object_id => group name, once relocated
+
+  relocate = lambda do |provider|
+    next group_for[provider.object_id] if group_for[provider.object_id]
+
+    idx = steps.index(provider)
     start, finish = unit_span(steps, idx)
-    (start..finish).each { |i| claimed[i] = true }
-    { name: "provider_#{provider_step[:meets]}", steps: steps[start..finish] }
+    unit = steps[start..finish]
+    unit.each { |s| claimed[steps.index(s)] = true }
+
+    f = owning_function(provider)
+    n_idx = natural_steps.index(provider)
+    prefix = []
+    i = n_idx - 1
+    while i >= 0 && owning_function(natural_steps[i]) == f
+      sibling = natural_steps[i]
+      i -= 1
+
+      # Only f's *own* direct packages (path ends exactly at f) count as
+      #  an implicit prerequisite - a *sibling* subsection that merely
+      #  inlines into the same function (e.g. compiled_lang.cs, sitting
+      #  between compiled_lang's own curl/build-essential and
+      #  compiled_lang.java in document order) is not one, and pulling
+      #  it in anyway would just relocate an unrelated install (here,
+      #  .NET SDK) for no reason.
+      next unless sibling[:path].split('.').last == f
+
+      r_idx = steps.index(sibling)
+      # A section-filtered `steps` (see generate_install_script.rb's own
+      #  select_sections) may not include this natural-order sibling at
+      #  all - skip it and keep looking further back rather than
+      #  stopping the whole walk on a step that isn't even part of this
+      #  run.
+      next if r_idx.nil?
+      break if claimed[r_idx] # already pulled in by an earlier relocation - nothing further back is unclaimed either
+
+      prefix.unshift(sibling)
+      claimed[r_idx] = true
+    end
+
+    group_steps = prefix + unit
+    name = "provider_#{provider[:meets]}"
+    group_for[provider.object_id] = name
+    groups << { name: name, steps: group_steps }
+
+    # A step within this pulled-along group might itself `need:`
+    #  something that also requires relocation - resolve recursively,
+    #  inserting immediately before *that* step wherever it lands.
+    group_steps.each do |s|
+      next unless s[:needs]
+
+      dep = steps.find { |x| x[:meets] == s[:needs] }
+      next unless dep && needs_relocation?(dep, s, natural_order)
+
+      dep_name = relocate.call(dep)
+      insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+    end
+
+    name
   end
 
-  local = steps.each_index.reject { |i| claimed[i] }.map { |i| steps[i] }
-  [groups, local]
+  steps.each do |consumer|
+    next unless consumer[:needs]
+
+    provider = steps.find { |s| s[:meets] == consumer[:needs] }
+    next unless provider && needs_relocation?(provider, consumer, natural_order)
+
+    group_name = relocate.call(provider)
+    insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+  end
+
+  [groups, claimed, insert_before]
 end
 
 if __FILE__ == $PROGRAM_NAME

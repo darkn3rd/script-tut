@@ -55,13 +55,29 @@ These key words include the following:
    * `gem` for installing ruby gems
    * `cpan` and `cpanm` for installing perl modules
 
+### Implicit Dependencies
 
-Two optional keys express cross-cutting dependencies between steps, regardless of where they live in the tree:
+The `packages` from node will be run in the order hierarchy, thus if the script is installing perl, it will have run though this order already:
+
+1. **`global.packages[]`** includes homebrew install, chocolatey install, `apt update`
+2. **`global.lessons.packages[]**` includes any installers that are cross cutting to all the langauges, such as sdkman for both `java` and `groovy`
+3. **`global.lessons.gen_scripts.packages[]`** includes any dependencies needed for all general script packages, such as build-essentials.
+4. **`global.lessons.gen_scripts.perl.packages[]`** are the explicit packages for **perl**. 
+
+In each `packages` list, they are run in order, so for perl you have this for Ubuntu 22.04:
+
+* `system: perl`, `script: ubuntu22_cpan_local_setup` - sets up local `cpan`
+* `cpan: App::cpanminus` - installs `cpanm`
+* `cpanm: Switch` - install perl module `Switch.pm`
+
+### Explicit Dependencies
+
+For dependencies that do not fit neatly into a hierarchy, you can use these key words: 
 
 * `needs: X` - this step must install after whichever other step declares `meets: X` (first listed provider wins).
 * `meets: X` - marks this step as the provider for any `needs: X` elsewhere.
 
-A `script:` key next to a package (rather than as its own list entry) attaches a follow-up command that runs immediately after that package installs, as its own step. For example, from `macos.yml`:
+Here's an example of that association: 
 
 ```yaml
 groovy:
@@ -77,7 +93,14 @@ java:
       script: macos_java_17_home   # runs right after the cask installs
 ```
 
-`script`/`cmd`-type steps reference a shared `scripts:` block (also in the manifest file) by name, so the same install snippet can be reused across multiple package entries without duplicating it.
+### Script Library
+
+Under the scripts key are a dictionary (hash) of reusable scripts indexed by the script name. These will have the following structure:
+
+* `type`: the shell that runs the script, such as `powershell` or `bash`
+* `cmd`: a single line or multline commands that make the script
+* `elevated`: boolean to determine if the script is run in escalated privileges
+
 
 ## Compiling a manifest
 
