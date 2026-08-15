@@ -1,0 +1,37 @@
+# Shared bash functions for any platform whose own env.yml environments:
+#  entry declares `family: debian` (Ubuntu, Debian, Mint, Pop!_OS,
+#  elementary, Zorin, ...) - see generate_install_script.rb's own
+#  family_for/load_helpers. File name matches the family name, the same
+#  way it'd match /etc/os-release's own ID_LIKE root for this family -
+#  see env.yml's own comment on why that association lives there,
+#  not here or in code.
+debian:
+  helpers:
+    add_apt_repo:
+      cmd: |
+        add_apt_repo() {
+          local NAME=$1
+          local KEY_URL=$2 # Signed-By
+          local REPO_URI=$3
+          local DISTRO_STRING=$4 # "Suites Components" or "/"
+
+          local KEYRING="/usr/share/keyrings/${NAME}-archive-keyring.gpg"
+          local LIST_FILE="/etc/apt/sources.list.d/${NAME}.list"
+          local ARCH=$(dpkg --print-architecture)
+
+          echo "Configuring repository: $NAME"
+
+          # Download and dearmor the GPG key
+          wget -qO - "$KEY_URL" | sudo gpg --dearmor --yes -o "$KEYRING"
+
+          # Construct and save the list file
+          # Note: arch=$ARCH is included by default
+          #       as it is standard for most 3rd party repos
+          echo "deb [arch=$ARCH signed-by=$KEYRING] $REPO_URI $DISTRO_STRING" \
+            | sudo tee "$LIST_FILE" > /dev/null
+
+          sudo apt-get update \
+            -o Dir::Etc::sourcelist="$LIST_FILE" \
+            -o Dir::Etc::sourceparts="-" \
+            -o APT::Get::List-Cleanup="0"
+        }
