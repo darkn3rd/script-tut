@@ -1,14 +1,17 @@
 ubuntu22:
+  apt_mirror: https://archive.ubuntu.com/ubuntu/
   global:
     packages:
+      - cmd: sudo apt update
       - apt: zsh
         script: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
-      - script: ubuntu22_sdkman
-        tags: [sdkman]
       - apt: ['curl','git','make','wget']
         meets: make
     lessons:
+      packages:
+        - script: ubuntu22_sdkman
+          tags: [sdkman]
       gen_scripts:
         packages:
           - apt:

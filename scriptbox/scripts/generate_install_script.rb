@@ -226,20 +226,19 @@ def indent_body(body, indent)
   end.join
 end
 
-# render_step(step, scripts, dialect, state) - one step's full output
-#  block (status line + install command + any dialect-specific follow-
-#  up), as a single un-indented string ending in a blank line - the same
-#  shape write_install_script used to emit directly into the file
-#  before steps were grouped into functions, now built once here so
+# render_step(step, scripts, dialect, insert_before) - one step's full
+#  output block (status line + install command + any dialect-specific
+#  follow-up), as a single un-indented string ending in a blank line -
+#  the same shape write_install_script used to emit directly into the
+#  file before steps were grouped into functions, now built once here so
 #  provider/section function bodies (see emit_provider_functions/
-#  emit_section_functions) and the file-header case all use exactly one
-#  implementation. `state` is a shared, mutable {apt_updated:,
-#  pacman_synced:} - the one-time package-index refresh has to happen
-#  before the very first apt/pacman step *anywhere in the whole script*,
-#  which can now end up inside any of several different functions, not
-#  just the top of one flat loop - a plain local boolean wouldn't see
-#  across those calls the way this shared hash does.
-def render_step(step, scripts, dialect, state, insert_before = {})
+#  emit_section_functions) all use exactly one implementation.
+#  Deliberately does *not* handle the one-time apt-get update/pacman -Syu
+#  refresh itself anymore - see write_install_script's own comment on
+#  why tracking that here (by which step is generated *first*) went
+#  wrong once steps could live inside a function that's defined earlier
+#  in the file than one that actually *runs* earlier.
+def render_step(step, scripts, dialect, insert_before = {})
   lines = []
   Array(insert_before[step.object_id]).each { |name| lines << name }
   if dialect == 'powershell'
@@ -250,37 +249,25 @@ def render_step(step, scripts, dialect, state, insert_before = {})
       lines << 'Update-SessionEnvironment'
     end
   else
-    if step[:type] == 'apt' && !state[:apt_updated]
-      lines << "echo '==> apt-get update (refresh package index)'"
-      lines << 'sudo apt-get update'
-      lines << ''
-      state[:apt_updated] = true
-    end
-    if step[:type] == 'pacman' && !state[:pacman_synced]
-      lines << "echo '==> pacman -Syu (refresh package database)'"
-      lines << 'pacman -Syu --noconfirm'
-      lines << ''
-      state[:pacman_synced] = true
-    end
     lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
     lines << command_for(step, scripts, dialect)
   end
   "#{lines.join("\n")}\n\n"
 end
 
-# emit_provider_functions(f, groups, scripts, dialect, state) - defines
-#  each relocate_cross_cutting group as its own function, up front -
-#  *defines* only. Nothing here calls one: a relocated provider is only
-#  ever called from the specific consumer(s) that actually needed it
-#  moved (see render_step's own insert_before, wired up inside
+# emit_provider_functions(f, groups, scripts, dialect) - defines each
+#  relocate_cross_cutting group as its own function, up front - *defines*
+#  only. Nothing here calls one: a relocated provider is only ever
+#  called from the specific consumer(s) that actually needed it moved
+#  (see render_step's own insert_before, wired up inside
 #  emit_section_functions) - never a separate "run every provider first"
 #  pre-phase, which would just reintroduce the same implicit-ordering
 #  break this whole mechanism exists to avoid (see resolve_order.rb's
 #  own relocate_cross_cutting comment).
-def emit_provider_functions(f, groups, scripts, dialect, state)
+def emit_provider_functions(f, groups, scripts, dialect)
   groups.each do |group|
     f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
-    body = group[:steps].map { |s| render_step(s, scripts, dialect, state) }.join
+    body = group[:steps].map { |s| render_step(s, scripts, dialect) }.join
     f.puts indent_body(body, '  ')
     f.puts '}'
     f.puts ''
@@ -327,18 +314,18 @@ end
 #  defined. Returns whether it emitted itself, which is exactly what the
 #  caller (its parent, or write_install_script for the root) needs to
 #  decide that.
-def emit_section_functions(f, node, children, own_steps, scripts, dialect, state, insert_before, visited = {})
+def emit_section_functions(f, node, children, own_steps, scripts, dialect, insert_before, visited = {})
   return visited[node] if visited.key?(node)
 
   emitted_children = children[node].select do |child|
-    emit_section_functions(f, child, children, own_steps, scripts, dialect, state, insert_before, visited)
+    emit_section_functions(f, child, children, own_steps, scripts, dialect, insert_before, visited)
   end
 
   will_emit = !own_steps[node].empty? || !emitted_children.empty?
   visited[node] = will_emit
   return false unless will_emit
 
-  body = own_steps[node].map { |s| render_step(s, scripts, dialect, state, insert_before) }.join
+  body = own_steps[node].map { |s| render_step(s, scripts, dialect, insert_before) }.join
   body += emitted_children.map { |c| "#{c}\n" }.join
 
   f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
@@ -349,21 +336,23 @@ def emit_section_functions(f, node, children, own_steps, scripts, dialect, state
 end
 
 # write_install_script(name, steps, scripts, dialect, generated_dir,
-#  header_lines, natural_steps) - writes generated/<name>_install.<ext>
-#  in the given dialect, shared by generate_install_script.rb's and
-#  gen_installer.rb's own entry points so the two never drift into
-#  writing the file header/footer two different ways. `natural_steps` -
-#  a flatten() snapshot taken *before* resolve! reorders anything - has
-#  to come from the caller: resolve! has already mutated `steps` in
-#  place by the time it reaches here, and relocate_cross_cutting needs
-#  the tree's original, undisturbed document order (see its own comment,
-#  and resolve_order.rb's natural_function_order). PowerShell gets a
-#  real self-elevation check up front rather than a comment reminding
-#  the user to run it as Administrator - confirmed directly every
-#  choco/feature step in practice needs it, and Start-Process -Verb
-#  RunAs relaunching itself once at the top is simpler and more reliable
-#  than trying to elevate per step. Returns the path written.
-def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps)
+#  header_lines, natural_steps, apt_mirror) - writes generated/
+#  <name>_install.<ext> in the given dialect, shared by generate_install_
+#  script.rb's and gen_installer.rb's own entry points so the two never
+#  drift into writing the file header/footer two different ways.
+#  `natural_steps` - a flatten() snapshot taken *before* resolve!
+#  reorders anything - has to come from the caller: resolve! has already
+#  mutated `steps` in place by the time it reaches here, and
+#  relocate_cross_cutting needs the tree's original, undisturbed
+#  document order (see its own comment, and resolve_order.rb's
+#  natural_function_order). `apt_mirror` - see apt_mirror_for - is
+#  optional. PowerShell gets a real self-elevation check up front rather
+#  than a comment reminding the user to run it as Administrator -
+#  confirmed directly every choco/feature step in practice needs it, and
+#  Start-Process -Verb RunAs relaunching itself once at the top is
+#  simpler and more reliable than trying to elevate per step. Returns
+#  the path written.
+def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
@@ -392,7 +381,6 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   natural_order = natural_function_order(natural_steps)
   groups, claimed, insert_before = relocate_cross_cutting(steps, natural_steps, natural_order)
   children, own_steps = section_tree(steps, claimed)
-  state = { apt_updated: false, pacman_synced: false }
 
   File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
@@ -410,8 +398,8 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '}'
       f.puts ''
       emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect, state)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state, insert_before)
+      emit_provider_functions(f, groups, scripts, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
       f.puts 'global' if global_emitted
       f.puts ''
       unless reboot_steps.empty?
@@ -425,9 +413,44 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts ''
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
+      # Swaps the mirror host/path in every sources.list line, whatever
+      #  it currently is, for apt_mirror - has to run before the
+      #  unconditional apt-get update just below, not as an ordinary
+      #  package step (see apt_mirror_for's own comment on why).
+      #  Confirmed directly against a real failing mirror before
+      #  encoding this pattern.
+      if apt_mirror && steps.any? { |s| s[:type] == 'apt' }
+        mirror = apt_mirror.end_with?('/') ? apt_mirror : "#{apt_mirror}/"
+        f.puts "echo '==> switching apt mirror to #{mirror}'"
+        f.puts "sudo sed -i -E 's#https?://[a-zA-Z0-9.-]+/ubuntu/##{mirror}#g' /etc/apt/sources.list"
+        f.puts ''
+      end
+      # Unconditional, once, right at the top - *not* injected just
+      #  before whichever apt/pacman step happens to need it (the old
+      #  approach): once steps could be relocated into a function that's
+      #  *defined* earlier in this file than one that actually *runs*
+      #  earlier (see provider_java, whose own apt: step used to get
+      #  generated - and therefore flagged as "already refreshed" -
+      #  before global()'s own, earlier-running `apt: zsh` step), there
+      #  is no single generation-order position that's reliably "the
+      #  first apt/pacman step to actually execute" for every config
+      #  shape. Running the refresh unconditionally up front is what a
+      #  provisioning script would do anyway, and it's cheap and
+      #  idempotent - no correctness cost for the configs that don't
+      #  need it at all.
+      if steps.any? { |s| s[:type] == 'apt' }
+        f.puts "echo '==> apt-get update (refresh package index)'"
+        f.puts 'sudo apt-get update'
+        f.puts ''
+      end
+      if steps.any? { |s| s[:type] == 'pacman' }
+        f.puts "echo '==> pacman -Syu (refresh package database)'"
+        f.puts 'pacman -Syu --noconfirm'
+        f.puts ''
+      end
       emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect, state)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, state, insert_before)
+      emit_provider_functions(f, groups, scripts, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
       f.puts 'global' if global_emitted
     end
   end
@@ -444,6 +467,21 @@ end
 def dialect_for(tree, name)
   node = tree[name]
   node.is_a?(Hash) ? (node['shell'] || 'bash') : 'bash'
+end
+
+# apt_mirror_for(tree, name) - the URL from an optional 'apt_mirror:' key
+#  (same sibling position as 'shell:' - see dialect_for), or nil. Exists
+#  because a box's own default apt mirror can be unreliable (confirmed
+#  directly: generic/ubuntu2204's default, mirrors.edge.kernel.org,
+#  intermittently 404'd on real packages and, on a later run, was
+#  outright unreachable - "No route to host" - for the exact same host)
+#  and the fix has to run *before* write_install_script's own
+#  unconditional apt-get update, not as an ordinary package step inside
+#  the tree - a normal step only ever runs from within global()'s own
+#  call chain, which happens after that preamble update already ran.
+def apt_mirror_for(tree, name)
+  node = tree[name]
+  node.is_a?(Hash) ? node['apt_mirror'] : nil
 end
 
 # root_key - the platform key a config file is about (e.g. "macos",
@@ -587,6 +625,6 @@ if __FILE__ == $PROGRAM_NAME
   out_path = write_install_script(name, steps, scripts, dialect, generated_dir, [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
-  ], natural_steps)
+  ], natural_steps, apt_mirror_for(tree, name))
   puts "wrote #{out_path}"
 end
