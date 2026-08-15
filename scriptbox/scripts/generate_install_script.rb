@@ -39,7 +39,15 @@ def bash_install(step)
   #  step isn't here either - same as pacman's own -Syu refresh below,
   #  it's a property of the whole script, not any one step, so
   #  write_install_script injects it directly.
-  when 'apt'    then "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
+  # apt_repository: - a sibling key on this same step (see resolve_
+  #  order.rb's own flatten, which reads it directly onto the step, not
+  #  as a separate attached one) - `add-apt-repository` itself refreshes
+  #  the package index for the new repo by default (no --no-update
+  #  passed), so nothing extra is needed before the install line below
+  #  sees packages from it.
+  when 'apt'
+    repo = step[:apt_repository] ? "sudo add-apt-repository -y #{step[:apt_repository]}\n" : ''
+    "#{repo}sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
   #  rebuild from source unnecessarily).
@@ -113,6 +121,36 @@ def powershell_install(step)
   end
 end
 
+# file_write(step, tree) - a 'file' step (see resolve_order.rb's own
+#  ATTACHABLE_KEYS) as a heredoc write, looked up in the manifest's own
+#  files: block by name. The generic, data-driven equivalent of what
+#  used to be a hand-written `cat <<'EOF' > $HOME/.zshrc` script body -
+#  same heredoc shape, just emitted directly from files:'s own dest:/
+#  content: instead of a script author having to write the wrapper by
+#  hand each time.
+def file_write(step, tree)
+  entry = tree['files'][step[:name]]
+  "cat <<'EOF' > #{entry['dest']}\n#{entry['content']}EOF"
+end
+
+# append_lines(step, tree) - an 'append' step (see resolve_order.rb's
+#  own ATTACHABLE_KEYS) as one grep-guarded append per dest/line pair,
+#  looked up in the manifest's own appends: block by name. `dest` may be
+#  a single path or a list (e.g. both .bashrc and .zshrc) - Array()
+#  normalizes either shape the same way bash_install's own apt/pacman
+#  cases already do for `name`. Guarded on the dest file actually
+#  existing first, same reasoning as bash_install's own 'path' case:
+#  appending to a shell startup file that isn't actually anyone's yet
+#  accomplishes nothing.
+def append_lines(step, tree)
+  entry = tree['appends'][step[:name]]
+  Array(entry['dest']).flat_map do |dest|
+    Array(entry['lines']).map do |line|
+      %([ -f "#{dest}" ] && { grep -qxF '#{line}' "#{dest}" 2>/dev/null || echo '#{line}' >> "#{dest}"; })
+    end
+  end.join("\n")
+end
+
 # command_for - the full install command for one resolved step, in the
 #  given dialect ('bash' or 'powershell' - see write_install_script).
 #  `script` steps pull their multi-line cmd straight from the YAML's
@@ -133,7 +171,10 @@ end
 #  global 3.14.6" right after installing a pyenv version) is a
 #  different thing - runs immediately after that other install, in
 #  the same generated script - see resolve_order.rb's own step[:cmd].
-def command_for(step, scripts, dialect)
+#  `tree` (the whole parsed manifest, not just its own scripts: block)
+#  so 'file'/'append' can look themselves up in files:/appends: the
+#  same way 'script' already looks itself up in scripts:.
+def command_for(step, tree, dialect)
   install =
     case step[:type]
     # A bare function *call*, not the body - write_install_script's own
@@ -142,8 +183,14 @@ def command_for(step, scripts, dialect)
     #  unconditionally), so a typo'd/missing scripts: entry still falls
     #  through to the "unsupported" TODO below instead of generating a
     #  call to a function that was never defined.
-    when 'script' then (scripts.dig(step[:name], 'cmd') ? step[:name] : nil)
+    when 'script' then (tree['scripts'].dig(step[:name], 'cmd') ? step[:name] : nil)
     when 'cmd' then step[:name]
+    # Dialect-agnostic like 'script'/'cmd' - a heredoc write and a
+    #  grep-guarded append are the same bash regardless of platform (no
+    #  windows.yml manifest uses either yet, so there's no PowerShell
+    #  equivalent to write here until one actually needs it).
+    when 'file' then file_write(step, tree)
+    when 'append' then append_lines(step, tree)
     else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
@@ -158,7 +205,7 @@ def command_for(step, scripts, dialect)
   step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
 end
 
-# emit_script_functions(f, steps, scripts, dialect) - defines every
+# emit_script_functions(f, steps, tree, dialect) - defines every
 #  unique `script`-type step referenced anywhere in `steps` as a real,
 #  named function up front (bash: `name() { ... }`, PowerShell:
 #  `function name { ... }`), instead of splicing its body inline at
@@ -175,9 +222,9 @@ end
 #  included here - it has no name of its own to define a function
 #  under (step[:name] and step[:cmd] are the same string - see
 #  command_for's own comment), so there's nothing to name it.
-def emit_script_functions(f, steps, scripts, dialect)
+def emit_script_functions(f, steps, tree, dialect)
   steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
-    body = scripts.dig(sname, 'cmd')&.rstrip
+    body = tree['scripts'].dig(sname, 'cmd')&.rstrip
     next unless body
 
     if dialect == 'powershell'
@@ -226,7 +273,7 @@ def indent_body(body, indent)
   end.join
 end
 
-# render_step(step, scripts, dialect, insert_before) - one step's full
+# render_step(step, tree, dialect, insert_before) - one step's full
 #  output block (status line + install command + any dialect-specific
 #  follow-up), as a single un-indented string ending in a blank line -
 #  the same shape write_install_script used to emit directly into the
@@ -238,24 +285,24 @@ end
 #  why tracking that here (by which step is generated *first*) went
 #  wrong once steps could live inside a function that's defined earlier
 #  in the file than one that actually *runs* earlier.
-def render_step(step, scripts, dialect, insert_before = {})
+def render_step(step, tree, dialect, insert_before = {})
   lines = []
   Array(insert_before[step.object_id]).each { |name| lines << name }
   if dialect == 'powershell'
     lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, scripts, dialect)
+    lines << command_for(step, tree, dialect)
     if step[:type] == 'choco'
       lines << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
       lines << 'Update-SessionEnvironment'
     end
   else
     lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, scripts, dialect)
+    lines << command_for(step, tree, dialect)
   end
   "#{lines.join("\n")}\n\n"
 end
 
-# emit_provider_functions(f, groups, scripts, dialect) - defines each
+# emit_provider_functions(f, groups, tree, dialect) - defines each
 #  relocate_cross_cutting group as its own function, up front - *defines*
 #  only. Nothing here calls one: a relocated provider is only ever
 #  called from the specific consumer(s) that actually needed it moved
@@ -264,10 +311,10 @@ end
 #  pre-phase, which would just reintroduce the same implicit-ordering
 #  break this whole mechanism exists to avoid (see resolve_order.rb's
 #  own relocate_cross_cutting comment).
-def emit_provider_functions(f, groups, scripts, dialect)
+def emit_provider_functions(f, groups, tree, dialect)
   groups.each do |group|
     f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
-    body = group[:steps].map { |s| render_step(s, scripts, dialect) }.join
+    body = group[:steps].map { |s| render_step(s, tree, dialect) }.join
     f.puts indent_body(body, '  ')
     f.puts '}'
     f.puts ''
@@ -314,18 +361,18 @@ end
 #  defined. Returns whether it emitted itself, which is exactly what the
 #  caller (its parent, or write_install_script for the root) needs to
 #  decide that.
-def emit_section_functions(f, node, children, own_steps, scripts, dialect, insert_before, visited = {})
+def emit_section_functions(f, node, children, own_steps, tree, dialect, insert_before, visited = {})
   return visited[node] if visited.key?(node)
 
   emitted_children = children[node].select do |child|
-    emit_section_functions(f, child, children, own_steps, scripts, dialect, insert_before, visited)
+    emit_section_functions(f, child, children, own_steps, tree, dialect, insert_before, visited)
   end
 
   will_emit = !own_steps[node].empty? || !emitted_children.empty?
   visited[node] = will_emit
   return false unless will_emit
 
-  body = own_steps[node].map { |s| render_step(s, scripts, dialect, insert_before) }.join
+  body = own_steps[node].map { |s| render_step(s, tree, dialect, insert_before) }.join
   body += emitted_children.map { |c| "#{c}\n" }.join
 
   f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
@@ -335,16 +382,20 @@ def emit_section_functions(f, node, children, own_steps, scripts, dialect, inser
   true
 end
 
-# write_install_script(name, steps, scripts, dialect, generated_dir,
+# write_install_script(name, steps, tree, dialect, generated_dir,
 #  header_lines, natural_steps, apt_mirror) - writes generated/
 #  <name>_install.<ext> in the given dialect, shared by generate_install_
 #  script.rb's and gen_installer.rb's own entry points so the two never
-#  drift into writing the file header/footer two different ways.
-#  `natural_steps` - a flatten() snapshot taken *before* resolve!
-#  reorders anything - has to come from the caller: resolve! has already
-#  mutated `steps` in place by the time it reaches here, and
-#  relocate_cross_cutting needs the tree's original, undisturbed
-#  document order (see its own comment, and resolve_order.rb's
+#  drift into writing the file header/footer two different ways. `tree`
+#  - the whole parsed manifest, not just its own scripts: block - so
+#  command_for's own 'file'/'append' cases can reach files:/appends: the
+#  same way 'script' already reaches scripts:, without every function in
+#  this call chain needing its own extra parameter as more of these
+#  named-lookup blocks get added. `natural_steps` - a flatten() snapshot
+#  taken *before* resolve! reorders anything - has to come from the
+#  caller: resolve! has already mutated `steps` in place by the time it
+#  reaches here, and relocate_cross_cutting needs the tree's original,
+#  undisturbed document order (see its own comment, and resolve_order.rb's
 #  natural_function_order). `apt_mirror` - see apt_mirror_for - is
 #  optional. PowerShell gets a real self-elevation check up front rather
 #  than a comment reminding the user to run it as Administrator -
@@ -352,7 +403,7 @@ end
 #  Start-Process -Verb RunAs relaunching itself once at the top is
 #  simpler and more reliable than trying to elevate per step. Returns
 #  the path written.
-def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
+def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
@@ -397,9 +448,9 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '    exit'
       f.puts '}'
       f.puts ''
-      emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      emit_script_functions(f, steps, tree, dialect)
+      emit_provider_functions(f, groups, tree, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
       f.puts ''
       unless reboot_steps.empty?
@@ -448,9 +499,9 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
         f.puts 'pacman -Syu --noconfirm'
         f.puts ''
       end
-      emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      emit_script_functions(f, steps, tree, dialect)
+      emit_provider_functions(f, groups, tree, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
     end
   end
@@ -489,9 +540,9 @@ end
 #  "scripts" block; anything else is a malformed file, so fail fast
 #  rather than silently guessing which key to use.
 def root_key(tree)
-  candidates = tree.keys - ['scripts']
+  candidates = tree.keys - RESERVED_KEYS
   if candidates.size != 1
-    warn "#{$PROGRAM_NAME}: expected exactly one top-level key besides 'scripts', found: #{candidates.join(', ')}"
+    warn "#{$PROGRAM_NAME}: expected exactly one top-level key besides #{RESERVED_KEYS.join('/')}, found: #{candidates.join(', ')}"
     exit 1
   end
   candidates.first
@@ -599,7 +650,6 @@ if __FILE__ == $PROGRAM_NAME
   end
 
   tree = YAML.load_file(config_path)
-  scripts = tree['scripts'] || {}
   name = root_key(tree)
 
   # Order matters here: resolve! runs on the *full* list first, so
@@ -622,7 +672,7 @@ if __FILE__ == $PROGRAM_NAME
   generated_dir = File.join(__dir__, '..', 'generated')
   FileUtils.mkdir_p(generated_dir)
   dialect = dialect_for(tree, name)
-  out_path = write_install_script(name, steps, scripts, dialect, generated_dir, [
+  out_path = write_install_script(name, steps, tree, dialect, generated_dir, [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
   ], natural_steps, apt_mirror_for(tree, name))

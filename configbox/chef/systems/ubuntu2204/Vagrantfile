@@ -1,4 +1,31 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
+  config.vm.hostname = "chef-node-01.test"
+
+  config.vm.provision "chef_zero" do |chef|
+    chef.product = "cinc"
+    chef.omnibus_url = "https://omnitruck.cinc.sh/install.sh"
+
+    # .berks-vendor/, not cookbooks/ - berks vendor output (lessons +
+    #  its own Supermarket dependencies - see cookbooks/lessons/
+    #  Berksfile), gitignored, regenerated on demand with `berks vendor`
+    #  from within cookbooks/lessons - never hand-edited, and never the
+    #  hand-authored cookbooks/ tree itself.
+    chef.cookbooks_path = "../../.berks-vendor"
+    chef.data_bags_path = "../../data_bags"
+    chef.nodes_path = "../../nodes"
+    chef.add_recipe "lessons"
+    chef.log_level = "debug"
+    
+    # Area gates default true (see ../../cookbooks/lessons/attributes/
+    #  default.rb) - override here per node, e.g. chef.json = {
+    #  "lessons" => { "win_scripts" => false } }, rather than editing
+    #  the cookbook itself.
+    chef.json = {
+      "lessons" => {
+        "platform" => "ubuntu22"
+      }
+    }
+  end
 end

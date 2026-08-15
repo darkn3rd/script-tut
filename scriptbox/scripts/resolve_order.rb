@@ -2,19 +2,41 @@ require 'yaml'
 
 PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg feature gem pacman path cyg cmd].freeze
 
+# RESERVED_KEYS - top-level manifest keys that aren't a platform's own
+#  root key - shared by generate_install_script.rb's and generate_chef_
+#  databag.rb's own root_key, and gen_installer.rb's own --platform
+#  validation, so all three never drift out of sync on what counts as
+#  "not a platform" as new top-level blocks (files:, appends:) get
+#  added. Ruby constants aren't file-scoped, so defining this more than
+#  once across files that require each other silently shadows one
+#  definition with the other instead of erroring - one shared source
+#  here avoids that entirely.
+RESERVED_KEYS = %w[scripts files appends environments].freeze
+
+# ATTACHABLE_KEYS - sibling keys that each add one more step immediately
+#  following the package they're declared on (see flatten's own
+#  attached_to handling below) - `script:` (a follow-up command, from
+#  the manifest's own scripts: block), `file:` (a static file to write,
+#  from files:), and `append:` (idempotent line-appends to one or more
+#  dest files, from appends:). An entry can carry more than one of these
+#  at once (e.g. a package needing both a post-install script and a
+#  profile append), each becoming its own attached step in the order
+#  listed here.
+ATTACHABLE_KEYS = %w[script file append].freeze
+
 # flatten - walks the macos.yml tree in document order and produces one
 #  array of "steps". A step is either a package (brew/cask/tap/cpan/cpanm/
-#  system) or a script - including scripts attached to a package via a
-#  sibling `script:` key, which become their own step (tagged with
-#  attached_to) immediately following the package they belong to, so a
-#  package and its post-install script can be moved together as a unit.
+#  system) or something from ATTACHABLE_KEYS attached to a package via a
+#  sibling key, which becomes its own step (tagged with attached_to)
+#  immediately following the package they belong to, so a package and
+#  its own follow-ups can be moved together as a unit (see unit_span).
 def flatten(node, path = [])
   steps = []
   return steps unless node.is_a?(Hash)
 
   if node['packages'].is_a?(Array)
     node['packages'].each do |entry|
-      type = PACKAGE_TYPES.find { |t| entry.key?(t) } || (entry.key?('script') ? 'script' : nil)
+      type = PACKAGE_TYPES.find { |t| entry.key?(t) } || (ATTACHABLE_KEYS.find { |k| entry.key?(k) })
       next unless type
 
       steps << {
@@ -24,10 +46,15 @@ def flatten(node, path = [])
         needs: entry['needs'],
         cmd: entry['cmd'],
         reboot: entry['reboot'],
+        apt_repository: entry['apt_repository'],
         path: path.join('.')
       }
-      if type != 'script' && entry['script']
-        steps << { type: 'script', name: entry['script'], attached_to: entry[type], path: path.join('.') }
+      next if ATTACHABLE_KEYS.include?(type)
+
+      ATTACHABLE_KEYS.each do |key|
+        next unless entry[key]
+
+        steps << { type: key, name: entry[key], attached_to: entry[type], path: path.join('.') }
       end
     end
   end
@@ -67,7 +94,10 @@ end
 # unit_span - the contiguous [start, end] index range that must move
 #  together with the provider at `index`: any directly-preceding `tap`
 #  steps in the *same* package list (a cask's tap must stay right before
-#  it), plus a directly-following script step attached to this provider.
+#  it), plus every directly-following ATTACHABLE_KEYS step attached to
+#  this provider (an entry can carry more than one - e.g. both a
+#  `script:` and an `append:` - flatten emits them consecutively, so
+#  this walks forward through all of them, not just one).
 def unit_span(steps, index)
   start = index
   while start > 0 &&
@@ -77,8 +107,9 @@ def unit_span(steps, index)
   end
 
   finish = index
-  nxt = steps[index + 1]
-  finish += 1 if nxt && nxt[:type] == 'script' && nxt[:attached_to] == steps[index][:name]
+  while (nxt = steps[finish + 1]) && ATTACHABLE_KEYS.include?(nxt[:type]) && nxt[:attached_to] == steps[index][:name]
+    finish += 1
+  end
 
   [start, finish]
 end

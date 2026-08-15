@@ -4,7 +4,7 @@ ubuntu22:
     packages:
       - cmd: sudo apt update
       - apt: zsh
-        script: ubuntu_default_zshrc
+        file: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
       - apt: ['curl','git','make','wget']
         meets: make
@@ -105,6 +105,7 @@ ubuntu22:
         zsh:
             packages:
             - apt: zsh
+              file: ubuntu_default_zshrc
       compiled_lang:
         packages:
           - apt: curl
@@ -112,14 +113,17 @@ ubuntu22:
             meets: make
         cs:
           packages:
-            - script: ubuntu22_dotnet_10
+            - apt_repository: ppa:dotnet/backports
+              apt: dotnet-sdk-10.0
         java:
           packages:
             - apt: openjdk-17-jdk
               meets: java
         go:
           packages:
-            - script: ubuntu22_go
+            - apt_repository: ppa:longsleep/golang-backports
+              apt: golang-go
+              append: ubuntu22_go
         rust:
           packages:
             - script: ubuntu22_rust
@@ -285,25 +289,6 @@ scripts:
 
       export PATH="$HOME/.rbenv/bin:$PATH"
       eval "$(rbenv init - bash)"
-  ubuntu22_go:
-    type: bash
-    cmd: |
-      # https://go.dev/wiki/Ubuntu
-      sudo add-apt-repository -y ppa:longsleep/golang-backports
-      sudo apt update \
-        && sudo DEBIAN_FRONTEND=noninteractive apt install -y golang-go
-      
-      # Grep-guarded - see ubuntu22_post_rbenv's own comment on why
-      # (go itself is already installed idempotently via apt).
-      grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.bashrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
-      grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.bashrc
-      if [[ -f $HOME/.zshrc ]]; then
-        grep -qxF 'export GOPATH=$(go env GOPATH)' ~/.zshrc 2>/dev/null || echo 'export GOPATH=$(go env GOPATH)' >> ~/.zshrc
-        grep -qxF 'export PATH=$GOPATH/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$GOPATH/bin:$PATH' >> ~/.zshrc
-      fi
-
-      export GOPATH=$(go env GOPATH)
-      export PATH=$GOPATH/bin:$PATH
   ubuntu22_cpan_local_setup:
     type: bash
     cmd: |
@@ -357,16 +342,11 @@ scripts:
       fi
 
       source "$HOME/.sdkman/bin/sdkman-init.sh"
-  ubuntu22_dotnet_10:
-    type: bash
-    cmd: |
-      sudo add-apt-repository -y ppa:dotnet/backports
-      sudo apt-get update && \
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y dotnet-sdk-10.0
+
+files:
   ubuntu_default_zshrc:
-    type: bash
-    cmd: |
-      cat <<'EOF' > $HOME/.zshrc
+    dest: $HOME/.zshrc
+    content: |
       # Set up the prompt
 
       autoload -Uz promptinit
@@ -404,5 +384,9 @@ scripts:
 
       zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
       zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
-
-      EOF
+appends:
+  ubuntu22_go:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - export GOPATH=$(go env GOPATH)
+      - export PATH=$GOPATH/bin:$PATH

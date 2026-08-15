@@ -39,14 +39,16 @@ These key words include the following:
    * `cmd` a single command to execute
    * `path` setup a path for the shell environment or windows environment
    * `system` indicates that the item comes pre-installed
-   * `script` corresponds a full script specified in `scripts` area
+   * `script` corresponds a full script specified in the `scripts` area
    * `feature` under windwos represents a feature that is enabled
+   * `file` create a file with specified content and destination specified in the `files` area
+   * `append` appends a line if it doesn't exist to destinations specified in the `appends` area
 * Version Managers
    * `pyenv` vrsion manager for python
    * `rbenv`  version manager for ruby
    * `sdkman` version manager for installing Java platform based languages
 * System Package Managers
-   * `apt`
+   * `apt` debian/ubuntu package system 
    * `brew`, `cask`, `tap` are used with Hoembrew
    * `choco`, `choco_cyg` are used with Chocolatey
    * `pacman` used for managing packages on MSYS2 or Arch Linux
