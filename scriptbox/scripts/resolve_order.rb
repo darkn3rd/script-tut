@@ -111,6 +111,192 @@ def resolve!(steps)
   steps
 end
 
+# FUNCTION_SECTIONS - the tree keys that become their own generated
+#  function (see generate_install_script.rb's own section-function
+#  emission). Everything else - an individual lesson topic like "groovy"
+#  or "posix" - inlines into its nearest ancestor from this list instead
+#  of getting a function of its own, matching what was actually asked
+#  for: "lessons would call gen_scripts(), shell_scripts()... at this
+#  level they'll just call what is necessary to install the packages" -
+#  one function per organizational section, not one per topic.
+FUNCTION_SECTIONS = %w[global lessons cibox scriptbox testbox gen_scripts shell_scripts compiled_lang win_scripts].freeze
+
+# owning_function(step) - the name of the generated function step's own
+#  install command ends up inside: the last of step's own path segments
+#  that names a real function boundary (see FUNCTION_SECTIONS). A step
+#  several levels deeper than any boundary (e.g. "global.lessons.
+#  gen_scripts.groovy") still resolves to its nearest ancestor
+#  ("gen_scripts"), not itself - "groovy" isn't a function.
+def owning_function(step)
+  step[:path].split('.').reverse.find { |seg| FUNCTION_SECTIONS.include?(seg) }
+end
+
+# natural_function_order(raw_steps) - the order function boundaries are
+#  first encountered in the *original*, pre-resolve! document order -
+#  i.e. the order the underlying tree's own hash keys were actually
+#  written in, which is what the generated call tree (see
+#  generate_install_script.rb's section_tree/emit_section_functions)
+#  actually calls its own children in. Deliberately computed from
+#  flatten()'s own raw output, not the post-resolve! steps list -
+#  resolve! moves *individual* steps earlier (e.g. compiled_lang's own
+#  `meets: java` step gets moved to sit right before gen_scripts's own
+#  `needs: java` consumer), which would make compiled_lang look like it
+#  starts early even though the rest of its own content still runs much
+#  later - only the raw, undisturbed document order reflects where a
+#  whole function's content actually lives in the call tree.
+def natural_function_order(raw_steps)
+  order = []
+  raw_steps.each do |step|
+    step[:path].split('.').each do |seg|
+      order << seg if FUNCTION_SECTIONS.include?(seg) && !order.include?(seg)
+    end
+  end
+  order
+end
+
+# needs_relocation?(provider, consumer, natural_order) - true if the
+#  generated call tree can't be trusted to already run `provider` before
+#  `consumer` on its own, so generate_install_script.rb has to actually
+#  move it. Same owning_function: false - resolve! already puts them in
+#  the right relative order within that one function's own local body
+#  (see relocate_cross_cutting). Different owning_function, but
+#  provider's whole function is a strictly earlier sibling/ancestor in
+#  the natural call tree: also false - it's already guaranteed to have
+#  completely finished by the time the consumer's function is even
+#  entered (confirmed directly: ubuntu2204.yml's own `rbenv`/`ruby`/
+#  `make`/`perl` steps all fall in this case - gen_scripts is lessons'
+#  *first* child, so nothing about scriptbox or shell_scripts needing
+#  them ever required moving anything). True only for a genuine
+#  cross-cutting case, like the same file's own `groovy` (in
+#  gen_scripts, lessons' first child) needing `java` (in compiled_lang,
+#  lessons' *third* child) - the natural call order runs gen_scripts
+#  before compiled_lang even starts, so nothing short of actually moving
+#  java's own install earlier fixes it.
+def needs_relocation?(provider, consumer, natural_order)
+  fp = owning_function(provider)
+  fc = owning_function(consumer)
+  return false if fp == fc
+
+  fp_index = natural_order.index(fp)
+  fc_index = natural_order.index(fc)
+  fp_index.nil? || fc_index.nil? || fp_index > fc_index
+end
+
+# relocate_cross_cutting(steps, natural_steps, natural_order) - handles
+#  the genuine cross-cutting needs:/meets: pairs (see needs_relocation?)
+#  the way the ordinary call tree can't fix on its own: pulls each such
+#  provider - along with its own unit (see unit_span) *and* whatever of
+#  its own owning function's local steps naturally precede it - out of
+#  its natural position, and arranges for a call to it to run
+#  immediately before the consumer, inside the consumer's *own*
+#  function. The precedes-it prefix matters because those steps aren't
+#  necessarily tagged with their own meets: at all - e.g. compiled_lang's
+#  own `apt: curl` isn't declared as anything java needs, but it does
+#  sit before java in compiled_lang's own local sequence, so it has to
+#  go along too or java's relocated call would run without it. Found by
+#  walking backward through `natural_steps` - the *pre-resolve!* snapshot
+#  (see natural_function_order) - specifically because `steps` itself
+#  can't answer this anymore: resolve! has already physically moved
+#  `provider` away from those very neighbors (that's the whole reason it
+#  needs relocating at all), so looking at what's immediately before it
+#  in `steps` would find whatever resolve! happened to splice in next to
+#  it instead, not its real local siblings.
+#  Placing the call inside the *consumer's* function, rather than some
+#  separate pre-phase, is what keeps this correct without having to
+#  separately re-derive the provider's own ancestor chain: the
+#  consumer's own function is already guaranteed (by the ordinary call
+#  tree) to run after everything *its* ancestors do, so a relocated
+#  provider inserted right there inherits that guarantee for free.
+#  Transitive case (a relocated provider that itself `needs:` something
+#  also needing relocation) is handled the same way, recursively - its
+#  own relocated prerequisite gets inserted right before *it*, wherever
+#  it itself ends up.
+#  Returns [groups, claimed, insert_before]: groups is the ordered list
+#  of {name:, steps:} provider bundles to define as their own function
+#  (see generate_install_script.rb's emit_provider_functions) - defined,
+#  but not called from anywhere but the insertion points below. claimed
+#  flags every original steps[] index pulled out of its natural local
+#  position, for section_tree to exclude. insert_before maps a step's
+#  object_id to the ordered array of group names that must be called
+#  immediately before it, wherever *it* ends up.
+def relocate_cross_cutting(steps, natural_steps, natural_order)
+  claimed = Array.new(steps.length, false)
+  insert_before = Hash.new { |h, k| h[k] = [] }
+  groups = []
+  group_for = {} # provider step's object_id => group name, once relocated
+
+  relocate = lambda do |provider|
+    next group_for[provider.object_id] if group_for[provider.object_id]
+
+    idx = steps.index(provider)
+    start, finish = unit_span(steps, idx)
+    unit = steps[start..finish]
+    unit.each { |s| claimed[steps.index(s)] = true }
+
+    f = owning_function(provider)
+    n_idx = natural_steps.index(provider)
+    prefix = []
+    i = n_idx - 1
+    while i >= 0 && owning_function(natural_steps[i]) == f
+      sibling = natural_steps[i]
+      i -= 1
+
+      # Only f's *own* direct packages (path ends exactly at f) count as
+      #  an implicit prerequisite - a *sibling* subsection that merely
+      #  inlines into the same function (e.g. compiled_lang.cs, sitting
+      #  between compiled_lang's own curl/build-essential and
+      #  compiled_lang.java in document order) is not one, and pulling
+      #  it in anyway would just relocate an unrelated install (here,
+      #  .NET SDK) for no reason.
+      next unless sibling[:path].split('.').last == f
+
+      r_idx = steps.index(sibling)
+      # A section-filtered `steps` (see generate_install_script.rb's own
+      #  select_sections) may not include this natural-order sibling at
+      #  all - skip it and keep looking further back rather than
+      #  stopping the whole walk on a step that isn't even part of this
+      #  run.
+      next if r_idx.nil?
+      break if claimed[r_idx] # already pulled in by an earlier relocation - nothing further back is unclaimed either
+
+      prefix.unshift(sibling)
+      claimed[r_idx] = true
+    end
+
+    group_steps = prefix + unit
+    name = "provider_#{provider[:meets]}"
+    group_for[provider.object_id] = name
+    groups << { name: name, steps: group_steps }
+
+    # A step within this pulled-along group might itself `need:`
+    #  something that also requires relocation - resolve recursively,
+    #  inserting immediately before *that* step wherever it lands.
+    group_steps.each do |s|
+      next unless s[:needs]
+
+      dep = steps.find { |x| x[:meets] == s[:needs] }
+      next unless dep && needs_relocation?(dep, s, natural_order)
+
+      dep_name = relocate.call(dep)
+      insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+    end
+
+    name
+  end
+
+  steps.each do |consumer|
+    next unless consumer[:needs]
+
+    provider = steps.find { |s| s[:meets] == consumer[:needs] }
+    next unless provider && needs_relocation?(provider, consumer, natural_order)
+
+    group_name = relocate.call(provider)
+    insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+  end
+
+  [groups, claimed, insert_before]
+end
+
 if __FILE__ == $PROGRAM_NAME
   tree = YAML.load_file(File.join(__dir__, '..', 'config', 'macos.yml'))
   steps = flatten(tree['macos'])

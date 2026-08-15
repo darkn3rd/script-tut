@@ -79,14 +79,8 @@ msys2:
 scripts:
   msys2_purge_windows_path:
     type: bash
-    # Strips drive-letter (/c/, /d/, ...) entries out of PATH before any of
-    #  our own explicit re-additions (Corretto, php, groovy, ...) run, so
-    #  the base PATH is POSIX-only and the only Windows tools reachable
-    #  from this shell are ones we deliberately put there - not whatever
-    #  happened to already be on the inherited Windows PATH. Positioned in
-    #  global.packages (runs before every lessons.* PATH addition) so this
-    #  lands first in ~/.bashrc too, ahead of anything that re-adds a
-    #  specific directory on top of the now-clean base.
+    # Create POSIX-only base PATH and only Windows tools we deliberately 
+    #  add on a case-by-case basis. 
     cmd: |
       grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
       # purge-windows-path

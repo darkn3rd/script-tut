@@ -12,11 +12,8 @@ cygwin:
             - script: cygwin_groovy_path
         perl:
           packages:
-            # perl_base (Cygwin's minimal runtime-only package) doesn't
-            # include the `cpan` command-line client at all - confirmed
-            # directly, `cpan` came back "command not found" even after
-            # perl_base installed cleanly. The full `perl` package bundles
-            # CPAN.pm's shell client and ExtUtils::MakeMaker.
+            # perl_base = minimal perl
+            # perl      = perl + CPAN.pm + ExtUtils::MakeMaker
             - cyg: perl
               meets: perl
             - script: cygwin_cpan_local_setup
@@ -70,6 +67,9 @@ cygwin:
         cs:
           packages:
             - path: /cygdrive/c/Program Files/dotnet/
+        go:
+          packages:
+            - path: /cygdrive/c/Program Files/Go/bin/
         java:
           packages:
             - script: cygwin_corretto_path
@@ -99,9 +99,8 @@ cygwin:
 scripts:
   cygwin_purge_windows_path:
     type: bash
-    # See msys2_purge_windows_path's own comment - same fix, same reason.
-    # Cygwin's own Windows-mapped prefix is /cygdrive/, not /c/ - the
-    # single generalized pattern msys2 uses doesn't apply here.
+    # Purge Windows Path as Windows binaries interfere with Cygwin posix binaries
+    # Windows Paths that are needed will be selectively added on a case-by-case basis
     cmd: |
       grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
       # purge-windows-path
@@ -111,7 +110,6 @@ scripts:
       export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
   cygwin_zsh_setup:
     type: bash
-    # See msys2_zsh_setup's own comment - same fix, same reason (zsh's own
     # skel .zshrc only gets created on first interactive launch, which
     # never happens during non-interactive provisioning).
     cmd: |
@@ -157,8 +155,7 @@ scripts:
       export PATH=$HOME/perl5/bin:$PATH
   cygwin_corretto_path:
     type: bash
-    # See msys2_corretto_path's own comment - same fix, same reason
-    # (Chocolatey's corretto17jdk build number already drifted once).
+    # Dynamically find corretto17jdk based on build number 
     cmd: |
       CORRETTO_BIN=$(ls -d "/cygdrive/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
       if [ -n "$CORRETTO_BIN" ]; then
@@ -172,9 +169,7 @@ scripts:
       fi
   cygwin_groovy_path:
     type: bash
-    # See msys2_corretto_path's own comment - same fix, same reason
-    # (Chocolatey's groovy package embeds its version number in the
-    # install directory, which drifts on every package update).
+    # Dynamically find Groovy's patha based on build number 
     cmd: |
       GROOVY_BIN=$(ls -d "/cygdrive/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
       if [ -n "$GROOVY_BIN" ]; then

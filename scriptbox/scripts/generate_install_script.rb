@@ -136,7 +136,13 @@ end
 def command_for(step, scripts, dialect)
   install =
     case step[:type]
-    when 'script' then scripts.dig(step[:name], 'cmd')&.rstrip
+    # A bare function *call*, not the body - write_install_script's own
+    #  emit_script_functions already defined it, once, up front. Still
+    #  gated on the body actually existing (not just `step[:name]`
+    #  unconditionally), so a typo'd/missing scripts: entry still falls
+    #  through to the "unsupported" TODO below instead of generating a
+    #  call to a function that was never defined.
+    when 'script' then (scripts.dig(step[:name], 'cmd') ? step[:name] : nil)
     when 'cmd' then step[:name]
     else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
     end
@@ -152,17 +158,201 @@ def command_for(step, scripts, dialect)
   step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
 end
 
+# emit_script_functions(f, steps, scripts, dialect) - defines every
+#  unique `script`-type step referenced anywhere in `steps` as a real,
+#  named function up front (bash: `name() { ... }`, PowerShell:
+#  `function name { ... }`), instead of splicing its body inline at
+#  every call site the way this used to work - command_for's own
+#  'script' case now just emits a call to the name defined here. First-
+#  appearance order, deduped by name (a script referenced from more
+#  than one place in the manifest - e.g. attached to two different
+#  packages via a sibling `script:` key - only needs defining once;
+#  dedup! already collapses repeat *steps*, but two distinct packages
+#  each attaching the same script produces two distinct steps that
+#  legitimately both call it).
+#
+#  A bare `cmd:` package type (see command_for) deliberately isn't
+#  included here - it has no name of its own to define a function
+#  under (step[:name] and step[:cmd] are the same string - see
+#  command_for's own comment), so there's nothing to name it.
+def emit_script_functions(f, steps, scripts, dialect)
+  steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
+    body = scripts.dig(sname, 'cmd')&.rstrip
+    next unless body
+
+    if dialect == 'powershell'
+      f.puts "function #{sname} {"
+    else
+      f.puts "#{sname}() {"
+    end
+    f.puts indent_body(body, '  ')
+    f.puts '}'
+    f.puts ''
+  end
+end
+
+# indent_body(body, indent) - `body`'s own lines each prefixed with
+#  `indent`, except heredoc payload lines (and the heredoc's own
+#  terminator line), which are left exactly as they are. Two different
+#  reasons that's not optional: bash requires a heredoc terminator
+#  unindented at column 0 unless the opener used `<<-` (none of these
+#  do - confirmed directly, every heredoc across config/*.yml is a
+#  plain `<<EOF`/`<<'EOF'`), so an indented terminator would just never
+#  match and the heredoc would run away to EOF; and the payload lines
+#  themselves aren't script logic at all, they're literal file content
+#  (e.g. cygwin_purge_windows_path's heredoc *is* the real text written
+#  into ~/.bashrc) - indenting them would inject extra leading
+#  whitespace directly into that file, not just the generated script.
+#  Only recognizes bash's own `<<`/`<<-` heredoc syntax - PowerShell's
+#  here-strings (`@"..."@`/`@'...'@`) have the identical column-0-
+#  terminator hazard but aren't detected here, since none of the
+#  windows.yml scripts currently use one (confirmed directly - no `@"`/
+#  `@'` anywhere in config/*.yml). Extend this the same way if one ever
+#  gets added.
+def indent_body(body, indent)
+  heredoc_terminator = nil
+  body.each_line.map do |line|
+    if heredoc_terminator
+      heredoc_terminator = nil if line.chomp == heredoc_terminator
+      line
+    elsif (m = line.match(/<<-?\s*(['"]?)(\w+)\1/))
+      heredoc_terminator = m[2]
+      "#{indent}#{line}"
+    elsif line.strip.empty?
+      line
+    else
+      "#{indent}#{line}"
+    end
+  end.join
+end
+
+# render_step(step, scripts, dialect, insert_before) - one step's full
+#  output block (status line + install command + any dialect-specific
+#  follow-up), as a single un-indented string ending in a blank line -
+#  the same shape write_install_script used to emit directly into the
+#  file before steps were grouped into functions, now built once here so
+#  provider/section function bodies (see emit_provider_functions/
+#  emit_section_functions) all use exactly one implementation.
+#  Deliberately does *not* handle the one-time apt-get update/pacman -Syu
+#  refresh itself anymore - see write_install_script's own comment on
+#  why tracking that here (by which step is generated *first*) went
+#  wrong once steps could live inside a function that's defined earlier
+#  in the file than one that actually *runs* earlier.
+def render_step(step, scripts, dialect, insert_before = {})
+  lines = []
+  Array(insert_before[step.object_id]).each { |name| lines << name }
+  if dialect == 'powershell'
+    lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    lines << command_for(step, scripts, dialect)
+    if step[:type] == 'choco'
+      lines << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
+      lines << 'Update-SessionEnvironment'
+    end
+  else
+    lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    lines << command_for(step, scripts, dialect)
+  end
+  "#{lines.join("\n")}\n\n"
+end
+
+# emit_provider_functions(f, groups, scripts, dialect) - defines each
+#  relocate_cross_cutting group as its own function, up front - *defines*
+#  only. Nothing here calls one: a relocated provider is only ever
+#  called from the specific consumer(s) that actually needed it moved
+#  (see render_step's own insert_before, wired up inside
+#  emit_section_functions) - never a separate "run every provider first"
+#  pre-phase, which would just reintroduce the same implicit-ordering
+#  break this whole mechanism exists to avoid (see resolve_order.rb's
+#  own relocate_cross_cutting comment).
+def emit_provider_functions(f, groups, scripts, dialect)
+  groups.each do |group|
+    f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
+    body = group[:steps].map { |s| render_step(s, scripts, dialect) }.join
+    f.puts indent_body(body, '  ')
+    f.puts '}'
+    f.puts ''
+  end
+end
+
+# section_tree(steps, claimed) - groups every not-claimed step (see
+#  resolve_order.rb's relocate_cross_cutting - a claimed step has been
+#  pulled out to run somewhere else entirely) by owning_function, and
+#  records which function calls which. A step's own path, e.g. "global.
+#  lessons.gen_scripts.groovy", filtered down to just its
+#  FUNCTION_SECTIONS segments ("global", "lessons", "gen_scripts") and
+#  taken pairwise, says lessons is gen_scripts' own parent - derived
+#  from each file's actual tree shape, not hardcoded, so this comes out
+#  right even for windows.yml's own quirk of nesting cibox/scriptbox/
+#  testbox under lessons instead of directly under global like every
+#  other platform's config (reflects the manifest as actually written,
+#  rather than silently reshaping it to match the others).
+def section_tree(steps, claimed)
+  children = Hash.new { |h, k| h[k] = [] }
+  own_steps = Hash.new { |h, k| h[k] = [] }
+
+  steps.each_with_index do |step, i|
+    next if claimed[i]
+
+    boundaries = step[:path].split('.').select { |seg| FUNCTION_SECTIONS.include?(seg) }
+    boundaries.each_cons(2) { |parent, child| children[parent] << child unless children[parent].include?(child) }
+    own_steps[boundaries.last] << step if boundaries.last
+  end
+
+  [children, own_steps]
+end
+
+# emit_section_functions(f, node, children, own_steps, ..., insert_before,
+#  ...) - depth-first defines `node`'s own function (its own local
+#  steps, in original relative order - each one preceded by a call to
+#  whatever relocate_cross_cutting says must run immediately before it,
+#  see render_step's own insert_before - then a call to each child that
+#  actually ended up with something to do), recursing into children
+#  first so a would-be-empty node - every one of its children turned out
+#  empty too, and it has no local steps of its own - is detected and
+#  skipped rather than emitted as a no-op function or, worse, called by
+#  its own parent as a dangling reference to a function that was never
+#  defined. Returns whether it emitted itself, which is exactly what the
+#  caller (its parent, or write_install_script for the root) needs to
+#  decide that.
+def emit_section_functions(f, node, children, own_steps, scripts, dialect, insert_before, visited = {})
+  return visited[node] if visited.key?(node)
+
+  emitted_children = children[node].select do |child|
+    emit_section_functions(f, child, children, own_steps, scripts, dialect, insert_before, visited)
+  end
+
+  will_emit = !own_steps[node].empty? || !emitted_children.empty?
+  visited[node] = will_emit
+  return false unless will_emit
+
+  body = own_steps[node].map { |s| render_step(s, scripts, dialect, insert_before) }.join
+  body += emitted_children.map { |c| "#{c}\n" }.join
+
+  f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
+  f.puts indent_body(body, '  ')
+  f.puts '}'
+  f.puts ''
+  true
+end
+
 # write_install_script(name, steps, scripts, dialect, generated_dir,
-#  header_lines) - writes generated/<name>_install.<ext> in the given
-#  dialect, shared by generate_install_script.rb's and gen_installer.rb's
-#  own entry points so the two never drift into writing the file header/
-#  footer two different ways. PowerShell gets a real self-elevation
-#  check up front rather than a comment reminding the user to run it as
-#  Administrator - confirmed directly every choco/feature step in
-#  practice needs it, and Start-Process -Verb RunAs relaunching itself
-#  once at the top is simpler and more reliable than trying to elevate
-#  per step. Returns the path written.
-def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines)
+#  header_lines, natural_steps, apt_mirror) - writes generated/
+#  <name>_install.<ext> in the given dialect, shared by generate_install_
+#  script.rb's and gen_installer.rb's own entry points so the two never
+#  drift into writing the file header/footer two different ways.
+#  `natural_steps` - a flatten() snapshot taken *before* resolve!
+#  reorders anything - has to come from the caller: resolve! has already
+#  mutated `steps` in place by the time it reaches here, and
+#  relocate_cross_cutting needs the tree's original, undisturbed
+#  document order (see its own comment, and resolve_order.rb's
+#  natural_function_order). `apt_mirror` - see apt_mirror_for - is
+#  optional. PowerShell gets a real self-elevation check up front rather
+#  than a comment reminding the user to run it as Administrator -
+#  confirmed directly every choco/feature step in practice needs it, and
+#  Start-Process -Verb RunAs relaunching itself once at the top is
+#  simpler and more reliable than trying to elevate per step. Returns
+#  the path written.
+def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
@@ -179,6 +369,19 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   # found`). Binary mode disables the translation outright, regardless
   # of host OS - safe for the powershell dialect too, since modern
   # PowerShell tolerates LF-only scripts fine.
+  # Every generated function - a named script:, a relocated
+  #  provider_<meets>, or a section like gen_scripts()/lessons() - is
+  #  defined up front, in that order, before any of them are actually
+  #  called, since any of them can call any other. Actually *calling*
+  #  one only happens in two places: a relocated provider is called from
+  #  inside whichever specific consumer needed it moved (see
+  #  emit_section_functions' own insert_before), and the root section
+  #  (global) is called once at the very end, reaching every other step
+  #  through its own nested calls.
+  natural_order = natural_function_order(natural_steps)
+  groups, claimed, insert_before = relocate_cross_cutting(steps, natural_steps, natural_order)
+  children, own_steps = section_tree(steps, claimed)
+
   File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
       f.puts '#Requires -Version 5.1'
@@ -194,26 +397,11 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '    exit'
       f.puts '}'
       f.puts ''
-      steps.each do |step|
-        f.puts "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-        f.puts command_for(step, scripts, dialect)
-        # choco install does not reliably propagate PATH/PSModulePath
-        #  changes to the *calling* script's own process - confirmed
-        #  directly against a real provision where `gem install
-        #  ratatui_ruby` and `choco install psake` both ran without
-        #  error later in this same script, yet neither was visible
-        #  afterward (ratatui_ruby resolved against a stale Ruby;
-        #  psake's module path never showed up at all). Re-import
-        #  Chocolatey's own profile module and refresh right after every
-        #  choco step so later steps in this same process see it, the
-        #  same fix community.chocolatey.org/install.ps1 itself applies
-        #  to its own single process after installing choco.
-        if step[:type] == 'choco'
-          f.puts 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
-          f.puts 'Update-SessionEnvironment'
-        end
-        f.puts ''
-      end
+      emit_script_functions(f, steps, scripts, dialect)
+      emit_provider_functions(f, groups, scripts, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      f.puts 'global' if global_emitted
+      f.puts ''
       unless reboot_steps.empty?
         f.puts "Write-Host ''"
         f.puts "Write-Host 'The following require a restart to take effect:'"
@@ -225,41 +413,45 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts ''
       header_lines.each { |line| f.puts "# #{line}" }
       f.puts ''
-      # Sync/refresh the package database exactly once, right before the
-      #  *first* apt/pacman step of each kind - not per step, which
-      #  would just re-sync needlessly before every single package - and
-      #  not unconditionally up front either, on a platform with no
-      #  apt/pacman steps at all (ubuntu22/macos share this same bash
-      #  branch). Confirmed directly apt needed this too, the same as
-      #  pacman already got: generating ubuntu2204.yml's full install
-      #  script, the very first `apt-get install -y zsh` had nothing
-      #  before it at all - on a fresh system (a minimal cloud image,
-      #  a fresh container) with a stale/empty local package index,
-      #  that install can fail outright. The two existing `apt-get
-      #  update` lines already in this config (ahead of the dotnet-sdk
-      #  and PowerShell steps) are a different thing entirely - each is
-      #  a repo-specific refresh baked into that one script step's own
-      #  body, right after *that* step adds a new APT source, not a
-      #  general safeguard for every plain `apt:` step.
-      apt_updated = false
-      pacman_synced = false
-      steps.each do |step|
-        if step[:type] == 'apt' && !apt_updated
-          f.puts "echo '==> apt-get update (refresh package index)'"
-          f.puts 'sudo apt-get update'
-          f.puts ''
-          apt_updated = true
-        end
-        if step[:type] == 'pacman' && !pacman_synced
-          f.puts "echo '==> pacman -Syu (refresh package database)'"
-          f.puts 'pacman -Syu --noconfirm'
-          f.puts ''
-          pacman_synced = true
-        end
-        f.puts "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-        f.puts command_for(step, scripts, dialect)
+      # Swaps the mirror host/path in every sources.list line, whatever
+      #  it currently is, for apt_mirror - has to run before the
+      #  unconditional apt-get update just below, not as an ordinary
+      #  package step (see apt_mirror_for's own comment on why).
+      #  Confirmed directly against a real failing mirror before
+      #  encoding this pattern.
+      if apt_mirror && steps.any? { |s| s[:type] == 'apt' }
+        mirror = apt_mirror.end_with?('/') ? apt_mirror : "#{apt_mirror}/"
+        f.puts "echo '==> switching apt mirror to #{mirror}'"
+        f.puts "sudo sed -i -E 's#https?://[a-zA-Z0-9.-]+/ubuntu/##{mirror}#g' /etc/apt/sources.list"
         f.puts ''
       end
+      # Unconditional, once, right at the top - *not* injected just
+      #  before whichever apt/pacman step happens to need it (the old
+      #  approach): once steps could be relocated into a function that's
+      #  *defined* earlier in this file than one that actually *runs*
+      #  earlier (see provider_java, whose own apt: step used to get
+      #  generated - and therefore flagged as "already refreshed" -
+      #  before global()'s own, earlier-running `apt: zsh` step), there
+      #  is no single generation-order position that's reliably "the
+      #  first apt/pacman step to actually execute" for every config
+      #  shape. Running the refresh unconditionally up front is what a
+      #  provisioning script would do anyway, and it's cheap and
+      #  idempotent - no correctness cost for the configs that don't
+      #  need it at all.
+      if steps.any? { |s| s[:type] == 'apt' }
+        f.puts "echo '==> apt-get update (refresh package index)'"
+        f.puts 'sudo apt-get update'
+        f.puts ''
+      end
+      if steps.any? { |s| s[:type] == 'pacman' }
+        f.puts "echo '==> pacman -Syu (refresh package database)'"
+        f.puts 'pacman -Syu --noconfirm'
+        f.puts ''
+      end
+      emit_script_functions(f, steps, scripts, dialect)
+      emit_provider_functions(f, groups, scripts, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      f.puts 'global' if global_emitted
     end
   end
   File.chmod(0o755, out_path) if dialect != 'powershell'
@@ -275,6 +467,21 @@ end
 def dialect_for(tree, name)
   node = tree[name]
   node.is_a?(Hash) ? (node['shell'] || 'bash') : 'bash'
+end
+
+# apt_mirror_for(tree, name) - the URL from an optional 'apt_mirror:' key
+#  (same sibling position as 'shell:' - see dialect_for), or nil. Exists
+#  because a box's own default apt mirror can be unreliable (confirmed
+#  directly: generic/ubuntu2204's default, mirrors.edge.kernel.org,
+#  intermittently 404'd on real packages and, on a later run, was
+#  outright unreachable - "No route to host" - for the exact same host)
+#  and the fix has to run *before* write_install_script's own
+#  unconditional apt-get update, not as an ordinary package step inside
+#  the tree - a normal step only ever runs from within global()'s own
+#  call chain, which happens after that preamble update already ran.
+def apt_mirror_for(tree, name)
+  node = tree[name]
+  node.is_a?(Hash) ? node['apt_mirror'] : nil
 end
 
 # root_key - the platform key a config file is about (e.g. "macos",
@@ -405,6 +612,9 @@ if __FILE__ == $PROGRAM_NAME
   #  entirely if dedup! had already kept some *other*, unselected
   #  section's identical step as the "first" occurrence instead.
   steps = flatten(tree[name])
+  # Snapshotted before resolve! mutates steps' own order - see
+  #  write_install_script's own comment on why.
+  natural_steps = steps.dup
   resolve!(steps)
   steps = select_sections(steps, expand_selectors(ARGV[1..]))
   dedup!(steps)
@@ -415,6 +625,6 @@ if __FILE__ == $PROGRAM_NAME
   out_path = write_install_script(name, steps, scripts, dialect, generated_dir, [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
-  ])
+  ], natural_steps, apt_mirror_for(tree, name))
   puts "wrote #{out_path}"
 end
