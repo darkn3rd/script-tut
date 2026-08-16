@@ -151,12 +151,24 @@ end
 #  cases already do for `name`. Guarded on the dest file actually
 #  existing first, same reasoning as bash_install's own 'path' case:
 #  appending to a shell startup file that isn't actually anyone's yet
-#  accomplishes nothing.
+#  accomplishes nothing. `|| true` at the end of each line - confirmed
+#  directly via a real `vagrant provision` failure this matters, not
+#  just defensive: `[ -f dest ] && { ... }` alone returns the *test's*
+#  own exit code (1) when dest doesn't exist yet, and set -e's usual
+#  exemption for a non-final command in an && list only protects that
+#  one statement from aborting immediately - it doesn't stop a non-zero
+#  status from becoming a *function's own return value* when this line
+#  happens to be the last one in its generated section function, which
+#  then aborts the whole script the moment something else calls that
+#  function as an ordinary statement. `|| true` makes the guard's own
+#  success unconditional, the same way `sudo apt-get remove ... 2>
+#  /dev/null || true` elsewhere in this file already has to for the
+#  identical reason.
 def append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
-      %([ -f "#{dest}" ] && { grep -qxF '#{line}' "#{dest}" 2>/dev/null || echo '#{line}' >> "#{dest}"; })
+      %([ -f "#{dest}" ] && { grep -qxF '#{line}' "#{dest}" 2>/dev/null || echo '#{line}' >> "#{dest}"; } || true)
     end
   end.join("\n")
 end
