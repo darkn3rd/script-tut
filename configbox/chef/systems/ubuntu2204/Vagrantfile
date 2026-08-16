@@ -1,11 +1,27 @@
+SCRIPT_TUT_PATH="../../../../.."
+DISABLE_IPV6_SCRIPT = <<-SHELL
+  sudo tee /etc/sysctl.d/99-disable-ipv6.conf << 'EOF'
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+EOF
+  sudo sysctl --system
+SHELL
+
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
   config.vm.hostname = "chef-node-01.test"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
 
+  #config.vm.provision "shell", inline: DISABLE_IPV6_SCRIPT
+  config.vm.provision "shell", inline: 'ln -sf cinc /opt/chef'
+  
   config.vm.provision "chef_zero" do |chef|
     chef.product = "cinc"
     chef.omnibus_url = "https://omnitruck.cinc.sh/install.sh"
+    chef.binary_path = "/opt/cinc/bin"
+    chef.version = "19"
 
     # .berks-vendor/, not cookbooks/ - berks vendor output (lessons +
     #  its own Supermarket dependencies - see cookbooks/lessons/
@@ -29,3 +45,4 @@ Vagrant.configure("2") do |config|
     }
   end
 end
+

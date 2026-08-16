@@ -11,7 +11,7 @@ PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco 
 #  once across files that require each other silently shadows one
 #  definition with the other instead of erroring - one shared source
 #  here avoids that entirely.
-RESERVED_KEYS = %w[scripts files appends environments].freeze
+RESERVED_KEYS = %w[scripts files appends add_apt_repos environments].freeze
 
 # ATTACHABLE_KEYS - sibling keys that each add one more step immediately
 #  following the package they're declared on (see flatten's own
@@ -47,14 +47,36 @@ def flatten(node, path = [])
         cmd: entry['cmd'],
         reboot: entry['reboot'],
         apt_repository: entry['apt_repository'],
+        add_apt_repo: entry['add_apt_repo'],
         path: path.join('.')
       }
-      next if ATTACHABLE_KEYS.include?(type)
 
+      # `key == type` is skipped, not the whole loop - `type` can itself
+      #  be an ATTACHABLE_KEYS entry (a bare `script:` with no real
+      #  package type alongside it, e.g. the sdkman bootstrap's own
+      #  `- script: ubuntu22_sdkman\n  append: ubuntu22_sdkman`), in
+      #  which case it was already emitted as the primary step above -
+      #  only that one key would double up; a *different* attachable key
+      #  on the same entry (append: here) still needs its own step.
+      #  Confirmed via a real `vagrant provision` run: the old `next if
+      #  ATTACHABLE_KEYS.include?(type)` bailed out of this entire loop
+      #  whenever the primary type itself was attachable, silently
+      #  dropping that sibling append: step from *every* generator, not
+      #  just the Chef one.
       ATTACHABLE_KEYS.each do |key|
+        next if key == type
         next unless entry[key]
 
-        steps << { type: key, name: entry[key], attached_to: entry[type], path: path.join('.') }
+        # Array(entry[key]) - an attachable key's own value can be a
+        #  single name (ubuntu22_go's own `append: ubuntu22_go`) or a
+        #  list of names (rbenv/pyenv's own `append: [ubuntu22_rbenv_
+        #  bash, ubuntu22_rbenv_zsh]`, one appends: block per shell) -
+        #  one step per name either way, never one step holding an array
+        #  as its own :name (every consumer - append_lines, step_to_
+        #  entry - looks up tree['appends'] by a single string key).
+        Array(entry[key]).each do |name|
+          steps << { type: key, name: name, attached_to: entry[type], path: path.join('.') }
+        end
       end
     end
   end

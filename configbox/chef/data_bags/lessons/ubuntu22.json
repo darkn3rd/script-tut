@@ -1,5 +1,23 @@
 {
   "id": "ubuntu22",
+  "common": [
+    {
+      "type": "script",
+      "name": "ubuntu22_sdkman",
+      "cmd": "if [ ! -d \"$HOME/.sdkman\" ]; then\n  curl -s \"https://get.sdkman.io\" | bash\n  sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' \"$HOME/.sdkman/etc/config\"\nfi\nsource \"$HOME/.sdkman/bin/sdkman-init.sh\"\n"
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_sdkman",
+      "dest": [
+        "$HOME/.bashrc",
+        "$HOME/.zshrc"
+      ],
+      "lines": [
+        "[[ -s \"$HOME/.sdkman/bin/sdkman-init.sh\" ]] && source \"$HOME/.sdkman/bin/sdkman-init.sh\""
+      ]
+    }
+  ],
   "gen_scripts": [
     {
       "type": "apt",
@@ -34,12 +52,50 @@
     {
       "type": "script",
       "name": "ubuntu22_rbenv",
-      "cmd": "sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true\ncurl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash\nif [[ -d \"$HOME/.rbenv/plugins/ruby-build\" ]]; then\n  pushd \"$HOME/.rbenv/plugins/ruby-build\" && git pull && popd\nelse\n  git clone https://github.com/rbenv/ruby-build.git \"$HOME/.rbenv/plugins/ruby-build\"\nfi\ngrep -qxF 'export PATH=\"$HOME/.rbenv/bin:$PATH\"' ~/.bashrc 2>/dev/null || echo 'export PATH=\"$HOME/.rbenv/bin:$PATH\"' >> ~/.bashrc\ngrep -qxF 'eval \"$(rbenv init - bash)\"' ~/.bashrc 2>/dev/null || echo 'eval \"$(rbenv init - bash)\"' >> ~/.bashrc\nif [[ -f $HOME/.zshrc ]]; then\n  grep -qxF 'export PATH=\"$HOME/.rbenv/bin:$PATH\"' ~/.zshrc 2>/dev/null || echo 'export PATH=\"$HOME/.rbenv/bin:$PATH\"' >> ~/.zshrc\n  grep -qxF 'eval \"$(rbenv init - zsh)\"' ~/.zshrc 2>/dev/null || echo 'eval \"$(rbenv init - zsh)\"' >> ~/.zshrc\nfi\nexport PATH=\"$HOME/.rbenv/bin:$PATH\"\neval \"$(rbenv init - bash)\"\n"
+      "cmd": "sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true\ncurl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash\nif [[ -d \"$HOME/.rbenv/plugins/ruby-build\" ]]; then\n  pushd \"$HOME/.rbenv/plugins/ruby-build\" && git pull && popd\nelse\n  git clone https://github.com/rbenv/ruby-build.git \"$HOME/.rbenv/plugins/ruby-build\"\nfi\nexport PATH=\"$HOME/.rbenv/bin:$PATH\"\neval \"$(rbenv init - bash)\"\n"
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_rbenv_bash",
+      "dest": "$HOME/.bashrc",
+      "lines": [
+        "export PATH=\"$HOME/.rbenv/bin:$PATH\"",
+        "eval \"$(rbenv init - bash)\""
+      ]
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_rbenv_zsh",
+      "dest": "$HOME/.zshrc",
+      "lines": [
+        "export PATH=\"$HOME/.rbenv/bin:$PATH\"",
+        "eval \"$(rbenv init - zsh)\""
+      ]
     },
     {
       "type": "script",
       "name": "ubuntu22_pyenv",
-      "cmd": "if [ ! -d \"$HOME/.pyenv\" ]; then\n  curl https://pyenv.run | bash\n  echo 'export PYENV_ROOT=\"$HOME/.pyenv\"' >> ~/.bashrc\n  echo '[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"' >> ~/.bashrc\n  echo 'eval \"$(pyenv init - bash)\"' >> ~/.bashrc\n  if [[ -f $HOME/.zshrc ]]; then\n    echo 'export PYENV_ROOT=\"$HOME/.pyenv\"' >> ~/.zshrc\n    echo '[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"' >> ~/.zshrc\n    echo 'eval \"$(pyenv init - zsh)\"' >> ~/.zshrc\n  fi\nfi\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PATH\"\neval \"$(pyenv init - bash)\"\npyenv update\n"
+      "cmd": "if [ ! -d \"$HOME/.pyenv\" ]; then\n  curl https://pyenv.run | bash\nfi\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PATH\"\neval \"$(pyenv init - bash)\"\npyenv update\n"
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_pyenv_bash",
+      "dest": "$HOME/.bashrc",
+      "lines": [
+        "export PYENV_ROOT=\"$HOME/.pyenv\"",
+        "[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"",
+        "eval \"$(pyenv init - bash)\""
+      ]
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_pyenv_zsh",
+      "dest": "$HOME/.zshrc",
+      "lines": [
+        "export PYENV_ROOT=\"$HOME/.pyenv\"",
+        "[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"",
+        "eval \"$(pyenv init - zsh)\""
+      ]
     },
     {
       "type": "sdkman",
@@ -48,7 +104,19 @@
     {
       "type": "script",
       "name": "ubuntu22_cpan_local_setup",
-      "cmd": "PERL_MM_USE_DEFAULT=1 PERL_MM_OPT=\"INSTALL_BASE=$HOME/perl5\" cpan local::lib\ngrep -qxF 'eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"' ~/.bashrc 2>/dev/null || echo 'eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"' >> ~/.bashrc\ngrep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc\nif [[ -f $HOME/.zshrc ]]; then\n  grep -qxF 'eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"' ~/.zshrc 2>/dev/null || echo 'eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"' >> ~/.zshrc\n  grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc\nfi\neval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"\nexport PATH=$HOME/perl5/bin:$PATH\n"
+      "cmd": "PERL_MM_USE_DEFAULT=1 PERL_MM_OPT=\"INSTALL_BASE=$HOME/perl5\" cpan local::lib\neval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"\nexport PATH=$HOME/perl5/bin:$PATH\n"
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_cpan_local_setup",
+      "dest": [
+        "$HOME/.bashrc",
+        "$HOME/.zshrc"
+      ],
+      "lines": [
+        "eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"",
+        "export PATH=$HOME/perl5/bin:$PATH"
+      ]
     },
     {
       "type": "cpan",
@@ -124,7 +192,32 @@
     {
       "type": "script",
       "name": "ubuntu22_rust",
-      "cmd": "if [ ! -d \"$HOME/.cargo\" ]; then\n  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \\\n    | sh -s -- -y --profile minimal --no-modify-path\n  echo 'source \"$HOME/.cargo/env\"' >> ~/.bashrc\n  [[ -f $HOME/.zshrc ]] && echo 'source \"$HOME/.cargo/env\"' >> ~/.zshrc\n  cat <<'EOF' > \"$HOME/.cargo/env.ps1\"\n# rustup shell setup\n# affix colons on either side of $env:PATH to simplify matching\nif (\":${env:PATH}:\" -notlike \"*:$HOME/.cargo/bin:*\") {\n    # Prepending path in case a system-installed rustc needs to be overridden\n    $env:PATH = \"$HOME/.cargo/bin:$env:PATH\"\n}\nEOF\n  mkdir -p \"$HOME/.config/powershell\"\n  echo '. \"$HOME/.cargo/env.ps1\"' >> \"$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1\"\nfi\nsource \"$HOME/.cargo/env\"\n"
+      "cmd": "if [ ! -d \"$HOME/.cargo\" ]; then\n  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \\\n    | sh -s -- -y --profile minimal --no-modify-path\nfi\nmkdir -p \"$HOME/.config/powershell\"\nsource \"$HOME/.cargo/env\"\n"
+    },
+    {
+      "type": "file",
+      "name": "ubuntu22_rust_ps1",
+      "dest": "$HOME/.cargo/env.ps1",
+      "content": "# rustup shell setup\n# affix colons on either side of $env:PATH to simplify matching\nif (\":${env:PATH}:\" -notlike \"*:$HOME/.cargo/bin:*\") {\n    # Prepending path in case a system-installed rustc needs to be overridden\n    $env:PATH = \"$HOME/.cargo/bin:$env:PATH\"\n}\n"
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_rust_shell",
+      "dest": [
+        "$HOME/.bashrc",
+        "$HOME/.zshrc"
+      ],
+      "lines": [
+        "source \"$HOME/.cargo/env\""
+      ]
+    },
+    {
+      "type": "append",
+      "name": "ubuntu22_rust_ps1",
+      "dest": "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1",
+      "lines": [
+        ". \"$HOME/.cargo/env.ps1\""
+      ]
     }
   ],
   "win_scripts": [

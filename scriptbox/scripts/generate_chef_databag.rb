@@ -10,6 +10,16 @@ require_relative 'resolve_order'
 #  lessons' own four children, not global/cibox/scriptbox/testbox.
 LESSON_AREAS = %w[gen_scripts shell_scripts compiled_lang win_scripts].freeze
 
+# COMMON_AREA - JSON key for steps whose owning_function is 'lessons'
+#  itself (see resolve_order.rb's FUNCTION_SECTIONS) rather than one of
+#  LESSON_AREAS's own four children - e.g. the sdkman bootstrap, which
+#  lives directly on lessons.packages as shared setup a specific area
+#  (gen_scripts's own `sdkman: groovy`) depends on, not nested under any
+#  one area. Confirmed via a real `vagrant provision` run: without this,
+#  such steps were silently dropped from the data bag entirely - the
+#  original select filter only ever kept the four named areas.
+COMMON_AREA = 'common'
+
 # strip_comments(cmd) - `cmd`'s own whole-line bash comments and blank
 #  lines removed, heredoc-aware: a line inside a heredoc body (e.g.
 #  ubuntu_default_zshrc's own `cat <<'EOF' > $HOME/.zshrc` payload) is
@@ -50,10 +60,15 @@ end
 #  from a script body the way an earlier version of this generator tried
 #  and the user rejected as unmaintainable. 'apt_repository' passes
 #  through as-is when the manifest's own apt entry declared one.
+#  'add_apt_repo' - like 'file'/'append', a *name* into the manifest's
+#  own add_apt_repos: block - resolved here to the full entry (name/
+#  key_url/repo_uri/distro_string), same self-contained-data-bag
+#  reasoning as everything else in this function.
 def step_to_entry(step, tree)
   entry = { type: step[:type], name: step[:name] }
   entry[:cmd] = strip_comments(step[:cmd]) if step[:cmd]
   entry[:apt_repository] = step[:apt_repository] if step[:apt_repository]
+  entry[:add_apt_repo] = (tree['add_apt_repos'] || {})[step[:add_apt_repo]] if step[:add_apt_repo]
 
   case step[:type]
   when 'script'
@@ -82,9 +97,11 @@ end
 #  PPA added first) is left out of the merge entirely - the lessons
 #  cookbook's own generic 'apt' case needs that entry's apt_repository
 #  attached to *that* package, not lost inside an anonymous merged list.
+#  Same reasoning for add_apt_repo (the non-PPA, raw-key way to add a
+#  repo - see step_to_entry) - also excluded from the merge.
 #  One apt_package resource per area instead of one per plain package.
 def consolidate_apt(entries)
-  plain, rest = entries.partition { |e| e[:type] == 'apt' && !e[:apt_repository] }
+  plain, rest = entries.partition { |e| e[:type] == 'apt' && !e[:apt_repository] && !e[:add_apt_repo] }
   apt_names = plain.flat_map { |e| Array(e[:name]) }
   return rest if apt_names.empty?
 
@@ -120,7 +137,7 @@ if __FILE__ == $PROGRAM_NAME
 
   steps = flatten(tree[name])
   resolve!(steps)
-  steps = steps.select { |s| LESSON_AREAS.include?(owning_function(s)) }
+  steps = steps.select { |s| (['lessons'] + LESSON_AREAS).include?(owning_function(s)) }
   # 'system' means "expected to already be provided by the OS" - no
   #  resource, no command, nothing for a recipe to actually consume, so
   #  it's dead weight in the data bag rather than useful documentation.
@@ -128,6 +145,7 @@ if __FILE__ == $PROGRAM_NAME
   dedup!(steps)
 
   data = { 'id' => name }
+  data[COMMON_AREA] = consolidate_apt(steps.select { |s| owning_function(s) == 'lessons' }.map { |s| step_to_entry(s, tree) })
   LESSON_AREAS.each do |area|
     entries = steps.select { |s| owning_function(s) == area }.map { |s| step_to_entry(s, tree) }
     data[area] = consolidate_apt(entries)

@@ -8,7 +8,7 @@ require_relative 'resolve_order'
 #  step[:type], nil for a type that dialect doesn't know about ('script'
 #  is deliberately absent from both: it's dialect-agnostic, handled once
 #  in command_for instead of duplicated in each).
-def bash_install(step)
+def bash_install(step, tree)
   case step[:type]
   when 'brew'   then "brew install #{step[:name]}"
   when 'cask'   then "brew install --cask #{step[:name]}"
@@ -44,9 +44,19 @@ def bash_install(step)
   #  as a separate attached one) - `add-apt-repository` itself refreshes
   #  the package index for the new repo by default (no --no-update
   #  passed), so nothing extra is needed before the install line below
-  #  sees packages from it.
+  #  sees packages from it. add_apt_repo: is the other, non-PPA way to
+  #  add a repo (a raw signed-by key + list file, e.g. Corretto/Docker) -
+  #  a *name* into the manifest's own add_apt_repos: block (mirroring
+  #  file:/append:'s own name-into-files:/appends: shape), rendered as a
+  #  call to the shared add_apt_repo() function instead of a literal
+  #  add-apt-repository invocation - see emit_helper_functions for where
+  #  that function itself gets defined.
   when 'apt'
     repo = step[:apt_repository] ? "sudo add-apt-repository -y #{step[:apt_repository]}\n" : ''
+    if step[:add_apt_repo]
+      entry = tree['add_apt_repos'][step[:add_apt_repo]]
+      repo += %(add_apt_repo "#{entry['name']}" "#{entry['key_url']}" "#{entry['repo_uri']}" "#{entry['distro_string']}"\n)
+    end
     "#{repo}sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
@@ -191,7 +201,7 @@ def command_for(step, tree, dialect)
     #  equivalent to write here until one actually needs it).
     when 'file' then file_write(step, tree)
     when 'append' then append_lines(step, tree)
-    else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
+    else dialect == 'powershell' ? powershell_install(step) : bash_install(step, tree)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
   #  this fallback existed, an unhandled type (e.g. 'choco'/'feature'
@@ -234,6 +244,43 @@ def emit_script_functions(f, steps, tree, dialect)
     end
     f.puts indent_body(body, '  ')
     f.puts '}'
+    f.puts ''
+  end
+end
+
+# emit_helper_functions(f, steps, tree, dialect, helpers) - every shared
+#  helper function this script's own steps actually need, defined once
+#  up front, before anything calls it - same "define once, call at
+#  point of use" shape as emit_script_functions, except these come from
+#  a cross-platform scriptbox/config/helpers/<name>.yml (see
+#  lineage_for/load_helpers) instead of this platform's own scripts:
+#  block, so every platform sharing an OS lineage reuses the same
+#  function body instead of each duplicating it. A helper's own cmd: is
+#  already a complete, self-contained function definition (unlike
+#  scripts:'s own cmd:, which is just a body this wraps in `name() {
+#  ... }`) - see helpers/debian.yml's own add_apt_repo. Two ways a step
+#  can need one: an add_apt_repo: field (this generator's own rendering
+#  calls the helper itself - see bash_install's 'apt' case), or a
+#  script's own manifest-authored uses: field (the script's *cmd body
+#  itself* calls it, which this generator can't see inside that raw
+#  string, so the manifest author has to say so explicitly). Bash-only
+#  for now - every lineage on the multi-OS roadmap with an actual
+#  helpers file today is bash-dialect; nothing here assumes that stays
+#  true forever, it just isn't needed yet.
+def emit_helper_functions(f, steps, tree, dialect, helpers)
+  return if dialect == 'powershell' || helpers.nil?
+
+  needed = []
+  needed << 'add_apt_repo' if steps.any? { |s| s[:add_apt_repo] }
+  steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
+    needed.concat(Array(tree.dig('scripts', sname, 'uses')))
+  end
+
+  needed.uniq.each do |hname|
+    body = helpers.dig('helpers', hname, 'cmd')&.rstrip
+    next unless body
+
+    f.puts body
     f.puts ''
   end
 end
@@ -432,6 +479,7 @@ def write_install_script(name, steps, tree, dialect, generated_dir, header_lines
   natural_order = natural_function_order(natural_steps)
   groups, claimed, insert_before = relocate_cross_cutting(steps, natural_steps, natural_order)
   children, own_steps = section_tree(steps, claimed)
+  helpers = load_helpers(lineage_for(tree, name))
 
   File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
@@ -449,6 +497,7 @@ def write_install_script(name, steps, tree, dialect, generated_dir, header_lines
       f.puts '}'
       f.puts ''
       emit_script_functions(f, steps, tree, dialect)
+      emit_helper_functions(f, steps, tree, dialect, helpers)
       emit_provider_functions(f, groups, tree, dialect)
       global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
@@ -500,6 +549,7 @@ def write_install_script(name, steps, tree, dialect, generated_dir, header_lines
         f.puts ''
       end
       emit_script_functions(f, steps, tree, dialect)
+      emit_helper_functions(f, steps, tree, dialect, helpers)
       emit_provider_functions(f, groups, tree, dialect)
       global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
@@ -533,6 +583,61 @@ end
 def apt_mirror_for(tree, name)
   node = tree[name]
   node.is_a?(Hash) ? node['apt_mirror'] : nil
+end
+
+# lineage_for(tree, name) - this platform's own OS lineage (e.g.
+#  'debian' for Ubuntu - see scriptbox/config/env.yml's own
+#  environments: entries), used to pick which scriptbox/config/helpers/
+#  <name>.yml file(s) this platform's generated script can pull shared
+#  functions from (see load_helpers) - author-declared there, not
+#  detected here or at runtime (no /etc/os-release probing at
+#  generation time). Normally a single value - most package-install-
+#  level helpers (add_apt_repo, ...) are already correct for the whole
+#  Debian family, Ubuntu included, with nothing Ubuntu-specific needed.
+#  A list is also accepted (most-specific first, mirroring how /etc/
+#  os-release's own ID+ID_LIKE would chain - e.g. ['ubuntu', 'debian']),
+#  for the rarer case a real Ubuntu-only tier is actually needed (e.g.
+#  client-server config like firewalls, where real per-distro
+#  differences show up - not a concern for simple package installs). A
+#  merged tree (gen_installer.rb's own load_merged_config) already has
+#  tree['environments'] populated; a direct, single-file
+#  `generate_install_script.rb <config.yml>` invocation doesn't merge
+#  env.yml in, so this falls back to reading it directly as a
+#  well-known sidecar next to this very script - keeps both entry
+#  points consistent without gen_installer.rb's own full multi-file
+#  merge semantics leaking in here.
+def lineage_for(tree, name)
+  environments = tree['environments']
+  if environments.nil?
+    env_path = File.join(__dir__, '..', 'config', 'env.yml')
+    environments = File.exist?(env_path) ? YAML.load_file(env_path)['environments'] : nil
+  end
+  entry = Array(environments).find { |e| e['platform'] == name }
+  return [] unless entry
+
+  Array(entry['lineage'])
+end
+
+# load_helpers(lineage) - every helper from every scriptbox/config/
+#  helpers/<name>.yml in `lineage` (see lineage_for) that actually
+#  exists, merged into one {'helpers' => {name => {'cmd' => ...}}} -
+#  nil if `lineage` is empty or none of its entries have a helpers file
+#  yet (most do not - only debian.yml exists so far). Merged least-
+#  specific first, so a *more* specific file's own helper of the same
+#  name wins if `lineage` ever has more than one entry - it's already
+#  most-specific-first, so this walks it in reverse.
+def load_helpers(lineage)
+  return nil if lineage.nil? || lineage.empty?
+
+  merged = {}
+  lineage.reverse_each do |name|
+    path = File.join(__dir__, '..', 'config', 'helpers', "#{name}.yml")
+    next unless File.exist?(path)
+
+    data = YAML.load_file(path)[name]
+    merged.merge!(data['helpers']) if data && data['helpers']
+  end
+  merged.empty? ? nil : { 'helpers' => merged }
 end
 
 # root_key - the platform key a config file is about (e.g. "macos",
