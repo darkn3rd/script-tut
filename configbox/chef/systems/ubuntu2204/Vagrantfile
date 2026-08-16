@@ -24,22 +24,32 @@ Vagrant.configure("2") do |config|
     chef.version = "19"
 
     # .berks-vendor/, not cookbooks/ - berks vendor output (lessons +
-    #  its own Supermarket dependencies - see cookbooks/lessons/
-    #  Berksfile), gitignored, regenerated on demand with `berks vendor`
-    #  from within cookbooks/lessons - never hand-edited, and never the
+    #  its own Supermarket dependencies, plus the sibling scriptbox
+    #  cookbook - see cookbooks/lessons/Berksfile), gitignored,
+    #  regenerated on demand with `berks vendor` from within
+    #  cookbooks/lessons - never hand-edited, and never the
     #  hand-authored cookbooks/ tree itself.
     chef.cookbooks_path = "../../.berks-vendor"
     chef.data_bags_path = "../../data_bags"
     chef.nodes_path = "../../nodes"
+    # lessons first, always - scriptbox's own gem update/ratatui_ruby
+    #  gem install need ruby (via rbenv) already on PATH, which only
+    #  lessons::gen_scripts actually installs - see scriptbox's own
+    #  recipes/default.rb comment on why it has no apt_update of its
+    #  own either, same reasoning.
     chef.add_recipe "lessons"
+    chef.add_recipe "scriptbox"
     chef.log_level = "debug"
-    
+
     # Area gates default true (see ../../cookbooks/lessons/attributes/
     #  default.rb) - override here per node, e.g. chef.json = {
     #  "lessons" => { "win_scripts" => false } }, rather than editing
     #  the cookbook itself.
     chef.json = {
       "lessons" => {
+        "platform" => "ubuntu22"
+      },
+      "scriptbox" => {
         "platform" => "ubuntu22"
       }
     }

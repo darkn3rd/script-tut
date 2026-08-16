@@ -1,2 +1,9 @@
 source 'https://supermarket.chef.io'
 metadata
+
+# scriptbox - a sibling cookbook (../scriptbox), not a real dependency
+#  of lessons itself - vendored here anyway so a single `berks vendor`
+#  from this one Berksfile populates .berks-vendor/ with both cookbooks
+#  the Vagrantfile's own run_list needs, rather than requiring a second,
+#  separate `berks vendor` invocation from scriptbox's own directory.
+cookbook 'scriptbox', path: '../scriptbox'

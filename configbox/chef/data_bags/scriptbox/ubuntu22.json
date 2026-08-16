@@ -1,0 +1,21 @@
+{
+  "id": "ubuntu22",
+  "packages": [
+    {
+      "type": "apt",
+      "name": [
+        "clang",
+        "libclang-dev"
+      ]
+    },
+    {
+      "type": "script",
+      "name": "ubuntu22_gem_update",
+      "cmd": "URL=\"https://rubygems.org/api/v1/versions/rubygems-update/latest.json\"\nif [[ \"$(curl -s $URL | grep -oP '\"version\"[: ]*\"\\K[^\"]+')\" != \"$(gem --version)\" ]]; then \n  gem update --system\nfi\n"
+    },
+    {
+      "type": "gem",
+      "name": "ratatui_ruby --platform ruby"
+    }
+  ]
+}

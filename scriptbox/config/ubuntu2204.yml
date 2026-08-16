@@ -148,7 +148,7 @@ ubuntu22:
     cibox:
     scriptbox:
       packages:
-        - cmd: gem update --system
+        - script: ubuntu22_gem_update
           needs: ruby
           tags: [rbenv]
         - apt: [clang, libclang-dev]
@@ -163,6 +163,14 @@ ubuntu22:
           needs: ruby
 
 scripts:
+  ubuntu22_gem_update:
+    type: bash
+    cmd: |
+      URL="https://rubygems.org/api/v1/versions/rubygems-update/latest.json"
+      if [[ "$(curl -s $URL | grep -oP '"version"[: ]*"\K[^"]+')" != "$(gem --version)" ]]; then 
+        gem update --system
+      fi
+
   ubuntu22_rust:
     type: bash
     cmd: |
