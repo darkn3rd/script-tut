@@ -191,6 +191,28 @@ def append_lines(step, tree)
   end.join("\n")
 end
 
+# powershell_append_lines(step, tree) - the PowerShell dialect's
+#  equivalent of append_lines above: same shape (looked up in appends:
+#  by name, dest may be a single path or a list, guarded on the dest
+#  already existing), just PowerShell idioms in place of bash ones.
+#  `-contains` against Get-Content's own line array is the exact-line
+#  match `grep -qxF` gives bash (not -Pattern/-SimpleMatch, which is a
+#  substring match, not a whole-line one). dest is wrapped in double
+#  quotes so a manifest can use "$PROFILE" itself, not just a literal
+#  path - PowerShell double-quoted strings interpolate variables the
+#  same way bash's do. Line values are escaped for a PowerShell
+#  single-quoted string (a literal quote there is just doubled, not the
+#  close/escape/reopen dance bash needs).
+def powershell_append_lines(step, tree)
+  entry = tree['appends'][step[:name]]
+  Array(entry['dest']).flat_map do |dest|
+    Array(entry['lines']).map do |line|
+      quoted = "'" + line.gsub("'") { "''" } + "'"
+      %(if ((Test-Path "#{dest}") -and -not ((Get-Content "#{dest}" -ErrorAction SilentlyContinue) -contains #{quoted})) { Add-Content -Path "#{dest}" -Value #{quoted} })
+    end
+  end.join("\n")
+end
+
 # command_for - the full install command for one resolved step, in the
 #  given dialect ('bash' or 'powershell' - see write_install_script).
 #  `script` steps pull their multi-line cmd straight from the YAML's
@@ -225,12 +247,12 @@ def command_for(step, tree, dialect)
     #  call to a function that was never defined.
     when 'script' then (tree['scripts'].dig(step[:name], 'cmd') ? step[:name] : nil)
     when 'cmd' then step[:name]
-    # Dialect-agnostic like 'script'/'cmd' - a heredoc write and a
-    #  grep-guarded append are the same bash regardless of platform (no
-    #  windows.yml manifest uses either yet, so there's no PowerShell
-    #  equivalent to write here until one actually needs it).
+    # 'file' stays bash-only for now (heredoc write) - no windows.yml
+    #  manifest uses it yet, so there's no PowerShell equivalent to write
+    #  here until one actually needs it. 'append' does have both: see
+    #  append_lines (bash) / powershell_append_lines (PowerShell) above.
     when 'file' then file_write(step, tree)
-    when 'append' then append_lines(step, tree)
+    when 'append' then dialect == 'powershell' ? powershell_append_lines(step, tree) : append_lines(step, tree)
     else dialect == 'powershell' ? powershell_install(step) : bash_install(step, tree)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before

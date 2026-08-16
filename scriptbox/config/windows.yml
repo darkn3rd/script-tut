@@ -3,6 +3,8 @@ windows:
   global:
     packages:
       - script: windows_chocolatey
+      - choco: vim
+        append: windows_vi_alias
       - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
@@ -166,3 +168,9 @@ scripts:
         New-Item -ItemType Directory -Path $corePSModules -Force | Out-Null
         Copy-Item -Path $winPSakeModule -Destination $corePSModules -Recurse -Force
       }
+appends:
+  windows_vi_alias:
+    # $Env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+    dest: $PROFILE
+    lines:
+      - Set-Alias -Name vi -Value vim
