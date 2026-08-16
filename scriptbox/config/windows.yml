@@ -6,6 +6,10 @@ windows:
       - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
+      # Ruby required for lessons.gen_scripts, scriptbox, testbox
+      - choco: ruby
+      # Powershell requried for lessons.win_scripts, scriptbox, testbox
+      - choco: powershell-core
     lessons:
       gen_scripts:
         awk:
@@ -30,9 +34,6 @@ windows:
           packages:
             - choco: python3
               script: windows_python3
-        ruby:
-          packages:
-            - choco: ruby
         tcl:
           packages:
             - choco: magicsplat-tcl-tk
@@ -60,28 +61,21 @@ windows:
       win_scripts:
         packages:
           - choco: mscoreutils
-        powershell:
-          packages:
-            - choco: powershell-core
-      cibox:
-        packages:
-          - feature: Microsoft-Windows-Subsystem-Linux
-            reboot: no
-          - feature: VirtualMachinePlatform
-            reboot: yes
-          - choco: docker-desktop
-          - choco: act-cli
-      testbox:
-        packages:
-          - choco: powershell-core
-          - choco: ruby
-          - script: windows_psake
-      scriptbox:
-        packages:
-          - choco: powershell-core
-          - choco: ruby
-          - script: windows_update_gems
-          - gem: ratatui_ruby      
+    cibox:
+      packages:
+        - feature: Microsoft-Windows-Subsystem-Linux
+          reboot: no
+        - feature: VirtualMachinePlatform
+          reboot: yes
+        - choco: docker-desktop
+        - choco: act-cli
+    testbox:
+      packages:
+        - script: windows_psake
+    scriptbox:
+      packages:
+        - script: windows_update_gems
+        - gem: ratatui_ruby    
 scripts:
   windows_chocolatey:
     type: powershell
@@ -124,7 +118,13 @@ scripts:
   windows_update_gems:
     type: powershell
     elevated: true
-    cmd: gem update --system
+    cmd: |
+      $URL = "https://rubygems.org/api/v1/versions/rubygems-update/latest.json"
+      $LatestVersion = (Invoke-RestMethod -Uri $URL).version
+      $CurrentVersion = (gem --version).Trim()
+      if ($LatestVersion -ne $CurrentVersion) {
+        gem update --system
+      }
   windows_python2:
     type: powershell
     elevated: true

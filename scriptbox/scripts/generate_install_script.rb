@@ -137,10 +137,18 @@ end
 #  used to be a hand-written `cat <<'EOF' > $HOME/.zshrc` script body -
 #  same heredoc shape, just emitted directly from files:'s own dest:/
 #  content: instead of a script author having to write the wrapper by
-#  hand each time.
+#  hand each time. content is forced to end in exactly one newline
+#  before the terminator - confirmed directly via a real bash syntax
+#  error this matters, not just tidiness: a files: entry that happens
+#  to be the very last thing in its own YAML file inherits that file's
+#  own missing trailing newline (a common editor/save artifact) straight
+#  into its own content string, which without this would glue EOF onto
+#  the last content line instead of giving it its own - the heredoc
+#  terminator then never matches, and bash reads to end-of-file instead.
 def file_write(step, tree)
   entry = tree['files'][step[:name]]
-  "cat <<'EOF' > #{entry['dest']}\n#{entry['content']}EOF"
+  content = entry['content'].end_with?("\n") ? entry['content'] : "#{entry['content']}\n"
+  "cat <<'EOF' > #{entry['dest']}\n#{content}EOF"
 end
 
 # append_lines(step, tree) - an 'append' step (see resolve_order.rb's
@@ -168,7 +176,17 @@ def append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
-      %([ -f "#{dest}" ] && { grep -qxF '#{line}' "#{dest}" 2>/dev/null || echo '#{line}' >> "#{dest}"; } || true)
+      # Lines like msys2/cygwin_purge_windows_path embed their own single
+      #  quotes (tr ':' '\n', grep -vE '^/[a-zA-Z]/', ...). Naively
+      #  interpolating `line` inside a '...' wrapper lets those embedded
+      #  quotes toggle bash's own quote-parsing mid-string, silently
+      #  corrupting what gets written (confirmed directly: produced
+      #  `tr : n` instead of `tr ':' '\n'` in a real generated .bashrc).
+      #  Standard bash single-quote escaping - close, escaped literal
+      #  quote, reopen - keeps the whole line literal regardless of
+      #  what it contains.
+      quoted = "'" + line.gsub("'") { "'\\''" } + "'"
+      %([ -f "#{dest}" ] && { grep -qxF #{quoted} "#{dest}" 2>/dev/null || echo #{quoted} >> "#{dest}"; } || true)
     end
   end.join("\n")
 end

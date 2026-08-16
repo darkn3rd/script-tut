@@ -91,3 +91,8 @@ For an existing Knife Solo installation, treat migration as a workflow change ra
   * [About Environments](https://docs.chef.io/client/19/policy/environments/)
   * [About Roles](https://docs.chef.io/client/19/policy/roles/)
 * [Knife Zero](https://knife-zero.github.io/)
+
+
+Bugs/Issues Encountered
+
+* https://github.com/chef/chef/issues/16281
