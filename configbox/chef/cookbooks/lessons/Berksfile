@@ -1,9 +1,11 @@
 source 'https://supermarket.chef.io'
 metadata
 
-# scriptbox - a sibling cookbook (../scriptbox), not a real dependency
-#  of lessons itself - vendored here anyway so a single `berks vendor`
-#  from this one Berksfile populates .berks-vendor/ with both cookbooks
-#  the Vagrantfile's own run_list needs, rather than requiring a second,
-#  separate `berks vendor` invocation from scriptbox's own directory.
+# scriptbox/sdkman - sibling cookbooks (../scriptbox, ../sdkman), not
+#  real dependencies of lessons itself - vendored here anyway so a
+#  single `berks vendor` from this one Berksfile populates
+#  .berks-vendor/ with every cookbook the Vagrantfile's own run_list
+#  (or, for sdkman, a real dependents' own metadata.rb) needs, rather
+#  than requiring a separate `berks vendor` invocation per cookbook.
 cookbook 'scriptbox', path: '../scriptbox'
+cookbook 'sdkman', path: '../sdkman'
