@@ -165,8 +165,18 @@ module Lessons
         #  require: chocolatey installs system-wide, and chef-client
         #  itself already runs elevated on a Windows Vagrant guest (same
         #  WinRM session the shell-provisioner pipeline's own
-        #  `elevated: true` scripts already rely on).
-        chocolatey_package pkg['name']
+        #  `elevated: true` scripts already rely on). timeout raised
+        #  well past chocolatey_package's own 900s default - confirmed
+        #  directly via a real Mixlib::ShellOut::CommandTimeout on
+        #  powershell-core: the package had genuinely finished
+        #  installing (100% downloaded, "package files install
+        #  completed" in the captured output), but the underlying
+        #  choco.exe process itself took longer than 900s to actually
+        #  exit on this VM - an MSI/Chocolatey process-handle quirk on
+        #  slower/virtualized hosts, not anything wrong with the install.
+        chocolatey_package pkg['name'] do
+          timeout 1800
+        end
       when 'choco_cyg'
         # windows.yml's own choco_cyg type (see resolve_order.rb's
         #  PACKAGE_TYPES) - installs a *Cygwin* package via the cyg-get

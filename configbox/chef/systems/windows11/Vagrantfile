@@ -3,14 +3,8 @@ SCRIPT_TUT_PATH="../../../../.."
 Vagrant.configure("2") do |config|
   config.vm.box = "gusztavvargadr/windows-11"
   config.vm.box_version = "2607.1.0"
-  # chef-node-02, not -01 - ../ubuntu2204/Vagrantfile already uses
-  #  chef-node-01(.test), and both systems' nodes_path/data_bags_path
-  #  point at the same shared configbox/chef/{nodes,data_bags} - distinct
-  #  node names keep their converged node state from colliding there.
-  #  No FQDN (unlike ubuntu2204's own "chef-node-01.test") - Windows
-  #  guest rename rejects a hostname containing a period, confirmed
-  #  directly via a real `vagrant up` failure ("Renaming the Windows
-  #  guest failed... may not contain... periods").
+  # Windows guest rename rejects a hostname containing a period, as this
+  # requires joining an Active Directory (Kerberos, LDAP) Domain.
   config.vm.hostname = "chef-node-02"
   config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "C:/script-tut"
 
