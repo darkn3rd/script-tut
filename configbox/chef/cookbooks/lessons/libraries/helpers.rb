@@ -159,6 +159,27 @@ module Lessons
             end
           end
         end
+      when 'choco'
+        # windows.yml's own package manager - no user/environment
+        #  scoping needed the way the Linux per-user installs below
+        #  require: chocolatey installs system-wide, and chef-client
+        #  itself already runs elevated on a Windows Vagrant guest (same
+        #  WinRM session the shell-provisioner pipeline's own
+        #  `elevated: true` scripts already rely on).
+        chocolatey_package pkg['name']
+      when 'choco_cyg'
+        # windows.yml's own choco_cyg type (see resolve_order.rb's
+        #  PACKAGE_TYPES) - installs a *Cygwin* package via the cyg-get
+        #  shim (itself a `choco: cyg-get` package elsewhere in the same
+        #  data bag), not a Windows one - genuinely a different install
+        #  path than plain `choco:`, same reasoning generate_install_
+        #  script.rb's own powershell_install gives it a separate type
+        #  rather than folding into 'choco'. No idempotency guard here,
+        #  same as that bash/PowerShell equivalent - relies on cyg-get/
+        #  apt-cyg's own idempotency rather than duplicating it.
+        execute "choco_cyg-#{pkg['name']}" do
+          command "cyg-get #{pkg['name']}"
+        end
       when 'script'
         # Every one of these scripts (rbenv/pyenv installers, cpan's
         #  local::lib setup, sdkman's own bootstrap) installs into
@@ -166,11 +187,23 @@ module Lessons
         #  own (chef-client runs as root by default, whose $HOME is
         #  /root) - user/environment here make that true, the same
         #  correction rustup's own install_rustup resource already makes
-        #  below.
-        bash pkg['name'] do
-          code pkg['cmd']
-          user node['lessons']['user']
-          environment('HOME' => Etc.getpwnam(node['lessons']['user']).dir)
+        #  below. Windows has no such gap to correct for (chef-client
+        #  itself already runs elevated, same as the 'choco' case above),
+        #  and no bash - powershell_script is the dialect this data bag's
+        #  own scripts: block is actually written in for windows.yml
+        #  (see generate_chef_databag.rb's step_to_entry, which pulls
+        #  pkg['cmd'] straight from the manifest's own scripts: body
+        #  verbatim, whatever dialect that platform's manifest uses).
+        if platform_family?('windows')
+          powershell_script pkg['name'] do
+            code pkg['cmd']
+          end
+        else
+          bash pkg['name'] do
+            code pkg['cmd']
+            user node['lessons']['user']
+            environment('HOME' => Etc.getpwnam(node['lessons']['user']).dir)
+          end
         end
       when 'sdkman'
         # sdkman's own bootstrap script (see the 'script' case above)

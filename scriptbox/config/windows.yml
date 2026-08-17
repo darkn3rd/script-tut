@@ -8,10 +8,6 @@ windows:
       - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
-      # Ruby required for lessons.gen_scripts, scriptbox, testbox
-      - choco: ruby
-      # Powershell requried for lessons.win_scripts, scriptbox, testbox
-      - choco: powershell-core
     lessons:
       gen_scripts:
         awk:
@@ -36,6 +32,18 @@ windows:
           packages:
             - choco: python3
               script: windows_python3
+        ruby:
+          # Not in global: (unlike gsudo/make above) - scriptbox and
+          #  testbox both need it too, but per ../ubuntu2204's own
+          #  convention (see its own gen_scripts.ruby), they get it by
+          #  running *after* lessons in the run list/call tree rather
+          #  than each redeclaring their own copy - confirmed directly
+          #  this matters: sitting in global: instead left it out of the
+          #  Chef data bag entirely (generate_chef_databag.rb's own
+          #  LESSON_AREAS never includes 'global'), so `lessons`'s own
+          #  Chef converge never installed Ruby at all.
+          packages:
+            - choco: ruby
         tcl:
           packages:
             - choco: magicsplat-tcl-tk
@@ -62,6 +70,12 @@ windows:
             - choco: rust
       win_scripts:
         packages:
+          # Same reasoning as gen_scripts.ruby just above - required by
+          #  this area itself (and by scriptbox/testbox, which rely on
+          #  lessons running first rather than each redeclaring it), and
+          #  was silently dropped from the Chef data bag entirely while
+          #  it lived in global:.
+          - choco: powershell-core
           - choco: mscoreutils
     cibox:
       packages:

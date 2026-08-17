@@ -7,6 +7,15 @@
 
 apt_update 'update' if platform_family?('debian')
 
+# Chocolatey itself - the Windows analogue of apt_update above: bootstrap
+#  the package manager `choco`/`chocolatey_package` resources need before
+#  any of them can run. A real Chef resource (../../chocolatey cookbook),
+#  not a Vagrant shell provisioner living outside the cookbook - the
+#  whole point of testing against a Vagrant VM is to prove the *Chef*
+#  automation alone stands the box up to the desired state, the same way
+#  it would against a real target with no Vagrant involved at all.
+include_recipe 'chocolatey' if platform_family?('windows')
+
 # 'common' - steps that live directly on the manifest's own lessons.
 #  packages, not nested under any one of the four gated areas below (see
 #  scriptbox/scripts/generate_chef_databag.rb's own COMMON_AREA) - e.g.
