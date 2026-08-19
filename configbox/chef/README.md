@@ -1,5 +1,96 @@
 # Chef
 
+Chef is a configuration management tool used to manage a fleet of servers. Chef scripts called *recipes* use a imperative Ruby script blocks to describe the desired state.
+
+## Resources
+
+### Built-In Resources
+
+| Area                    | Chef built-in resources                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Packages**            | `package`, `apt_package`, `apt_update`, `dnf_package`, `yum_package`, `rpm_package`, `snap_package`, `homebrew_package`, `macports_package` |
+| **Repositories**        | `apt_repository`, `yum_repository`                                                                                                          |
+| **Language packages**   | `gem_package`, `chef_gem`                                                                                                                   |
+| **Windows packages**    | `windows_package`, `msu_package`, `cab_package`, `chocolatey_package`                                                                       |
+| **PowerShell packages** | `powershell_package`, `powershell_package_source`                                                                                           |
+| **Files**               | `file`, `cookbook_file`, `remote_file`, `remote_directory`, `directory`, `template`, `link`                                                 |
+| **Users / groups**      | `user`, `group`                                                                                                                             |
+| **Services**            | `service`, `windows_service`, `systemd_unit`, `launchd`                                                                                     |
+| **Commands / scripts**  | `execute`, `bash`, `csh`, `powershell_script`, `ruby_block`, `script`                                                                       |
+| **Scheduling**          | `cron`, `cron_access`, `cron_d`, `windows_task`, `chef_client_scheduled_task`                                                               |
+| **Networking**          | `hostsfile_entry`, `http_request`, `windows_firewall_rule`, `windows_dns_record`, `windows_dns_zone`                                        |
+| **Storage / mounts**    | `mount`, `filesystem`, `swap_file`, `windows_pagefile`                                                                                      |
+| **Archives**            | `archive`, `seven_zip_archive`                                                                                                              |
+| **Certificates**        | `windows_certificate`                                                                                                                       |
+| **Windows registry**    | `registry_key`                                                                                                                              |
+| **Windows environment** | `windows_env`, `windows_path`                                                                                                               |
+| **Windows features**    | `window                                                                                                                                     |
+
+## Configbox Configuration Items
+
+These are configuration items that can be used to support language lessons and their supporting development tools.
+
+| Tool    | Cookbook     | Resource                                     |
+| ------- | ------------ | -------------------------------------------- |
+| pyenv   | `pyenv`      | `pyenv_install`, `pyenv_python`, `pyenv_pip` |
+| rbenv   | `ruby_rbenv` | `rbenv_system_install`, `rbenv_ruby`, etc.   |
+| RVM     | `rvm`        | RVM custom resources                         |
+| nvm     | `nvm`        | `nvm_install`                                |
+| asdf    | `asdf`            | [`asdf`](https://supermarket.chef.io/cookbooks/asdf) custom resources   |
+| uv      | —            | No established dedicated cookbook identified |
+| rustup  | —            | No established current cookbook identified   |
+| SDKMAN! | —            | No established current cookbook identified   |
+
+### Package Managers, System
+
+Here Chef is much stronger because most of these map directly to Chef Infra resources.
+
+| Tool           | Chef Resource             | Source                      |
+| -------------- | ------------------------- | --------------------------- |
+| Homebrew       | `homebrew_package`        | Chef Infra                  |
+| Chocolatey     | `chocolatey_package`      | Chef Infra                  |
+| APT            | `apt_package` / `package` | Chef Infra                  |
+| APT Repository | `apt_repository`          | Chef Infra                  |
+| Cygwin         | `cygwin_package`          | [`cygwin`](https://supermarket.chef.io/cookbooks/cygwin) cookbook           |
+| MSYS2          | `msys2_package`           | [`msys2](https://supermarket.chef.io/cookbooks/msys2) cookbook            |
+| YUM            | `yum_package` / `package` | Chef Infra                  |
+| DNF            | `dnf_package` / `package` | Chef Infra                  |
+| YUM Repository | `yum_repository`          | Chef Infra                  |
+
+Chef's generic `package` resource automatically selects the appropriate package provider for the platform
+
+### Package Managers, Language
+
+This section is where I would be careful not to imply a dedicated Chef resource exists merely because the command can be executed.
+
+| Tool           | Chef Resource / Cookbook | Source                                       |
+| -------------- | ------------------------ | -------------------------------------------- |
+| npm            | `npm_package`*           | Cookbook/custom resource                     |
+| pip            | `python_package`*        | Cookbook/custom resource                     |
+| RubyGems / gem | `gem_package`            | Chef Infra                                   |
+| Maven          | —                        | No general built-in Maven package resource   |
+| NuGet          | —                        | No dedicated built-in NuGet package resource |
+| CPAN           | `cpan_module`            | [`perl`](https://supermarket.chef.io/cookbooks/perl) cookbook (Sous Chefs)                 |
+| Cargo          | —                        | No dedicated built-in Cargo resource         |
+| PSGallery      | `powershell_package`     | Chef Infra                                   |
+
+
+### Windows Features
+
+Chef has built-in resources for Windows feature management, so this section can stay very small.
+
+| Tool                     | Chef Resource          | Source     |
+| ------------------------ | ---------------------- | ---------- |
+| Windows Features / Roles | `windows_feature`      | Chef Infra |
+| Windows Feature DISM     | `windows_feature_dism` | Chef Infra |
+
+
+
+### Version Managers
+
+Version managers are generally provided through community cookbooks from Chef Supermarket. Several of these cookbooks expose custom Chef resources for installing the version manager, language runtimes, plugins, and packages.
+
+
 ## Standalone Chef: Solo, Zero, and Knife
 
 Chef Solo and Chef Zero both run Chef cookbooks without a centralized Chef Infra Server. The key difference is how they provide Chef’s server-side features.
