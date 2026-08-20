@@ -1,21 +1,51 @@
 # Chocolatey Packages
 
-Added the README.md and an update.ps1 that actually wires up the auto-update. Quick summary of "how it wires up":
+This area is for building Chocolatey packages. 
 
-Chocolatey itself has no update mechanism — packages are static until something edits them. The community standard for that is AU (majkinetor/au), a PowerShell module that looks for an update.ps1 next to the .nuspec and expects two functions:
+## Updating 
 
-au_GetLatest — hits pypa/pipx's GitHub releases API, returns the new version + the pipx.pyz asset URL.
-au_SearchReplace — regex rules for which lines in chocolateyinstall.ps1 to rewrite with that data.
+Chocolatey has no update mechanism, as the packages themselves are static until they are manually edited.  The community standard for updating packages is AU (majkinetor/au), a PowerShell module that looks for an `update.ps1` next to the `.nuspec` and exptect two functions.
 
-I only needed a rule for $version and $checksum — $url already interpolates $version in the install script, so it self-corrects once that line is rewritten. The last line, update -ChecksumFor 32, is what actually triggers the check-and-rewrite (pipx publishes no checksum of its own, so AU downloads and hashes the file itself).
+1. `au_GetLatest` — hits project's GitHub releases API, returns the new version + the artifact's asset URL.
+2. `au_SearchReplace` — regex rules for which lines in chocolateyinstall.ps1 to rewrite with that data.
 
-To use it: choco install au once, then run .\update.ps1 from that directory whenever you want to check for a new pipx release — it edits chocolateyinstall.ps1 and the nuspec version in place if one's found. Update-AUPackages is the batch form if you ever have multiple packages here; I didn't wire that into CI since none exists yet for this repo.
+## Instructions
 
-I validated all three .ps1 files parse correctly with pwsh (it's on this Mac), though the Chocolatey-specific cmdlets (Get-ChocolateyWebFile, Install-BinFile) only exist inside choco's own helper module, so a real choco pack/install run on Windows is still the way to fully confirm it end-to-end.
+### Building packages with GNU Make
 
-# Instructions
+The Makefile discovers each package directory that contains a matching
+`.nuspec` file. For example, `pipx/pipx.nuspec` creates the `pipx` target.
+Run these commands from `pkgbox/chocolatey`:
 
-## pipx
+```sh
+# Show discovered package targets.
+make list
+
+# Build one package into pipx/vendor/.
+make pipx
+
+# Build every discovered package into its own vendor/ directory.
+make
+
+# Run AU for one package that contains update.ps1.
+make update-pipx
+
+# Run AU for every package that contains update.ps1.
+make update
+```
+
+Package output under `*/vendor/` is generated locally and ignored by Git.
+
+The update targets require the AU PowerShell module. Install it once with
+`choco install au`. Each `update-<package>` target changes into the package
+directory before running its `update.ps1`, allowing AU's relative search-and-
+replace paths to resolve correctly. AU updates the package source files; run
+`make <package>` afterward to build the updated `.nupkg`.
+
+### Building without GNU Make
+
+#### pipx example
+
 ```pwsh
 $repo = "/path/to/script-tut"
 $target = "pipx"
