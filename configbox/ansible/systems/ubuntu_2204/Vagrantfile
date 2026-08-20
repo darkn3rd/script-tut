@@ -1,13 +1,19 @@
 SCRIPT_TUT_PATH="../../../../.."
+# ansible_local runs ansible-playbook *inside* the guest, so provision/
+#  (site.yml, roles/, vars/) has to actually be synced there first -
+#  this Vagrantfile's own default share only covers systems/ubuntu_2204/
+#  itself, not its ../.. parent where provision/ actually lives.
+ANSIBLE_ROOT="../.."
 
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
   config.vm.hostname = "ansible-node-01.test"
   config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+  config.vm.synced_folder "#{ANSIBLE_ROOT}", "/vagrant/ansible"
 
   config.vm.provision "ansible_local" do |ansible|
-    ansible.playbook = "provision/site.yml"
+    ansible.playbook = "ansible/provision/site.yml"
     ansible.verbose = true
   end
 end

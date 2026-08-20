@@ -1,0 +1,312 @@
+#SPDX-License-Identifier: MIT-0
+---
+# One step from a lessons_data area array (see ../vars/<platform>.yml)
+#  dispatched to the matching Ansible module - included once per step by
+#  ../tasks/main.yml's own loops, `step` set via loop_control.loop_var.
+#  Mirrors ../../../../chef/cookbooks/lessons/libraries/helpers.rb's own
+#  lessons_install dispatch, type for type, except pyenv/rbenv/cpan/
+#  cpanm, which there dispatch to real sous-chefs cookbook resources -
+#  no Ansible-native equivalent is assumed to exist for pyenv/rbenv (see
+#  ../../README.md's own "no established dedicated role/module" note),
+#  so those two fall back to the same `pyenv install -s`/`rbenv install
+#  -s` commands scriptbox/scripts/generate_install_script.rb's own bash
+#  generator already uses.
+
+- name: "apt repository (ppa) for {{ step.name }}"
+  when: step.type == 'apt' and step.apt_repository is defined
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "{{ step.apt_repository }}"
+
+# add_apt_repo - the manifest's own add_apt_repos: entry (raw signed-by
+#  key + list file - Corretto, Docker, ... - see scriptbox/config/
+#  README.md), the non-PPA way to add a repo. deb822_repository, not
+#  apt_repository - see ../../README.md's own "For new Debian/Ubuntu
+#  automation, deb822_repository is the direction to use" note.
+- name: "add_apt_repo for {{ step.name }}"
+  when: step.type == 'apt' and step.add_apt_repo is defined
+  become: true
+  vars:
+    lessons_repo_parts: "{{ step.add_apt_repo.distro_string.split(' ') }}"
+  ansible.builtin.deb822_repository:
+    name: "{{ step.add_apt_repo.name }}"
+    types: deb
+    uris: "{{ step.add_apt_repo.repo_uri }}"
+    suites: "{{ lessons_repo_parts[0] }}"
+    components: "{{ lessons_repo_parts[1:] }}"
+    signed_by: "{{ step.add_apt_repo.key_url }}"
+
+- name: "apt: {{ step.name }}"
+  when: step.type == 'apt'
+  become: true
+  ansible.builtin.apt:
+    name: "{{ step.name }}"
+    state: present
+
+- name: "file: {{ step.name }}"
+  when: step.type == 'file'
+  become: true
+  vars:
+    lessons_file_dest: "{{ step.dest | replace('$HOME', lessons_home) }}"
+  block:
+    - name: Ensure parent directory exists for {{ step.name }}
+      ansible.builtin.file:
+        path: "{{ lessons_file_dest | dirname }}"
+        state: directory
+        owner: "{{ lessons_user }}"
+        mode: '0755'
+
+    - name: Write {{ step.name }}
+      ansible.builtin.copy:
+        dest: "{{ lessons_file_dest }}"
+        content: "{{ step.content }}"
+        owner: "{{ lessons_user }}"
+        mode: '0644'
+
+- name: "append: {{ step.name }}"
+  when: step.type == 'append'
+  become: true
+  vars:
+    lessons_append_dests: "{{ ([step.dest] if step.dest is string else step.dest) | map('replace', '$HOME', lessons_home) | list }}"
+  block:
+    - name: Ensure parent directories exist for {{ step.name }}
+      ansible.builtin.file:
+        path: "{{ item | dirname }}"
+        state: directory
+        owner: "{{ lessons_user }}"
+        mode: '0755'
+      loop: "{{ lessons_append_dests }}"
+
+    - name: Append lines for {{ step.name }}
+      ansible.builtin.lineinfile:
+        path: "{{ item[0] }}"
+        line: "{{ item[1] }}"
+        create: true
+        owner: "{{ lessons_user }}"
+      with_nested:
+        - "{{ lessons_append_dests }}"
+        - "{{ step.lines }}"
+
+- name: "script: {{ step.name }}"
+  when: step.type == 'script' and step.name not in lessons_special_scripts
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell:
+    cmd: "{{ step.cmd }}"
+    executable: /bin/bash
+
+# ubuntu22_powershell - the manifest's own script downloads and installs
+#  a vendor .deb that configures apt itself (packages-microsoft-prod.deb),
+#  not a plain PPA - get_url + apt(deb=) is the faithful native
+#  equivalent, same reasoning the Chef version gives for remote_file +
+#  dpkg_package over apt_repository (which has no way to represent
+#  "install this specific local .deb").
+- name: "special script: ubuntu22_powershell"
+  when: step.type == 'script' and step.name == 'ubuntu22_powershell'
+  become: true
+  block:
+    - name: Download Microsoft package config .deb
+      ansible.builtin.get_url:
+        url: "https://packages.microsoft.com/config/ubuntu/{{ ansible_facts['distribution_version'] }}/packages-microsoft-prod.deb"
+        dest: /tmp/packages-microsoft-prod.deb
+        mode: '0644'
+
+    - name: Install Microsoft package config .deb
+      ansible.builtin.apt:
+        deb: /tmp/packages-microsoft-prod.deb
+
+    - name: Refresh apt cache after adding Microsoft repo
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install PowerShell
+      ansible.builtin.apt:
+        name: powershell
+        state: present
+
+    - name: Check whether the psake module is already installed for {{ lessons_user }}
+      become_user: "{{ lessons_user }}"
+      environment:
+        HOME: "{{ lessons_home }}"
+      ansible.builtin.shell: pwsh -NoProfile -Command "if (Get-Module -ListAvailable -Name psake) { 'present' } else { 'absent' }"
+      register: lessons_psake_check
+      changed_when: false
+
+    # psake needs installing for the *lessons user*, not this task's own
+    #  invoking user - same correction the Chef pwsh_package resource
+    #  this mirrors already makes (see its own comment on -Scope
+    #  CurrentUser landing under the wrong home directory otherwise).
+    - name: Install psake PowerShell module for {{ lessons_user }}
+      become_user: "{{ lessons_user }}"
+      environment:
+        HOME: "{{ lessons_home }}"
+      ansible.builtin.shell: >-
+        pwsh -NoProfile -Command
+        "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
+        Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
+      when: "'present' not in lessons_psake_check.stdout"
+
+# ubuntu22_rust - rustup's own installer script, same as the manifest.
+#  `creates` is the Ansible idiom for the Chef version's own `not_if
+#  { File.exist?(...) }` guard - both skip re-running the installer once
+#  cargo already exists for this user.
+- name: "special script: ubuntu22_rust"
+  when: step.type == 'script' and step.name == 'ubuntu22_rust'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: |
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+      sh -s -- -y --profile minimal --no-modify-path
+  args:
+    executable: /bin/bash
+    creates: "{{ lessons_home }}/.cargo/bin/cargo"
+
+# sdk is a shell function, not a binary - only defined once sdkman's own
+#  init script has been sourced (see the ubuntu22_sdkman common step,
+#  which must already have run). No idempotency guard here, matching the
+#  Chef bash resource this mirrors (which has none either) - relies on
+#  sdkman_auto_answer=true (set by that same common step) plus `sdk
+#  install`'s own already-installed handling, not a Chef/Ansible-level
+#  not_if/creates.
+- name: "sdkman: {{ step.name }}"
+  when: step.type == 'sdkman'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: |
+    source "{{ lessons_home }}/.sdkman/bin/sdkman-init.sh"
+    sdk install {{ step.name }}
+  args:
+    executable: /bin/bash
+
+- name: "{{ step.type }}: {{ step.name }}"
+  when: step.type in ['cpan', 'cpanm']
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  community.general.cpanm:
+    name: "{{ step.name }}"
+
+# No Ansible-native pyenv module exists (see ../../README.md's own
+#  version-managers table) - `pyenv install -s`/pyenv global, the same
+#  commands scriptbox/scripts/generate_install_script.rb's own bash
+#  generator already produces, PATH-scoped to reach the pyenv binary
+#  itself (installed by the ubuntu22_pyenv common step) without needing
+#  a login shell's own eval "$(pyenv init -)".  `creates` gives this the
+#  idempotency pyenv_python's own Chef resource gets for free.
+- name: "pyenv: {{ step.name }}"
+  when: step.type == 'pyenv'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+    PYENV_ROOT: "{{ lessons_home }}/.pyenv"
+    PATH: "{{ lessons_home }}/.pyenv/bin:{{ lessons_home }}/.pyenv/shims:{{ ansible_env.PATH }}"
+  block:
+    - name: Install Python {{ step.name }} via pyenv
+      ansible.builtin.command: "pyenv install -s {{ step.name }}"
+      args:
+        creates: "{{ lessons_home }}/.pyenv/versions/{{ step.name }}"
+
+    - name: "{{ step.cmd }}"
+      ansible.builtin.command: "{{ step.cmd }}"
+      when: step.cmd is defined
+      changed_when: true
+
+- name: "rbenv: {{ step.name }}"
+  when: step.type == 'rbenv'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+    PATH: "{{ lessons_home }}/.rbenv/bin:{{ lessons_home }}/.rbenv/shims:{{ ansible_env.PATH }}"
+  block:
+    - name: Install Ruby {{ step.name }} via rbenv
+      ansible.builtin.command: "rbenv install -s {{ step.name }}"
+      args:
+        creates: "{{ lessons_home }}/.rbenv/versions/{{ step.name }}"
+
+    - name: "{{ step.cmd }}"
+      ansible.builtin.command: "{{ step.cmd }}"
+      when: step.cmd is defined
+      changed_when: true
+
+# pkgbox/chocolatey/<name>/ - a local nuspec source for a package
+#  missing from the community Chocolatey feed (see pkgbox's own README).
+#  Path derived from type+name, same reasoning apt_repository/
+#  add_apt_repo get their own key rather than being packed into name:.
+#  version: is always an exact pin - choco install --version has no
+#  floor semantics, so '>=' is rejected rather than silently treated as
+#  a pin (the data bag itself was already validated at generation time -
+#  see resolve_order.rb's own parse_version_constraint - so only this
+#  type-specific '>=' rejection is needed here, not the full operator
+#  vocabulary again). argv: (a literal arg list, not a shell string) -
+#  the version flag only needs conditionally including, which is safer
+#  built as a list than string-concatenated with embedded quotes.
+- name: "choco_local: {{ step.name }}"
+  when: step.type == 'choco_local'
+  become: true
+  vars:
+    lessons_choco_dir: "pkgbox/chocolatey/{{ step.name }}"
+    lessons_choco_version: "{{ (step.version | regex_replace('^=\\s*', '')) if step.version is defined else '' }}"
+  block:
+    - name: Reject a choco_local floor constraint for {{ step.name }}
+      ansible.builtin.fail:
+        msg: "choco_local '{{ step.name }}': version must be an exact pin ('=' or a bare version) - choco install --version has no floor semantics"
+      when: step.version is defined and step.version is match('>=')
+
+    - name: Pack {{ step.name }}
+      ansible.builtin.command:
+        argv:
+          - choco
+          - pack
+          - "{{ lessons_choco_dir }}/{{ step.name }}.nuspec"
+          - "--output-directory={{ lessons_choco_dir }}/vendor"
+
+    - name: Install {{ step.name }} from local vendor source
+      ansible.builtin.command:
+        argv: >-
+          {{ ['choco', 'install', step.name, '--source=' + lessons_choco_dir + '/vendor']
+             + (['--version=' + lessons_choco_version] if lessons_choco_version else [])
+             + ['--yes'] }}
+
+# pwsh, not native PowerShell - this role only targets ubuntu22 today
+#  (see ../vars/), reached through the same `pwsh -Command "..."`
+#  pattern the ubuntu22_powershell script step already uses for psake -
+#  no PowerShell interpreter is running this playbook itself to invoke
+#  either cmdlet directly. -Force covers the untrusted-PSGallery prompt
+#  on its own for powershell_module (see the Set-PSRepository/
+#  Install-Module discussion this followed) - no separate repository-
+#  trust step needed.
+- name: "powershell_package_provider: {{ step.name }}"
+  when: step.type == 'powershell_package_provider'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  vars:
+    lessons_ps_version: "{{ (step.version | regex_replace('^(>=|=)\\s*', '')) if step.version is defined else '' }}"
+  ansible.builtin.shell: >-
+    pwsh -NoProfile -Command
+    "Install-PackageProvider -Name {{ step.name }}{{ (' -MinimumVersion ' + lessons_ps_version) if lessons_ps_version else '' }} -Force"
+
+- name: "powershell_module: {{ step.name }}"
+  when: step.type == 'powershell_module'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: >-
+    pwsh -NoProfile -Command
+    "Install-Module -Name {{ step.name }}{{ (' ' + step.args) if step.args is defined else '' }} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
+
+- name: "unsupported lessons step type"
+  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'choco_local', 'powershell_package_provider', 'powershell_module']
+  ansible.builtin.debug:
+    msg: "lessons: unsupported package type '{{ step.type }}' for '{{ step.name }}'"

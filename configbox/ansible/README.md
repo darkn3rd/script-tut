@@ -153,6 +153,14 @@ These are the modules currently listed under `ansible.builtin`; unlike collectio
 
 These are types of items that can be used to support language lessons and supporting tools. 
 
+### Manifest Pipeline
+
+`lessons` and `scriptbox` (`provision/roles/`) are generated the same way as this repo's own `{system_type}_install.sh`/`.ps1` scripts and the `../chef/cookbooks/` cookbooks: the source of truth is always `scriptbox/config/*.yml`, never hand-edited here.
+
+`scriptbox/scripts/generate_ansible_databag.rb <config.yml> <lessons_out.yml> <scriptbox_out.yml>` flattens/resolves a manifest the same way `generate_chef_databag.rb` does for Chef's own data bags, then writes each role's own `vars/<platform>.yml` - e.g. `roles/lessons/vars/ubuntu22.yml`. Chef's `data_bag_item('lessons', node['lessons']['platform'])` explicit lookup-by-key has no automatic-merge Ansible equivalent (`group_vars`/`host_vars` solve a different problem - which vars apply to a host by inventory group, not an arbitrary keyed document); each role's own `tasks/main.yml` instead does the equivalent explicit lookup with `include_vars: "{{ lessons_platform }}.yml"`, where `lessons_platform`/`scriptbox_platform` (`defaults/main.yml`) is the key, overridable per host the same way `group_vars` would set it.
+
+Each role's own `tasks/install_step.yml` then dispatches every step by its `type` to the matching Ansible module - the Ansible analogue of `../chef/cookbooks/{lessons,scriptbox}/libraries/helpers.rb`'s own `lessons_install`/`scriptbox_install` case statement.
+
 ## Version Managers
 
 There are no explicit modules that I can find for these tools, so some have written roles that can help.

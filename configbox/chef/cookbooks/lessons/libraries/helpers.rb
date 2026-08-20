@@ -190,6 +190,38 @@ module Lessons
         execute "choco_cyg-#{pkg['name']}" do
           command "cyg-get #{pkg['name']}"
         end
+      when 'choco_local'
+        # pkgbox/chocolatey/<name>/ - a local nuspec source for a package
+        #  missing from the community Chocolatey feed (see pkgbox's own
+        #  README). Path derived from type+name, same reasoning apt_
+        #  repository/add_apt_repo get their own key rather than being
+        #  packed into name:. version: is always an exact pin here -
+        #  choco install --version has no floor semantics, so '>=' isn't
+        #  accepted (matches scriptbox/scripts/generate_install_script
+        #  .rb's own choco_local case, and the data bag itself was
+        #  already validated at generation time - see resolve_order.rb's
+        #  own parse_version_constraint - so only the '>=' shape needs
+        #  rejecting here, not the full operator vocabulary again).
+        if pkg['version']&.start_with?('>=')
+          raise "choco_local '#{pkg['name']}': version must be an exact pin ('=' or a bare version) - choco install --version has no floor semantics"
+        end
+
+        pkg_dir = "pkgbox/chocolatey/#{pkg['name']}"
+        version = pkg['version']&.sub(/\A=\s*/, '')
+        version_flag = version ? %( --version="#{version}") : ''
+        powershell_script "choco_local-#{pkg['name']}" do
+          code <<~PS1
+            choco pack "#{pkg_dir}/#{pkg['name']}.nuspec" --output-directory="#{pkg_dir}/vendor"
+            choco install #{pkg['name']} --source="#{pkg_dir}/vendor"#{version_flag} --yes
+          PS1
+        end
+      when 'powershell_package_provider'
+        version = pkg['version']&.sub(/\A(>=|=)\s*/, '')
+        version_flag = version ? " -MinimumVersion #{version}" : ''
+        run_powershell("Install-PackageProvider -Name #{pkg['name']}#{version_flag} -Force", "powershell_package_provider-#{pkg['name']}")
+      when 'powershell_module'
+        args_suffix = pkg['args'] ? " #{pkg['args']}" : ''
+        run_powershell("Install-Module -Name #{pkg['name']}#{args_suffix} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber", "powershell_module-#{pkg['name']}")
       when 'script'
         # Every one of these scripts (rbenv/pyenv installers, cpan's
         #  local::lib setup, sdkman's own bootstrap) installs into
@@ -361,6 +393,28 @@ module Lessons
           user rust_user
           environment('HOME' => rust_home)
           not_if { ::File.exist?("#{rust_home}/.cargo/bin/cargo") }
+        end
+      end
+    end
+
+    # run_powershell(cmd, resource_name) - cmd run natively on Windows
+    #  (chef-client already runs elevated there, same as the 'choco' case
+    #  above) or through `pwsh -Command "..."` for the *lessons user* on
+    #  every other platform - same platform_family? branch the 'script'
+    #  case above already needs, for the same underlying reason (no
+    #  PowerShell interpreter running chef-client itself to invoke this
+    #  directly).
+    def run_powershell(cmd, resource_name)
+      if platform_family?('windows')
+        powershell_script resource_name do
+          code cmd
+        end
+      else
+        home = Etc.getpwnam(node['lessons']['user']).dir
+        execute resource_name do
+          command %(pwsh -NoProfile -Command "#{cmd}")
+          user node['lessons']['user']
+          environment('HOME' => home)
         end
       end
     end

@@ -1,0 +1,11 @@
+---
+# Install with: ansible-galaxy collection install -r requirements.yml
+#
+# community.general - only for the cpanm module (see roles/lessons/tasks/
+#  install_step.yml's own 'cpan'/'cpanm' dispatch). Everything else this
+#  playbook uses (apt, apt_repository, deb822_repository, getent, uri,
+#  get_url, lineinfile, copy, file, shell, command) ships in ansible-core
+#  itself under the ansible.builtin namespace - no other collection
+#  needed.
+collections:
+  - name: community.general

@@ -1,3 +1,73 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for lessons
+#
+# Gates each area's own steps on its own boolean var (all default true -
+#  see ../defaults/main.yml) so a run can skip an entire area without
+#  touching this file or ../tasks/install_step.yml. Only ubuntu22 has a
+#  generated vars/ file today (see ../vars/), same scope the Chef
+#  cookbook this mirrors currently covers.
+
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Resolve home directory for {{ lessons_user }}
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ lessons_user }}"
+
+- name: Set lessons_home
+  ansible.builtin.set_fact:
+    lessons_home: "{{ ansible_facts['getent_passwd'][lessons_user][4] }}"
+
+- name: Load lessons vars for {{ lessons_platform }}
+  ansible.builtin.include_vars:
+    file: "{{ lessons_platform }}.yml"
+    name: lessons_data
+
+# 'common' - steps that live directly on the manifest's own lessons.
+#  packages, not nested under any one of the four gated areas below (see
+#  scriptbox/scripts/generate_chef_databag.rb's own COMMON_AREA) - e.g.
+#  the sdkman bootstrap, which gen_scripts's own `sdkman: groovy` step
+#  depends on existing already. Always runs, ungated.
+- name: Run lessons common install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ lessons_data.common }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"
+
+- name: Run lessons gen_scripts install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ lessons_data.gen_scripts }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"
+  when: lessons_gen_scripts
+
+- name: Run lessons shell_scripts install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ lessons_data.shell_scripts }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"
+  when: lessons_shell_scripts
+
+- name: Run lessons compiled_lang install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ lessons_data.compiled_lang }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"
+  when: lessons_compiled_lang
+
+- name: Run lessons win_scripts install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ lessons_data.win_scripts }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"
+  when: lessons_win_scripts

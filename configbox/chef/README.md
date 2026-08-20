@@ -8,6 +8,19 @@ Administrators interact with this ecosystem using `knife`, a powerful command-li
 
 Individual recipes are bundled together into a cookbook, which serves as the fundamental unit of configuration and policy distribution in the **Chef** ecosystem. To promote reuse and collaboration, the community shares pre-built, open-source cookbooks through a centralized repository known as the **Chef Supermarket**. This allows organizations to leverage community-maintained automation for common infrastructure components instead of building everything from scratch.
 
+## Components
+
+- **Chef Workstation:** Provides tools for writing, testing, and managing Chef code.
+- **Chef Infra Server:** Centrally stores cookbooks, policies, and node information.
+- **Chef Infra Client:** Runs on managed nodes and applies the required configurations.
+- **Cookbooks:** Collections of configuration files and supporting resources.
+- **Recipes:** Instructions within cookbooks that define the desired system configuration.
+- **Resources:** Describe system components such as packages, files, services, and users.
+- **Nodes:** Physical, virtual, or cloud-based systems managed by Chef.
+- **Roles and environments:** Organize nodes and define configurations for different purposes or deployment stages.
+- **Data bags:** Store shared configuration data for use in recipes. They provide an on-demand lookup by an arbitrary key.
+
+
 ## Resources
 
 ### Built-In Resources

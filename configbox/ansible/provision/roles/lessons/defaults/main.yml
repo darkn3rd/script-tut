@@ -1,3 +1,25 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for lessons
+
+# Which vars/<platform>.yml (see ../vars) this host converges against -
+#  one file per platform, generated from that platform's own
+#  scriptbox/config/*.yml manifest by scriptbox/scripts/
+#  generate_ansible_databag.rb. The Ansible analogue of Chef's
+#  data_bag_item('lessons', node['lessons']['platform']) explicit
+#  lookup-by-key.
+lessons_platform: ubuntu22
+
+# Which user per-user installs (e.g. rustup - see ../tasks/install_step
+#  .yml) run as, and whose home directory they land in. 'vagrant'
+#  matches every Vagrant box this role currently converges against;
+#  override per host (e.g. in inventory group_vars) for anything else.
+lessons_user: vagrant
+
+# Area gates - all default true. Override on a host/group, or with
+#  --extra-vars at run time, to skip an area entirely, e.g.:
+#  ansible-playbook site.yml -e '{"lessons_win_scripts": false}'
+lessons_gen_scripts: true
+lessons_shell_scripts: true
+lessons_compiled_lang: true
+lessons_win_scripts: true
