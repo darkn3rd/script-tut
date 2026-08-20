@@ -3,6 +3,19 @@ require 'yaml'
 require 'fileutils'
 require_relative 'resolve_order'
 
+# arg_suffix(step) - step[:args] (see resolve_order.rb's own flatten)
+#  rendered as a leading-space-prefixed string to splice straight after
+#  an install command's own package name, or '' when absent - the
+#  general-purpose escape hatch for opaque extra flags (gem's own
+#  --platform ruby, pipx's own --include-deps) that don't need the
+#  manifest itself to understand them, only pass them through verbatim.
+#  Array() accepts either a single string or a list, same normalization
+#  apt's own `name:`/append's own `dest:`/`lines:` already get.
+def arg_suffix(step)
+  args = Array(step[:args]).join(' ')
+  args.empty? ? '' : " #{args}"
+end
+
 # bash_install/powershell_install - the *dialect-specific* half of a
 #  step's install command - just the package-manager invocation for
 #  step[:type], nil for a type that dialect doesn't know about ('script'
@@ -77,7 +90,22 @@ def bash_install(step, tree)
   #  which already sets it) - that's the real, documented
   #  non-interactive mechanism, not a per-command flag.
   when 'sdkman' then "sdk install #{step[:name]}"
-  when 'gem'    then "gem install #{step[:name]}"
+  when 'gem'    then "gem install #{step[:name]}#{arg_suffix(step)}"
+  when 'pipx'   then "pipx install #{step[:name]}#{arg_suffix(step)}"
+  # pwsh, not native PowerShell - a bash-dialect platform (ubuntu2204.yml)
+  #  reaches PowerShellGet through the same `pwsh -Command "..."` pattern
+  #  the ubuntu22_powershell script step already uses for psake (see
+  #  scriptbox/config/ubuntu2204.yml), not a bare Install-Module call -
+  #  there's no PowerShell interpreter running this script itself to
+  #  invoke it directly. -Force covers the untrusted-PSGallery prompt on
+  #  its own (see the Set-PSRepository/Install-Module discussion this
+  #  followed) - no separate repository-trust step needed.
+  when 'powershell_package_provider'
+    _, ver = parse_version_constraint(step)
+    version_flag = ver ? " -MinimumVersion #{ver}" : ''
+    %(pwsh -NoProfile -Command "Install-PackageProvider -Name #{step[:name]}#{version_flag} -Force")
+  when 'powershell_module'
+    %(pwsh -NoProfile -Command "Install-Module -Name #{step[:name]}#{arg_suffix(step)} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber")
   # --noconfirm - same non-interactive reasoning as apt's own -y. The
   #  one-time `pacman -Syu` refresh this needs before the *first* pacman
   #  step isn't here - it's a property of the whole script, not any one
@@ -115,7 +143,8 @@ end
 def powershell_install(step)
   case step[:type]
   when 'choco' then "choco install #{step[:name]} -y"
-  when 'gem'   then "gem install #{step[:name]}"
+  when 'gem'   then "gem install #{step[:name]}#{arg_suffix(step)}"
+  when 'pipx'  then "pipx install #{step[:name]}#{arg_suffix(step)}"
   # cyg-get (itself a `choco: cyg-get` package elsewhere in the same
   #  file) installs *Cygwin's own* packages from PowerShell - a
   #  genuinely different install path than plain `choco:`, not just a
@@ -128,6 +157,39 @@ def powershell_install(step)
   #  write_install_script) - an unattended mid-script reboot would just
   #  kill the rest of the run.
   when 'feature' then "Enable-WindowsOptionalFeature -Online -FeatureName #{step[:name]} -All -NoRestart"
+  # pkgbox/chocolatey/<name>/ - a local nuspec source for a package
+  #  missing from the community Chocolatey feed (see pkgbox's own
+  #  README). Path derived from type+name, never stored in the manifest
+  #  itself - nothing here ever needs parsing a path back out of a
+  #  string, same reasoning apt_repository/add_apt_repo get their own
+  #  key instead of being packed into name:. version: is always an exact
+  #  pin here (`=` only, not `>=`) - choco's own --version has no way to
+  #  express "at least this version," only "exactly this version," so a
+  #  manifest author writing `>= X` for a choco_local step would be
+  #  promising behavior this can't actually deliver.
+  when 'choco_local'
+    op, ver = parse_version_constraint(step)
+    if op == '>='
+      raise "choco_local '#{step[:name]}': version must be an exact pin ('=' or a bare version) - choco install --version has no floor semantics"
+    end
+
+    pkg_dir = "pkgbox/chocolatey/#{step[:name]}"
+    version_flag = ver ? %( --version="#{ver}") : ''
+    <<~PS1.strip
+      choco pack "#{pkg_dir}/#{step[:name]}.nuspec" --output-directory="#{pkg_dir}/vendor"
+      choco install #{step[:name]} --source="#{pkg_dir}/vendor"#{version_flag} --yes
+    PS1
+  # Native Install-PackageProvider/Install-Module - this dialect's whole
+  #  script already runs under PowerShell, so no pwsh wrapper is needed
+  #  the way bash_install's own equivalents require. -Force covers the
+  #  untrusted-PSGallery confirmation on its own for 'powershell_module'
+  #  (see the Set-PSRepository/Install-Module discussion this followed).
+  when 'powershell_package_provider'
+    _, ver = parse_version_constraint(step)
+    version_flag = ver ? " -MinimumVersion #{ver}" : ''
+    "Install-PackageProvider -Name #{step[:name]}#{version_flag} -Force"
+  when 'powershell_module'
+    "Install-Module -Name #{step[:name]}#{arg_suffix(step)} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
   end
 end
 

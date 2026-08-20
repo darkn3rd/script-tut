@@ -69,6 +69,17 @@ def step_to_entry(step, tree)
   entry[:cmd] = strip_comments(step[:cmd]) if step[:cmd]
   entry[:apt_repository] = step[:apt_repository] if step[:apt_repository]
   entry[:add_apt_repo] = (tree['add_apt_repos'] || {})[step[:add_apt_repo]] if step[:add_apt_repo]
+  # parse_version_constraint validates, but its own [op, number] split is
+  #  discarded here - the raw string is what's stored, since a data bag
+  #  consumer (Chef's own helpers.rb, Ansible's own install_step.yml)
+  #  does its own lightweight strip, the same way generate_install_
+  #  script.rb's bash_install/powershell_install do. Validating here too
+  #  (not just there) matters because those two data-bag consumers never
+  #  go through generate_install_script.rb's own dispatch at all - this
+  #  is the one place a bad operator would otherwise reach them silently.
+  parse_version_constraint(step) if step[:version]
+  entry[:version] = step[:version] if step[:version]
+  entry[:args] = step[:args] if step[:args]
 
   case step[:type]
   when 'script'

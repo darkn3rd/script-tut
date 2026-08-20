@@ -1,6 +1,16 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg feature gem pacman path cyg cmd].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module].freeze
+
+# VERSION_OPS - the only version-constraint operators any downstream
+#  generator actually implements (see parse_version_constraint) - a
+#  floor (>=) or an exact pin (= or no operator at all). Deliberately not
+#  the full pip/gem/npm vocabulary (~>/^/~=/<=/<...): nothing in this
+#  pipeline targets a tool that can express more than a floor or a pin
+#  yet (Install-PackageProvider only has -MinimumVersion; choco_local's
+#  own `choco install --version=` is always exact), so parsing anything
+#  richer would just be guessing at semantics no generator can act on.
+VERSION_OPS = ['=', '>='].freeze
 
 # RESERVED_KEYS - top-level manifest keys that aren't a platform's own
 #  root key - shared by generate_install_script.rb's and generate_chef_
@@ -48,6 +58,8 @@ def flatten(node, path = [])
         reboot: entry['reboot'],
         apt_repository: entry['apt_repository'],
         add_apt_repo: entry['add_apt_repo'],
+        version: entry['version'],
+        args: entry['args'],
         path: path.join('.')
       }
 
@@ -87,6 +99,31 @@ def flatten(node, path = [])
   end
 
   steps
+end
+
+# parse_version_constraint(step) - step[:version] (e.g. ">= 2.8.5.201",
+#  "1.16.7", or absent) split into [op, number] - op defaults to '=' when
+#  none is written, matching how a bare version already reads ("install
+#  exactly this"). Raises rather than silently misreading anything
+#  outside VERSION_OPS - a manifest author writing `~>`/`^`/`<=` deserves
+#  a loud failure at generation time, not a generator quietly treating it
+#  as an exact pin or a floor it never actually asked for.
+def parse_version_constraint(step)
+  spec = step[:version]
+  return [nil, nil] if spec.nil?
+
+  # [~^<>=!]+ - any leading run of comparison-ish symbols, not just the
+  #  two this actually supports - a stray '~>'/'^'/'<=' has to be
+  #  captured as *some* op string so the VERSION_OPS check below can see
+  #  and reject it, rather than falling through unmatched and silently
+  #  becoming part of the version number itself with op defaulted to '='.
+  m = spec.strip.match(/\A([~^<>=!]+)?\s*(.+)\z/)
+  op = m[1] || '='
+  unless VERSION_OPS.include?(op)
+    raise "#{step[:type]} '#{step[:name]}': unsupported version operator '#{op}' in '#{spec}' (only #{VERSION_OPS.join('/')} implemented)"
+  end
+
+  [op, m[2]]
 end
 
 # dedup! - drops a later step whose (type, name) already appeared

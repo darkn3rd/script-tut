@@ -154,7 +154,8 @@ ubuntu22:
         - apt: [clang, libclang-dev]
           # Skip incompatible precompiled binary with glibc 2.39
           # and compile from source using glibc 2.35
-        - gem: ratatui_ruby --platform ruby
+        - gem: ratatui_ruby
+          args: --platform ruby
     testbox:
       packages:
         - cmd: pwsh --version
