@@ -1,7 +1,17 @@
 cygwin:
   global:
     packages:
-      - script: cygwin_purge_windows_path
+      - cyg: vim
+      - file: cygwin_default_zshrc
+      - append: cygwin_purge_windows_path
+        script: cygwin_purge_windows_path
+      # Ruby required for lessons.gen_scripts, scriptbox, and testbox
+      - cyg: 
+        - ruby
+        - ruby-rake
+      # PowerShell required for lessons.win_scripts, scriptbox, and testbox
+      #  Configuration will depend on Windows installation
+      - path: /cygdrive/c/Windows/System32/WindowsPowerShell/v1.0/
     lessons:
       gen_scripts:
         awk:
@@ -9,7 +19,7 @@ cygwin:
             - cyg: gawk
         groovy:
           packages:
-            - script: cygwin_groovy_path
+            - append: cygwin_groovy_path
         perl:
           packages:
             # perl_base = minimal perl
@@ -17,6 +27,9 @@ cygwin:
             - cyg: perl
               meets: perl
             - script: cygwin_cpan_local_setup
+              append: 
+                - cygwin_cpan_local_setup_zsh
+                - cygwin_cpan_local_setup_bash
               needs: make
             - cpan: App::cpanminus
             - cpanm: Switch
@@ -26,10 +39,6 @@ cygwin:
         python3:
           packages:
             - cyg: python312
-        ruby:
-          packages:
-            - cyg: ruby
-            - cyg: ruby-rake
         tcl:
           packages:
             - cyg: tcl
@@ -46,7 +55,6 @@ cygwin:
         zsh:
           packages:
             - cyg: zsh
-              script: cygwin_zsh_setup
       compiled_lang:
         packages:
           - cyg:
@@ -72,7 +80,7 @@ cygwin:
             - path: /cygdrive/c/Program Files/Go/bin/
         java:
           packages:
-            - script: cygwin_corretto_path
+            - append: cygwin_corretto_path
         rust:
           packages:
             - cyg: rust
@@ -84,16 +92,12 @@ cygwin:
           packages:
             - path: /cygdrive/c/Windows/System32/WindowsPowerShell/v1.0/
     testbox:
-      packages:
-        - cyg: ruby
-        - path: /cygdrive/c/Windows/System32/WindowsPowerShell/v1.0/
     scriptbox:
       packages:
-        - cyg: ruby
-        - cyg: rubygems
-        - cyg: ruby-devel
-        - cyg: libclang-devel
-        - cyg: clang
+        - cyg: 
+          - ruby-devel
+          - libclang-devel
+          - clang
         - script: cygwin_update_gems
         - script: cygwin_ratatui_ruby_gem
 scripts:
@@ -102,22 +106,7 @@ scripts:
     # Purge Windows Path as Windows binaries interfere with Cygwin posix binaries
     # Windows Paths that are needed will be selectively added on a case-by-case basis
     cmd: |
-      grep -qxF '# purge-windows-path' ~/.bashrc 2>/dev/null || cat >> ~/.bashrc <<'EOF'
-      # purge-windows-path
       export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
-      EOF
-
-      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
-  cygwin_zsh_setup:
-    type: bash
-    # skel .zshrc only gets created on first interactive launch, which
-    # never happens during non-interactive provisioning).
-    cmd: |
-      touch ~/.zshrc
-      grep -qxF '# purge-windows-path' ~/.zshrc 2>/dev/null || cat >> ~/.zshrc <<'EOF'
-      # purge-windows-path
-      export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
-      EOF
   cygwin_cpan_local_setup:
     type: bash
     cmd: |
@@ -125,65 +114,16 @@ scripts:
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
 
-      # local::lib's own perl -Mlocal::lib=... invocation decides its OUTPUT
-      #  SYNTAX (bash `export` vs Windows batch `@if`/`@set`) by checking
-      #  $ENV{SHELL}'s basename BEFORE even looking at $^O (see
-      #  guess_shelltype in local/lib.pm) - confirmed directly against a
-      #  real failure: this whole chain (pwsh -> bash.exe) inherits
-      #  SHELL=cmd.exe from sshd's own default shell further up, and
-      #  nothing normally resets it, so local::lib silently emits
-      #  Windows batch syntax that `eval` then tries to run as bash
-      #  commands. Exported (not just set) so child processes - and this
-      #  same line re-run from ~/.bashrc on every future interactive
-      #  session - see the correct value too.
-      grep -qxF 'export SHELL=/bin/bash' ~/.bashrc 2>/dev/null || echo 'export SHELL=/bin/bash' >> ~/.bashrc
-      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
-      if [[ -f $HOME/.zshrc ]]; then
-        grep -qxF 'export SHELL=/bin/zsh' ~/.zshrc 2>/dev/null || echo 'export SHELL=/bin/zsh' >> ~/.zshrc
-        grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-        grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
-      fi
-
-      # Direct, not `source ~/.bashrc` - a script run non-interactively
-      # (any provisioner, or even a human running this file with `bash
-      # script.sh`) hits nearly every default .bashrc's own "return if
-      # not interactive" guard before ever reaching the lines just
-      # appended above, so they'd never take effect in this process.
       export SHELL=/bin/bash
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       export PATH=$HOME/perl5/bin:$PATH
-  cygwin_corretto_path:
-    type: bash
-    # Dynamically find corretto17jdk based on build number 
-    cmd: |
-      CORRETTO_BIN=$(ls -d "/cygdrive/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
-      if [ -n "$CORRETTO_BIN" ]; then
-        grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.bashrc
-        if [[ -f $HOME/.zshrc ]]; then
-          grep -qxF "export PATH=\"$CORRETTO_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$CORRETTO_BIN:\$PATH\"" >> ~/.zshrc
-        fi
-        export PATH="$CORRETTO_BIN:$PATH"
-      else
-        echo "WARNING: no Amazon Corretto jdk17.* found under /cygdrive/c/Program Files/Amazon Corretto/" >&2
-      fi
-  cygwin_groovy_path:
-    type: bash
-    # Dynamically find Groovy's patha based on build number 
-    cmd: |
-      GROOVY_BIN=$(ls -d "/cygdrive/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
-      if [ -n "$GROOVY_BIN" ]; then
-        grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.bashrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.bashrc
-        if [[ -f $HOME/.zshrc ]]; then
-          grep -qxF "export PATH=\"$GROOVY_BIN:\$PATH\"" ~/.zshrc 2>/dev/null || echo "export PATH=\"$GROOVY_BIN:\$PATH\"" >> ~/.zshrc
-        fi
-        export PATH="$GROOVY_BIN:$PATH"
-      else
-        echo "WARNING: no groovy-* found under /cygdrive/c/tools/" >&2
-      fi
   cygwin_update_gems:
     type: bash
-    cmd: gem update --system
+    cmd: |
+      URL="https://rubygems.org/api/v1/versions/rubygems-update/latest.json"
+      if [[ "$(curl -s $URL | grep -oP '"version"[: ]*"\K[^"]+')" != "$(gem --version)" ]]; then 
+        gem update --system
+      fi
   cygwin_ratatui_ruby_gem:
     type: bash
     cmd: |
@@ -240,3 +180,60 @@ scripts:
         | head -1
       )
       cp ratatui_ruby.so "$RATATUI_RUBY_SO_EXT_DEST"
+
+appends: 
+  cygwin_purge_windows_path:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/cygdrive' | paste -sd ':')
+  cygwin_cpan_local_setup_bash:
+    dest: "$HOME/.bashrc"
+    lines:
+      # SHELL required for local::lib on Windows
+      #   local::lib emits Windows batch syntax if not specified
+      #   See: https://github.com/Perl-Toolchain-Gang/local-lib/issues/15
+      - export SHELL=/usr/bin/bash
+      - eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      - export PATH=$HOME/perl5/bin:$PATH
+  cygwin_cpan_local_setup_zsh:
+    dest: "$HOME/.zshrc"
+    lines:
+      # SHELL required for local::lib on Windows
+      #   local::lib emits Windows batch syntax if not specified
+      #   See: https://github.com/Perl-Toolchain-Gang/local-lib/issues/15
+      - export SHELL=/usr/bin/zsh
+      - eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      - export PATH=$HOME/perl5/bin:$PATH
+  # Detect Windows Groovy versioned path and append to PATH
+  cygwin_groovy_path:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - GROOVY_BIN=$(ls -d "/cygdrive/c/tools/groovy-"*"/bin" 2>/dev/null | sort -V | tail -1)
+      - '[[ -d "$GROOVY_BIN" ]] && export PATH="$GROOVY_BIN:$PATH"'
+  # Detect Windows Corretto JDK versioned path and append to PATH
+  #   Dynamically find corretto17jdk based on build number 
+  cygwin_corretto_path:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - CORRETTO_BIN=$(ls -d "/cygdrive/c/Program Files/Amazon Corretto/jdk17."*"/bin" 2>/dev/null | sort -V | tail -1)
+      - '[[ -d "$CORRETTO_BIN" ]] && export PATH="$CORRETTO_BIN:$PATH"'
+
+files:
+  cygwin_default_zshrc:
+    dest: $HOME/.zshrc
+    content: |
+      # reset inherited bash prompt
+      PROMPT=$'\n%F{green}%n@%m %F{yellow}%~%f\n%# '
+
+      # settings from zsh-newuser-install 
+      HISTFILE=~/.histfile
+      HISTSIZE=1000
+      SAVEHIST=1000
+      setopt beep extendedglob nomatch
+      unsetopt autocd
+      bindkey -v
+      
+      # settings from compinstall
+      autoload -Uz compinit
+      compinit
+

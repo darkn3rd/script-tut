@@ -1,0 +1,16 @@
+source 'https://supermarket.chef.io'
+metadata
+
+# scriptbox/sdkman - sibling cookbooks (../scriptbox, ../sdkman), not
+#  real dependencies of lessons itself - vendored here anyway so a
+#  single `berks vendor` from this one Berksfile populates
+#  .berks-vendor/ with every cookbook the Vagrantfile's own run_list
+#  (or, for sdkman, a real dependents' own metadata.rb) needs, rather
+#  than requiring a separate `berks vendor` invocation per cookbook.
+cookbook 'scriptbox', path: '../scriptbox'
+cookbook 'sdkman', path: '../sdkman'
+
+# chocolatey IS a real dependency (see ../lessons's own metadata.rb) -
+#  pinned to this local path so Berkshelf resolves it here instead of
+#  fetching Supermarket's own stale `chocolatey` cookbook.
+cookbook 'chocolatey', path: '../chocolatey'

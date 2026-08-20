@@ -3,6 +3,8 @@ windows:
   global:
     packages:
       - script: windows_chocolatey
+      - choco: vim
+        append: windows_vi_alias
       - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
@@ -31,6 +33,15 @@ windows:
             - choco: python3
               script: windows_python3
         ruby:
+          # Not in global: (unlike gsudo/make above) - scriptbox and
+          #  testbox both need it too, but per ../ubuntu2204's own
+          #  convention (see its own gen_scripts.ruby), they get it by
+          #  running *after* lessons in the run list/call tree rather
+          #  than each redeclaring their own copy - confirmed directly
+          #  this matters: sitting in global: instead left it out of the
+          #  Chef data bag entirely (generate_chef_databag.rb's own
+          #  LESSON_AREAS never includes 'global'), so `lessons`'s own
+          #  Chef converge never installed Ruby at all.
           packages:
             - choco: ruby
         tcl:
@@ -59,29 +70,28 @@ windows:
             - choco: rust
       win_scripts:
         packages:
+          # Same reasoning as gen_scripts.ruby just above - required by
+          #  this area itself (and by scriptbox/testbox, which rely on
+          #  lessons running first rather than each redeclaring it), and
+          #  was silently dropped from the Chef data bag entirely while
+          #  it lived in global:.
+          - choco: powershell-core
           - choco: mscoreutils
-        powershell:
-          packages:
-            - choco: powershell-core
-      cibox:
-        packages:
-          - feature: Microsoft-Windows-Subsystem-Linux
-            reboot: no
-          - feature: VirtualMachinePlatform
-            reboot: yes
-          - choco: docker-desktop
-          - choco: act-cli
-      testbox:
-        packages:
-          - choco: powershell-core
-          - choco: ruby
-          - script: windows_psake
-      scriptbox:
-        packages:
-          - choco: powershell-core
-          - choco: ruby
-          - script: windows_update_gems
-          - gem: ratatui_ruby      
+    cibox:
+      packages:
+        - feature: Microsoft-Windows-Subsystem-Linux
+          reboot: no
+        - feature: VirtualMachinePlatform
+          reboot: yes
+        - choco: docker-desktop
+        - choco: act-cli
+    testbox:
+      packages:
+        - script: windows_psake
+    scriptbox:
+      packages:
+        - script: windows_update_gems
+        - gem: ratatui_ruby    
 scripts:
   windows_chocolatey:
     type: powershell
@@ -124,7 +134,13 @@ scripts:
   windows_update_gems:
     type: powershell
     elevated: true
-    cmd: gem update --system
+    cmd: |
+      $URL = "https://rubygems.org/api/v1/versions/rubygems-update/latest.json"
+      $LatestVersion = (Invoke-RestMethod -Uri $URL).version
+      $CurrentVersion = (gem --version).Trim()
+      if ($LatestVersion -ne $CurrentVersion) {
+        gem update --system
+      }
   windows_python2:
     type: powershell
     elevated: true
@@ -166,3 +182,9 @@ scripts:
         New-Item -ItemType Directory -Path $corePSModules -Force | Out-Null
         Copy-Item -Path $winPSakeModule -Destination $corePSModules -Recurse -Force
       }
+appends:
+  windows_vi_alias:
+    # $Env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+    dest: $PROFILE
+    lines:
+      - Set-Alias -Name vi -Value vim

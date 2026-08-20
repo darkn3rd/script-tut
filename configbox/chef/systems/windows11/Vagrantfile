@@ -1,0 +1,97 @@
+SCRIPT_TUT_PATH="../../../../.."
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "gusztavvargadr/windows-11"
+  config.vm.box_version = "2607.1.0"
+  # Windows guest rename rejects a hostname containing a period, as this
+  # requires joining an Active Directory (Kerberos, LDAP) Domain.
+  config.vm.hostname = "chef-node-02"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "C:/script-tut"
+
+  # Virtualbox Freeze at EFI: debug point DXE_AP
+  # Issue: https://github.com/VirtualBox/virtualbox/issues/799
+  # Problem
+  #  * 2 or 6 vCPUs causes freeze on Intel Core Ultra 9 285K
+  # Solutions:
+  #  * Use Virtualbox 7.2.4 or earlier
+  #  * Use 1 vCPU, 4-5 vCPUs, 7+ vCPUs
+  #  * Use Intel Core i5-1038NG7 CPU or similar 
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+    vb.gui = true
+  end
+
+  # Post Install Verification Check is broken with
+  #   `plugins/provisioners/chef/cap/windows/chef_installed.rb`
+  # * See: https://github.com/hashicorp/vagrant/issues/12587
+  # * Solution: 
+  #     - Turn off Vagrant's built-in boostrap mechanism with broken detection
+  #     - Manually handle installing Cinc 
+  config.vm.provision "shell", name: "install_cinc", inline: <<-'SHELL'
+    iex (irm 'https://omnitruck.cinc.sh/install.ps1')
+    Install-Project -project cinc -version 19 -install_strategy once
+  SHELL
+
+  # Chef Execution Check is broken with as it searches "/Chef*/" 
+  #    version banner output information with 
+  #    `plugins/provisioners/chef/provisioner/chef_zero.rb`
+  # Problems:
+  #  * Required `/Chef*/` version banner not emitted from cinc-client
+  #  * Required `/Chef*/` version banner not emitted from chef-client.bat wrapper
+  # Solution:
+  #  * Create alterantive shim wrapper that emits `/Chef*/` for chef_zero.rb
+  CHEF_SHIM_SCRIPT = <<-'SHIM'
+    New-Item -ItemType Directory -Path 'C:\vagrant-chef-shim' -Force | Out-Null
+    @'
+@echo off
+if "%~1"=="-v" (
+  echo Chef Client: 19.3.14
+  exit /b 0
+)
+if "%~1"=="--version" (
+  echo Chef Client: 19.3.14
+  exit /b 0
+)
+"C:\cinc-project\cinc\bin\cinc-client.bat" %*
+'@ | Set-Content -Path 'C:\vagrant-chef-shim\chef-client.bat' -Encoding ASCII
+  SHIM
+
+  config.vm.provision "shell", name: "chef_client_shim", inline: CHEF_SHIM_SCRIPT
+
+
+  # Node Path Workaround
+  # Issue: https://github.com/chef/chef/issues/16309
+  # Problem:
+  #   * chef-zero local-mode unconditionally tries to set owner/DACL on every node file
+  #     it creates when `ChefUtils.windows?` is true. There's no config flag to run this off.
+  #     This causes a problem with VBoxSF share that doesn't have NTFS support for DACL.
+  # Solution:
+  #   * Setup nodes direcotry on guest 
+  #     * skip sync by setting :vm and throw aaway :host with nodes_path: 
+  #       `chef.nodes_path = [[:vm, path][:host, path]]`
+  #     * create local path that matches :vm path
+  
+  config.vm.provision "shell", name: "chef_nodes_dir", inline: <<-'SHELL'
+    New-Item -ItemType Directory -Path 'C:\vagrant-chef-nodes' -Force | Out-Null
+  SHELL
+
+  config.vm.provision "chef_zero" do |chef|
+    chef.install = false
+    chef.binary_path = "C:/vagrant-chef-shim"
+
+    chef.cookbooks_path = "../../.berks-vendor"
+    chef.data_bags_path = "../../data_bags"
+    # Node Path Workaround (see above comment)
+    chef.nodes_path = [[:vm, "C:/vagrant-chef-nodes"], [:host, "../../nodes"]]
+    chef.add_recipe "lessons"
+    chef.log_level = "debug"
+
+    # Override attributes 
+    chef.json = {
+      "lessons" => {
+        "platform" => "windows"
+      }
+    }
+  end
+end

@@ -18,3 +18,9 @@ lessons/compiled_lang/*/target/*
 # regenerated on demand from config/*.yml - see scriptbox/generated/README.md.
 scriptbox/generated/*
 !scriptbox/generated/README.md
+
+# configbox/chef/.berks-vendor/ holds `berks vendor` output for
+# configbox/chef/cookbooks/lessons's own Berksfile - third-party
+# Supermarket cookbooks (pyenv, ruby_rbenv, perl - see lessons's own
+# metadata.rb), fetched on demand, not part of this repo's own source.
+configbox/chef/.berks-vendor/

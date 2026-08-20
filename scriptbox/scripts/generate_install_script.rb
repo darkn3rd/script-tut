@@ -8,7 +8,7 @@ require_relative 'resolve_order'
 #  step[:type], nil for a type that dialect doesn't know about ('script'
 #  is deliberately absent from both: it's dialect-agnostic, handled once
 #  in command_for instead of duplicated in each).
-def bash_install(step)
+def bash_install(step, tree)
   case step[:type]
   when 'brew'   then "brew install #{step[:name]}"
   when 'cask'   then "brew install --cask #{step[:name]}"
@@ -39,7 +39,25 @@ def bash_install(step)
   #  step isn't here either - same as pacman's own -Syu refresh below,
   #  it's a property of the whole script, not any one step, so
   #  write_install_script injects it directly.
-  when 'apt'    then "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
+  # apt_repository: - a sibling key on this same step (see resolve_
+  #  order.rb's own flatten, which reads it directly onto the step, not
+  #  as a separate attached one) - `add-apt-repository` itself refreshes
+  #  the package index for the new repo by default (no --no-update
+  #  passed), so nothing extra is needed before the install line below
+  #  sees packages from it. add_apt_repo: is the other, non-PPA way to
+  #  add a repo (a raw signed-by key + list file, e.g. Corretto/Docker) -
+  #  a *name* into the manifest's own add_apt_repos: block (mirroring
+  #  file:/append:'s own name-into-files:/appends: shape), rendered as a
+  #  call to the shared add_apt_repo() function instead of a literal
+  #  add-apt-repository invocation - see emit_helper_functions for where
+  #  that function itself gets defined.
+  when 'apt'
+    repo = step[:apt_repository] ? "sudo add-apt-repository -y #{step[:apt_repository]}\n" : ''
+    if step[:add_apt_repo]
+      entry = tree['add_apt_repos'][step[:add_apt_repo]]
+      repo += %(add_apt_repo "#{entry['name']}" "#{entry['key_url']}" "#{entry['repo_uri']}" "#{entry['distro_string']}"\n)
+    end
+    "#{repo}sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is
   #  already installed (a repeat/unattended run shouldn't fail or
   #  rebuild from source unnecessarily).
@@ -113,6 +131,88 @@ def powershell_install(step)
   end
 end
 
+# file_write(step, tree) - a 'file' step (see resolve_order.rb's own
+#  ATTACHABLE_KEYS) as a heredoc write, looked up in the manifest's own
+#  files: block by name. The generic, data-driven equivalent of what
+#  used to be a hand-written `cat <<'EOF' > $HOME/.zshrc` script body -
+#  same heredoc shape, just emitted directly from files:'s own dest:/
+#  content: instead of a script author having to write the wrapper by
+#  hand each time. content is forced to end in exactly one newline
+#  before the terminator - confirmed directly via a real bash syntax
+#  error this matters, not just tidiness: a files: entry that happens
+#  to be the very last thing in its own YAML file inherits that file's
+#  own missing trailing newline (a common editor/save artifact) straight
+#  into its own content string, which without this would glue EOF onto
+#  the last content line instead of giving it its own - the heredoc
+#  terminator then never matches, and bash reads to end-of-file instead.
+def file_write(step, tree)
+  entry = tree['files'][step[:name]]
+  content = entry['content'].end_with?("\n") ? entry['content'] : "#{entry['content']}\n"
+  "cat <<'EOF' > #{entry['dest']}\n#{content}EOF"
+end
+
+# append_lines(step, tree) - an 'append' step (see resolve_order.rb's
+#  own ATTACHABLE_KEYS) as one grep-guarded append per dest/line pair,
+#  looked up in the manifest's own appends: block by name. `dest` may be
+#  a single path or a list (e.g. both .bashrc and .zshrc) - Array()
+#  normalizes either shape the same way bash_install's own apt/pacman
+#  cases already do for `name`. Guarded on the dest file actually
+#  existing first, same reasoning as bash_install's own 'path' case:
+#  appending to a shell startup file that isn't actually anyone's yet
+#  accomplishes nothing. `|| true` at the end of each line - confirmed
+#  directly via a real `vagrant provision` failure this matters, not
+#  just defensive: `[ -f dest ] && { ... }` alone returns the *test's*
+#  own exit code (1) when dest doesn't exist yet, and set -e's usual
+#  exemption for a non-final command in an && list only protects that
+#  one statement from aborting immediately - it doesn't stop a non-zero
+#  status from becoming a *function's own return value* when this line
+#  happens to be the last one in its generated section function, which
+#  then aborts the whole script the moment something else calls that
+#  function as an ordinary statement. `|| true` makes the guard's own
+#  success unconditional, the same way `sudo apt-get remove ... 2>
+#  /dev/null || true` elsewhere in this file already has to for the
+#  identical reason.
+def append_lines(step, tree)
+  entry = tree['appends'][step[:name]]
+  Array(entry['dest']).flat_map do |dest|
+    Array(entry['lines']).map do |line|
+      # Lines like msys2/cygwin_purge_windows_path embed their own single
+      #  quotes (tr ':' '\n', grep -vE '^/[a-zA-Z]/', ...). Naively
+      #  interpolating `line` inside a '...' wrapper lets those embedded
+      #  quotes toggle bash's own quote-parsing mid-string, silently
+      #  corrupting what gets written (confirmed directly: produced
+      #  `tr : n` instead of `tr ':' '\n'` in a real generated .bashrc).
+      #  Standard bash single-quote escaping - close, escaped literal
+      #  quote, reopen - keeps the whole line literal regardless of
+      #  what it contains.
+      quoted = "'" + line.gsub("'") { "'\\''" } + "'"
+      %([ -f "#{dest}" ] && { grep -qxF #{quoted} "#{dest}" 2>/dev/null || echo #{quoted} >> "#{dest}"; } || true)
+    end
+  end.join("\n")
+end
+
+# powershell_append_lines(step, tree) - the PowerShell dialect's
+#  equivalent of append_lines above: same shape (looked up in appends:
+#  by name, dest may be a single path or a list, guarded on the dest
+#  already existing), just PowerShell idioms in place of bash ones.
+#  `-contains` against Get-Content's own line array is the exact-line
+#  match `grep -qxF` gives bash (not -Pattern/-SimpleMatch, which is a
+#  substring match, not a whole-line one). dest is wrapped in double
+#  quotes so a manifest can use "$PROFILE" itself, not just a literal
+#  path - PowerShell double-quoted strings interpolate variables the
+#  same way bash's do. Line values are escaped for a PowerShell
+#  single-quoted string (a literal quote there is just doubled, not the
+#  close/escape/reopen dance bash needs).
+def powershell_append_lines(step, tree)
+  entry = tree['appends'][step[:name]]
+  Array(entry['dest']).flat_map do |dest|
+    Array(entry['lines']).map do |line|
+      quoted = "'" + line.gsub("'") { "''" } + "'"
+      %(if ((Test-Path "#{dest}") -and -not ((Get-Content "#{dest}" -ErrorAction SilentlyContinue) -contains #{quoted})) { Add-Content -Path "#{dest}" -Value #{quoted} })
+    end
+  end.join("\n")
+end
+
 # command_for - the full install command for one resolved step, in the
 #  given dialect ('bash' or 'powershell' - see write_install_script).
 #  `script` steps pull their multi-line cmd straight from the YAML's
@@ -133,7 +233,10 @@ end
 #  global 3.14.6" right after installing a pyenv version) is a
 #  different thing - runs immediately after that other install, in
 #  the same generated script - see resolve_order.rb's own step[:cmd].
-def command_for(step, scripts, dialect)
+#  `tree` (the whole parsed manifest, not just its own scripts: block)
+#  so 'file'/'append' can look themselves up in files:/appends: the
+#  same way 'script' already looks itself up in scripts:.
+def command_for(step, tree, dialect)
   install =
     case step[:type]
     # A bare function *call*, not the body - write_install_script's own
@@ -142,9 +245,15 @@ def command_for(step, scripts, dialect)
     #  unconditionally), so a typo'd/missing scripts: entry still falls
     #  through to the "unsupported" TODO below instead of generating a
     #  call to a function that was never defined.
-    when 'script' then (scripts.dig(step[:name], 'cmd') ? step[:name] : nil)
+    when 'script' then (tree['scripts'].dig(step[:name], 'cmd') ? step[:name] : nil)
     when 'cmd' then step[:name]
-    else dialect == 'powershell' ? powershell_install(step) : bash_install(step)
+    # 'file' stays bash-only for now (heredoc write) - no windows.yml
+    #  manifest uses it yet, so there's no PowerShell equivalent to write
+    #  here until one actually needs it. 'append' does have both: see
+    #  append_lines (bash) / powershell_append_lines (PowerShell) above.
+    when 'file' then file_write(step, tree)
+    when 'append' then dialect == 'powershell' ? powershell_append_lines(step, tree) : append_lines(step, tree)
+    else dialect == 'powershell' ? powershell_install(step) : bash_install(step, tree)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
   #  this fallback existed, an unhandled type (e.g. 'choco'/'feature'
@@ -158,7 +267,7 @@ def command_for(step, scripts, dialect)
   step[:cmd] && step[:type] != 'cmd' ? "#{install}\n#{step[:cmd]}" : install
 end
 
-# emit_script_functions(f, steps, scripts, dialect) - defines every
+# emit_script_functions(f, steps, tree, dialect) - defines every
 #  unique `script`-type step referenced anywhere in `steps` as a real,
 #  named function up front (bash: `name() { ... }`, PowerShell:
 #  `function name { ... }`), instead of splicing its body inline at
@@ -175,9 +284,9 @@ end
 #  included here - it has no name of its own to define a function
 #  under (step[:name] and step[:cmd] are the same string - see
 #  command_for's own comment), so there's nothing to name it.
-def emit_script_functions(f, steps, scripts, dialect)
+def emit_script_functions(f, steps, tree, dialect)
   steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
-    body = scripts.dig(sname, 'cmd')&.rstrip
+    body = tree['scripts'].dig(sname, 'cmd')&.rstrip
     next unless body
 
     if dialect == 'powershell'
@@ -187,6 +296,43 @@ def emit_script_functions(f, steps, scripts, dialect)
     end
     f.puts indent_body(body, '  ')
     f.puts '}'
+    f.puts ''
+  end
+end
+
+# emit_helper_functions(f, steps, tree, dialect, helpers) - every shared
+#  helper function this script's own steps actually need, defined once
+#  up front, before anything calls it - same "define once, call at
+#  point of use" shape as emit_script_functions, except these come from
+#  a cross-platform scriptbox/config/helpers/<name>.yml (see
+#  lineage_for/load_helpers) instead of this platform's own scripts:
+#  block, so every platform sharing an OS lineage reuses the same
+#  function body instead of each duplicating it. A helper's own cmd: is
+#  already a complete, self-contained function definition (unlike
+#  scripts:'s own cmd:, which is just a body this wraps in `name() {
+#  ... }`) - see helpers/debian.yml's own add_apt_repo. Two ways a step
+#  can need one: an add_apt_repo: field (this generator's own rendering
+#  calls the helper itself - see bash_install's 'apt' case), or a
+#  script's own manifest-authored uses: field (the script's *cmd body
+#  itself* calls it, which this generator can't see inside that raw
+#  string, so the manifest author has to say so explicitly). Bash-only
+#  for now - every lineage on the multi-OS roadmap with an actual
+#  helpers file today is bash-dialect; nothing here assumes that stays
+#  true forever, it just isn't needed yet.
+def emit_helper_functions(f, steps, tree, dialect, helpers)
+  return if dialect == 'powershell' || helpers.nil?
+
+  needed = []
+  needed << 'add_apt_repo' if steps.any? { |s| s[:add_apt_repo] }
+  steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
+    needed.concat(Array(tree.dig('scripts', sname, 'uses')))
+  end
+
+  needed.uniq.each do |hname|
+    body = helpers.dig('helpers', hname, 'cmd')&.rstrip
+    next unless body
+
+    f.puts body
     f.puts ''
   end
 end
@@ -226,7 +372,7 @@ def indent_body(body, indent)
   end.join
 end
 
-# render_step(step, scripts, dialect, insert_before) - one step's full
+# render_step(step, tree, dialect, insert_before) - one step's full
 #  output block (status line + install command + any dialect-specific
 #  follow-up), as a single un-indented string ending in a blank line -
 #  the same shape write_install_script used to emit directly into the
@@ -238,24 +384,24 @@ end
 #  why tracking that here (by which step is generated *first*) went
 #  wrong once steps could live inside a function that's defined earlier
 #  in the file than one that actually *runs* earlier.
-def render_step(step, scripts, dialect, insert_before = {})
+def render_step(step, tree, dialect, insert_before = {})
   lines = []
   Array(insert_before[step.object_id]).each { |name| lines << name }
   if dialect == 'powershell'
     lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, scripts, dialect)
+    lines << command_for(step, tree, dialect)
     if step[:type] == 'choco'
       lines << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
       lines << 'Update-SessionEnvironment'
     end
   else
     lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, scripts, dialect)
+    lines << command_for(step, tree, dialect)
   end
   "#{lines.join("\n")}\n\n"
 end
 
-# emit_provider_functions(f, groups, scripts, dialect) - defines each
+# emit_provider_functions(f, groups, tree, dialect) - defines each
 #  relocate_cross_cutting group as its own function, up front - *defines*
 #  only. Nothing here calls one: a relocated provider is only ever
 #  called from the specific consumer(s) that actually needed it moved
@@ -264,10 +410,10 @@ end
 #  pre-phase, which would just reintroduce the same implicit-ordering
 #  break this whole mechanism exists to avoid (see resolve_order.rb's
 #  own relocate_cross_cutting comment).
-def emit_provider_functions(f, groups, scripts, dialect)
+def emit_provider_functions(f, groups, tree, dialect)
   groups.each do |group|
     f.puts(dialect == 'powershell' ? "function #{group[:name]} {" : "#{group[:name]}() {")
-    body = group[:steps].map { |s| render_step(s, scripts, dialect) }.join
+    body = group[:steps].map { |s| render_step(s, tree, dialect) }.join
     f.puts indent_body(body, '  ')
     f.puts '}'
     f.puts ''
@@ -314,18 +460,18 @@ end
 #  defined. Returns whether it emitted itself, which is exactly what the
 #  caller (its parent, or write_install_script for the root) needs to
 #  decide that.
-def emit_section_functions(f, node, children, own_steps, scripts, dialect, insert_before, visited = {})
+def emit_section_functions(f, node, children, own_steps, tree, dialect, insert_before, visited = {})
   return visited[node] if visited.key?(node)
 
   emitted_children = children[node].select do |child|
-    emit_section_functions(f, child, children, own_steps, scripts, dialect, insert_before, visited)
+    emit_section_functions(f, child, children, own_steps, tree, dialect, insert_before, visited)
   end
 
   will_emit = !own_steps[node].empty? || !emitted_children.empty?
   visited[node] = will_emit
   return false unless will_emit
 
-  body = own_steps[node].map { |s| render_step(s, scripts, dialect, insert_before) }.join
+  body = own_steps[node].map { |s| render_step(s, tree, dialect, insert_before) }.join
   body += emitted_children.map { |c| "#{c}\n" }.join
 
   f.puts(dialect == 'powershell' ? "function #{node} {" : "#{node}() {")
@@ -335,16 +481,20 @@ def emit_section_functions(f, node, children, own_steps, scripts, dialect, inser
   true
 end
 
-# write_install_script(name, steps, scripts, dialect, generated_dir,
+# write_install_script(name, steps, tree, dialect, generated_dir,
 #  header_lines, natural_steps, apt_mirror) - writes generated/
 #  <name>_install.<ext> in the given dialect, shared by generate_install_
 #  script.rb's and gen_installer.rb's own entry points so the two never
-#  drift into writing the file header/footer two different ways.
-#  `natural_steps` - a flatten() snapshot taken *before* resolve!
-#  reorders anything - has to come from the caller: resolve! has already
-#  mutated `steps` in place by the time it reaches here, and
-#  relocate_cross_cutting needs the tree's original, undisturbed
-#  document order (see its own comment, and resolve_order.rb's
+#  drift into writing the file header/footer two different ways. `tree`
+#  - the whole parsed manifest, not just its own scripts: block - so
+#  command_for's own 'file'/'append' cases can reach files:/appends: the
+#  same way 'script' already reaches scripts:, without every function in
+#  this call chain needing its own extra parameter as more of these
+#  named-lookup blocks get added. `natural_steps` - a flatten() snapshot
+#  taken *before* resolve! reorders anything - has to come from the
+#  caller: resolve! has already mutated `steps` in place by the time it
+#  reaches here, and relocate_cross_cutting needs the tree's original,
+#  undisturbed document order (see its own comment, and resolve_order.rb's
 #  natural_function_order). `apt_mirror` - see apt_mirror_for - is
 #  optional. PowerShell gets a real self-elevation check up front rather
 #  than a comment reminding the user to run it as Administrator -
@@ -352,7 +502,7 @@ end
 #  Start-Process -Verb RunAs relaunching itself once at the top is
 #  simpler and more reliable than trying to elevate per step. Returns
 #  the path written.
-def write_install_script(name, steps, scripts, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
+def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
   out_path = File.join(generated_dir, "#{name}_install.#{ext}")
   reboot_steps = steps.select { |s| s[:reboot] }
@@ -381,6 +531,7 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
   natural_order = natural_function_order(natural_steps)
   groups, claimed, insert_before = relocate_cross_cutting(steps, natural_steps, natural_order)
   children, own_steps = section_tree(steps, claimed)
+  helpers = load_helpers(lineage_for(tree, name))
 
   File.open(out_path, 'wb') do |f|
     if dialect == 'powershell'
@@ -397,9 +548,10 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
       f.puts '    exit'
       f.puts '}'
       f.puts ''
-      emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      emit_script_functions(f, steps, tree, dialect)
+      emit_helper_functions(f, steps, tree, dialect, helpers)
+      emit_provider_functions(f, groups, tree, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
       f.puts ''
       unless reboot_steps.empty?
@@ -448,9 +600,10 @@ def write_install_script(name, steps, scripts, dialect, generated_dir, header_li
         f.puts 'pacman -Syu --noconfirm'
         f.puts ''
       end
-      emit_script_functions(f, steps, scripts, dialect)
-      emit_provider_functions(f, groups, scripts, dialect)
-      global_emitted = emit_section_functions(f, 'global', children, own_steps, scripts, dialect, insert_before)
+      emit_script_functions(f, steps, tree, dialect)
+      emit_helper_functions(f, steps, tree, dialect, helpers)
+      emit_provider_functions(f, groups, tree, dialect)
+      global_emitted = emit_section_functions(f, 'global', children, own_steps, tree, dialect, insert_before)
       f.puts 'global' if global_emitted
     end
   end
@@ -484,14 +637,69 @@ def apt_mirror_for(tree, name)
   node.is_a?(Hash) ? node['apt_mirror'] : nil
 end
 
+# lineage_for(tree, name) - this platform's own OS lineage (e.g.
+#  'debian' for Ubuntu - see scriptbox/config/env.yml's own
+#  environments: entries), used to pick which scriptbox/config/helpers/
+#  <name>.yml file(s) this platform's generated script can pull shared
+#  functions from (see load_helpers) - author-declared there, not
+#  detected here or at runtime (no /etc/os-release probing at
+#  generation time). Normally a single value - most package-install-
+#  level helpers (add_apt_repo, ...) are already correct for the whole
+#  Debian family, Ubuntu included, with nothing Ubuntu-specific needed.
+#  A list is also accepted (most-specific first, mirroring how /etc/
+#  os-release's own ID+ID_LIKE would chain - e.g. ['ubuntu', 'debian']),
+#  for the rarer case a real Ubuntu-only tier is actually needed (e.g.
+#  client-server config like firewalls, where real per-distro
+#  differences show up - not a concern for simple package installs). A
+#  merged tree (gen_installer.rb's own load_merged_config) already has
+#  tree['environments'] populated; a direct, single-file
+#  `generate_install_script.rb <config.yml>` invocation doesn't merge
+#  env.yml in, so this falls back to reading it directly as a
+#  well-known sidecar next to this very script - keeps both entry
+#  points consistent without gen_installer.rb's own full multi-file
+#  merge semantics leaking in here.
+def lineage_for(tree, name)
+  environments = tree['environments']
+  if environments.nil?
+    env_path = File.join(__dir__, '..', 'config', 'env.yml')
+    environments = File.exist?(env_path) ? YAML.load_file(env_path)['environments'] : nil
+  end
+  entry = Array(environments).find { |e| e['platform'] == name }
+  return [] unless entry
+
+  Array(entry['lineage'])
+end
+
+# load_helpers(lineage) - every helper from every scriptbox/config/
+#  helpers/<name>.yml in `lineage` (see lineage_for) that actually
+#  exists, merged into one {'helpers' => {name => {'cmd' => ...}}} -
+#  nil if `lineage` is empty or none of its entries have a helpers file
+#  yet (most do not - only debian.yml exists so far). Merged least-
+#  specific first, so a *more* specific file's own helper of the same
+#  name wins if `lineage` ever has more than one entry - it's already
+#  most-specific-first, so this walks it in reverse.
+def load_helpers(lineage)
+  return nil if lineage.nil? || lineage.empty?
+
+  merged = {}
+  lineage.reverse_each do |name|
+    path = File.join(__dir__, '..', 'config', 'helpers', "#{name}.yml")
+    next unless File.exist?(path)
+
+    data = YAML.load_file(path)[name]
+    merged.merge!(data['helpers']) if data && data['helpers']
+  end
+  merged.empty? ? nil : { 'helpers' => merged }
+end
+
 # root_key - the platform key a config file is about (e.g. "macos",
 #  "windows"). Every config file has exactly one of these alongside its
 #  "scripts" block; anything else is a malformed file, so fail fast
 #  rather than silently guessing which key to use.
 def root_key(tree)
-  candidates = tree.keys - ['scripts']
+  candidates = tree.keys - RESERVED_KEYS
   if candidates.size != 1
-    warn "#{$PROGRAM_NAME}: expected exactly one top-level key besides 'scripts', found: #{candidates.join(', ')}"
+    warn "#{$PROGRAM_NAME}: expected exactly one top-level key besides #{RESERVED_KEYS.join('/')}, found: #{candidates.join(', ')}"
     exit 1
   end
   candidates.first
@@ -599,7 +807,6 @@ if __FILE__ == $PROGRAM_NAME
   end
 
   tree = YAML.load_file(config_path)
-  scripts = tree['scripts'] || {}
   name = root_key(tree)
 
   # Order matters here: resolve! runs on the *full* list first, so
@@ -622,7 +829,7 @@ if __FILE__ == $PROGRAM_NAME
   generated_dir = File.join(__dir__, '..', 'generated')
   FileUtils.mkdir_p(generated_dir)
   dialect = dialect_for(tree, name)
-  out_path = write_install_script(name, steps, scripts, dialect, generated_dir, [
+  out_path = write_install_script(name, steps, tree, dialect, generated_dir, [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
   ], natural_steps, apt_mirror_for(tree, name))

@@ -1,0 +1,98 @@
+{
+  "id": "windows",
+  "common": [],
+  "gen_scripts": [
+    {
+      "type": "choco",
+      "name": "gawk"
+    },
+    {
+      "type": "choco",
+      "name": "groovy"
+    },
+    {
+      "type": "choco",
+      "name": "strawberryperl"
+    },
+    {
+      "type": "choco",
+      "name": "php"
+    },
+    {
+      "type": "choco",
+      "name": "python2"
+    },
+    {
+      "type": "script",
+      "name": "windows_python2",
+      "cmd": "Copy-Item \"C:\\Python27\\python.exe\" \"C:\\Python27\\python2.exe\"\nCopy-Item \"C:\\Python27\\pythonw.exe\" \"C:\\Python27\\python2w.exe\"\n$sysPath = [Environment]::GetEnvironmentVariable(\"PATH\", \"Machine\") -split ';' `\n  | Where-Object { $_ -ne '' }\n$python2Entries = $sysPath | Where-Object { $_ -like '*Python27*' }\n$otherEntries   = $sysPath | Where-Object { $_ -notlike '*Python27*' }\n$newPath = ($otherEntries + $python2Entries) -join ';'\n[Environment]::SetEnvironmentVariable(\"PATH\", $newPath, \"Machine\")\n"
+    },
+    {
+      "type": "choco",
+      "name": "python3"
+    },
+    {
+      "type": "script",
+      "name": "windows_python3",
+      "cmd": "Copy-Item \"C:\\Python314\\python.exe\" \"C:\\Python314\\python3.exe\"\nCopy-Item \"C:\\Python314\\pythonw.exe\" \"C:\\Python314\\python3w.exe\"\n"
+    },
+    {
+      "type": "choco",
+      "name": "ruby"
+    },
+    {
+      "type": "choco",
+      "name": "magicsplat-tcl-tk"
+    }
+  ],
+  "shell_scripts": [
+    {
+      "type": "choco",
+      "name": "cygwin"
+    },
+    {
+      "type": "choco",
+      "name": "cyg-get"
+    },
+    {
+      "type": "choco_cyg",
+      "name": "wget"
+    },
+    {
+      "type": "choco",
+      "name": "apt-cyg"
+    },
+    {
+      "type": "choco",
+      "name": "msys2"
+    }
+  ],
+  "compiled_lang": [
+    {
+      "type": "choco",
+      "name": "corretto17jdk"
+    },
+    {
+      "type": "choco",
+      "name": "dotnet-sdk"
+    },
+    {
+      "type": "choco",
+      "name": "go"
+    },
+    {
+      "type": "choco",
+      "name": "rust"
+    }
+  ],
+  "win_scripts": [
+    {
+      "type": "choco",
+      "name": "powershell-core"
+    },
+    {
+      "type": "choco",
+      "name": "mscoreutils"
+    }
+  ]
+}

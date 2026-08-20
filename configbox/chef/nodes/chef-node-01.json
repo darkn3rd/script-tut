@@ -1,0 +1,870 @@
+{
+  "name": "chef-node-01",
+  "normal": {
+    "tags": [
+
+    ],
+    "lessons": {
+      "platform": "windows"
+    }
+  },
+  "default": {
+    "audit": {
+      "inspec_backend_cache": true,
+      "reporter": null,
+      "fetcher": null,
+      "insecure": null,
+      "quiet": false,
+      "profiles": {
+
+      },
+      "inputs": {
+
+      },
+      "attributes": {
+
+      },
+      "waiver_file": null,
+      "json_file": {
+        "location": "C:\\cinc\\compliance_reports\\compliance-20260816225200.json"
+      },
+      "run_time_limit": 1.0,
+      "result_message_limit": 10000,
+      "result_include_backtrace": false,
+      "control_results_limit": 50,
+      "chef_node_attribute_enabled": true,
+      "compliance_phase": false,
+      "interval": {
+        "enabled": false,
+        "time": 1440
+      }
+    },
+    "perl": {
+      "version": "5.26.1.1",
+      "cpanm": {
+        "url": "https://raw.githubusercontent.com/miyagawa/cpanminus/1.7043/cpanm",
+        "checksum": "d2221f1adb956591fa43cd61d0846b961be1fffa222210f097bfd472a11e0539",
+        "suppress_diff": false,
+        "path": "C:\\strawberry\\perl\\bin\\cpanm"
+      }
+    },
+    "lessons": {
+      "platform": "ubuntu22",
+      "user": "vagrant",
+      "gen_scripts": true,
+      "shell_scripts": true,
+      "compiled_lang": true,
+      "win_scripts": true
+    }
+  },
+  "automatic": {
+    "kernel": {
+      "os_info": {
+        "boot_device": "\\Device\\HarddiskVolume2",
+        "build_number": "26200",
+        "build_type": "Multiprocessor Free",
+        "caption": "Microsoft Windows 11 Enterprise Evaluation",
+        "code_set": "1252",
+        "country_code": "1",
+        "csd_version": null,
+        "cs_name": "CHEF-NODE-01",
+        "current_time_zone": -420,
+        "data_execution_prevention_32_bit_applications": true,
+        "data_execution_prevention_available": true,
+        "data_execution_prevention_drivers": true,
+        "data_execution_prevention_support_policy": 2,
+        "debug": false,
+        "description": "",
+        "distributed": false,
+        "encryption_level": 256,
+        "foreground_application_boost": 2,
+        "install_date": "20260816150215.000000-420",
+        "large_system_cache": null,
+        "last_boot_up_time": "20260816151047.296670-420",
+        "local_date_time": "20260816155202.844000-420",
+        "locale": "0409",
+        "manufacturer": "Microsoft Corporation",
+        "max_number_of_processes": -1,
+        "max_process_memory_size": "137438953344",
+        "mui_languages": [
+          "en-US"
+        ],
+        "name": "Microsoft Windows 11 Enterprise Evaluation|C:\\WINDOWS|\\Device\\Harddisk0\\Partition4",
+        "number_of_licensed_users": 0,
+        "number_of_processes": 96,
+        "number_of_users": 1,
+        "operating_system_sku": 72,
+        "organization": "gusztavvargadr",
+        "os_architecture": "64-bit",
+        "os_language": 1033,
+        "os_product_suite": 256,
+        "os_type": 18,
+        "other_type_description": null,
+        "pae_enabled": null,
+        "plus_product_id": null,
+        "plus_version_number": null,
+        "portable_operating_system": false,
+        "primary": true,
+        "product_type": 1,
+        "registered_user": "",
+        "serial_number": "00329-20000-00001-AA077",
+        "service_pack_major_version": 0,
+        "service_pack_minor_version": 0,
+        "size_stored_in_paging_files": "1441792",
+        "status": "OK",
+        "suite_mask": 272,
+        "system_device": "\\Device\\HarddiskVolume4",
+        "system_directory": "C:\\WINDOWS\\system32",
+        "system_drive": "C:",
+        "total_visible_memory_size": "4174724",
+        "version": "10.0.26200",
+        "windows_directory": "C:\\WINDOWS"
+      },
+      "name": "Microsoft Windows 11 Enterprise Evaluation",
+      "release": "10.0.26200",
+      "version": "10.0.26200  Build 26200",
+      "os": "WINNT",
+      "product_type": "Workstation",
+      "server_core": false,
+      "cs_info": {
+        "admin_password_status": 3,
+        "automatic_managed_pagefile": true,
+        "automatic_reset_boot_option": true,
+        "automatic_reset_capability": true,
+        "boot_option_on_limit": null,
+        "boot_option_on_watch_dog": null,
+        "boot_rom_supported": true,
+        "boot_status": null,
+        "bootup_state": "Normal boot",
+        "caption": "CHEF-NODE-01",
+        "chassis_bootup_state": 3,
+        "chassis_sku_number": null,
+        "current_time_zone": -420,
+        "daylight_in_effect": true,
+        "description": "AT/AT COMPATIBLE",
+        "dns_host_name": "chef-node-01",
+        "domain": "WORKGROUP",
+        "domain_role": 0,
+        "enable_daylight_savings_time": true,
+        "front_panel_reset_status": 3,
+        "hypervisor_present": true,
+        "infrared_supported": false,
+        "initial_load_info": null,
+        "install_date": null,
+        "keyboard_password_status": 3,
+        "last_load_info": null,
+        "manufacturer": "innotek GmbH",
+        "model": "VirtualBox",
+        "name": "CHEF-NODE-01",
+        "name_format": null,
+        "network_server_mode_enabled": true,
+        "number_of_logical_processors": 2,
+        "number_of_processors": 1,
+        "oem_string_array": [
+          "vboxVer_7.2.14",
+          "vboxRev_174565"
+        ],
+        "part_of_domain": false,
+        "pause_after_reset": "-1",
+        "pc_system_type": 2,
+        "pc_system_type_ex": 2,
+        "power_management_capabilities": null,
+        "power_management_supported": null,
+        "power_on_password_status": 3,
+        "power_state": 0,
+        "power_supply_state": 3,
+        "primary_owner_contact": null,
+        "primary_owner_name": "",
+        "reset_capability": 1,
+        "reset_count": -1,
+        "reset_limit": -1,
+        "roles": [
+          "LM_Workstation",
+          "LM_Server",
+          "NT"
+        ],
+        "status": "OK",
+        "support_contact_description": null,
+        "system_family": "Virtual Machine",
+        "system_sku_number": null,
+        "system_startup_delay": null,
+        "system_startup_options": null,
+        "system_startup_setting": null,
+        "system_type": "x64-based PC",
+        "thermal_state": 3,
+        "total_physical_memory": "4274917376",
+        "user_name": null,
+        "wake_up_type": 6,
+        "workgroup": "WORKGROUP"
+      },
+      "machine": "x86_64",
+      "system_type": "Mobile"
+    },
+    "memory": {
+      "swap": {
+        "total": "1441792kB",
+        "free": "1392300kB"
+      },
+      "total": "4174724kB",
+      "free": "2127204kB"
+    },
+    "network": {
+      "interfaces": {
+        "0x6": {
+          "configuration": {
+            "ip_address": [
+              "10.0.2.15",
+              "fe80::ffc6:b0ec:c3bc:1086",
+              "fd17:625c:f037:2:44b0:dd47:9def:4f9d",
+              "fd17:625c:f037:2:d3ed:8e40:e3f5:e4aa"
+            ],
+            "arp_always_source_route": null,
+            "arp_use_ether_snap": null,
+            "caption": "[00000000] Intel(R) PRO/1000 MT Desktop Adapter",
+            "database_path": "%SystemRoot%\\System32\\drivers\\etc",
+            "dead_gw_detect_enabled": null,
+            "default_ip_gateway": [
+              "10.0.2.2",
+              "fe80::2"
+            ],
+            "default_tos": null,
+            "default_ttl": null,
+            "description": "Intel(R) PRO/1000 MT Desktop Adapter",
+            "dhcp_enabled": true,
+            "dhcp_lease_expires": "20260817151111.000000-420",
+            "dhcp_lease_obtained": "20260816151111.000000-420",
+            "dhcp_server": "10.0.2.2",
+            "dns_domain": null,
+            "dns_domain_suffix_search_order": [
+              "internal"
+            ],
+            "dns_enabled_for_wins_resolution": false,
+            "dns_host_name": "chef-node-01",
+            "dns_server_search_order": [
+              "192.168.1.1"
+            ],
+            "domain_dns_registration_enabled": false,
+            "forward_buffer_memory": null,
+            "full_dns_registration_enabled": true,
+            "gateway_cost_metric": [
+              0,
+              256
+            ],
+            "igmp_level": null,
+            "index": 0,
+            "interface_index": 6,
+            "ip_connection_metric": 25,
+            "ip_enabled": true,
+            "ip_filter_security_enabled": false,
+            "ip_port_security_enabled": null,
+            "ip_sec_permit_ip_protocols": [
+
+            ],
+            "ip_sec_permit_tcp_ports": [
+
+            ],
+            "ip_sec_permit_udp_ports": [
+
+            ],
+            "ip_subnet": [
+              "255.255.255.0",
+              "64",
+              "128",
+              "64"
+            ],
+            "ip_use_zero_broadcast": null,
+            "ipx_address": null,
+            "ipx_enabled": null,
+            "ipx_frame_type": null,
+            "ipx_media_type": null,
+            "ipx_network_number": null,
+            "ipx_virtual_net_number": null,
+            "keep_alive_interval": null,
+            "keep_alive_time": null,
+            "mac_address": "08:00:27:AD:AB:41",
+            "mtu": null,
+            "num_forward_packets": null,
+            "pmtubh_detect_enabled": null,
+            "pmtu_discovery_enabled": null,
+            "service_name": "E1G60",
+            "setting_id": "{C5CB0AB1-A4EA-4A49-B392-ABE2BAC31D08}",
+            "tcpip_netbios_options": 0,
+            "tcp_max_connect_retransmissions": null,
+            "tcp_max_data_retransmissions": null,
+            "tcp_num_connections": null,
+            "tcp_use_rfc1122_urgent_pointer": null,
+            "tcp_window_size": 64240,
+            "wins_enable_lm_hosts_lookup": true,
+            "wins_host_lookup_file": null,
+            "wins_primary_server": null,
+            "wins_scope_id": "",
+            "wins_secondary_server": null
+          },
+          "instance": {
+            "adapter_type": "Ethernet 802.3",
+            "adapter_type_id": 0,
+            "auto_sense": null,
+            "availability": 3,
+            "caption": "[00000000] Intel(R) PRO/1000 MT Desktop Adapter",
+            "config_manager_error_code": 0,
+            "config_manager_user_config": false,
+            "description": "Intel(R) PRO/1000 MT Desktop Adapter",
+            "device_id": "0",
+            "error_cleared": null,
+            "error_description": null,
+            "guid": "{C5CB0AB1-A4EA-4A49-B392-ABE2BAC31D08}",
+            "index": 0,
+            "install_date": null,
+            "installed": true,
+            "interface_index": 6,
+            "last_error_code": null,
+            "mac_address": "08:00:27:AD:AB:41",
+            "manufacturer": "Intel",
+            "max_number_controlled": 0,
+            "max_speed": null,
+            "name": "Intel(R) PRO/1000 MT Desktop Adapter",
+            "net_connection_id": "Ethernet",
+            "net_connection_status": 2,
+            "net_enabled": true,
+            "network_addresses": null,
+            "permanent_address": null,
+            "physical_adapter": true,
+            "pnp_device_id": "PCI\\VEN_8086&DEV_100E&SUBSYS_001E8086&REV_02\\3&267A616A&1&18",
+            "power_management_capabilities": null,
+            "power_management_supported": false,
+            "product_name": "Intel(R) PRO/1000 MT Desktop Adapter",
+            "service_name": "E1G60",
+            "speed": "1000000000",
+            "status": null,
+            "status_info": null,
+            "system_name": "CHEF-NODE-01",
+            "time_of_last_reset": "20260816151047.296670-420"
+          },
+          "counters": {
+
+          },
+          "addresses": {
+            "10.0.2.15": {
+              "prefixlen": "24",
+              "netmask": "255.255.255.0",
+              "broadcast": "10.0.2.255",
+              "family": "inet"
+            },
+            "fe80::ffc6:b0ec:c3bc:1086": {
+              "prefixlen": "64",
+              "family": "inet6",
+              "scope": "Link"
+            },
+            "fd17:625c:f037:2:44b0:dd47:9def:4f9d": {
+              "prefixlen": "128",
+              "family": "inet6"
+            },
+            "fd17:625c:f037:2:d3ed:8e40:e3f5:e4aa": {
+              "prefixlen": "64",
+              "family": "inet6"
+            },
+            "08:00:27:AD:AB:41": {
+              "family": "lladdr"
+            }
+          },
+          "mtu": null,
+          "type": "Ethernet 802.3",
+          "arp": {
+            "10.0.2.2": "52:54:00:12:35:00",
+            "10.0.2.255": "ff:ff:ff:ff:ff:ff",
+            "224.0.0.22": "01:00:5e:00:00:16",
+            "224.0.0.251": "01:00:5e:00:00:fb",
+            "224.0.0.252": "01:00:5e:00:00:fc",
+            "239.255.255.250": "01:00:5e:7f:ff:fa",
+            "255.255.255.255": "ff:ff:ff:ff:ff:ff"
+          },
+          "encapsulation": "Ethernet"
+        }
+      },
+      "default_gateway": "10.0.2.2",
+      "default_interface": "0x6"
+    },
+    "counters": {
+      "network": {
+
+      }
+    },
+    "ipaddress": "10.0.2.15",
+    "macaddress": "08:00:27:AD:AB:41",
+    "ip6address": "fe80::ffc6:b0ec:c3bc:1086",
+    "os": "windows",
+    "os_version": "10.0.26200",
+    "platform": "windows",
+    "platform_version": "10.0.26200",
+    "platform_family": "windows",
+    "uptime_seconds": 2476,
+    "uptime": "41 minutes 16 seconds",
+    "dmi": {
+      "chassis": {
+        "all_records": [
+          {
+            "AudibleAlarm": null,
+            "BreachDescription": null,
+            "CableManagementStrategy": null,
+            "Caption": "System Enclosure",
+            "ChassisTypes": [
+              1
+            ],
+            "CreationClassName": "Win32_SystemEnclosure",
+            "CurrentRequiredOrProduced": null,
+            "Depth": null,
+            "Description": "System Enclosure",
+            "HeatGeneration": null,
+            "Height": null,
+            "HotSwappable": null,
+            "InstallDate": null,
+            "LockPresent": false,
+            "Manufacturer": "Oracle Corporation",
+            "Model": null,
+            "Name": "System Enclosure",
+            "NumberOfPowerCords": null,
+            "OtherIdentifyingInfo": null,
+            "PartNumber": null,
+            "PoweredOn": null,
+            "Removable": null,
+            "Replaceable": null,
+            "SecurityBreach": null,
+            "SecurityStatus": 3,
+            "SerialNumber": "",
+            "ServiceDescriptions": null,
+            "ServicePhilosophy": null,
+            "SKU": null,
+            "SMBIOSAssetTag": "",
+            "Status": null,
+            "Tag": "System Enclosure 0",
+            "TypeDescriptions": null,
+            "Version": "",
+            "VisibleAlarm": null,
+            "Weight": null,
+            "Width": null
+          }
+        ],
+        "description": "System Enclosure",
+        "manufacturer": "Oracle Corporation",
+        "serial_number": "",
+        "smbios_asset_tag": "",
+        "tag": "System Enclosure 0",
+        "version": "",
+        "family": "System Enclosure"
+      },
+      "processor": {
+        "all_records": [
+          {
+            "AddressWidth": 64,
+            "Architecture": 9,
+            "AssetTag": null,
+            "Availability": 3,
+            "Caption": "Intel64 Family 6 Model 126 Stepping 5",
+            "Characteristics": null,
+            "ConfigManagerErrorCode": null,
+            "ConfigManagerUserConfig": null,
+            "CpuStatus": 0,
+            "CreationClassName": "Win32_Processor",
+            "CurrentClockSpeed": 2014,
+            "CurrentVoltage": null,
+            "DataWidth": 64,
+            "Description": "Intel64 Family 6 Model 126 Stepping 5",
+            "DeviceID": "CPU0",
+            "ErrorCleared": null,
+            "ErrorDescription": null,
+            "ExtClock": null,
+            "Family": 2,
+            "InstallDate": null,
+            "L2CacheSize": 1024,
+            "L2CacheSpeed": null,
+            "L3CacheSize": 12288,
+            "L3CacheSpeed": 0,
+            "LastErrorCode": null,
+            "Level": 6,
+            "LoadPercentage": 11,
+            "Manufacturer": "GenuineIntel",
+            "MaxClockSpeed": 2014,
+            "Name": "Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz",
+            "NumberOfCores": 2,
+            "NumberOfEnabledCore": null,
+            "NumberOfLogicalProcessors": 2,
+            "OtherFamilyDescription": null,
+            "PartNumber": null,
+            "PNPDeviceID": null,
+            "PowerManagementCapabilities": null,
+            "PowerManagementSupported": false,
+            "ProcessorId": null,
+            "ProcessorType": null,
+            "Revision": 32261,
+            "Role": "CPU",
+            "SecondLevelAddressTranslationExtensions": false,
+            "SerialNumber": null,
+            "SocketDesignation": null,
+            "Status": "OK",
+            "StatusInfo": 3,
+            "Stepping": null,
+            "SystemCreationClassName": "Win32_ComputerSystem",
+            "SystemName": "CHEF-NODE-01",
+            "ThreadCount": null,
+            "UniqueId": null,
+            "UpgradeMethod": 2,
+            "Version": "",
+            "VirtualizationFirmwareEnabled": false,
+            "VMMonitorModeExtensions": false,
+            "VoltageCaps": null
+          }
+        ],
+        "description": "Intel64 Family 6 Model 126 Stepping 5",
+        "device_id": "CPU0",
+        "manufacturer": "GenuineIntel",
+        "role": "CPU",
+        "status": "OK",
+        "system_name": "CHEF-NODE-01",
+        "version": "",
+        "family": "Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz"
+      },
+      "bios": {
+        "all_records": [
+          {
+            "BiosCharacteristics": [
+              4,
+              7,
+              15,
+              16,
+              27,
+              30,
+              32,
+              42,
+              43
+            ],
+            "BIOSVersion": [
+              "VBOX   - 1",
+              "VirtualBox",
+              "EDK II - 10000"
+            ],
+            "BuildNumber": null,
+            "Caption": "VirtualBox",
+            "CodeSet": null,
+            "CurrentLanguage": null,
+            "Description": "VirtualBox",
+            "EmbeddedControllerMajorVersion": 0,
+            "EmbeddedControllerMinorVersion": 1,
+            "IdentificationCode": null,
+            "InstallableLanguages": null,
+            "InstallDate": null,
+            "LanguageEdition": null,
+            "ListOfLanguages": null,
+            "Manufacturer": "innotek GmbH",
+            "Name": "VirtualBox",
+            "OtherTargetOS": null,
+            "PrimaryBIOS": true,
+            "ReleaseDate": "20061201000000.000000+000",
+            "SerialNumber": "VirtualBox-a7c419e7-087d-40da-9f9f-0ea5acef62b9",
+            "SMBIOSBIOSVersion": "VirtualBox",
+            "SMBIOSMajorVersion": 2,
+            "SMBIOSMinorVersion": 5,
+            "SMBIOSPresent": true,
+            "SoftwareElementID": "VirtualBox",
+            "SoftwareElementState": 3,
+            "Status": "OK",
+            "SystemBiosMajorVersion": 0,
+            "SystemBiosMinorVersion": 1,
+            "TargetOperatingSystem": 0,
+            "Version": "VBOX   - 1"
+          }
+        ],
+        "description": "VirtualBox",
+        "manufacturer": "innotek GmbH",
+        "release_date": "20061201000000.000000+000",
+        "serial_number": "VirtualBox-a7c419e7-087d-40da-9f9f-0ea5acef62b9",
+        "smbiosbios_version": "VirtualBox",
+        "software_element_id": "VirtualBox",
+        "status": "OK",
+        "version": "VBOX   - 1",
+        "family": "VirtualBox"
+      },
+      "system": {
+        "all_records": [
+          {
+            "Caption": "Computer System Product",
+            "Description": "Computer System Product",
+            "IdentifyingNumber": "VirtualBox-a7c419e7-087d-40da-9f9f-0ea5acef62b9",
+            "Name": "VirtualBox",
+            "SKUNumber": null,
+            "UUID": "A7C419E7-087D-40DA-9F9F-0EA5ACEF62B9",
+            "Vendor": "innotek GmbH",
+            "Version": "1.2"
+          }
+        ],
+        "description": "Computer System Product",
+        "uuid": "A7C419E7-087D-40DA-9F9F-0EA5ACEF62B9",
+        "version": "1.2",
+        "manufacturer": "innotek GmbH",
+        "serial_number": "VirtualBox-a7c419e7-087d-40da-9f9f-0ea5acef62b9",
+        "family": "VirtualBox"
+      },
+      "base_board": {
+        "all_records": [
+          {
+            "Caption": "Base Board",
+            "ConfigOptions": null,
+            "CreationClassName": "Win32_BaseBoard",
+            "Depth": null,
+            "Description": "Base Board",
+            "Height": null,
+            "HostingBoard": true,
+            "HotSwappable": false,
+            "InstallDate": null,
+            "Manufacturer": "Oracle Corporation",
+            "Model": null,
+            "Name": "Base Board",
+            "OtherIdentifyingInfo": null,
+            "PartNumber": null,
+            "PoweredOn": true,
+            "Product": "VirtualBox",
+            "Removable": false,
+            "Replaceable": false,
+            "RequirementsDescription": null,
+            "RequiresDaughterBoard": false,
+            "SerialNumber": "0",
+            "SKU": null,
+            "SlotLayout": null,
+            "SpecialRequirements": null,
+            "Status": "OK",
+            "Tag": "Base Board",
+            "Version": "1.2",
+            "Weight": null,
+            "Width": null
+          }
+        ],
+        "description": "Base Board",
+        "manufacturer": "Oracle Corporation",
+        "product": "VirtualBox",
+        "serial_number": "0",
+        "status": "OK",
+        "tag": "Base Board",
+        "version": "1.2",
+        "family": "Base Board"
+      }
+    },
+    "cpu": {
+      "0": {
+        "cores": 2,
+        "vendor_id": "GenuineIntel",
+        "family": "2",
+        "model": "32261",
+        "stepping": "5",
+        "physical_id": "CPU0",
+        "model_name": "Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz",
+        "description": "Intel64 Family 6 Model 126 Stepping 5",
+        "mhz": "2014",
+        "cache_size": "1024 KB"
+      },
+      "total": 2,
+      "cores": 2,
+      "real": 1
+    },
+    "virtualization": {
+      "systems": {
+        "vbox": "guest"
+      },
+      "system": "vbox",
+      "role": "guest"
+    },
+    "languages": {
+      "powershell": {
+        "version": "5.1.26100.8875",
+        "ws_man_stack_version": "3.0",
+        "serialization_version": "1.1.0.1",
+        "clr_version": "4.0.30319.42000",
+        "build_version": "10.0.26100.8875",
+        "compatible_versions": [
+          "1.0",
+          "2.0",
+          "3.0",
+          "4.0",
+          "5.0",
+          "5.1.26100.8875"
+        ],
+        "remoting_protocol_version": "2.3"
+      },
+      "ruby": {
+        "platform": "x64-mingw-ucrt",
+        "version": "3.4.9",
+        "release_date": "2026-03-11",
+        "target": "x64-w64-mingw32",
+        "target_cpu": "x64",
+        "target_vendor": "w64",
+        "target_os": "mingw32",
+        "host": "x64-w64-mingw32",
+        "host_cpu": "x64",
+        "host_os": "mingw32",
+        "host_vendor": "w64",
+        "bin_dir": "C:/cinc-project/cinc/embedded/bin",
+        "ruby_bin": "C:/cinc-project/cinc/embedded/bin/ruby",
+        "gem_bin": "C:/cinc-project/cinc/embedded/bin/gem",
+        "gems_dir": "C:/cinc-project/cinc/embedded/lib/ruby/gems/3.4.0"
+      }
+    },
+    "chef_packages": {
+      "chef": {
+        "version": "19.3.14",
+        "chef_root": "C:/cinc-project/cinc/embedded/lib/ruby/gems/3.4.0/gems/chef-19.3.14-universal-mingw-ucrt/lib",
+        "chef_effortless": null
+      },
+      "ohai": {
+        "version": "19.1.31",
+        "ohai_root": "C:/cinc-project/cinc/embedded/lib/ruby/gems/3.4.0/gems/ohai-19.1.31/lib/ohai"
+      }
+    },
+    "hostname": "chef-node-01",
+    "machinename": "CHEF-NODE-01",
+    "fqdn": "chef-node-01.internal",
+    "domain": "internal",
+    "cloud": null,
+    "command": {
+
+    },
+    "filesystem": {
+      "by_device": {
+        "windows": {
+          "kb_size": 134656028,
+          "kb_available": 117620686,
+          "kb_used": 17035342,
+          "percent_used": 12,
+          "fs_type": "ntfs",
+          "drive_type": 3,
+          "drive_type_string": "local",
+          "drive_type_human": "Local Fixed Disk",
+          "volume_name": "Windows",
+          "encryption_status": "FullyDecrypted",
+          "mounts": [
+            "C:"
+          ]
+        }
+      },
+      "by_mountpoint": {
+        "C:": {
+          "kb_size": 134656028,
+          "kb_available": 117620686,
+          "kb_used": 17035342,
+          "percent_used": 12,
+          "fs_type": "ntfs",
+          "drive_type": 3,
+          "drive_type_string": "local",
+          "drive_type_human": "Local Fixed Disk",
+          "volume_name": "Windows",
+          "encryption_status": "FullyDecrypted",
+          "devices": [
+            "windows"
+          ]
+        }
+      },
+      "by_pair": {
+        "windows,C:": {
+          "kb_size": 134656028,
+          "kb_available": 117620686,
+          "kb_used": 17035342,
+          "percent_used": 12,
+          "mount": "C:",
+          "fs_type": "ntfs",
+          "drive_type": 3,
+          "drive_type_string": "local",
+          "drive_type_human": "Local Fixed Disk",
+          "volume_name": "Windows",
+          "device": "windows",
+          "encryption_status": "FullyDecrypted"
+        }
+      }
+    },
+    "fips": {
+      "kernel": {
+        "enabled": false
+      }
+    },
+    "keys": {
+      "ssh": {
+
+      }
+    },
+    "ohai_time": 1786920734.2880702,
+    "packages": {
+      "Oracle VirtualBox Guest Additions 7.2.14": {
+        "version": "7.2.14.174565",
+        "publisher": "Oracle and/or its affiliates"
+      },
+      "Cinc Client v19.3.14": {
+        "version": "19.3.14.1",
+        "publisher": "Cinc Software, Inc.",
+        "installdate": "20260816"
+      },
+      "Microsoft Edge": {
+        "version": "151.0.4129.59",
+        "publisher": "Microsoft Corporation",
+        "installdate": "20260803"
+      },
+      "Microsoft Edge WebView2 Runtime": {
+        "version": "151.0.4129.59",
+        "publisher": "Microsoft Corporation",
+        "installdate": "20260803"
+      }
+    },
+    "root_group": "Administrators",
+    "shard_seed": 228278810,
+    "time": {
+      "timezone": "Pacific Standard Time"
+    },
+    "virtualbox": {
+      "host": {
+        "language": "en_US",
+        "revision": "174565",
+        "version": "7.2.14"
+      },
+      "guest": {
+        "guest_additions_version": "7.2.14",
+        "guest_additions_revision": "174565"
+      }
+    },
+    "system_enclosure": {
+      "manufacturer": "Oracle Corporation",
+      "serialnumber": ""
+    },
+    "chef_guid": "2da91e40-26d6-4874-bb51-96d0585f6709",
+    "name": "chef-node-01",
+    "chef_environment": "_default",
+    "recipes": [
+      "lessons",
+      "lessons::default",
+      "lessons::gen_scripts",
+      "lessons::shell_scripts",
+      "lessons::compiled_lang",
+      "lessons::win_scripts"
+    ],
+    "expanded_run_list": [
+      "lessons::default"
+    ],
+    "roles": [
+
+    ],
+    "cookbooks": {
+      "lessons": {
+        "version": "0.1.0"
+      },
+      "pyenv": {
+        "version": "4.2.8"
+      },
+      "ruby_rbenv": {
+        "version": "4.0.1"
+      },
+      "perl": {
+        "version": "8.0.20"
+      },
+      "line": {
+        "version": "5.0.1"
+      }
+    }
+  },
+  "run_list": [
+    "recipe[lessons]"
+  ]
+}
