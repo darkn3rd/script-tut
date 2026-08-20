@@ -8,62 +8,39 @@ Vagrant.configure("2") do |config|
   config.vm.hostname = "chef-node-02"
   config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "C:/script-tut"
 
-  # Vagrant's own chef_zero provisioner installs cinc fine on Windows
-  #  (confirmed directly: C:\cinc-project\cinc\bin ends up fully
-  #  populated with real chef-client/cinc-client binaries) - but its own
-  #  *post-install verification* is broken for this box: plugins/
-  #  provisioners/chef/cap/windows/chef_installed.rb calls bare
-  #  `chef-client --version` over the same WinRM session that ran the
-  #  installer, and WinRM caches the session's environment (PATH) at
-  #  connection time - it never sees the Machine PATH entry the MSI
-  #  installer itself just added, so the check fails even right after a
-  #  genuinely successful install ("Vagrant could not detect Chef on the
-  #  guest"), confirmed directly via a real `vagrant provision` run.
-  #  Installing explicitly here (install_strategy 'once' - Install-
-  #  Project's own idempotency flag, checks for C:\cinc-project\cinc\
-  #  embedded) and setting chef.install = false below sidesteps
-  #  Vagrant's own broken detection entirely rather than fighting it.
+  # Virtualbox Freeze at EFI: debug point DXE_AP
+  # Issue: https://github.com/VirtualBox/virtualbox/issues/799
+  # Problem
+  #  * 2 or 6 vCPUs causes freeze on Intel Core Ultra 9 285K
+  # Solutions:
+  #  * Use Virtualbox 7.2.4 or earlier
+  #  * Use 1 vCPU, 4-5 vCPUs, 7+ vCPUs
+  #  * Use Intel Core i5-1038NG7 CPU or similar 
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+    vb.gui = true
+  end
+
+  # Post Install Verification Check is broken with
+  #   `plugins/provisioners/chef/cap/windows/chef_installed.rb`
+  # * See: https://github.com/hashicorp/vagrant/issues/12587
+  # * Solution: 
+  #     - Turn off Vagrant's built-in boostrap mechanism with broken detection
+  #     - Manually handle installing Cinc 
   config.vm.provision "shell", name: "install_cinc", inline: <<-'SHELL'
     iex (irm 'https://omnitruck.cinc.sh/install.ps1')
     Install-Project -project cinc -version 19 -install_strategy once
   SHELL
 
-  # Chocolatey bootstrap is deliberately NOT here - it belongs to the
-  #  Chef automation itself (../../cookbooks/lessons/recipes/default.rb's
-  #  own `install_chocolatey` powershell_script), not to Vagrant. A
-  #  Vagrant-only fix would mean the cookbook can only ever stand up a
-  #  box inside this exact Vagrant environment - defeating the reason
-  #  for testing against a VM in the first place, which is to prove the
-  #  Chef automation *alone* reaches the desired state, the same way it
-  #  would against any real target with no Vagrant involved at all.
-
-  # Vagrant's own chef_zero provisioner has a *second*, separate problem
-  #  beyond the install-detection one above: plugins/provisioners/chef/
-  #  provisioner/chef_zero.rb unconditionally calls verify_binary(chef_
-  #  binary_path("chef-client")) - `& '<binary_path>/chef-client' -v`
-  #  matched against /Chef*/ - and the same binary_path is reused
-  #  verbatim to build the real converge command afterward. Two
-  #  independent failures against cinc's own C:\cinc-project\cinc\bin,
-  #  each confirmed directly:
-  #  1. `chef-client` (no extension) already exists there as-is - it's
-  #     the Unix-shebang Ruby script from the omnibus package, not
-  #     Windows-executable at all. Since that exact filename already
-  #     exists, PowerShell's native-command resolution never falls back
-  #     to trying `chef-client.bat` (the real Windows launcher, also
-  #     present in that same directory) the way it would if no
-  #     extensionless file were shadowing it.
-  #  2. Even calling `chef-client.bat` directly, cinc's own version
-  #     banner is "Cinc Client: 19.x.x", which /Chef*/ never matches.
-  #  A clean shim directory - just one file, chef-client.bat, no
-  #  extensionless twin to shadow it - sidesteps #1 (confirmed directly:
-  #  PowerShell's `&` resolution against an extensionless path *does*
-  #  fall back to trying PATHEXT extensions in the same directory, once
-  #  nothing already occupies the bare name) and #2 (short-circuits -v/
-  #  --version with a "Chef Client: ..." string that satisfies the
-  #  regex, forwarding every other argument - confirmed directly via a
-  #  real `--help` call - straight to the real cinc-client.bat
-  #  unmodified, so the actual converge run behaves identically to
-  #  calling cinc directly).
+  # Chef Execution Check is broken with as it searches "/Chef*/" 
+  #    version banner output information with 
+  #    `plugins/provisioners/chef/provisioner/chef_zero.rb`
+  # Problems:
+  #  * Required `/Chef*/` version banner not emitted from cinc-client
+  #  * Required `/Chef*/` version banner not emitted from chef-client.bat wrapper
+  # Solution:
+  #  * Create alterantive shim wrapper that emits `/Chef*/` for chef_zero.rb
   CHEF_SHIM_SCRIPT = <<-'SHIM'
     New-Item -ItemType Directory -Path 'C:\vagrant-chef-shim' -Force | Out-Null
     @'
@@ -79,54 +56,38 @@ if "%~1"=="--version" (
 "C:\cinc-project\cinc\bin\cinc-client.bat" %*
 '@ | Set-Content -Path 'C:\vagrant-chef-shim\chef-client.bat' -Encoding ASCII
   SHIM
+
   config.vm.provision "shell", name: "chef_client_shim", inline: CHEF_SHIM_SCRIPT
 
-  # nodes_path can't be a synced folder on this box the way ../ubuntu2204/
-  #  Vagrantfile's own "../../nodes" is - confirmed directly via a real
-  #  `vagrant provision` run: chef-zero's own local-mode data store
-  #  (chef/chef_fs/file_system/repository/nodes_dir.rb#create_child)
-  #  unconditionally tries to set an owner/DACL on every node file it
-  #  creates when ChefUtils.windows? is true, no config flag to turn it
-  #  off, and VirtualBox's shared-folder filesystem doesn't support
-  #  Windows security-descriptor operations - the attempt fails outright
-  #  with Chef::Exceptions::Win32APIError ("Incorrect function"). A
-  #  plain guest-local directory (real NTFS, not a VBoxSF share) doesn't
-  #  hit this at all - a `[:vm, ...]` path (not a bare string, which
-  #  chef/config/chef_zero.rb's own prepare_folders_config always
-  #  normalizes to `[:host, ...]` and therefore always shares) tells
-  #  Vagrant this path already exists on the guest and should be used
-  #  as-is rather than synced from the host.
+
+  # Node Path Workaround
+  # Issue: https://github.com/chef/chef/issues/16309
+  # Problem:
+  #   * chef-zero local-mode unconditionally tries to set owner/DACL on every node file
+  #     it creates when `ChefUtils.windows?` is true. There's no config flag to run this off.
+  #     This causes a problem with VBoxSF share that doesn't have NTFS support for DACL.
+  # Solution:
+  #   * Setup nodes direcotry on guest 
+  #     * skip sync by setting :vm and throw aaway :host with nodes_path: 
+  #       `chef.nodes_path = [[:vm, path][:host, path]]`
+  #     * create local path that matches :vm path
+  
   config.vm.provision "shell", name: "chef_nodes_dir", inline: <<-'SHELL'
     New-Item -ItemType Directory -Path 'C:\vagrant-chef-nodes' -Force | Out-Null
   SHELL
-  # nodes_path needs a *second*, throwaway :host entry too - confirmed
-  #  directly: chef/config/chef_zero.rb's own validate() checks File.
-  #  exist? on *every* entry's path against the HOST filesystem
-  #  (../../nodes on this Mac, not the guest), regardless of :host/:vm
-  #  tag - a lone [:vm, "C:/vagrant-chef-nodes"] entry fails validation
-  #  outright since that path obviously doesn't exist on the host. It
-  #  only requires *one* entry across the whole array to exist, though,
-  #  and chef_fs's own MultiplexedDir#write_dir always writes to
-  #  multiplexed_dirs[0] - so the real (:vm) target goes first, and
-  #  ../ubuntu2204/Vagrantfile's own already-host-shared "../../nodes"
-  #  goes second purely to satisfy validation; nothing ever actually
-  #  gets written there.
 
   config.vm.provision "chef_zero" do |chef|
     chef.install = false
     chef.binary_path = "C:/vagrant-chef-shim"
 
-    # .berks-vendor/, not cookbooks/ - see ../ubuntu2204/Vagrantfile's
-    #  own comment; same berks vendor output, shared by every system.
     chef.cookbooks_path = "../../.berks-vendor"
     chef.data_bags_path = "../../data_bags"
+    # Node Path Workaround (see above comment)
     chef.nodes_path = [[:vm, "C:/vagrant-chef-nodes"], [:host, "../../nodes"]]
     chef.add_recipe "lessons"
     chef.log_level = "debug"
 
-    # Area gates default true (see ../../cookbooks/lessons/attributes/
-    #  default.rb) - override here per node, matching ../ubuntu2204/
-    #  Vagrantfile's own pattern.
+    # Override attributes 
     chef.json = {
       "lessons" => {
         "platform" => "windows"
