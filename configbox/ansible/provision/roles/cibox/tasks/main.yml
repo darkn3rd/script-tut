@@ -1,0 +1,28 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for cibox
+#
+# diodonfrost.act (see ../meta/main.yml's own dependencies:) has already
+#  run by the time this file starts. This guest never actually drives
+#  act against a real workflow - it simulates a real end-user machine
+#  getting the *box kits installed, not a nested CI run - so confirming
+#  the binary actually landed and runs is the whole test, same
+#  "functional, not exhaustive" verification shell scriptbox's own
+#  verify_commands.rb/run_all_tests.rb already do for everything else.
+
+- name: Confirm act is installed and runs
+  ansible.builtin.command: act --version
+  register: cibox_act_version
+  changed_when: false
+
+- name: Record verification result
+  ansible.builtin.copy:
+    dest: "{{ cibox_verify_log }}"
+    content: |
+      cibox verification - {{ ansible_date_time.iso8601 }}
+      act: {{ cibox_act_version.stdout }}
+    mode: '0644'
+
+- name: Show verification result
+  ansible.builtin.debug:
+    msg: "cibox: act installed - {{ cibox_act_version.stdout }}"

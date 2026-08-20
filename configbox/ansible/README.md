@@ -199,9 +199,11 @@ ansible-galaxy role install comses.sdkman
 | APT Repository | `deb822_repository` | `ansible.builtin`       |
 | Cygwin         | —                   | No dedicated module     |
 | MSYS2          | `pacman`*           | `community.general`     |
-| YUM            | `dnf`*              | `ansible.builtin`       |
+| YUM            | `dnf`               | `ansible.builtin`       |
 | DNF            | `dnf`               | `ansible.builtin`       |
 | YUM Repository | `yum_repository`    | `ansible.builtin`       |
+
+\* `pacman` may not work for MSYS2, needs testing
 
 ### Package Managers, Language
 
@@ -230,3 +232,9 @@ ansible-galaxy role install comses.sdkman
 * [Ansible.Builtin](https://docs.ansible.com/projects/ansible/14/collections/ansible/builtin/index.html?utm_source=chatgpt.com)
 * [Using Ansible modules and plugins](https://docs.ansible.com/projects/ansible/latest/module_plugin_guide/index.html?utm_source=chatgpt.com)
 * [Plugins](https://docs.ansible.com/projects/ansible/latest/plugins/plugins.html)
+
+### Articles
+
+* [Why no Ansible controller for Windows?](https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html)
+* [CygWin: Process Creation](https://cygwin.com/cygwin-ug-net/highlights.html#ov-hi-process) -"POSIX-compatibility projects like Cygwin have attempted to implement fork() for Windows, but even after years of really smart people working on it, they admit that sometimes it just breaks, which implies that it shouldn't be relied on for anything important"
+* [Python’s GIL — A Hurdle to Multithreaded Program](https://medium.com/python-features/pythons-gil-a-hurdle-to-multithreaded-program-d04ad9c1a63) - "Python's well-documented limitations around threaded execution, acceptable performance and scaling cannot be achieved"

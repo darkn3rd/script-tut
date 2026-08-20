@@ -1,0 +1,9 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for cibox
+
+# Where ../tasks/main.yml's own verification result gets written -
+#  purely so a guest's own /tmp is inspectable after `vagrant up`
+#  finishes, without needing to scroll back through Ansible's own
+#  verbose console output.
+cibox_verify_log: /tmp/cibox_verify.log

@@ -15,6 +15,28 @@ Vagrant.configure("2") do |config|
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "ansible/provision/site.yml"
     ansible.verbose = true
+
+    # Galaxy vendoring (see ../../provision/requirements.yml/ansible.cfg)
+    #  has to run *inside the guest* too, same reason ansible-playbook
+    #  itself does - ansible-galaxy ships as part of ansible-core, so it
+    #  has the identical no-native-Windows-controller limitation, not a
+    #  separate one. Vagrant's own default galaxy_command
+    #  (`ansible-galaxy install --role-file=... --roles-path=... --force`)
+    #  only installs roles: - confirmed directly against Vagrant's own
+    #  docs, not assumed - so it would silently skip requirements.yml's
+    #  own collections: section (community.general). Overridden here to
+    #  run both `ansible-galaxy role install`/`collection install`
+    #  explicitly against the same vendor paths ansible.cfg's own
+    #  roles_path/collections_paths expect, rather than relying on
+    #  whether `ansible-galaxy install` alone would honor those from
+    #  ansible.cfg on its own (not verified in this environment - no
+    #  guest to actually test against). Confirm with a real
+    #  `vagrant up`/`vagrant provision` run before trusting this comment
+    #  over what actually happens.
+    ansible.galaxy_role_file = "ansible/provision/requirements.yml"
+    ansible.galaxy_roles_path = "ansible/provision/.galaxy-vendor/roles"
+    ansible.galaxy_command = "ansible-galaxy role install -r %{role_file} -p %{roles_path} --force && " \
+                              "ansible-galaxy collection install -r %{role_file} -p ansible/provision/.galaxy-vendor/collections --force"
   end
 end
 
