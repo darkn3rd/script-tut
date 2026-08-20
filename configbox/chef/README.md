@@ -1,6 +1,12 @@
 # Chef
 
-Chef is a configuration management tool used to manage a fleet of servers. Chef scripts called *recipes* use a imperative Ruby script blocks to describe the desired state.
+**Chef** is an **Infrastructure as Code** (IaC) configuration management tool used to automate and manage a fleet of servers. Configuration policies are written in **recipes**, which are imperative Ruby scripts executed sequentially in the exact order they are declared. Within these script blocks, Chef leverages Ruby's flexible syntax to provide a domain-specific layout where individual resources ensure the infrastructure converges safely into an idempotent, desired state.
+
+Chef operates on a server-client architecture where an agent, known as the **chef-client**, runs locally on each target node. This agent pulls its assigned configuration policies from a centralized **Chef Server**, compiles the resources, and executes them. Throughout this process, the agent tracks changes and uploads the final status of the convergence back to the **Chef Server**. To manage complex environments, the server organizes configuration data using `environments` (such as staging or production), `roles` (to define server types like web or database), and `data bags` (which store global configuration data and encrypted secrets in JSON format).
+
+Administrators interact with this ecosystem using `knife`, a powerful command-line interface tool. **Knife** allows engineers to bootstrap new instances: installing the agent and registering the machine as a managed node on the Chef Server; and remotely trigger the client execution to kick off an immediate infrastructure convergence.
+
+Individual recipes are bundled together into a cookbook, which serves as the fundamental unit of configuration and policy distribution in the **Chef** ecosystem. To promote reuse and collaboration, the community shares pre-built, open-source cookbooks through a centralized repository known as the **Chef Supermarket**. This allows organizations to leverage community-maintained automation for common infrastructure components instead of building everything from scratch.
 
 ## Resources
 
@@ -24,11 +30,16 @@ Chef is a configuration management tool used to manage a fleet of servers. Chef 
 | **Certificates**        | `windows_certificate`                                                                                                                       |
 | **Windows registry**    | `registry_key`                                                                                                                              |
 | **Windows environment** | `windows_env`, `windows_path`                                                                                                               |
-| **Windows features**    | `window                                                                                                                                     |
+| **Windows features**    | `window`                                                                                                                                    |
 
 ## Configbox Configuration Items
 
 These are configuration items that can be used to support language lessons and their supporting development tools.
+
+### Version Managers
+
+Version managers are generally provided through community cookbooks from **Chef Supermarket**. Several of these cookbooks expose custom Chef resources for installing the version manager, language runtimes, plugins, and packages.
+
 
 | Tool    | Cookbook     | Resource                                     |
 | ------- | ------------ | -------------------------------------------- |
@@ -36,7 +47,7 @@ These are configuration items that can be used to support language lessons and t
 | rbenv   | `ruby_rbenv` | `rbenv_system_install`, `rbenv_ruby`, etc.   |
 | RVM     | `rvm`        | RVM custom resources                         |
 | nvm     | `nvm`        | `nvm_install`                                |
-| asdf    | `asdf`            | [`asdf`](https://supermarket.chef.io/cookbooks/asdf) custom resources   |
+| asdf    | `asdf`       | [`asdf`](https://supermarket.chef.io/cookbooks/asdf) custom resources   |
 | uv      | —            | No established dedicated cookbook identified |
 | rustup  | —            | No established current cookbook identified   |
 | SDKMAN! | —            | No established current cookbook identified   |
@@ -51,8 +62,8 @@ Here Chef is much stronger because most of these map directly to Chef Infra reso
 | Chocolatey     | `chocolatey_package`      | Chef Infra                  |
 | APT            | `apt_package` / `package` | Chef Infra                  |
 | APT Repository | `apt_repository`          | Chef Infra                  |
-| Cygwin         | `cygwin_package`          | [`cygwin`](https://supermarket.chef.io/cookbooks/cygwin) cookbook           |
-| MSYS2          | `msys2_package`           | [`msys2](https://supermarket.chef.io/cookbooks/msys2) cookbook            |
+| Cygwin         | `cygwin_package`          | [`cygwin`](https://supermarket.chef.io/cookbooks/cygwin) cookbook |
+| MSYS2          | `msys2_package`           | [`msys2`](https://supermarket.chef.io/cookbooks/msys2) cookbook |
 | YUM            | `yum_package` / `package` | Chef Infra                  |
 | DNF            | `dnf_package` / `package` | Chef Infra                  |
 | YUM Repository | `yum_repository`          | Chef Infra                  |
@@ -65,8 +76,8 @@ This section is where I would be careful not to imply a dedicated Chef resource 
 
 | Tool           | Chef Resource / Cookbook | Source                                       |
 | -------------- | ------------------------ | -------------------------------------------- |
-| npm            | `npm_package`*           | Cookbook/custom resource                     |
-| pip            | `python_package`*        | Cookbook/custom resource                     |
+| npm            | `npm_package`            | Cookbook/custom resource                     |
+| pip            | `python_package`         | Cookbook/custom resource                     |
 | RubyGems / gem | `gem_package`            | Chef Infra                                   |
 | Maven          | —                        | No general built-in Maven package resource   |
 | NuGet          | —                        | No dedicated built-in NuGet package resource |
@@ -83,13 +94,6 @@ Chef has built-in resources for Windows feature management, so this section can 
 | ------------------------ | ---------------------- | ---------- |
 | Windows Features / Roles | `windows_feature`      | Chef Infra |
 | Windows Feature DISM     | `windows_feature_dism` | Chef Infra |
-
-
-
-### Version Managers
-
-Version managers are generally provided through community cookbooks from Chef Supermarket. Several of these cookbooks expose custom Chef resources for installing the version manager, language runtimes, plugins, and packages.
-
 
 ## Standalone Chef: Solo, Zero, and Knife
 
@@ -157,7 +161,7 @@ Knife Zero’s own documentation notes that it is not strictly a direct replacem
 | Capability | Legacy Chef Solo | Chef Zero / Local Mode | Knife Solo | Knife Zero |
 |---|---|---|---|---|
 | **Primary role** | Local execution engine | Lightweight local Chef Server | Remote Solo workflow | Remote local-mode workflow |
-| **Typical command** | `chef-solo --legacy-mode` | `chef-client -z` | `knife solo cook HOST` | `knife zero converge QUERY` |
+| **Typical command** | `chef-solo` | `chef-client -z` | `knife solo cook HOST` | `knife zero converge QUERY` |
 | **Chef Server-compatible API** | No | Yes, locally | No | Yes, from the workstation |
 | **Search support** | No native search | Searches local repository data | No native search | Searches locally managed data |
 | **Data bags** | Local JSON and encrypted items; direct lookup but no native search | Repository-backed JSON and encrypted items; direct lookup plus search of indexable data | Copies or stages local data-bag files on the node | Makes repository data bags available through local mode |
@@ -186,4 +190,10 @@ For an existing Knife Solo installation, treat migration as a workflow change ra
 
 Bugs/Issues Encountered
 
-* https://github.com/chef/chef/issues/16281
+* Vagrant
+  * https://github.com/hashicorp/vagrant/issues/12587
+* Virtualbox
+  * https://github.com/VirtualBox/virtualbox/issues/799
+* Chef
+  * https://github.com/chef/chef/issues/16309
+  * https://github.com/chef/chef/issues/16281
