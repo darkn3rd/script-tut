@@ -25,3 +25,7 @@ scriptbox/generated/*
 # metadata.rb), fetched on demand, not part of this repo's own source.
 configbox/chef/.berks-vendor/
 configbox/chef/nodes
+
+# pkgbox
+pkgbox/chocolatey/*/vendor/*
+!pkgbox/chocolatey/*/vendor/.gitkeep
