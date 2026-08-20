@@ -26,6 +26,15 @@ scriptbox/generated/*
 configbox/chef/.berks-vendor/
 configbox/chef/nodes
 
+# Locally built Chocolatey packages; regenerate with `choco pack`.
+pkgbox/chocolatey/*/vendor/
+
 # pkgbox
 pkgbox/chocolatey/*/vendor/*
 !pkgbox/chocolatey/*/vendor/.gitkeep
+
+# configbox/ansible/provision/.galaxy-vendor/ holds `ansible-galaxy
+# install -r requirements.yml` output (third-party roles/collections -
+# diodonfrost.act, community.general, ...), fetched on demand, not part
+# of this repo's own source - same reasoning as .berks-vendor/ above.
+configbox/ansible/provision/.galaxy-vendor/

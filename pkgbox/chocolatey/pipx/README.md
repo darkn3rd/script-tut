@@ -9,6 +9,9 @@ own Python to run it. Both the Scoop manifest and this package follow the
 same shape: download `pipx.pyz`, generate a `pipx.bat` launcher that
 invokes it via `python`/`py`, and put that launcher on PATH.
 
+The Chocolatey package declares `python3` (Python 3.9 or newer) as a
+dependency, so Chocolatey installs a suitable Python runtime when needed.
+
 ## Layout
 
 | File                          | Purpose                                                              |
@@ -21,21 +24,26 @@ invokes it via `python`/`py`, and put that launcher on PATH.
 
 ## Requirements
 
-pipx needs Python on PATH (`python` or `py`) at install time - this
-package doesn't install Python itself, same as upstream's manifest.
-`choco install python` first if needed.
+pipx needs Python 3.9 or newer. The package declares the Chocolatey
+`python3` package as a dependency and then locates either `python` or `py`
+on PATH when it creates the launcher.
 
 ## Building and testing locally
 
-Chocolatey (`choco`) is Windows-only, so this can only be packed/tested
-on a Windows host, not from this macOS working copy:
+Run these commands from an elevated PowerShell prompt in this directory:
 
 ```powershell
-choco pack .\pipx.nuspec
-choco install pipx -s . -y
+New-Item -ItemType Directory -Force .\vendor
+choco pack .\pipx.nuspec --output-directory .\vendor
+choco install pipx --source="$PWD\vendor;https://community.chocolatey.org/api/v2/" --version=1.16.7 -y
 pipx --version
 choco uninstall pipx -y
 ```
+
+The community source in the install command is needed to resolve the
+`python3` dependency; the `pipx` package itself is installed from
+`vendor`. Generated `.nupkg` files should remain untracked. This
+repository ignores the package's `vendor/` directory.
 
 ## Keeping it current: wiring up AU
 
