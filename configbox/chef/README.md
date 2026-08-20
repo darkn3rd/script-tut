@@ -30,7 +30,7 @@ Individual recipes are bundled together into a cookbook, which serves as the fun
 | **Certificates**        | `windows_certificate`                                                                                                                       |
 | **Windows registry**    | `registry_key`                                                                                                                              |
 | **Windows environment** | `windows_env`, `windows_path`                                                                                                               |
-| **Windows features**    | `window`                                                                                                                                    |
+| **Windows features**    | `windows_feature`, `windows_feature_dism`, `windows_feature_powershell`                                                                     |
 
 ## Configbox Configuration Items
 
