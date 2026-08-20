@@ -24,3 +24,4 @@ scriptbox/generated/*
 # Supermarket cookbooks (pyenv, ruby_rbenv, perl - see lessons's own
 # metadata.rb), fetched on demand, not part of this repo's own source.
 configbox/chef/.berks-vendor/
+configbox/chef/nodes
