@@ -1,0 +1,14 @@
+SCRIPT_TUT_PATH="../../../../.."
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "ansible-node-01.test"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.playbook = "provision/site.yml"
+    ansible.verbose = true
+  end
+end
+
