@@ -2,6 +2,8 @@
 
 © Joaquin Menchaca, 2014-2026
 
+Licensed under the [Mozilla Public License 2.0](LICENSE).
+
 ## Overview 
 
 This repository contains a comprehensive suite of automation scripts, tools, and educational resources, spanning foundational language lessons to production-grade deployment workflows. It serves as a practical showcase of CI/CD orchestration, build automation, and infrastructure-as-code principles.

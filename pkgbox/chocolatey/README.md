@@ -63,3 +63,9 @@ gsudo choco install pipx --source="'.\vendor'" --version='1.16.7' --yes
 # verify results
 pipx --version
 ```
+
+## Searching for Packages
+
+```pwsh
+choco search pipx --exact --source=https://community.chocolatey.org/api/v2/
+```
