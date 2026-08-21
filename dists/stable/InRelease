@@ -1,0 +1,38 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: script-tut
+Label: script-tut
+Codename: stable
+Date: Fri, 21 Aug 2026 07:25:31 UTC
+Architectures: amd64
+Components: main
+Description: Packages built by script-tut (https://github.com/darkn3rd/script-tut)
+MD5Sum:
+ 9a0ac284a0e20603072ea6e88ef8b40b 505 main/binary-amd64/Packages
+ 54c9e44d2d52ed38fa19317e4ccc7f2e 378 main/binary-amd64/Packages.gz
+ 7b2ba65a736ca5f0bc45190b2edcce17 156 main/binary-amd64/Release
+SHA1:
+ 6e0b388a83ccac49de67549f92ea0587a94deadd 505 main/binary-amd64/Packages
+ 1999bbec8a9bf58119418c82cccc3e6ea9fb00a1 378 main/binary-amd64/Packages.gz
+ 54df2087e911f2bdafa90909a63ab17ae279fc14 156 main/binary-amd64/Release
+SHA256:
+ c9dd14d4829a84a687aa017a532ff160309de20388f20fa531ee81771643bae1 505 main/binary-amd64/Packages
+ 0ca7668cb6dc8ba2a88a1091f48eb59932493d4addad514ff6b1deeaeae11f3a 378 main/binary-amd64/Packages.gz
+ bb1e2788932f44a77b455ed36c3bcbc5079b067973896262ca0abce10cd7018b 156 main/binary-amd64/Release
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEvvPYf7hdP7Wm6uQfkmaCN+v+/TgFAmqH/WsACgkQkmaCN+v+
+/TgoiA//Q7yOvMgIe0tbAhNW4wLiuCGjGoL8jjHCVV08nNVMjY8LMFmLSfFKIxXr
+ZhtFUdRViKINh6X29Wy1qIFbOOihOmLYuwkyY10y99urv8f7h0gEo3KGHRQqtLJX
+qnva3S/pYNN2uBktFQ/Yfu88h6wXe46u1JvYLgPDsBDw+Mmqn+j/R0jZHyY9HRAE
+2lYCM4vqM9wz3KKDTIA0lxsGDyxw7nrI3V6gEB+d30zF0bFm2dWUC7USf4dxMbye
+Fqd1QWnOSGifQzwCTbyz+p+O2bnm8yaH47HMNa2FE9B6fMBvtyhyMFRusjWFLY1x
+PFMX/SVk2hp8XkdLv9fT378vx9h/G3Xk3IZgdV3VmIwwlYVhVrxxtXg7+Mi9v3pB
+75pvFVD4sCoUUAl5z3UtWLWim/KmWWidfDeVQc1uxEIjyAuoAqWI2oZZv22JML6t
+gYVJ9Oh7PQKM8wyaIjJcyIEVR1K2OgZyX/IZyrUnIVMDPSf6dnbmAIEXST2jlQbj
+Qfqz9tXaK9m5oNuZnL0YvlO3AZV1Hn1KtU00UNxzDVNtSm1OE9XZHy1O65d2NQAc
+gEdLbJBbJcF2T9+A6NiQLCNxHEm6GlJPDTiEzwnpkYegK9OwRxYsAMlnZ8T19f/4
+1VSRtenO/LWxlNIgoXhL0MG2oFN4yLVQEfih6h0IoGq8HU6E5Ic=
+=Won0
+-----END PGP SIGNATURE-----

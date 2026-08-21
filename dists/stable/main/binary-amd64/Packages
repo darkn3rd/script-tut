@@ -1,0 +1,16 @@
+Package: act
+Version: 0.2.89
+Architecture: amd64
+Maintainer: Joaquin Menchaca
+Installed-Size: 20620
+Homepage: https://github.com/nektos/act
+Priority: optional
+Section: devel
+Filename: pool/main/a/act/act_0.2.89_amd64.deb
+Size: 8171238
+SHA256: ca3ccecc3c260b5dd73704eac3228ae9e398018f17530c2720481708bd7097af
+SHA1: 6f063dc81b06e06273165dc25dd9cfd1250bcd35
+MD5sum: ea411ab0e88ce169903341be10e56c4b
+Description: Run your GitHub Actions locally - a container-based test runner for
+ GitHub Actions workflows.
+

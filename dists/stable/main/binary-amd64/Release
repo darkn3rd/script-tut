@@ -1,0 +1,5 @@
+Component: main
+Origin: script-tut
+Label: script-tut
+Architecture: amd64
+Description: Packages built by script-tut (https://github.com/darkn3rd/script-tut)
