@@ -14,14 +14,18 @@ Requirements
   `../../site.yml` - `lessons` runs first and does this)
 - rbenv already installed under `scriptbox_user`'s home (the `gem` steps
   target rbenv's own rubygems, not the system one)
+- `../../group_vars/all/generated.yml` present in the play (auto-loaded by
+  Ansible - no include needed, but this role isn't self-contained outside
+  `../../site.yml`'s own play)
 
 Role Variables
 --------------
 
 See `defaults/main.yml`:
 
-- `scriptbox_platform` (default `ubuntu22`) - selects which generated
-  `vars/<platform>.yml` to converge against. Only `ubuntu22` exists today.
+- `scriptbox_platform` (default `ubuntu22`) - selects which entry of
+  `../../group_vars/all/generated.yml`'s `scriptbox:` map to converge
+  against. Only `ubuntu22` exists today.
 - `scriptbox_user` (default `vagrant`) - whose rbenv/pipx installs the `gem`
   and `pipx` steps target.
 

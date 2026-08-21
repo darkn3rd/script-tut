@@ -2,10 +2,10 @@
 ---
 # tasks file for scriptbox
 #
-# Static - never edited when the manifest/vars file changes. All content
-#  comes from vars/<platform>.yml (see scriptbox_platform in ../defaults/
-#  main.yml), generated from scriptbox/config/*.yml by scriptbox/
-#  scripts/generate_ansible_vars.rb.
+# Static - never edited when the manifest/vars data changes. All content
+#  comes from group_vars/all/generated.yml (see scriptbox_platform in
+#  ../defaults/main.yml), generated from scriptbox/config/*.yml by
+#  scriptbox/scripts/generate_ansible_vars.rb.
 #
 # No apt cache update here - lessons' own tasks already run one earlier
 #  in the same play, and apt's own cache_valid_time keeps it valid for
@@ -21,10 +21,13 @@
   ansible.builtin.set_fact:
     scriptbox_home: "{{ ansible_facts['getent_passwd'][scriptbox_user][4] }}"
 
-- name: Load scriptbox vars for {{ scriptbox_platform }}
-  ansible.builtin.include_vars:
-    file: "{{ scriptbox_platform }}.yml"
-    name: scriptbox_data
+# lessons/scriptbox top-level vars come from group_vars/all/generated.yml,
+#  auto-loaded for every host before any role runs - scriptbox_platform
+#  (../defaults/main.yml) is still an explicit lookup key into it, same
+#  as Chef's own data_bag_item('scriptbox', node['scriptbox']['platform']).
+- name: Set scriptbox_data for {{ scriptbox_platform }}
+  ansible.builtin.set_fact:
+    scriptbox_data: "{{ scriptbox[scriptbox_platform] }}"
 
 - name: Run scriptbox install steps
   ansible.builtin.include_tasks: install_step.yml

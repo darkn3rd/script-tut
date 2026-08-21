@@ -2,12 +2,12 @@
 ---
 # defaults file for scriptbox
 
-# Which vars/<platform>.yml (see ../vars) this host converges against -
-#  one file per platform, generated from that platform's own
-#  scriptbox/config/*.yml manifest's scriptbox: section by
-#  scriptbox/scripts/generate_ansible_vars.rb. The Ansible analogue
-#  of Chef's data_bag_item('scriptbox', node['scriptbox']['platform'])
-#  explicit lookup-by-key.
+# Which entry of group_vars/all/generated.yml's own `scriptbox:` map
+#  this host converges against - one key per platform, generated from
+#  that platform's own scriptbox/config/*.yml manifest's scriptbox:
+#  section by scriptbox/scripts/generate_ansible_vars.rb. The Ansible
+#  analogue of Chef's data_bag_item('scriptbox',
+#  node['scriptbox']['platform']) explicit lookup-by-key.
 scriptbox_platform: ubuntu22
 
 # Which user's rbenv-managed ruby scriptbox's own gem install/update

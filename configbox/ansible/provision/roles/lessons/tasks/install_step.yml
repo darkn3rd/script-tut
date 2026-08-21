@@ -1,7 +1,8 @@
 #SPDX-License-Identifier: MPL-2.0
 ---
-# One step from a lessons_data area array (see ../vars/<platform>.yml)
-#  dispatched to the matching Ansible module - included once per step by
+# One step from a lessons_data area array (see ../../../group_vars/all/
+#  generated.yml's own lessons: map) dispatched to the matching Ansible
+#  module - included once per step by
 #  ../tasks/main.yml's own loops, `step` set via loop_control.loop_var.
 #  Mirrors ../../../../chef/cookbooks/lessons/libraries/helpers.rb's own
 #  lessons_install dispatch, type for type, except pyenv/rbenv/cpan/

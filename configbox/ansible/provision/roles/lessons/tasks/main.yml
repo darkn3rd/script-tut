@@ -5,8 +5,8 @@
 # Gates each area's own steps on its own boolean var (all default true -
 #  see ../defaults/main.yml) so a run can skip an entire area without
 #  touching this file or ../tasks/install_step.yml. Only ubuntu22 has a
-#  generated vars/ file today (see ../vars/), same scope the Chef
-#  cookbook this mirrors currently covers.
+#  generated entry today (see ../../../group_vars/all/generated.yml),
+#  same scope the Chef cookbook this mirrors currently covers.
 
 - name: Update apt cache
   become: true
@@ -23,10 +23,13 @@
   ansible.builtin.set_fact:
     lessons_home: "{{ ansible_facts['getent_passwd'][lessons_user][4] }}"
 
-- name: Load lessons vars for {{ lessons_platform }}
-  ansible.builtin.include_vars:
-    file: "{{ lessons_platform }}.yml"
-    name: lessons_data
+# lessons/scriptbox top-level vars come from group_vars/all/generated.yml,
+#  auto-loaded for every host before any role runs - lessons_platform
+#  (../defaults/main.yml) is still an explicit lookup key into it, same
+#  as Chef's own data_bag_item('lessons', node['lessons']['platform']).
+- name: Set lessons_data for {{ lessons_platform }}
+  ansible.builtin.set_fact:
+    lessons_data: "{{ lessons[lessons_platform] }}"
 
 # 'common' - steps that live directly on the manifest's own lessons.
 #  packages, not nested under any one of the four gated areas below (see

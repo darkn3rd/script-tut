@@ -7,22 +7,22 @@ require_relative 'generate_chef_databag' # for strip_comments/step_to_entry/cons
 # generate_ansible_vars.rb - the Ansible equivalent of generate_chef_
 #  databag.rb + generate_scriptbox_databag.rb combined: same source of
 #  truth (scriptbox/config/*.yml), same flattened/resolved step list, same
-#  step_to_entry/consolidate_apt shape - just written out as the two
-#  roles' own vars/<platform>.yml instead of the two Chef cookbooks' own
-#  data_bags/*/​<platform>.json (Ansible has no data bag equivalent - these
-#  are plain role vars files, loaded via include_vars). One invocation
-#  produces both files (rather than mirroring the Chef side's two
-#  separate scripts) since both need the exact same flatten/resolve! pass
-#  over the whole tree anyway - no reason to parse the manifest twice for
-#  two YAML files that come from the same run.
+#  step_to_entry/consolidate_apt shape - just written out as one
+#  group_vars/all/ file instead of the two Chef cookbooks' own
+#  data_bags/*/<platform>.json. One invocation produces the combined file
+#  (rather than mirroring the Chef side's two separate scripts) since
+#  both halves need the exact same flatten/resolve! pass over the whole
+#  tree anyway - no reason to parse the manifest twice for one YAML file.
 #
-#  Loaded via each role's own tasks/main.yml (`include_vars:
-#  "{{ role_path }}/vars/{{ ... }}.yml"`), keyed by a role variable
-#  (lessons_platform/scriptbox_platform - see defaults/main.yml), the
-#  Ansible analogue of Chef's own `data_bag_item('lessons',
-#  node['lessons']['platform'])` explicit-lookup-by-key - group_vars
-#  would be the wrong tool here, since that's Ansible's own automatic
-#  inventory-group merge, not an arbitrary keyed document lookup.
+#  Written as {'lessons' => {platform => {...}}, 'scriptbox' => {platform
+#  => {...}}} under group_vars/all/, which Ansible auto-loads for every
+#  host before any role runs - both roles read straight out of the
+#  top-level `lessons`/`scriptbox` vars it defines
+#  (lessons[lessons_platform], see ../../configbox/ansible/provision/
+#  roles/lessons/tasks/main.yml), no per-role include_vars task needed.
+#  The platform key is still an explicit lookup, same as Chef's own
+#  data_bag_item('lessons', node['lessons']['platform']) - group_vars'
+#  own automatic inventory-group merge plays no part in selecting it.
 
 # deep_stringify_keys(obj) - step_to_entry/consolidate_apt (shared from
 #  generate_chef_databag.rb) build each entry with symbol keys (:type,
@@ -46,10 +46,9 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   config_path = ARGV[0]
-  lessons_out = ARGV[1]
-  scriptbox_out = ARGV[2]
-  if config_path.nil? || config_path.empty? || lessons_out.nil? || lessons_out.empty? || scriptbox_out.nil? || scriptbox_out.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <lessons_out.yml> <scriptbox_out.yml>"
+  out_path = ARGV[1]
+  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.yml>"
     exit 1
   end
 
@@ -88,11 +87,17 @@ if __FILE__ == $PROGRAM_NAME
   dedup!(scriptbox_steps)
   scriptbox_data = { 'id' => name, 'packages' => consolidate_apt(scriptbox_steps.map { |s| step_to_entry(s, tree) }) }
 
-  FileUtils.mkdir_p(File.dirname(lessons_out))
-  File.write(lessons_out, deep_stringify_keys(lessons_data).to_yaml)
-  puts "wrote #{lessons_out}"
+  # Merged into any existing out_path rather than overwritten outright -
+  #  one manifest run only has this platform's data, but out_path is
+  #  shared across every platform (see scriptbox/config/windows.yml),
+  #  so a later platform's run must not clobber an earlier one's entry.
+  existing = File.exist?(out_path) ? (YAML.load_file(out_path) || {}) : {}
+  combined = {
+    'lessons' => (existing['lessons'] || {}).merge(name => lessons_data),
+    'scriptbox' => (existing['scriptbox'] || {}).merge(name => scriptbox_data),
+  }
 
-  FileUtils.mkdir_p(File.dirname(scriptbox_out))
-  File.write(scriptbox_out, deep_stringify_keys(scriptbox_data).to_yaml)
-  puts "wrote #{scriptbox_out}"
+  FileUtils.mkdir_p(File.dirname(out_path))
+  File.write(out_path, deep_stringify_keys(combined).to_yaml)
+  puts "wrote #{out_path}"
 end
