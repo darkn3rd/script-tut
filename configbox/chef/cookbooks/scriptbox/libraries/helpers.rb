@@ -30,14 +30,22 @@ module Scriptbox
         #  the actual logged-in user, who only ever sees rbenv's own
         #  ruby. rbenv_gem_env below puts rbenv's shims first on PATH,
         #  the same thing the bash generator's own script relies on
-        #  already having happened by this point in *its* script.
-        gem_name, options_str = pkg['name'].split(' ', 2)
+        #  already having happened by this point in *its* script. pkg['args']
+        #  (e.g. --platform ruby) is its own data bag key, not parsed back
+        #  out of pkg['name'] - see scriptbox/scripts/generate_install_
+        #  script.rb's own arg_suffix.
         env = rbenv_gem_env
-        execute "gem install #{gem_name}" do
-          command "gem install #{gem_name}#{options_str ? " #{options_str}" : ''}"
+        execute "gem install #{pkg['name']}" do
+          command "gem install #{pkg['name']}#{pkg['args'] ? " #{pkg['args']}" : ''}"
           user node['scriptbox']['user']
           environment env
-          not_if "gem list -i #{gem_name}", user: node['scriptbox']['user'], environment: env
+          not_if "gem list -i #{pkg['name']}", user: node['scriptbox']['user'], environment: env
+        end
+      when 'pipx'
+        execute "pipx install #{pkg['name']}" do
+          command "pipx install #{pkg['name']}#{pkg['args'] ? " #{pkg['args']}" : ''}"
+          user node['scriptbox']['user']
+          not_if "pipx list --short | grep -qw '^#{pkg['name']} '", user: node['scriptbox']['user']
         end
       when 'cmd'
         execute pkg['name'] do

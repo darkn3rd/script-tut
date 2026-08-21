@@ -1,0 +1,37 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# tasks file for scriptbox
+#
+# Static - never edited when the manifest/vars data changes. All content
+#  comes from group_vars/all/generated.yml (see scriptbox_platform in
+#  ../defaults/main.yml), generated from scriptbox/config/*.yml by
+#  scriptbox/scripts/generate_ansible_vars.rb.
+#
+# No apt cache update here - lessons' own tasks already run one earlier
+#  in the same play, and apt's own cache_valid_time keeps it valid for
+#  the rest of this play; scriptbox always converges alongside lessons
+#  (see ../../../site.yml, lessons listed first), not standalone.
+
+- name: Resolve home directory for {{ scriptbox_user }}
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ scriptbox_user }}"
+
+- name: Set scriptbox_home
+  ansible.builtin.set_fact:
+    scriptbox_home: "{{ ansible_facts['getent_passwd'][scriptbox_user][4] }}"
+
+# lessons/scriptbox top-level vars come from group_vars/all/generated.yml,
+#  auto-loaded for every host before any role runs - scriptbox_platform
+#  (../defaults/main.yml) is still an explicit lookup key into it, same
+#  as Chef's own data_bag_item('scriptbox', node['scriptbox']['platform']).
+- name: Set scriptbox_data for {{ scriptbox_platform }}
+  ansible.builtin.set_fact:
+    scriptbox_data: "{{ scriptbox[scriptbox_platform] }}"
+
+- name: Run scriptbox install steps
+  ansible.builtin.include_tasks: install_step.yml
+  loop: "{{ scriptbox_data.packages }}"
+  loop_control:
+    loop_var: step
+    label: "{{ step.type }}: {{ step.name }}"

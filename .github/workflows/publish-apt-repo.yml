@@ -1,0 +1,56 @@
+name: Publish apt repo
+
+# DRAFT - manual-trigger only. Needs the APT_SIGNING_KEY secret set (see
+#  pkgbox/deb/apt-repo/README.md's "Production key" section) and GitHub
+#  Pages enabled (Settings > Pages > Deploy from branch > gh-pages)
+#  before this can actually publish anything - review both before adding
+#  a real trigger (e.g. a schedule, or on: release for pkgbox/deb/act's
+#  own upstream).
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install reprepro
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq reprepro
+
+      - name: Install nfpm
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+        env:
+          GORELEASER_CURRENT_TAG: v0.0.0
+
+      # imported into a throwaway GNUPGHOME for this job only - never
+      #  touches a real keyring, and nothing here persists past the job.
+      - name: Import signing key
+        run: |
+          echo "${{ secrets.APT_SIGNING_KEY }}" | gpg --batch --import
+          KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+          echo "KEYID=$KEYID" >> "$GITHUB_ENV"
+
+      - name: Refresh act package
+        run: |
+          pkgbox/deb/act/update.sh
+          make -C pkgbox/deb act
+
+      - name: Publish to apt-repo
+        run: |
+          sed -i "s/^SignWith: .*/SignWith: $KEYID/" pkgbox/deb/apt-repo/conf/distributions
+          pkgbox/deb/apt-repo/publish.sh pkgbox/deb/act/vendor/*.deb
+
+      - name: Export public key
+        run: gpg --armor --export "$KEYID" > pkgbox/deb/apt-repo/public.asc
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pkgbox/deb/apt-repo
+          publish_branch: gh-pages
+          exclude_assets: conf,publish.sh,db

@@ -146,6 +146,19 @@ ubuntu22:
             - script: ubuntu22_powershell
               meets: powershell
     cibox:
+      packages:
+        - add_apt_repo: ubuntu22_docker
+        - apt: 
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-buildx-plugin
+            - docker-compose-plugin
+        - cmd: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+    pkgbox:
+      packages:
+        - add_apt_repo: ubuntu22_nfpm
+        - apt: nfpm
     scriptbox:
       packages:
         - script: ubuntu22_gem_update
@@ -154,7 +167,8 @@ ubuntu22:
         - apt: [clang, libclang-dev]
           # Skip incompatible precompiled binary with glibc 2.39
           # and compile from source using glibc 2.35
-        - gem: ratatui_ruby --platform ruby
+        - gem: ratatui_ruby
+          args: --platform ruby
     testbox:
       packages:
         - cmd: pwsh --version
@@ -383,3 +397,13 @@ add_apt_repos:
     key_url: https://apt.corretto.aws/corretto.key
     repo_uri: https://apt.corretto.aws
     distro_string: stable main
+  ubuntu22_docker:
+    name: docker
+    key_url: https://download.docker.com/linux/ubuntu/gpg
+    repo_uri: https://download.docker.com/linux/ubuntu
+    distro_string: "jammy stable"
+  ubuntu22_nfpm:
+    name: goreleaser
+    trusted: yes
+    repo_uri: https://repo.goreleaser.com/apt/
+    distro_string: "/"

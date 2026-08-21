@@ -1,0 +1,12 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# vars file for scriptbox
+
+# scriptbox_special_scripts - script-name steps intercepted in
+#  tasks/install_step.yml before the generic 'script' case (a plain
+#  shell of pkg.cmd) - mirrors ../../../../chef/cookbooks/scriptbox/
+#  libraries/helpers.rb's own SPECIAL_SCRIPTS: the real intent behind
+#  ubuntu22_gem_update is "skip a rubygems update that's already
+#  current", not just blindly re-running it every converge.
+scriptbox_special_scripts:
+  - ubuntu22_gem_update

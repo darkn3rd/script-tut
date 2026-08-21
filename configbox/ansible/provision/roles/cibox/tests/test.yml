@@ -1,0 +1,19 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# Run with: ansible-playbook -i inventory test.yml
+#
+# Needs diodonfrost.act already vendored first (see ../../requirements.yml,
+#  ../../ansible.cfg's own roles_path) - this role's own meta/main.yml
+#  dependency won't resolve otherwise, same "role not found" error a real
+#  `vagrant up` hit before that role existed.
+#
+# check_mode: true - a structure/rendering smoke test, not a real install
+#  (the `act --version` command task doesn't support check mode, so it's
+#  skipped rather than run). See ../../systems/ubuntu_2204/Vagrantfile
+#  for the real end-to-end test.
+- hosts: localhost
+  become: true
+  gather_facts: true
+  check_mode: true
+  roles:
+    - cibox

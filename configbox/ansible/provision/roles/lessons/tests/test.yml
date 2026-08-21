@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# Run with: ansible-playbook -i inventory test.yml
+#
+# check_mode: true - a structure/rendering smoke test, not a real install.
+#  command/shell tasks (most of pyenv/rbenv/sdkman/the special scripts)
+#  don't support check mode at all and just get skipped here rather than
+#  running or failing - this catches Jinja/when: errors and confirms
+#  apt/file/append tasks would do something sane, not that a real
+#  install actually works. See ../../systems/ubuntu_2204/Vagrantfile
+#  for the real end-to-end test.
+- hosts: localhost
+  become: true
+  gather_facts: true
+  check_mode: true
+  roles:
+    - lessons

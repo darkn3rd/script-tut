@@ -24,3 +24,33 @@ scriptbox/generated/*
 # Supermarket cookbooks (pyenv, ruby_rbenv, perl - see lessons's own
 # metadata.rb), fetched on demand, not part of this repo's own source.
 configbox/chef/.berks-vendor/
+configbox/chef/nodes
+
+# Locally built Chocolatey packages; regenerate with `choco pack`.
+pkgbox/chocolatey/*/vendor/
+
+# pkgbox
+pkgbox/chocolatey/*/vendor/*
+!pkgbox/chocolatey/*/vendor/.gitkeep
+
+# configbox/ansible/provision/.galaxy-vendor/ holds `ansible-galaxy
+# install -r requirements.yml` output (third-party roles/collections -
+# diodonfrost.act, community.general, ...), fetched on demand, not part
+# of this repo's own source - same reasoning as .berks-vendor/ above.
+# .gitkeep keeps the otherwise-empty directory itself tracked.
+configbox/ansible/provision/.galaxy-vendor/*
+!configbox/ansible/provision/.galaxy-vendor/.gitkeep
+
+# Locally built Debian packages and their staged binaries; regenerate
+# with `make` (pkgbox/deb) / `update.sh` per package.
+pkgbox/deb/*/vendor/*
+!pkgbox/deb/*/vendor/.gitkeep
+
+# reprepro's own output (pkgbox/deb/apt-repo) - regenerate with
+# publish.sh; published by pushing it to gh-pages, never committed here.
+# public.asc is NOT here - it's stable public identity material (like
+# LICENSE), tracked in the repo rather than treated as build output.
+pkgbox/deb/apt-repo/db/
+pkgbox/deb/apt-repo/dists/
+pkgbox/deb/apt-repo/pool/
+pkgbox/deb/apt-repo/logs/

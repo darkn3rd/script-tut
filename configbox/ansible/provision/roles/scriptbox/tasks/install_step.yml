@@ -1,0 +1,108 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# One step from scriptbox_data.packages (see ../../../group_vars/all/
+#  generated.yml's own scriptbox: map) dispatched to the matching
+#  Ansible module - included once per step by
+#  ../tasks/main.yml's own loop, `step` set via loop_control.loop_var.
+#  Mirrors ../../../../chef/cookbooks/scriptbox/libraries/helpers.rb's
+#  own scriptbox_install dispatch, type for type.
+
+- name: "apt repository for {{ step.name }}"
+  when: step.type == 'apt' and step.apt_repository is defined
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "{{ step.apt_repository }}"
+
+- name: "apt: {{ step.name }}"
+  when: step.type == 'apt'
+  become: true
+  ansible.builtin.apt:
+    name: "{{ step.name }}"
+    state: present
+
+- name: "script: {{ step.name }}"
+  when: step.type == 'script' and step.name not in scriptbox_special_scripts
+  become: true
+  become_user: "{{ scriptbox_user }}"
+  environment:
+    HOME: "{{ scriptbox_home }}"
+  ansible.builtin.shell:
+    cmd: "{{ step.cmd }}"
+    executable: /bin/bash
+
+# ubuntu22_gem_update - same rbenv-scoping reasoning as the 'gem' case
+#  below: this has to update *rbenv's* rubygems, the one the 'gem' case
+#  actually installs into, not the control-node-irrelevant system gem -
+#  so both the version check and the update itself run as scriptbox_user
+#  with rbenv's shims first on PATH.
+- name: "special script: ubuntu22_gem_update"
+  when: step.type == 'script' and step.name == 'ubuntu22_gem_update'
+  become: true
+  become_user: "{{ scriptbox_user }}"
+  environment:
+    HOME: "{{ scriptbox_home }}"
+    PATH: "{{ scriptbox_home }}/.rbenv/shims:{{ scriptbox_home }}/.rbenv/bin:{{ ansible_env.PATH }}"
+  block:
+    - name: Check rbenv's own current rubygems version
+      ansible.builtin.command: gem --version
+      register: scriptbox_gem_version
+      changed_when: false
+
+    - name: Look up latest rubygems-update release
+      ansible.builtin.uri:
+        url: https://rubygems.org/api/v1/versions/rubygems-update/latest.json
+        return_content: true
+      register: scriptbox_gem_latest
+      become: false
+
+    - name: Update rbenv's own rubygems
+      ansible.builtin.command: gem update --system
+      when: (scriptbox_gem_version.stdout | trim) is version(scriptbox_gem_latest.json.version, '<')
+
+# Deliberately a plain shell, not community.general.gem - that module has
+#  no user/environment scoping of its own (same gap confirmed against
+#  Chef's gem_package resource - see the Chef helpers.rb comment this
+#  mirrors), so it would install into whatever ruby this task runs
+#  under rather than the rbenv-managed one the manifest's own `needs:
+#  ruby`/tags: [rbenv] entry actually targets. step.args (e.g. --platform
+#  ruby) is its own data bag key, not parsed back out of step.name - see
+#  scriptbox/scripts/generate_install_script.rb's own arg_suffix.
+- name: "gem: {{ step.name }}"
+  when: step.type == 'gem'
+  become: true
+  become_user: "{{ scriptbox_user }}"
+  environment:
+    HOME: "{{ scriptbox_home }}"
+    PATH: "{{ scriptbox_home }}/.rbenv/shims:{{ scriptbox_home }}/.rbenv/bin:{{ ansible_env.PATH }}"
+  block:
+    - name: Check whether {{ step.name }} is already installed
+      ansible.builtin.command: "gem list -i {{ step.name }}"
+      register: scriptbox_gem_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install gem {{ step.name }}
+      ansible.builtin.shell: "gem install {{ step.name }}{{ (' ' + step.args) if step.args is defined else '' }}"
+      when: (scriptbox_gem_check.stdout | trim) != 'true'
+
+- name: "pipx: {{ step.name }}"
+  when: step.type == 'pipx'
+  become: true
+  become_user: "{{ scriptbox_user }}"
+  environment:
+    HOME: "{{ scriptbox_home }}"
+  block:
+    - name: Check whether {{ step.name }} is already installed via pipx
+      ansible.builtin.shell: "pipx list --short | grep -qw '^{{ step.name }} '"
+      register: scriptbox_pipx_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install {{ step.name }} via pipx
+      ansible.builtin.shell: "pipx install {{ step.name }}{{ (' ' + step.args) if step.args is defined else '' }}"
+      when: scriptbox_pipx_check.rc != 0
+
+- name: "unsupported scriptbox step type"
+  when: step.type not in ['apt', 'script', 'gem', 'pipx']
+  ansible.builtin.debug:
+    msg: "scriptbox: unsupported package type '{{ step.type }}' for '{{ step.name }}'"

@@ -15,7 +15,8 @@
     },
     {
       "type": "gem",
-      "name": "ratatui_ruby --platform ruby"
+      "name": "ratatui_ruby",
+      "args": "--platform ruby"
     }
   ]
 }

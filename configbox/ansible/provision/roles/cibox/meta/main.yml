@@ -1,0 +1,30 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+galaxy_info:
+  author: Joaquin Menchaca
+  description: Installs and verifies CI tooling (Docker, nektos/act)
+  issue_tracker_url: https://github.com/darkn3rd/script-tut/issues
+
+  license: MPL-2.0
+
+  min_ansible_version: 2.2
+
+  galaxy_tags: []
+
+# cibox is the outlier: unlike lessons/scriptbox, it's hand-wired rather
+#  than manifest/generated.yml-driven for now - see scriptbox/config/
+#  ubuntu2204.yml's own cibox: section, not yet consumed by generate_
+#  ansible_vars.rb.
+#
+# Both roles are dependencies here, not include_role tasks in
+#  ../tasks/main.yml - "cibox needs docker and act installed" is
+#  unconditional, and a dependency is guaranteed to run before this
+#  role's own tasks start. Order matters: act needs docker already
+#  running (it drives workflow containers through it), so
+#  geerlingguy.docker must resolve first.
+dependencies:
+  - role: geerlingguy.docker
+    vars:
+      docker_users:
+        - "{{ cibox_user }}"
+  - role: diodonfrost.act

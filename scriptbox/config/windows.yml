@@ -32,6 +32,7 @@ windows:
           packages:
             - choco: python3
               script: windows_python3
+              mmets: python3
         ruby:
           # Not in global: (unlike gsudo/make above) - scriptbox and
           #  testbox both need it too, but per ../ubuntu2204's own
@@ -77,6 +78,14 @@ windows:
           #  it lived in global:.
           - choco: powershell-core
           - choco: mscoreutils
+    config_box:
+      packages:
+        - choco_local: pipx
+          version: "1.16.7"
+        - cmd: pipx ensurepath
+          needs: python3
+        - pipx: ansible
+          args: --include-deps
     cibox:
       packages:
         - feature: Microsoft-Windows-Subsystem-Linux
@@ -85,6 +94,12 @@ windows:
           reboot: yes
         - choco: docker-desktop
         - choco: act-cli
+    pkgbox:
+      packages:
+        - powershell_package_provider: NuGet
+          version: ">= 2.8.5.201"
+        - cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+        - powershell_module: au
     testbox:
       packages:
         - script: windows_psake

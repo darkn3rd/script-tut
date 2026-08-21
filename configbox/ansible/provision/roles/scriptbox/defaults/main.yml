@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# defaults file for scriptbox
+
+# Which entry of group_vars/all/generated.yml's own `scriptbox:` map
+#  this host converges against - one key per platform, generated from
+#  that platform's own scriptbox/config/*.yml manifest's scriptbox:
+#  section by scriptbox/scripts/generate_ansible_vars.rb. The Ansible
+#  analogue of Chef's data_bag_item('scriptbox',
+#  node['scriptbox']['platform']) explicit lookup-by-key.
+scriptbox_platform: ubuntu22
+
+# Which user's rbenv-managed ruby scriptbox's own gem install/update
+#  steps target - see tasks/install_step.yml. 'vagrant' matches every
+#  Vagrant box this role currently converges against; override per host
+#  (e.g. in inventory group_vars) for anything else.
+scriptbox_user: vagrant

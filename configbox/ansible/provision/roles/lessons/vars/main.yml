@@ -1,0 +1,14 @@
+#SPDX-License-Identifier: MPL-2.0
+---
+# vars file for lessons
+
+# lessons_special_scripts - script-name steps intercepted in
+#  ../tasks/install_step.yml before the generic 'script' case (a plain
+#  shell of pkg.cmd) - mirrors ../../../../chef/cookbooks/lessons/
+#  libraries/helpers.rb's own SPECIAL_SCRIPTS: each one's real first
+#  action has a more faithful native equivalent than just shelling out
+#  the manifest's own bash verbatim (a vendor .deb install for
+#  ubuntu22_powershell, an idempotent rustup install for ubuntu22_rust).
+lessons_special_scripts:
+  - ubuntu22_powershell
+  - ubuntu22_rust
