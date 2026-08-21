@@ -3,7 +3,7 @@ lessons
 
 Installs the language interpreters, compilers, and per-lesson tooling used
 in Lessons, from data generated out of `scriptbox/config/*.yml` by
-`scriptbox/scripts/generate_ansible_databag.rb`. Ansible analogue of the
+`scriptbox/scripts/generate_ansible_vars.rb`. Ansible analogue of the
 `lessons` Chef cookbook.
 
 Requirements

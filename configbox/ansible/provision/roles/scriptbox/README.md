@@ -3,7 +3,7 @@ scriptbox
 
 Installs script-tut's own scriptbox tooling (apt packages, shell scripts,
 rbenv-scoped gems, pipx tools) from data generated out of
-`scriptbox/config/*.yml` by `scriptbox/scripts/generate_ansible_databag.rb`.
+`scriptbox/config/*.yml` by `scriptbox/scripts/generate_ansible_vars.rb`.
 Ansible analogue of the `scriptbox` Chef cookbook.
 
 Requirements

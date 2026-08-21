@@ -5,7 +5,7 @@
 # Which vars/<platform>.yml (see ../vars) this host converges against -
 #  one file per platform, generated from that platform's own
 #  scriptbox/config/*.yml manifest by scriptbox/scripts/
-#  generate_ansible_databag.rb. The Ansible analogue of Chef's
+#  generate_ansible_vars.rb. The Ansible analogue of Chef's
 #  data_bag_item('lessons', node['lessons']['platform']) explicit
 #  lookup-by-key.
 lessons_platform: ubuntu22

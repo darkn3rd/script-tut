@@ -4,16 +4,17 @@ require 'fileutils'
 require_relative 'resolve_order'
 require_relative 'generate_chef_databag' # for strip_comments/step_to_entry/consolidate_apt/root_key/LESSON_AREAS/COMMON_AREA
 
-# generate_ansible_databag.rb - the Ansible equivalent of generate_chef_
+# generate_ansible_vars.rb - the Ansible equivalent of generate_chef_
 #  databag.rb + generate_scriptbox_databag.rb combined: same source of
 #  truth (scriptbox/config/*.yml), same flattened/resolved step list, same
 #  step_to_entry/consolidate_apt shape - just written out as the two
 #  roles' own vars/<platform>.yml instead of the two Chef cookbooks' own
-#  data_bags/*/​<platform>.json. One invocation produces both files
-#  (rather than mirroring the Chef side's two separate scripts) since
-#  both need the exact same flatten/resolve! pass over the whole tree
-#  anyway - no reason to parse the manifest twice for two YAML files that
-#  come from the same run.
+#  data_bags/*/​<platform>.json (Ansible has no data bag equivalent - these
+#  are plain role vars files, loaded via include_vars). One invocation
+#  produces both files (rather than mirroring the Chef side's two
+#  separate scripts) since both need the exact same flatten/resolve! pass
+#  over the whole tree anyway - no reason to parse the manifest twice for
+#  two YAML files that come from the same run.
 #
 #  Loaded via each role's own tasks/main.yml (`include_vars:
 #  "{{ role_path }}/vars/{{ ... }}.yml"`), keyed by a role variable

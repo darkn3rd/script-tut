@@ -5,7 +5,7 @@
 # Static - never edited when the manifest/vars file changes. All content
 #  comes from vars/<platform>.yml (see scriptbox_platform in ../defaults/
 #  main.yml), generated from scriptbox/config/*.yml by scriptbox/
-#  scripts/generate_ansible_databag.rb.
+#  scripts/generate_ansible_vars.rb.
 #
 # No apt cache update here - lessons' own tasks already run one earlier
 #  in the same play, and apt's own cache_valid_time keeps it valid for
