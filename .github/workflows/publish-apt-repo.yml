@@ -29,14 +29,24 @@ jobs:
       # imported into a throwaway GNUPGHOME for this job only - never
       #  touches a real keyring, and nothing here persists past the job.
       # Passed via env:, not spliced into the script with ${{ }} - direct
-      #  interpolation of a multi-line secret broke gpg's own armor
-      #  parsing (confirmed directly: "invalid armor header", exit 2).
+      #  interpolation of a multi-line secret is its own known footgun.
+      #  Separately (confirmed directly, twice): gpg --import exits 2
+      #  with an "invalid armor header" warning on this key regardless -
+      #  a benign export(MSYS2 gpg)/import(Ubuntu gpg) formatting quirk,
+      #  not an actual failure - both runs' own gpg output shows the key
+      #  imported fine ("secret key imported"). So the step checks the
+      #  real postcondition (a secret key now exists) instead of trusting
+      #  gpg's own exit code.
       - name: Import signing key
         env:
           APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
         run: |
-          echo "$APT_SIGNING_KEY" | gpg --batch --import
+          echo "$APT_SIGNING_KEY" | gpg --batch --import || true
           KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+          if [ -z "$KEYID" ]; then
+            echo "::error::gpg import produced no usable secret key" >&2
+            exit 1
+          fi
           echo "KEYID=$KEYID" >> "$GITHUB_ENV"
 
       - name: Refresh act package
