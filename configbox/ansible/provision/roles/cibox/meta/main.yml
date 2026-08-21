@@ -2,7 +2,7 @@
 ---
 galaxy_info:
   author: Joaquin Menchaca
-  description: Installs and verifies CI tooling (nektos/act) from generated data bags
+  description: Installs and verifies CI tooling (Docker, nektos/act)
   issue_tracker_url: https://github.com/darkn3rd/script-tut/issues
 
   license: MPL-2.0
@@ -11,12 +11,20 @@ galaxy_info:
 
   galaxy_tags: []
 
-# diodonfrost.act (see ../../requirements.yml, vendored to
-#  ../../.galaxy-vendor/roles/ by `ansible-galaxy install -r
-#  requirements.yml` - never committed, see ../../ansible.cfg) installs
-#  nektos/act itself. A role dependency here, not an include_role task
-#  in ../tasks/main.yml - "cibox needs act installed" is unconditional,
-#  not something any of this role's own logic decides at runtime, and a
-#  dependency is guaranteed to run before this role's own tasks start.
+# cibox is the outlier: unlike lessons/scriptbox, it's hand-wired rather
+#  than manifest/generated.yml-driven for now - see scriptbox/config/
+#  ubuntu2204.yml's own cibox: section, not yet consumed by generate_
+#  ansible_vars.rb.
+#
+# Both roles are dependencies here, not include_role tasks in
+#  ../tasks/main.yml - "cibox needs docker and act installed" is
+#  unconditional, and a dependency is guaranteed to run before this
+#  role's own tasks start. Order matters: act needs docker already
+#  running (it drives workflow containers through it), so
+#  geerlingguy.docker must resolve first.
 dependencies:
+  - role: geerlingguy.docker
+    vars:
+      docker_users:
+        - "{{ cibox_user }}"
   - role: diodonfrost.act

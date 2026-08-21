@@ -2,6 +2,12 @@
 ---
 # defaults file for cibox
 
+# Which user act actually runs as, and so needs docker-group membership
+#  for (see ../meta/main.yml's own docker_users:). 'vagrant' matches
+#  every Vagrant box this role currently converges against; override per
+#  host for anything else.
+cibox_user: vagrant
+
 # Where ../tasks/main.yml's own verification result gets written -
 #  purely so a guest's own /tmp is inspectable after `vagrant up`
 #  finishes, without needing to scroll back through Ansible's own

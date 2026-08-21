@@ -1,7 +1,11 @@
 ---
+# geerlingguy.docker - installs Docker CE, act's own container runtime.
+#  Well-established, high adoption.
+#
 # diodonfrost.act - installs nektos/act. Low adoption (download_count: 4) -
 #  source read holds up, but worth re-checking if it goes quiet.
 roles:
+  - name: geerlingguy.docker
   - name: diodonfrost.act
 
 # community.general - only for the cpanm module (lessons/tasks/install_step.yml)
