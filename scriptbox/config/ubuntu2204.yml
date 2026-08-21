@@ -155,6 +155,10 @@ ubuntu22:
             - docker-buildx-plugin
             - docker-compose-plugin
         - cmd: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+    pkgbox:
+      packages:
+        - add_apt_repo: ubuntu22_nfpm
+        - apt: nfpm
     scriptbox:
       packages:
         - script: ubuntu22_gem_update
@@ -398,3 +402,8 @@ add_apt_repos:
     key_url: https://download.docker.com/linux/ubuntu/gpg
     repo_uri: https://download.docker.com/linux/ubuntu
     distro_string: "jammy stable"
+  ubuntu22_nfpm:
+    name: goreleaser
+    trusted: yes
+    repo_uri: https://repo.goreleaser.com/apt/
+    distro_string: "/"

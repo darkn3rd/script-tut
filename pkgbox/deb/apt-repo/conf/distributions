@@ -1,0 +1,7 @@
+Origin: script-tut
+Label: script-tut
+Codename: stable
+Architectures: amd64
+Components: main
+Description: Packages built by script-tut (https://github.com/darkn3rd/script-tut)
+SignWith: BEF3D87FB85D3FB5A6EAE41F92668237EBFEFD38

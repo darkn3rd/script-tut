@@ -1,0 +1,19 @@
+name: "act"
+version: "0.2.89"
+arch: "amd64"
+platform: "linux"
+section: "devel"
+priority: "optional"
+maintainer: "Joaquin Menchaca"
+description: |
+  Run your GitHub Actions locally - a container-based test runner for
+  GitHub Actions workflows.
+vendor: "nektos"
+homepage: "https://github.com/nektos/act"
+license: "MIT"
+
+contents:
+  - src: ./vendor/act
+    dst: /usr/bin/act
+    file_info:
+      mode: 0755
