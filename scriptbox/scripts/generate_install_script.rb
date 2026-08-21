@@ -94,19 +94,37 @@ def bash_install(step, tree)
   when 'gem'    then "gem install #{step[:name]}#{arg_suffix(step)}"
   when 'pipx'   then "pipx install #{step[:name]}#{arg_suffix(step)}"
   # pwsh, not native PowerShell - a bash-dialect platform (ubuntu2204.yml)
-  #  reaches PowerShellGet through the same `pwsh -Command "..."` pattern
-  #  the ubuntu22_powershell script step already uses for psake (see
-  #  scriptbox/config/ubuntu2204.yml), not a bare Install-Module call -
-  #  there's no PowerShell interpreter running this script itself to
-  #  invoke it directly. -Force covers the untrusted-PSGallery prompt on
-  #  its own (see the Set-PSRepository/Install-Module discussion this
-  #  followed) - no separate repository-trust step needed.
+  #  reaches PowerShellGet through the same `pwsh -NoProfile -Command
+  #  "..."` wrapper powershell_cmd itself uses below, not a bare
+  #  Install-Module call - there's no PowerShell interpreter running
+  #  this script itself to invoke it directly. -Force covers the
+  #  untrusted-PSGallery prompt on its own (see powershell_cmd's own
+  #  Set-PSRepository/Install-Module example) - no separate repository-
+  #  trust step needed for a module install on its own.
   when 'powershell_package_provider'
     _, ver = parse_version_constraint(step)
     version_flag = ver ? " -MinimumVersion #{ver}" : ''
     %(pwsh -NoProfile -Command "Install-PackageProvider -Name #{step[:name]}#{version_flag} -Force")
   when 'powershell_module'
     %(pwsh -NoProfile -Command "Install-Module -Name #{step[:name]}#{arg_suffix(step)} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber")
+  # powershell_cmd - one raw PowerShell command/expression, run through
+  #  the same `pwsh -NoProfile -Command "..."` wrapper as powershell_
+  #  package_provider/powershell_module above (this dialect has no
+  #  PowerShell interpreter of its own running the script), for the
+  #  cases those two dedicated types don't cover (e.g. `Set-PSRepository
+  #  -Name PSGallery -InstallationPolicy Trusted` - trusting a
+  #  repository, not installing a provider or a module). Prefer
+  #  powershell_module/powershell_package_provider when either actually
+  #  fits - this is the escape hatch for everything else, the same
+  #  relationship bash_install's own bare `cmd:` type has to every
+  #  dedicated package type. Unlike `cmd:` (spelled identically in both
+  #  dialects, since the author writes one command that already works
+  #  verbatim in both shells), powershell_cmd's own *rendering* genuinely
+  #  differs per dialect - bash needs the pwsh wrapper, native
+  #  PowerShell doesn't (see powershell_install's own 'powershell_cmd'
+  #  case) - only the manifest-authored PowerShell text itself is
+  #  shared between them.
+  when 'powershell_cmd' then %(pwsh -NoProfile -Command "#{step[:name]}")
   # --noconfirm - same non-interactive reasoning as apt's own -y. The
   #  one-time `pacman -Syu` refresh this needs before the *first* pacman
   #  step isn't here - it's a property of the whole script, not any one
@@ -191,6 +209,10 @@ def powershell_install(step)
     "Install-PackageProvider -Name #{step[:name]}#{version_flag} -Force"
   when 'powershell_module'
     "Install-Module -Name #{step[:name]}#{arg_suffix(step)} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
+  # powershell_cmd - see bash_install's own case: the manifest-authored
+  #  PowerShell text runs verbatim here, no pwsh wrapper needed (this
+  #  dialect's whole script already runs under PowerShell).
+  when 'powershell_cmd' then step[:name]
   end
 end
 
