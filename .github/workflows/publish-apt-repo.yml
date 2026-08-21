@@ -19,12 +19,20 @@ jobs:
       - name: Install reprepro
         run: sudo apt-get update -qq && sudo apt-get install -y -qq reprepro
 
-      - name: Install nfpm
-        uses: goreleaser/goreleaser-action@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          install-only: true
-        env:
-          GORELEASER_CURRENT_TAG: v0.0.0
+          go-version: 'stable'
+
+      # goreleaser-action installs goreleaser itself, not the standalone
+      #  nfpm CLI (confirmed directly: "nfpm: not found" even after that
+      #  step ran) - goreleaser only uses nfpm as a Go library internally,
+      #  it doesn't put an nfpm binary on PATH. go install is what
+      #  actually worked when this was proven out locally.
+      - name: Install nfpm
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       # imported into a throwaway GNUPGHOME for this job only - never
       #  touches a real keyring, and nothing here persists past the job.
