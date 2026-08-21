@@ -1,0 +1,137 @@
+# Shared functions available to every platform, regardless of OS
+#  lineage or dialect - see generate_install_script.rb's own
+#  lineage_for/load_helpers, which always merges this file in on top
+#  of whatever family-specific helpers/<lineage>.yml a platform
+#  declares (e.g. debian.yml for Ubuntu). Unlike debian.yml's
+#  add_apt_repo (real Debian/apt-only behavior), append_line has no
+#  package-manager or distro dependency - append: steps show up across
+#  Ubuntu, cygwin, msys2, macOS, and Windows manifests alike (see
+#  append_lines/powershell_append_lines in generate_install_script.rb),
+#  so the function they all call lives here instead of being duplicated
+#  into (or forced to inherit from) a family that doesn't actually
+#  describe them. cmd: is the bash body, cmd_powershell: the PowerShell
+#  one - emit_helper_functions picks whichever one matches the
+#  generated script's own dialect (see its own comment for why
+#  cmd_powershell: is optional per helper, unlike cmd:).
+common:
+  helpers:
+    append_line:
+      cmd: |
+        append_line() {
+          local DEST=$1
+          local LINE=$2
+
+          # Guarded on the dest file actually existing first - appending
+          #  to a shell startup file that isn't actually anyone's yet
+          #  (e.g. .zshrc on a box where zsh was never installed/run)
+          #  accomplishes nothing.
+          # `|| true` at the end - confirmed directly via a real
+          #  `vagrant provision` failure this matters, not just
+          #  defensive: `[ -f "$DEST" ] && { ... }` alone returns the
+          #  *test's* own exit code (1) when DEST doesn't exist yet, and
+          #  set -e's usual exemption for a non-final command in an &&
+          #  list only protects that one statement from aborting
+          #  immediately - it doesn't stop a non-zero status from
+          #  becoming a *function's own return value* when this is the
+          #  last statement in this function, which then aborts the
+          #  whole script the moment something else calls append_line
+          #  as an ordinary statement.
+          [ -f "$DEST" ] && { grep -qxF "$LINE" "$DEST" 2>/dev/null || echo "$LINE" >> "$DEST"; } || true
+        }
+      # Same guard-file-exists/exact-line-match/append-if-missing shape
+      #  as cmd: above, PowerShell idioms in place of bash ones.
+      #  `-contains` against Get-Content's own line array is the
+      #  exact-line match `grep -qxF` gives bash (not -Pattern/
+      #  -SimpleMatch, which is a substring match, not a whole-line
+      #  one). No `|| true` equivalent needed - an `if (...) { ... }`
+      #  with a false condition isn't an error in PowerShell the way a
+      #  failed `[ -f ... ]` test is in bash under set -e, so there's no
+      #  return-value pitfall here to guard against.
+      cmd_powershell: |
+        function append_line {
+            param([string]$Dest, [string]$Line)
+            if ((Test-Path $Dest) -and -not ((Get-Content $Dest -ErrorAction SilentlyContinue) -contains $Line)) {
+                Add-Content -Path $Dest -Value $Line
+            }
+        }
+    is_vm_guest:
+      # A test function, not an installer - called from an `if`/`if
+      #  (...)`  guard (see generate_install_script.rb's own render_step
+      #  condition-wrapping), so its own *exit status*/return value is
+      #  the whole point, never anything it prints. Real hypervisor-
+      #  signature checks, not a stub - windows.yml's own `choco:
+      #  virtualbox` step (`condition: is_vm_guest == false`) depends on
+      #  this actually working: installing a Type-2 hypervisor *inside*
+      #  a VM guest is either a no-op or actively broken (nested
+      #  virtualization isn't universally available/enabled), so this
+      #  has to tell a real guest apart from real hardware, not just
+      #  exist to satisfy the condition: syntax.
+      # Bash body dispatches on `uname -s` since this one function has
+      #  to work across every bash-dialect platform (Ubuntu, macOS,
+      #  cygwin, msys2 - see helpers/common.yml's own file-level
+      #  comment) with genuinely different detection mechanisms per OS:
+      #  Linux - systemd-detect-virt (ships with systemd, so present on
+      #  any systemd-based distro including Ubuntu) is the standard,
+      #  maintained way to ask this; its own `none` output means bare
+      #  metal, anything else (kvm/vmware/oracle/xen/...) means a guest.
+      #  A DMI product_name grep is the fallback for a non-systemd
+      #  Linux (systemd-detect-virt missing) - the well-known set of
+      #  strings a hypervisor's BIOS/firmware writes there
+      #  (VirtualBox/VMware/KVM-QEMU/Hyper-V/Xen all do). Darwin (macOS)
+      #  - checked directly against a real Mac, confirmed this repo's
+      #  own bare-metal MacBook Pro reports Model Name "MacBook Pro"/
+      #  Model Identifier "MacBookPro16,2" (no match, correctly "not a
+      #  guest") - a macOS VM (Apple Silicon Virtualization.framework,
+      #  e.g. UTM/Tart/Parallels) reports a Model Name/Identifier
+      #  containing "Virtual" instead. Not independently verified
+      #  against a real macOS guest (no such VM available to test
+      #  against here) - a best-effort check matching Apple's own
+      #  documented convention, not confirmed end-to-end the way the
+      #  bare-metal branch is. cygwin/msys2 - both run atop a real
+      #  Windows kernel, so guest-ness is a Windows-level question, not
+      #  a Cygwin/MSYS one - shells out to the same Win32_ComputerSystem
+      #  check the PowerShell body below uses natively, via
+      #  `powershell.exe` (present on PATH in both environments). Not
+      #  independently verified (no cygwin/msys2 VM available to test
+      #  against here either) - powershell.exe's own availability from
+      #  inside a Cygwin/MSYS shell is assumed, not confirmed.
+      cmd: |
+        is_vm_guest() {
+          case "$(uname -s)" in
+            Linux)
+              if command -v systemd-detect-virt >/dev/null 2>&1; then
+                [ "$(systemd-detect-virt)" != "none" ]
+              elif [ -r /sys/class/dmi/id/product_name ]; then
+                grep -qiE 'vmware|virtualbox|kvm|qemu|hyper-v|xen' /sys/class/dmi/id/product_name
+              else
+                return 1
+              fi
+              ;;
+            Darwin)
+              system_profiler SPHardwareDataType 2>/dev/null | grep -qiE 'Model (Name|Identifier):.*virtual'
+              ;;
+            CYGWIN*|MINGW*|MSYS*)
+              powershell.exe -NoProfile -Command '(Get-CimInstance Win32_ComputerSystem).Model' 2>/dev/null | grep -qiE 'virtual|vmware|kvm|xen'
+              ;;
+            *)
+              return 1
+              ;;
+          esac
+        }
+      # Win32_ComputerSystem.Model is the standard, widely-documented
+      #  signature check on Windows: Hyper-V reports "Virtual Machine",
+      #  VMware "VMware Virtual Platform", VirtualBox "VirtualBox", KVM/
+      #  QEMU usually "KVM"/a "Standard PC (Q35 ...)" board (less
+      #  universally reliable than the others, included anyway since a
+      #  false negative here is the safer failure mode for windows.
+      #  yml's own use - see this helper's own top comment - than a
+      #  false positive would be). Not independently verified against a
+      #  real Windows guest (no Windows VM available to test against
+      #  here) - this is the well-known approach, not a confirmed-
+      #  working one; verify against this manifest's own actual target
+      #  VMs (Hyper-V/VMware/VirtualBox) before relying on it.
+      cmd_powershell: |
+        function is_vm_guest {
+            $model = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+            return $model -match 'Virtual|VMware|KVM|Xen'
+        }

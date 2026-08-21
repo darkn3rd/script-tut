@@ -215,26 +215,15 @@ def file_write(step, tree)
 end
 
 # append_lines(step, tree) - an 'append' step (see resolve_order.rb's
-#  own ATTACHABLE_KEYS) as one grep-guarded append per dest/line pair,
-#  looked up in the manifest's own appends: block by name. `dest` may be
-#  a single path or a list (e.g. both .bashrc and .zshrc) - Array()
-#  normalizes either shape the same way bash_install's own apt/pacman
-#  cases already do for `name`. Guarded on the dest file actually
-#  existing first, same reasoning as bash_install's own 'path' case:
-#  appending to a shell startup file that isn't actually anyone's yet
-#  accomplishes nothing. `|| true` at the end of each line - confirmed
-#  directly via a real `vagrant provision` failure this matters, not
-#  just defensive: `[ -f dest ] && { ... }` alone returns the *test's*
-#  own exit code (1) when dest doesn't exist yet, and set -e's usual
-#  exemption for a non-final command in an && list only protects that
-#  one statement from aborting immediately - it doesn't stop a non-zero
-#  status from becoming a *function's own return value* when this line
-#  happens to be the last one in its generated section function, which
-#  then aborts the whole script the moment something else calls that
-#  function as an ordinary statement. `|| true` makes the guard's own
-#  success unconditional, the same way `sudo apt-get remove ... 2>
-#  /dev/null || true` elsewhere in this file already has to for the
-#  identical reason.
+#  own ATTACHABLE_KEYS) as one call to the shared append_line() function
+#  (see helpers/common.yml, emitted by emit_helper_functions) per
+#  dest/line pair, looked up in the manifest's own appends: block by
+#  name. `dest` may be a single path or a list (e.g. both .bashrc and
+#  .zshrc) - Array() normalizes either shape the same way bash_install's
+#  own apt/pacman cases already do for `name`. The guard-file-exists/
+#  grep-guard/`|| true` logic itself lives once in append_line() now,
+#  not re-emitted per line here - see common.yml's own comment for why
+#  each of those pieces matters.
 def append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
@@ -249,29 +238,29 @@ def append_lines(step, tree)
       #  quote, reopen - keeps the whole line literal regardless of
       #  what it contains.
       quoted = "'" + line.gsub("'") { "'\\''" } + "'"
-      %([ -f "#{dest}" ] && { grep -qxF #{quoted} "#{dest}" 2>/dev/null || echo #{quoted} >> "#{dest}"; } || true)
+      %(append_line "#{dest}" #{quoted})
     end
   end.join("\n")
 end
 
 # powershell_append_lines(step, tree) - the PowerShell dialect's
 #  equivalent of append_lines above: same shape (looked up in appends:
-#  by name, dest may be a single path or a list, guarded on the dest
-#  already existing), just PowerShell idioms in place of bash ones.
-#  `-contains` against Get-Content's own line array is the exact-line
-#  match `grep -qxF` gives bash (not -Pattern/-SimpleMatch, which is a
-#  substring match, not a whole-line one). dest is wrapped in double
-#  quotes so a manifest can use "$PROFILE" itself, not just a literal
-#  path - PowerShell double-quoted strings interpolate variables the
-#  same way bash's do. Line values are escaped for a PowerShell
-#  single-quoted string (a literal quote there is just doubled, not the
-#  close/escape/reopen dance bash needs).
+#  by name, dest may be a single path or a list, one call to the shared
+#  append_line function - see helpers/common.yml's own cmd_powershell:,
+#  emitted by emit_helper_functions - per dest/line pair). dest is
+#  wrapped in double quotes so a manifest can use "$PROFILE" itself, not
+#  just a literal path - PowerShell double-quoted strings interpolate
+#  variables the same way bash's do, so append_line's own $Dest
+#  parameter receives the already-expanded path, not the literal text
+#  "$PROFILE". Line values are escaped for a PowerShell single-quoted
+#  string (a literal quote there is just doubled, not the close/escape/
+#  reopen dance bash needs).
 def powershell_append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
       quoted = "'" + line.gsub("'") { "''" } + "'"
-      %(if ((Test-Path "#{dest}") -and -not ((Get-Content "#{dest}" -ErrorAction SilentlyContinue) -contains #{quoted})) { Add-Content -Path "#{dest}" -Value #{quoted} })
+      %(append_line "#{dest}" #{quoted})
     end
   end.join("\n")
 end
@@ -299,6 +288,19 @@ end
 #  `tree` (the whole parsed manifest, not just its own scripts: block)
 #  so 'file'/'append' can look themselves up in files:/appends: the
 #  same way 'script' already looks itself up in scripts:.
+# noop_comment(step) - a 'noop' step's own line: pure documentation, no
+#  install command at all - see resolve_order.rb's own PACKAGE_TYPES
+#  and flatten comment for why this type exists (a meets:/needs: pair
+#  with no actual package on either side to attach to). A `#` comment
+#  reads identically in bash and PowerShell, so - unlike file_write/
+#  append_lines - this needs no dialect branching of its own.
+def noop_comment(step)
+  extra = []
+  extra << "meets: #{step[:meets]}" if step[:meets]
+  extra << "needs: #{step[:needs]}" if step[:needs]
+  "# noop#{extra.empty? ? '' : " (#{extra.join(', ')})"}"
+end
+
 def command_for(step, tree, dialect)
   install =
     case step[:type]
@@ -316,6 +318,7 @@ def command_for(step, tree, dialect)
     #  append_lines (bash) / powershell_append_lines (PowerShell) above.
     when 'file' then file_write(step, tree)
     when 'append' then dialect == 'powershell' ? powershell_append_lines(step, tree) : append_lines(step, tree)
+    when 'noop' then noop_comment(step)
     else dialect == 'powershell' ? powershell_install(step) : bash_install(step, tree)
     end
   # Confirmed directly this matters, not just belt-and-suspenders: before
@@ -370,29 +373,36 @@ end
 #  a cross-platform scriptbox/config/helpers/<name>.yml (see
 #  lineage_for/load_helpers) instead of this platform's own scripts:
 #  block, so every platform sharing an OS lineage reuses the same
-#  function body instead of each duplicating it. A helper's own cmd: is
-#  already a complete, self-contained function definition (unlike
-#  scripts:'s own cmd:, which is just a body this wraps in `name() {
-#  ... }`) - see helpers/debian.yml's own add_apt_repo. Two ways a step
-#  can need one: an add_apt_repo: field (this generator's own rendering
-#  calls the helper itself - see bash_install's 'apt' case), or a
-#  script's own manifest-authored uses: field (the script's *cmd body
-#  itself* calls it, which this generator can't see inside that raw
-#  string, so the manifest author has to say so explicitly). Bash-only
-#  for now - every lineage on the multi-OS roadmap with an actual
-#  helpers file today is bash-dialect; nothing here assumes that stays
-#  true forever, it just isn't needed yet.
+#  function body instead of each duplicating it. A helper's own cmd:/
+#  cmd_powershell: is already a complete, self-contained function
+#  definition (unlike scripts:'s own cmd:, which is just a body this
+#  wraps in `name() { ... }`) - see helpers/debian.yml's own
+#  add_apt_repo. Four ways a step can need one: an add_apt_repo: field,
+#  an append: step, or a condition: field naming a test function (this
+#  generator's own rendering calls the helper itself - see
+#  bash_install's 'apt' case, append_lines/powershell_append_lines, and
+#  render_step's own condition-guard wrapping), or a script's own
+#  manifest-authored uses: field (the script's *cmd body itself* calls
+#  it, which this generator can't see inside that raw string, so the
+#  manifest author has to say so explicitly). cmd_powershell: is
+#  optional per helper (add_apt_repo has none - nothing on the Windows/
+#  PowerShell side uses it yet) - a helper needed only in a dialect it
+#  has no body for is silently skipped, same as a helper nobody needs
+#  at all.
 def emit_helper_functions(f, steps, tree, dialect, helpers)
-  return if dialect == 'powershell' || helpers.nil?
+  return if helpers.nil?
 
   needed = []
   needed << 'add_apt_repo' if steps.any? { |s| s[:add_apt_repo] }
+  needed << 'append_line' if steps.any? { |s| s[:type] == 'append' }
+  steps.each { |s| needed << parse_condition(s[:condition]).first if s[:condition] }
   steps.select { |s| s[:type] == 'script' }.map { |s| s[:name] }.uniq.each do |sname|
     needed.concat(Array(tree.dig('scripts', sname, 'uses')))
   end
 
+  key = dialect == 'powershell' ? 'cmd_powershell' : 'cmd'
   needed.uniq.each do |hname|
-    body = helpers.dig('helpers', hname, 'cmd')&.rstrip
+    body = helpers.dig('helpers', hname, key)&.rstrip
     next unless body
 
     f.puts body
@@ -447,20 +457,48 @@ end
 #  why tracking that here (by which step is generated *first*) went
 #  wrong once steps could live inside a function that's defined earlier
 #  in the file than one that actually *runs* earlier.
+#  step[:condition] (see resolve_order.rb's own parse_condition) wraps
+#  just this step's own status/install/choco-extras block - not the
+#  insert_before calls ahead of it, which are relocated *other* steps'
+#  own installs and run unconditionally regardless of whether *this*
+#  step's own condition holds. `is_vm_guest`-style test functions are
+#  shared helpers (see helpers/common.yml, emitted by
+#  emit_helper_functions the same way append_line is), called by name -
+#  the guard is the bare call for `== true`, a dialect-appropriate
+#  negation for `== false`.
 def render_step(step, tree, dialect, insert_before = {})
   lines = []
   Array(insert_before[step.object_id]).each { |name| lines << name }
+
+  inner = []
   if dialect == 'powershell'
-    lines << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, tree, dialect)
+    inner << "Write-Host '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    inner << command_for(step, tree, dialect)
     if step[:type] == 'choco'
-      lines << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
-      lines << 'Update-SessionEnvironment'
+      inner << 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"'
+      inner << 'Update-SessionEnvironment'
     end
   else
-    lines << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
-    lines << command_for(step, tree, dialect)
+    inner << "echo '==> [#{step[:path]}] #{step[:type]}: #{step[:name]}'"
+    inner << command_for(step, tree, dialect)
   end
+
+  if step[:condition]
+    fn_name, expected = parse_condition(step[:condition])
+    body = indent_body("#{inner.join("\n")}\n", '  ').rstrip
+    if dialect == 'powershell'
+      lines << "if (#{expected ? fn_name : "-not (#{fn_name})"}) {"
+      lines << body
+      lines << '}'
+    else
+      lines << "if #{expected ? fn_name : "! #{fn_name}"}; then"
+      lines << body
+      lines << 'fi'
+    end
+  else
+    lines.concat(inner)
+  end
+
   "#{lines.join("\n")}\n\n"
 end
 
@@ -721,6 +759,12 @@ end
 #  well-known sidecar next to this very script - keeps both entry
 #  points consistent without gen_installer.rb's own full multi-file
 #  merge semantics leaking in here.
+# 'common' is always appended, least-specific, regardless of what (if
+#  anything) a platform declares - see helpers/common.yml's own
+#  append_line: unlike add_apt_repo, it isn't tied to any one OS family
+#  (Ubuntu, cygwin, and msys2 manifests all use append: steps), so every
+#  bash-dialect platform picks it up here rather than each family's own
+#  lineage having to name it explicitly.
 def lineage_for(tree, name)
   environments = tree['environments']
   if environments.nil?
@@ -728,19 +772,21 @@ def lineage_for(tree, name)
     environments = File.exist?(env_path) ? YAML.load_file(env_path)['environments'] : nil
   end
   entry = Array(environments).find { |e| e['platform'] == name }
-  return [] unless entry
-
-  Array(entry['lineage'])
+  lineage = entry ? Array(entry['lineage']) : []
+  lineage + ['common']
 end
 
 # load_helpers(lineage) - every helper from every scriptbox/config/
 #  helpers/<name>.yml in `lineage` (see lineage_for) that actually
-#  exists, merged into one {'helpers' => {name => {'cmd' => ...}}} -
-#  nil if `lineage` is empty or none of its entries have a helpers file
-#  yet (most do not - only debian.yml exists so far). Merged least-
-#  specific first, so a *more* specific file's own helper of the same
-#  name wins if `lineage` ever has more than one entry - it's already
-#  most-specific-first, so this walks it in reverse.
+#  exists, merged into one {'helpers' => {name => {'cmd' => ...}}} - nil
+#  if none of `lineage`'s entries have a helpers file (debian.yml and
+#  common.yml are the only two so far; lineage_for always includes
+#  'common', so in practice this is only ever nil for a platform whose
+#  lineage entry somehow doesn't resolve at all). Merged least-specific
+#  first, so a *more* specific file's own helper of the same name wins
+#  if `lineage` ever has more than one entry - it's already
+#  most-specific-first (lineage_for appends 'common' last), so this
+#  walks it in reverse.
 def load_helpers(lineage)
   return nil if lineage.nil? || lineage.empty?
 
@@ -871,6 +917,14 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  # Resolved right after root_key picks `name`, before flatten ever
+  #  walks the tree - see resolve_order.rb's own substitute_variables/
+  #  RESERVED_KEYS comment on why this is scoped to tree[name] alone
+  #  (variables: lives nested inside the platform's own root key, not
+  #  as a top-level shared block) - so every downstream consumer
+  #  (flatten, scripts:/appends:/files: lookups) already sees real
+  #  values, never <%= $name %> template text.
+  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
 
   # Order matters here: resolve! runs on the *full* list first, so
   #  dependency ordering is correct globally regardless of what gets

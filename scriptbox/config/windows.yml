@@ -1,4 +1,6 @@
 windows:
+  variables: 
+    ruby_ver: 3.4.10.1 
   shell: powershell
   global:
     packages:
@@ -8,6 +10,7 @@ windows:
       - script: windows_fix_ssh_home
       - choco: gsudo
       - choco: make
+        meets: make
     lessons:
       gen_scripts:
         awk:
@@ -34,17 +37,10 @@ windows:
               script: windows_python3
               mmets: python3
         ruby:
-          # Not in global: (unlike gsudo/make above) - scriptbox and
-          #  testbox both need it too, but per ../ubuntu2204's own
-          #  convention (see its own gen_scripts.ruby), they get it by
-          #  running *after* lessons in the run list/call tree rather
-          #  than each redeclaring their own copy - confirmed directly
-          #  this matters: sitting in global: instead left it out of the
-          #  Chef data bag entirely (generate_chef_databag.rb's own
-          #  LESSON_AREAS never includes 'global'), so `lessons`'s own
-          #  Chef converge never installed Ruby at all.
           packages:
             - choco: ruby
+              version: <%= $ruby_ver %>
+              meets: ruby
         tcl:
           packages:
             - choco: magicsplat-tcl-tk
@@ -56,6 +52,9 @@ windows:
           - choco: apt-cyg
           - choco: msys2
       compiled_lang:
+        packages:
+          - noop: make
+            needs: make
         cs:
           packages:
             - choco: dotnet-sdk
@@ -71,21 +70,20 @@ windows:
             - choco: rust
       win_scripts:
         packages:
-          # Same reasoning as gen_scripts.ruby just above - required by
-          #  this area itself (and by scriptbox/testbox, which rely on
-          #  lessons running first rather than each redeclaring it), and
-          #  was silently dropped from the Chef data bag entirely while
-          #  it lived in global:.
           - choco: powershell-core
+            meets: pwsh
           - choco: mscoreutils
     config_box:
       packages:
-        - choco_local: pipx
-          version: "1.16.7"
-        - cmd: pipx ensurepath
-          needs: python3
-        - pipx: ansible
-          args: --include-deps
+        # - choco_local: pipx
+        #   version: "1.16.7"
+        # - cmd: pipx ensurepath
+        #   needs: python3
+        # - pipx: ansible
+        #   args: --include-deps
+        - choco: virtualbox
+          condition: is_vm_guest == false
+        - choco: vagrant
     cibox:
       packages:
         - feature: Microsoft-Windows-Subsystem-Linux
@@ -96,31 +94,30 @@ windows:
         - choco: act-cli
     pkgbox:
       packages:
-        - powershell_package_provider: NuGet
-          version: ">= 2.8.5.201"
-        - cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-        - powershell_module: au
+        - noop: make
+          needs: make
+      chocolatey:
+        packages:
+          - powershell_package_provider: NuGet
+            version: ">= 2.8.5.201"
+            needs: pwsh
+          - cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          - powershell_module: au
     testbox:
       packages:
         - script: windows_psake
+          needs: pwsh
     scriptbox:
       packages:
         - script: windows_update_gems
+          needs: ruby
         - gem: ratatui_ruby    
 scripts:
   windows_chocolatey:
     type: powershell
     elevated: true
     cmd: |
-      # Some boxes (confirmed on gusztavvargadr/windows-11) inject
-      # HOME=%USERPROFILE% fresh into every process, outside the normal
-      # User/Machine env var scopes. Cleared before anything installs,
-      # not just before our own later msys2/cygwin steps - choco's own
-      # msys2/cygwin packages can invoke bash internally during install
-      # (MSYS2's first-run filesystem bootstrap, Cygwin's postinstall.sh
-      # scripts), and either would silently inherit the wrong HOME and
-      # bootstrap the user's home directory in the wrong place before we
-      # ever get a chance to fix it ourselves.
+      # Remove HOME env var as this breaks Cygwin and MSYS
       Remove-Item Env:\HOME -ErrorAction SilentlyContinue
       Set-ExecutionPolicy Bypass -Scope Process -Force
       [System.Net.ServicePointManager]::SecurityProtocol = `
@@ -132,14 +129,7 @@ scripts:
     type: powershell
     elevated: true
     cmd: |
-      # `vagrant ssh` lands in cmd.exe with HOME already set to
-      # %USERPROFILE% (same injected value seen in every process on this
-      # box - see windows_chocolatey's own comment). cmd.exe's AutoRun key
-      # runs automatically at the start of every new cmd.exe session,
-      # including ones reached over SSH, so clearing HOME there makes an
-      # interactive `vagrant ssh` session behave the same as provisioning
-      # (which clears it directly) without requiring it to be done by hand
-      # each time.
+      # Clear out HOME as this breaks Cygwin and MSYS2 environments 
       New-Item -Path 'HKCU:\Software\Microsoft\Command Processor' -Force | Out-Null
       Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value 'set HOME='
   windows_gsudo_config:
@@ -181,16 +171,9 @@ scripts:
     cmd: |
       Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
       Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
-
-      # Under an elevated session, Install-Module -Scope CurrentUser has
-      #  been observed writing into the Windows PowerShell 5.1-style
-      #  modules directory instead of PowerShell Core's own, even when
-      #  $PSVersionTable.PSEdition is genuinely 'Core' - confirmed
-      #  directly (module files present, manifest valid, yet
-      #  undiscoverable via Get-Module -ListAvailable from pwsh, in
-      #  either the same session or a brand new one). Copy it into
-      #  Core's own modules directory explicitly so it's discoverable
-      #  regardless of which PowerShellGet actually handled the install.
+      
+      # Copy configuration into PowerShell Core's own module dir to make it discoverable 
+      # PowerShell 5.1 style used in evalated mode, which breask PowerShell Core 
       $corePSModules = Join-Path $HOME 'Documents\PowerShell\Modules'
       $winPSakeModule = Join-Path $HOME 'Documents\WindowsPowerShell\Modules\psake'
       if ((Test-Path $winPSakeModule) -and -not (Test-Path (Join-Path $corePSModules 'psake'))) {
