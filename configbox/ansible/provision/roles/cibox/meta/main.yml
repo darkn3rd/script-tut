@@ -1,7 +1,16 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MPL-2.0
 ---
-# meta file for cibox
-#
+galaxy_info:
+  author: Joaquin Menchaca
+  description: Installs and verifies CI tooling (nektos/act) from generated data bags
+  issue_tracker_url: https://github.com/darkn3rd/script-tut/issues
+
+  license: MPL-2.0
+
+  min_ansible_version: 2.2
+
+  galaxy_tags: []
+
 # diodonfrost.act (see ../../requirements.yml, vendored to
 #  ../../.galaxy-vendor/roles/ by `ansible-galaxy install -r
 #  requirements.yml` - never committed, see ../../ansible.cfg) installs

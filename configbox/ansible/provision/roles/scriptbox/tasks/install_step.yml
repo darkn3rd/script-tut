@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MPL-2.0
 ---
 # One step from scriptbox_data.packages (see ../vars/<platform>.yml)
 #  dispatched to the matching Ansible module - included once per step by

@@ -1,4 +1,4 @@
-SCRIPT_TUT_PATH="../../../../.."
+SCRIPT_TUT_PATH="../../../.."
 # ansible_local runs ansible-playbook *inside* the guest, so provision/
 #  (site.yml, roles/, vars/) has to actually be synced there first -
 #  this Vagrantfile's own default share only covers systems/ubuntu_2204/
@@ -10,33 +10,29 @@ Vagrant.configure("2") do |config|
   config.vm.box_version = "4.3.12"
   config.vm.hostname = "ansible-node-01.test"
   config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
-  config.vm.synced_folder "#{ANSIBLE_ROOT}", "/vagrant/ansible"
+
+  # Tighten Security required for use with desired ansible.cfg
+  # * PROBLEM: Ansible security guard will ignore `ansible.cfg` when 
+  #     it is world writable, 777 (rwxrwxrwx) 
+  # * SOLUTION: set mount options with dmode=755, fmode=644
+  config.vm.synced_folder "#{ANSIBLE_ROOT}", "/vagrant/ansible", mount_options: ["dmode=755", "fmode=644"]
 
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "ansible/provision/site.yml"
     ansible.verbose = true
 
-    # Galaxy vendoring (see ../../provision/requirements.yml/ansible.cfg)
-    #  has to run *inside the guest* too, same reason ansible-playbook
-    #  itself does - ansible-galaxy ships as part of ansible-core, so it
-    #  has the identical no-native-Windows-controller limitation, not a
-    #  separate one. Vagrant's own default galaxy_command
-    #  (`ansible-galaxy install --role-file=... --roles-path=... --force`)
-    #  only installs roles: - confirmed directly against Vagrant's own
-    #  docs, not assumed - so it would silently skip requirements.yml's
-    #  own collections: section (community.general). Overridden here to
-    #  run both `ansible-galaxy role install`/`collection install`
-    #  explicitly against the same vendor paths ansible.cfg's own
-    #  roles_path/collections_paths expect, rather than relying on
-    #  whether `ansible-galaxy install` alone would honor those from
-    #  ansible.cfg on its own (not verified in this environment - no
-    #  guest to actually test against). Confirm with a real
-    #  `vagrant up`/`vagrant provision` run before trusting this comment
-    #  over what actually happens.
-    ansible.galaxy_role_file = "ansible/provision/requirements.yml"
+    # Install Roles & Collections
+    # * roles: installed from mounted path at /vagrant/ansible/provison/.galazy-vendor/roles
+    # * collections: installed using default at $HOME/.ansible/collections/ansible_collections
+    # Collecitons Workaround
+    # * PROBLEM: 
+    #   * mounted vboxsf doesn't support symlinks and [Errno 71] Protocol error
+    #   * installing from MSYS2 also causes ENOENT as symlinks are not supported
+    # * SOLUTION: install collections using guest's default location 
+    ansible.galaxy_role_file  = "ansible/provision/requirements.yml"
     ansible.galaxy_roles_path = "ansible/provision/.galaxy-vendor/roles"
-    ansible.galaxy_command = "ansible-galaxy role install -r %{role_file} -p %{roles_path} --force && " \
-                              "ansible-galaxy collection install -r %{role_file} -p ansible/provision/.galaxy-vendor/collections --force"
+    ansible.galaxy_command    = "ansible-galaxy role install -r %{role_file} -p %{roles_path} --force && " \
+                                "ansible-galaxy collection install -r %{role_file} --force"
   end
 end
 

@@ -1,38 +1,51 @@
-Role Name
-=========
+lessons
+=======
 
-A brief description of the role goes here.
+Installs the language interpreters, compilers, and per-lesson tooling used
+in Lessons, from data generated out of `scriptbox/config/*.yml` by
+`scriptbox/scripts/generate_ansible_databag.rb`. Ansible analogue of the
+`lessons` Chef cookbook.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Debian/Ubuntu target (`apt` tasks are gated on `ansible_facts['os_family']
+  == 'Debian'`)
+- `community.general` collection (`cpanm` module) - see
+  `../../requirements.yml`
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+See `defaults/main.yml`:
+
+- `lessons_platform` (default `ubuntu22`) - selects which generated
+  `vars/<platform>.yml` to converge against. Only `ubuntu22` exists today.
+- `lessons_user` (default `vagrant`) - owner of per-user installs (rustup,
+  pyenv, rbenv, ...) and their home directory.
+- `lessons_gen_scripts`, `lessons_shell_scripts`, `lessons_compiled_lang`,
+  `lessons_win_scripts` (all default `true`) - per-area gates; the manifest's
+  `common` steps always run regardless.
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+None.
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
+    - hosts: all
+      become: true
       roles:
-         - { role: username.rolename, x: 42 }
+        - lessons
 
 License
 -------
 
-BSD
+MPL-2.0
 
 Author Information
-------------------
+-------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Joaquin Menchaca

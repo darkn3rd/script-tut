@@ -1,28 +1,9 @@
 ---
-# Install with: ansible-galaxy install -r requirements.yml
-#  (installs both the roles: and collections: sections below in one
-#  pass - see ../ansible.cfg for where they land: .galaxy-vendor/,
-#  gitignored, never committed).
-#
-# diodonfrost.act - installs nektos/act (see cibox/README.md's own
-#  "Setup for Act" section) via GitHub-API version resolution +
-#  checksum-verified download - read directly at
-#  https://github.com/diodonfrost/ansible-role-act/blob/master/tasks/
-#  setup-Linux-Unix.yml before trusting this comment alone: only
-#  ansible.builtin modules (uri/get_url/unarchive/command/file), an
-#  `act --version` idempotency check before re-downloading anything, no
-#  external dependency of its own. Low adoption (download_count: 4 on
-#  Galaxy as of this writing) - the source held up on direct read, but
-#  that's a much smaller trust signal than geerlingguy's own roles get,
-#  worth re-checking if this role goes quiet or the task logic changes.
+# diodonfrost.act - installs nektos/act. Low adoption (download_count: 4) -
+#  source read holds up, but worth re-checking if it goes quiet.
 roles:
   - name: diodonfrost.act
 
-# community.general - only for the cpanm module (see roles/lessons/tasks/
-#  install_step.yml's own 'cpan'/'cpanm' dispatch). Everything else this
-#  playbook uses (apt, apt_repository, deb822_repository, getent, uri,
-#  get_url, lineinfile, copy, file, shell, command) ships in ansible-core
-#  itself under the ansible.builtin namespace - no other collection
-#  needed.
+# community.general - only for the cpanm module (lessons/tasks/install_step.yml)
 collections:
   - name: community.general

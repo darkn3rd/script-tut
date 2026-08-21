@@ -37,4 +37,6 @@ pkgbox/chocolatey/*/vendor/*
 # install -r requirements.yml` output (third-party roles/collections -
 # diodonfrost.act, community.general, ...), fetched on demand, not part
 # of this repo's own source - same reasoning as .berks-vendor/ above.
-configbox/ansible/provision/.galaxy-vendor/
+# .gitkeep keeps the otherwise-empty directory itself tracked.
+configbox/ansible/provision/.galaxy-vendor/*
+!configbox/ansible/provision/.galaxy-vendor/.gitkeep
