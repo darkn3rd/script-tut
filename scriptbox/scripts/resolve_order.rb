@@ -209,7 +209,7 @@ end
 #  for: "lessons would call gen_scripts(), shell_scripts()... at this
 #  level they'll just call what is necessary to install the packages" -
 #  one function per organizational section, not one per topic.
-FUNCTION_SECTIONS = %w[global lessons cibox scriptbox testbox gen_scripts shell_scripts compiled_lang win_scripts].freeze
+FUNCTION_SECTIONS = %w[global lessons cibox scriptbox testbox pkgbox gen_scripts shell_scripts compiled_lang win_scripts].freeze
 
 # owning_function(step) - the name of the generated function step's own
 #  install command ends up inside: the last of step's own path segments

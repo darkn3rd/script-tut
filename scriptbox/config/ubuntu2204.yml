@@ -148,17 +148,19 @@ ubuntu22:
     cibox:
       packages:
         - add_apt_repo: ubuntu22_docker
-        - apt: 
+          apt:
             - docker-ce
             - docker-ce-cli
             - containerd.io
             - docker-buildx-plugin
             - docker-compose-plugin
-        - cmd: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+        #- cmd: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+        - add_apt_repo: ubuntu22_script_tut
+          apt: act
     pkgbox:
       packages:
         - add_apt_repo: ubuntu22_nfpm
-        - apt: nfpm
+          apt: nfpm
     scriptbox:
       packages:
         - script: ubuntu22_gem_update
@@ -401,9 +403,14 @@ add_apt_repos:
     name: docker
     key_url: https://download.docker.com/linux/ubuntu/gpg
     repo_uri: https://download.docker.com/linux/ubuntu
-    distro_string: "jammy stable"
+    distro_string: jammy stable
   ubuntu22_nfpm:
     name: goreleaser
     trusted: yes
     repo_uri: https://repo.goreleaser.com/apt/
     distro_string: "/"
+  ubuntu22_script_tut:
+    name: script-tut
+    key_url: https://darkn3rd.github.io/script-tut/public.asc
+    repo_uri: https://darkn3rd.github.io/script-tut
+    distro_string: stable main

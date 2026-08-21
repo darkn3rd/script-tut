@@ -68,7 +68,8 @@ def bash_install(step, tree)
     repo = step[:apt_repository] ? "sudo add-apt-repository -y #{step[:apt_repository]}\n" : ''
     if step[:add_apt_repo]
       entry = tree['add_apt_repos'][step[:add_apt_repo]]
-      repo += %(add_apt_repo "#{entry['name']}" "#{entry['key_url']}" "#{entry['repo_uri']}" "#{entry['distro_string']}"\n)
+      trusted = entry['trusted'] ? 'yes' : ''
+      repo += %(add_apt_repo "#{entry['name']}" "#{entry['key_url']}" "#{entry['repo_uri']}" "#{entry['distro_string']}" "#{trusted}"\n)
     end
     "#{repo}sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y #{Array(step[:name]).join(' ')}"
   # -s/--skip-existing - safe to run again if this exact version is

@@ -11,24 +11,34 @@ debian:
       cmd: |
         add_apt_repo() {
           local NAME=$1
-          local KEY_URL=$2 # Signed-By
+          local KEY_URL=$2 # Signed-By - ignored when TRUSTED is set
           local REPO_URI=$3
           local DISTRO_STRING=$4 # "Suites Components" or "/"
+          local TRUSTED=$5 # non-empty - repo has no usable signing key
 
-          local KEYRING="/usr/share/keyrings/${NAME}-archive-keyring.gpg"
           local LIST_FILE="/etc/apt/sources.list.d/${NAME}.list"
           local ARCH=$(dpkg --print-architecture)
 
           echo "Configuring repository: $NAME"
 
-          # Download and dearmor the GPG key
-          wget -qO - "$KEY_URL" | sudo gpg --dearmor --yes -o "$KEYRING"
+          if [ -n "$TRUSTED" ]; then
+            # No signed-by - apt would otherwise refuse an unsigned repo
+            #  outright (e.g. repo.goreleaser.com/apt publishes no key at
+            #  all). trusted=yes is an explicit, deliberate opt-out of
+            #  that check, not a default.
+            echo "deb [arch=$ARCH trusted=yes] $REPO_URI $DISTRO_STRING" \
+              | sudo tee "$LIST_FILE" > /dev/null
+          else
+            local KEYRING="/usr/share/keyrings/${NAME}-archive-keyring.gpg"
+            # Download and dearmor the GPG key
+            wget -qO - "$KEY_URL" | sudo gpg --dearmor --yes -o "$KEYRING"
 
-          # Construct and save the list file
-          # Note: arch=$ARCH is included by default
-          #       as it is standard for most 3rd party repos
-          echo "deb [arch=$ARCH signed-by=$KEYRING] $REPO_URI $DISTRO_STRING" \
-            | sudo tee "$LIST_FILE" > /dev/null
+            # Construct and save the list file
+            # Note: arch=$ARCH is included by default
+            #       as it is standard for most 3rd party repos
+            echo "deb [arch=$ARCH signed-by=$KEYRING] $REPO_URI $DISTRO_STRING" \
+              | sudo tee "$LIST_FILE" > /dev/null
+          fi
 
           sudo apt-get update \
             -o Dir::Etc::sourcelist="$LIST_FILE" \

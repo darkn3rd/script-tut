@@ -24,18 +24,24 @@
 #  README.md), the non-PPA way to add a repo. deb822_repository, not
 #  apt_repository - see ../../README.md's own "For new Debian/Ubuntu
 #  automation, deb822_repository is the direction to use" note.
+# trusted: yes (e.g. repo.goreleaser.com/apt, which publishes no key at
+#  all) skips signed_by entirely - deb822_repository would otherwise
+#  require it, and an empty/missing key_url there breaks the fetch
+#  outright rather than degrading to unsigned.
 - name: "add_apt_repo"
   when: step.type == 'apt' and step.add_apt_repo is defined
   become: true
   vars:
     lessons_repo_parts: "{{ step.add_apt_repo.distro_string.split(' ') }}"
+    lessons_repo_trusted: "{{ step.add_apt_repo.trusted | default(false) }}"
   ansible.builtin.deb822_repository:
     name: "{{ step.add_apt_repo.name }}"
     types: deb
     uris: "{{ step.add_apt_repo.repo_uri }}"
     suites: "{{ lessons_repo_parts[0] }}"
     components: "{{ lessons_repo_parts[1:] }}"
-    signed_by: "{{ step.add_apt_repo.key_url }}"
+    signed_by: "{{ omit if lessons_repo_trusted else step.add_apt_repo.key_url }}"
+    trusted: "{{ lessons_repo_trusted }}"
 
 - name: "apt"
   when: step.type == 'apt'
