@@ -261,6 +261,54 @@
       when: step.cmd is defined
       changed_when: true
 
+# "<name> <repo_url>" (e.g. "ruby https://github.com/asdf-vm/asdf-
+#  ruby.git") - no Ansible-native asdf module exists any more than a
+#  Chef sous-chef does for it (see ../../README.md's own version-
+#  managers note) - plain shell, same as the bash generator's own
+#  asdf_plugin case (see generate_install_script.rb) and Chef's own
+#  helpers.rb mirror of it. `asdf plugin add` itself errors out if the
+#  plugin's already registered - unlike sdkman/pyenv/rbenv above, none
+#  of which need an explicit guard for re-running - so this checks
+#  `plugin list` first, the same guard both of those already use.
+- name: "asdf_plugin"
+  when: step.type == 'asdf_plugin'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  vars:
+    lessons_asdf_plugin: "{{ step.name.split(' ')[0] }}"
+    lessons_asdf_repo: "{{ step.name.split(' ')[1] }}"
+  ansible.builtin.shell: >-
+    asdf plugin list | grep -qx "{{ lessons_asdf_plugin }}" ||
+    asdf plugin add {{ lessons_asdf_plugin }} {{ lessons_asdf_repo }}
+  args:
+    executable: /bin/bash
+
+# "<language> <version>" (e.g. "ruby 4.0.6") - `asdf install` already
+#  skips a version that's already installed, no `creates`-style guard
+#  needed the way pyenv/rbenv above get from their own install command.
+#  step.cmd - the manifest's own follow-up "asdf set -u ..." (making
+#  this the active version) - same idea as pyenv/rbenv's own follow-up
+#  command above, just run inline rather than a dedicated module, since
+#  no native "asdf global"-equivalent Ansible module exists to hand it
+#  to.
+- name: "asdf"
+  when: step.type == 'asdf'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  block:
+    - name: Install language version via asdf
+      ansible.builtin.command: "asdf install {{ step.name }}"
+      changed_when: true
+
+    - name: asdf set (follow-up command)
+      ansible.builtin.command: "{{ step.cmd }}"
+      when: step.cmd is defined
+      changed_when: true
+
 # pkgbox/chocolatey/<name>/ - a local nuspec source for a package
 #  missing from the community Chocolatey feed (see pkgbox's own README).
 #  Path derived from type+name, same reasoning apt_repository/
@@ -330,7 +378,23 @@
     pwsh -NoProfile -Command
     "Install-Module -Name {{ step.name }}{{ (' ' + step.args) if step.args is defined else '' }} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
 
+# One raw PowerShell command/expression - see generate_install_
+#  script.rb's own powershell_cmd case for what this is an escape hatch
+#  for (whatever powershell_package_provider/powershell_module above
+#  don't cover - e.g. Set-PSRepository's own repository-trust call).
+#  This role only targets ubuntu22 today (see this file's own top
+#  comment), so unlike Chef's run_powershell helper, there's no native-
+#  PowerShell-host branch to consider here - always the pwsh wrapper.
+- name: "powershell_cmd"
+  when: step.type == 'powershell_cmd'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: >-
+    pwsh -NoProfile -Command "{{ step.name }}"
+
 - name: "unsupported lessons step type"
-  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'choco_local', 'powershell_package_provider', 'powershell_module']
+  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'asdf_plugin', 'asdf', 'choco_local', 'powershell_package_provider', 'powershell_module', 'powershell_cmd']
   ansible.builtin.debug:
     msg: "lessons: unsupported package type '{{ step.type }}' for '{{ step.name }}'"

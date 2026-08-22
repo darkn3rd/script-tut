@@ -24,7 +24,7 @@ module Lessons
     #  manifest now expresses that natively (see the generic 'apt' case
     #  below), so those two are gone from both the manifest's scripts:
     #  block and here.
-    SPECIAL_SCRIPTS = %w[ubuntu22_powershell ubuntu22_rust].freeze
+    SPECIAL_SCRIPTS = %w[ubuntu22_powershell ubuntu22_rust ubuntu22_asdf].freeze
 
     # ppa_key_url(ppa) - given a 'ppa:owner/name' string, the HTTPS URL
     #  for that PPA's own signing key, resolved dynamically via
@@ -222,6 +222,14 @@ module Lessons
       when 'powershell_module'
         args_suffix = pkg['args'] ? " #{pkg['args']}" : ''
         run_powershell("Install-Module -Name #{pkg['name']}#{args_suffix} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber", "powershell_module-#{pkg['name']}")
+      when 'powershell_cmd'
+        # One raw PowerShell command/expression - see generate_install_
+        #  script.rb's own powershell_cmd case for what this is an
+        #  escape hatch for (whatever powershell_package_provider/
+        #  powershell_module above don't cover - e.g. Set-PSRepository's
+        #  own repository-trust call). run_powershell already gives it
+        #  the identical native-vs-pwsh dispatch those two get.
+        run_powershell(pkg['name'], "powershell_cmd-#{pkg['name']}")
       when 'script'
         # Every one of these scripts (rbenv/pyenv installers, cpan's
         #  local::lib setup, sdkman's own bootstrap) installs into
@@ -322,6 +330,34 @@ module Lessons
             user node['lessons']['user']
           end
         end
+      when 'asdf_plugin'
+        # "<name> <repo_url>" (e.g. "ruby https://github.com/asdf-vm/
+        #  asdf-ruby.git") - the local ../asdf cookbook's own asdf_
+        #  plugin resource (see its resources/plugin.rb), not raw shell -
+        #  see ../asdf/README.md for why Supermarket's own asdf-chef/
+        #  asdf can't be depended on as-is (its own same-named resource
+        #  silently ignores the git url entirely).
+        plugin, repo = pkg['name'].split(' ', 2)
+        asdf_plugin plugin do
+          git_url repo
+          user node['lessons']['user']
+        end
+      when 'asdf'
+        # "<language> <version>" (e.g. "ruby 4.0.6") - the local ../asdf
+        #  cookbook's own asdf_package resource. [:install, :global]
+        #  mirrors that resource's own documented usage (install this
+        #  version, then make it the active one) - pkg['cmd'] (the
+        #  manifest's own "asdf set -u ..." follow-up, used verbatim by
+        #  the bash generator) isn't needed here at all; the resource's
+        #  own :global action already does the equivalent, natively
+        #  (via `asdf set -u`, not the removed `asdf global` - see
+        #  ../asdf/resources/package.rb's own comment).
+        language, version = pkg['name'].split(' ', 2)
+        asdf_package language do
+          version version
+          action [:install, :global]
+          user node['lessons']['user']
+        end
       else
         Chef::Log.warn("lessons: unsupported package type '#{pkg['type']}' for '#{pkg['name']}'")
       end
@@ -393,6 +429,22 @@ module Lessons
           user rust_user
           environment('HOME' => rust_home)
           not_if { ::File.exist?("#{rust_home}/.cargo/bin/cargo") }
+        end
+      when 'ubuntu22_asdf'
+        # Our own script downloads a specific GitHub Release tarball and
+        #  installs the binary to /usr/local/bin - asdf_user_install
+        #  (../asdf cookbook, a local fork - see its own README) is the
+        #  faithful native equivalent, not a bash resource replaying
+        #  pkg['cmd'] verbatim. The version is still pulled out of that
+        #  same pkg['cmd'] (ASDF_VERSION="...", already <%= $asdf_ver %>-
+        #  substituted by generate_chef_databag.rb) rather than
+        #  hardcoded here a second time - same reasoning the 'pyenv'/
+        #  'rbenv' cases above already apply to their own follow-up
+        #  pkg['cmd'] - so the manifest's own variables: block stays the
+        #  one and only place this version is ever written down.
+        asdf_version = pkg['cmd'][/ASDF_VERSION="([^"]+)"/, 1]
+        asdf_user_install node['lessons']['user'] do
+          version asdf_version if asdf_version
         end
       end
     end

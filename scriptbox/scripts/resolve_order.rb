@@ -318,15 +318,21 @@ VARIABLE_REF = /<%=\s*\$(\w+)\s*%>/.freeze
 #  contains, at any depth, replaced by vars[name] - returns a new
 #  structure rather than mutating in place (simplest given Hash/Array
 #  don't share one uniform in-place update method across both types).
-#  Called on just one platform's own subtree (`tree[name]`, once
-#  root_key/--platform has picked `name` - see each entry point's own
-#  main block), using that same subtree's own `variables:` block (see
-#  RESERVED_KEYS' own comment on why variables: is scoped per-platform,
-#  not a top-level shared block the way appends:/files: are) - so every
-#  field flatten reads out of that platform's tree (name:, version:,
-#  cmd:, an appends:/files: block's own lines:/content:, ...) already
-#  has its real value by the time flatten sees it, without flatten or
-#  any downstream consumer needing to know templating exists at all.
+#  Called on the *whole* parsed tree, not just one platform's own
+#  subtree (`tree[name]`) - even though `vars` itself always comes from
+#  just that one platform's own `variables:` block (see RESERVED_KEYS'
+#  own comment on why variables: is scoped per-platform). Confirmed
+#  directly this has to be the whole tree, not tree[name] alone:
+#  scripts:/files:/appends: are themselves top-level RESERVED_KEYS
+#  blocks, siblings of tree[name] rather than nested inside it, so a
+#  <%= $name %> reference in a script body (e.g. ubuntu22_asdf's own
+#  `ASDF_VERSION="<%= $asdf_ver %>"`) sat there completely unsubstituted
+#  - verbatim template text, in every generated output - for as long as
+#  every entry point here only ever substituted tree[name]. Every field
+#  flatten reads out of that platform's tree (name:, version:, cmd:, an
+#  appends:/files: block's own lines:/content:, ...) has its real value
+#  by the time flatten sees it either way, without flatten or any
+#  downstream consumer needing to know templating exists at all.
 #  Raises on a name vars doesn't have, rather than leaving the literal
 #  `<%= $name %>` text in the generated script - same fail-loud
 #  reasoning as parse_version_constraint's own unsupported-operator
@@ -636,7 +642,10 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   tree = YAML.load_file(File.join(__dir__, '..', 'config', 'macos.yml'))
-  tree['macos'] = substitute_variables(tree['macos'], tree['macos']['variables'] || {})
+  # Whole tree, not just tree['macos'] - see generate_chef_databag.rb's
+  #  own comment on why (scripts:/files:/appends: are top-level
+  #  RESERVED_KEYS blocks, not nested inside tree['macos']).
+  tree = substitute_variables(tree, tree['macos']['variables'] || {})
   steps = flatten(tree['macos'])
   resolve!(steps)
   steps.each do |s|

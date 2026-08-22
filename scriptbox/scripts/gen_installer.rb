@@ -50,13 +50,16 @@ if __FILE__ == $PROGRAM_NAME
     exit 1
   end
 
-  # Resolved right after the platform key itself is confirmed valid,
-  #  before anything below reads a single field out of it - see
-  #  resolve_order.rb's own substitute_variables/RESERVED_KEYS comment
-  #  on why this is scoped to tree[platform] alone, not the whole
-  #  merged tree (variables: lives nested inside each platform's own
-  #  key, not as a top-level shared block visible to every platform).
-  tree[platform] = substitute_variables(tree[platform], tree[platform]['variables'] || {})
+  # Substitutes across the *whole* merged tree, not just tree[platform] -
+  #  scripts:/files:/appends: are themselves top-level RESERVED_KEYS
+  #  blocks, siblings of tree[platform], not nested inside it, so a
+  #  <%= $name %> reference in a script body would otherwise sit there
+  #  unsubstituted (confirmed directly - see generate_install_script.rb's
+  #  own comment on this same fix). Values still come from just this
+  #  one platform's own variables: block (which does live nested inside
+  #  tree[platform] - see resolve_order.rb's own RESERVED_KEYS comment
+  #  on why that part stays scoped per-platform).
+  tree = substitute_variables(tree, tree[platform]['variables'] || {})
 
   # 2. detects this machine's own environment - uname_string/match_platform
   #  (verify_commands.rb) already handle Cygwin/MSYS2/WSL1/Linux distros/

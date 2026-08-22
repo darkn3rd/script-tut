@@ -2,6 +2,7 @@
 require 'yaml'
 require 'json'
 require 'fileutils'
+require 'optparse'
 require_relative 'resolve_order'
 
 # LESSON_AREAS - the four owning_function values this data bag actually
@@ -131,25 +132,100 @@ def root_key(tree)
   candidates.first
 end
 
-if __FILE__ == $PROGRAM_NAME
-  config_path = ARGV[0]
-  if config_path.nil? || config_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json>"
-    exit 1
+# parse_databag_args(argv) - <config.yml> <out.json/yml> [--select
+#  TAG,TAG] [--exclude TAG,TAG], shared by all three data-bag/vars
+#  generators (this file's own lessons bag, generate_scriptbox_
+#  databag.rb, generate_ansible_vars.rb) so their --select/--exclude
+#  semantics can never drift from generate_install_script.rb's own (see
+#  resolve_order.rb's own tag_eligible?/select_by_tags, issue #16) -
+#  without this, a manifest using rbenv/pyenv/asdf-style alternatives
+#  would have every alternative installed by the generated shell
+#  script (which does filter) while the Chef/Ansible side still saw -
+#  and emitted resources for - all of them at once.
+def parse_databag_args(argv)
+  options = { select: [], exclude: [] }
+  OptionParser.new do |opts|
+    opts.on('--select TAGS') { |v| options[:select] = v.split(',').map(&:strip) }
+    opts.on('--exclude TAGS') { |v| options[:exclude] = v.split(',').map(&:strip) }
+  end.parse!(argv)
+  [argv[0], argv[1], options[:select], options[:exclude]]
+end
+
+# warn_omissions(omitted) - one stderr line per step select_by_tags
+#  dropped for lacking any eligible provider (see its own comment) -
+#  these generators have no header-comment mechanism the way a
+#  generated shell script does (see generate_install_script.rb's own
+#  write_install_script), so a warning is the only way this wouldn't
+#  otherwise be silently invisible in the JSON/YAML output.
+def warn_omissions(omitted)
+  omitted.each do |step, missing|
+    warn "#{$PROGRAM_NAME}: omitted [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
   end
-  out_path = ARGV[1]
-  if out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json>"
+end
+
+# pull_in_cross_area_deps(area_steps, all_steps) - `area_steps` (already
+#  filtered down to whichever areas this generator's own JSON covers -
+#  lessons's four, or scriptbox's one) plus (transitively) any step
+#  elsewhere in the *whole* manifest that a step already in `area_steps`
+#  needs: - the exact same shape select_sections (generate_install_
+#  script.rb) already uses for --SECTION, just seeded by area instead of
+#  by path selector. Exists because a bootstrap tool isn't necessarily
+#  scoped to any one area at all - e.g. asdf, whose own bootstrap step
+#  sits directly on `global.packages` (not nested under `lessons:`)
+#  specifically *because* its plugins span every area a manifest might
+#  ever have (ruby/python/groovy today under lessons, hashicorp tools
+#  like vagrant/packer under some future buildbox) - so an area filter
+#  that only ever keeps steps whose *own* path already lives inside
+#  that area would silently drop the bootstrap the moment anything in
+#  the area needs: it, exactly the way lessons's own asdf_plugin/asdf
+#  steps did before this existed (confirmed directly: `ubuntu22_asdf`
+#  never appeared anywhere in a real generated lessons data bag,
+#  despite gen_scripts.ruby/python3/groovy's own asdf steps needing it).
+#  Also pulls in each newly-added provider's own attached file:/append:
+#  siblings (matched by attached_to, the same grouping resolve_order.rb's
+#  own unit_span uses for the bash generator) - a provider without them
+#  would run its bootstrap but never get its PATH/completions written.
+def pull_in_cross_area_deps(area_steps, all_steps)
+  loop do
+    names = area_steps.map { |s| s[:name] }
+    needed = area_steps.flat_map { |s| Array(s[:needs]) }.uniq
+    additions = all_steps.reject { |s| area_steps.include?(s) }
+                          .select { |s| needed.include?(s[:meets]) || names.include?(s[:attached_to]) }
+    break if additions.empty?
+
+    area_steps += additions
+  end
+  area_steps
+end
+
+if __FILE__ == $PROGRAM_NAME
+  config_path, out_path, select_tags, exclude_tags = parse_databag_args(ARGV)
+  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json> [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
-  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
+  # Whole tree, not just tree[name] - scripts:/files:/appends: are
+  #  themselves top-level RESERVED_KEYS blocks, siblings of tree[name],
+  #  not nested inside it, so a <%= $name %> reference in a script body
+  #  (e.g. ubuntu22_asdf's own ASDF_VERSION) would otherwise sit there
+  #  unsubstituted (confirmed directly - see generate_install_script.rb's
+  #  own comment on this same fix). Values still come from just this
+  #  platform's own variables: block.
+  tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   steps = flatten(tree[name])
+  steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
+  warn_omissions(omitted)
   resolve!(steps)
+  all_steps = steps
   steps = steps.select { |s| (['lessons'] + LESSON_AREAS).include?(owning_function(s)) }
+  # A step lessons's own areas need: isn't necessarily scoped to
+  #  lessons at all - see pull_in_cross_area_deps's own comment (asdf's
+  #  bootstrap sits on global.packages, not lessons:, on purpose).
+  steps = pull_in_cross_area_deps(steps, all_steps)
   # 'system' means "expected to already be provided by the OS" - no
   #  resource, no command, nothing for a recipe to actually consume, so
   #  it's dead weight in the data bag rather than useful documentation.
@@ -157,7 +233,11 @@ if __FILE__ == $PROGRAM_NAME
   dedup!(steps)
 
   data = { 'id' => name }
-  data[COMMON_AREA] = consolidate_apt(steps.select { |s| owning_function(s) == 'lessons' }.map { |s| step_to_entry(s, tree) })
+  # Not just owning_function(s) == 'lessons' - a step pulled in from
+  #  outside lessons: entirely (see pull_in_cross_area_deps) isn't
+  #  'lessons' either, but still belongs in the shared, ungated common
+  #  area alongside sdkman's own bootstrap, not nowhere.
+  data[COMMON_AREA] = consolidate_apt(steps.reject { |s| LESSON_AREAS.include?(owning_function(s)) }.map { |s| step_to_entry(s, tree) })
   LESSON_AREAS.each do |area|
     entries = steps.select { |s| owning_function(s) == area }.map { |s| step_to_entry(s, tree) }
     data[area] = consolidate_apt(entries)

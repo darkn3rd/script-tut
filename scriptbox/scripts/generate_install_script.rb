@@ -987,14 +987,22 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
-  # Resolved right after root_key picks `name`, before flatten ever
-  #  walks the tree - see resolve_order.rb's own substitute_variables/
-  #  RESERVED_KEYS comment on why this is scoped to tree[name] alone
-  #  (variables: lives nested inside the platform's own root key, not
-  #  as a top-level shared block) - so every downstream consumer
-  #  (flatten, scripts:/appends:/files: lookups) already sees real
-  #  values, never <%= $name %> template text.
-  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
+  # Substitutes across the *whole* tree, not just tree[name] - even
+  #  though variables: itself lives nested inside the platform's own
+  #  root key (see resolve_order.rb's own RESERVED_KEYS comment on why
+  #  that part is scoped per-platform), scripts:/files:/appends: are
+  #  themselves top-level RESERVED_KEYS blocks, siblings of tree[name],
+  #  not nested inside it - a <%= $name %> reference in a script body
+  #  (e.g. ubuntu22_asdf's own `ASDF_VERSION="<%= $asdf_ver %>"`) sat
+  #  there unsubstituted, verbatim, in every generated output until
+  #  this was widened from tree[name] alone - confirmed directly, not
+  #  theoretical: `grep ASDF_VERSION generated/ubuntu22_install.sh`
+  #  showed the literal template text, not a version number, before
+  #  this fix. Values still come from just this one platform's own
+  #  variables: block - a name only a *different* platform's own
+  #  scripts: entry happened to reference would still raise (no such
+  #  manifest does today).
+  tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   # Order matters here: select_by_tags (issue #16) runs first, on the
   #  *full* list, for the same reason resolve! itself needs the full
