@@ -54,3 +54,7 @@ pkgbox/deb/apt-repo/db/
 pkgbox/deb/apt-repo/dists/
 pkgbox/deb/apt-repo/pool/
 pkgbox/deb/apt-repo/logs/
+
+# integration_test.rb's own actual/ - what really happened last run,
+# regenerated every run. expected/ is the committed test oracle, kept.
+scriptbox/scripts/test/integration/actual/
