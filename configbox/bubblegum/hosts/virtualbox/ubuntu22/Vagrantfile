@@ -1,16 +1,27 @@
-SCRIPT_TUT_PATH = "../../../../.."
-DEFAULT_INSTALL_SCRIPT = "#{SCRIPT_TUT_PATH}/scriptbox/generated/ubuntu22_install.sh"
+SCRIPT_TUT_REPO_PATH = File.realpath("../../../../..", __dir__)
+DEFAULT_INSTALL_SCRIPT = "#{SCRIPT_TUT_REPO_PATH}/scriptbox/generated/ubuntu22_install.sh"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
 
-  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+  config.vm.synced_folder "#{SCRIPT_TUT_REPO_PATH}", "/var/script-tut"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
     vb.cpus = 4
     vb.gui = true
+
+    # This host runs with VBS (Virtualization-based security) active -
+    #  confirmed directly via `systeminfo`/`bcdedit /enum` showing
+    #  hypervisorlaunchtype Auto, independent of whether Docker Desktop/
+    #  WSL2 happen to be running. VirtualBox has to coexist with that
+    #  hypervisor layer either way; telling it to use Hyper-V's own
+    #  paravirt interface instead of guessing is the standard fix for
+    #  the resulting early-boot hangs/slowness, without needing to
+    #  disable VBS itself (a bigger, reboot-required change with real
+    #  security tradeoffs).
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
   end
 
   # TEST_PATH - which generated install script to provision with, for

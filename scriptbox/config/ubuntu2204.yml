@@ -141,7 +141,7 @@ ubuntu22:
               tags: [asdf_ruby]
         tcl:
           packages:
-            - apt: tcl8.6
+            - system: tcl8.6 # 8.6.12
       shell_scripts:
         bash:
             packages: 
