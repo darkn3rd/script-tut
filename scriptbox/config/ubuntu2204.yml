@@ -22,7 +22,7 @@ ubuntu22:
           - ubuntu22_asdf_zsh
           - ubuntu22_asdf_ps1
         meets: asdf
-        tag: [asdf]
+        tags: [asdf]
     lessons:
       packages:
         - script: ubuntu22_sdkman
@@ -75,7 +75,7 @@ ubuntu22:
           - asdf_plugin: python https://github.com/asdf-community/asdf-python.git
             tags: [asdf_python]
             needs: asdf
-          - asdf_groovy: groovy https://github.com/weibemoura/asdf-groovy.git
+          - asdf_plugin: groovy https://github.com/weibemoura/asdf-groovy.git
             tags: [asdf_groovy]
             needs: asdf
         awk:
@@ -95,13 +95,14 @@ ubuntu22:
           packages:
             - cpanm: HTTP::Tiny
               needs: cpanm
-              tags: [sdkman_groovy]
+              tags: [sdkman_groovy, default]
             - sdkman: groovy <%= $groovy_ver %>
               cmd: sdk default groovy <%= $groovy_ver %>
               needs: [java, sdkman]
-              tags: [sdkman_groovy]
+              tags: [sdkman_groovy, default]
             - asdf: groovy <%= $groovy_ver %>
               cmd: asdf set -u groovy <%= $groovy_ver %>
+              needs: asdf
               tags: [asdf_groovy]
         php:
           packages:
@@ -121,10 +122,13 @@ ubuntu22:
               tags: [pyenv]
             - asdf: python <%= $python_ver %>
               cmd: asdf set -u python <%= $python_ver %>
+              meets: pyenv3
+              needs: asdf
               tags: [asdf_python]
         ruby:
           packages:
             - system: ruby # 3.0.x
+              meets: ruby
             - rbenv: <%= $ruby_ver %>
               cmd: rbenv global <%= $ruby_ver %>
               tags: [rbenv]
@@ -132,6 +136,8 @@ ubuntu22:
               needs: rbenv
             - asdf: ruby <%= $ruby_ver %>
               cmd: asdf set -u ruby <%= $ruby_ver %>
+              meets: ruby
+              needs: asdf
               tags: [asdf_ruby]
         tcl:
           packages:
@@ -446,7 +452,7 @@ appends:
       - export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
       - source <(asdf completion bash)
   ubuntu22_asdf_zsh:
-    dest: $HOME/.bashrc
+    dest: $HOME/.zshrc
     lines:
       - export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
       - fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)

@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'yaml'
 require 'fileutils'
+require 'optparse'
 require_relative 'resolve_order'
 
 # arg_suffix(step) - step[:args] (see resolve_order.rb's own flatten)
@@ -91,6 +92,23 @@ def bash_install(step, tree)
   #  which already sets it) - that's the real, documented
   #  non-interactive mechanism, not a per-command flag.
   when 'sdkman' then "sdk install #{step[:name]}"
+  # asdf_plugin: "<name> <repo_url>" (e.g. "ruby https://github.com/
+  #  asdf-vm/asdf-ruby.git") - `asdf plugin add` itself errors out if
+  #  the plugin's already registered (unlike sdkman/pyenv/rbenv's own
+  #  install commands, none of which need an explicit guard for
+  #  re-provisioning), so this checks `plugin list` first rather than
+  #  relying on --skip-existing-style flag asdf's own `plugin add` has
+  #  no equivalent of.
+  when 'asdf_plugin'
+    plugin, repo = step[:name].split(' ', 2)
+    %(asdf plugin list | grep -qx "#{plugin}" || asdf plugin add #{plugin} #{repo})
+  # asdf: "<language> <version>" (e.g. "ruby 4.0.6") - `asdf install`
+  #  already skips a version that's installed, no --skip-existing-style
+  #  flag needed the way pyenv/rbenv's own `-s`/`--skip-existing` is.
+  #  Setting it as the active version (asdf's own `set -u`/`global`) is
+  #  a separate concern, same as pyenv/rbenv's own `cmd:` sibling for
+  #  "make this the default" - not this step's own job.
+  when 'asdf' then "asdf install #{step[:name]}"
   when 'gem'    then "gem install #{step[:name]}#{arg_suffix(step)}"
   when 'pipx'   then "pipx install #{step[:name]}#{arg_suffix(step)}"
   # pwsh, not native PowerShell - a bash-dialect platform (ubuntu2204.yml)
@@ -319,7 +337,7 @@ end
 def noop_comment(step)
   extra = []
   extra << "meets: #{step[:meets]}" if step[:meets]
-  extra << "needs: #{step[:needs]}" if step[:needs]
+  extra << "needs: #{Array(step[:needs]).join(', ')}" if step[:needs]
   "# noop#{extra.empty? ? '' : " (#{extra.join(', ')})"}"
 end
 
@@ -889,7 +907,7 @@ def select_sections(steps, selectors)
 
   selected = steps.select { |step| selectors.any? { |sel| path_matches?(step[:path], sel) } }
   loop do
-    needed = selected.map { |s| s[:needs] }.compact.uniq
+    needed = selected.flat_map { |s| Array(s[:needs]) }.uniq
     providers = steps.select { |s| needed.include?(s[:meets]) && !selected.include?(s) }
     break if providers.empty?
 
@@ -905,7 +923,7 @@ end
 #  a different destination/exit status depending on whether the user
 #  actually asked for it or just forgot an argument.
 def print_usage(stream)
-  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...]"
+  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...] [--select TAG,TAG] [--exclude TAG,TAG]"
   stream.puts ''
   stream.puts 'Reads one config/*.yml provisioning file, resolves every step into'
   stream.puts 'dependency-correct order (a `needs:` consumer always ends up after'
@@ -919,6 +937,16 @@ def print_usage(stream)
   stream.puts '    "lessons.{compiled_lang,shell_scripts}" - matches any step whose'
   stream.puts '    own path contains it as a consecutive segment run. No SECTION'
   stream.puts '    args installs everything in the file.'
+  stream.puts ''
+  stream.puts '  --select TAG,TAG - opt in to a tagged alternative (e.g. rbenv/pyenv/'
+  stream.puts '    asdf_ruby/asdf_python vs. Ubuntu\'s own system ruby/python) - see'
+  stream.puts '    resolve_order.rb\'s own tag_eligible?/select_by_tags (issue #16).'
+  stream.puts '    An untagged entry always runs regardless. A tagged entry runs if'
+  stream.puts '    it carries the literal tag \'default\' (the manifest author\'s own'
+  stream.puts '    declared fallback where no untagged alternative exists), at least'
+  stream.puts '    one of its own tags is named here, or something already running'
+  stream.puts '    needs: it.'
+  stream.puts '  --exclude TAG,TAG - veto a tag even over --select/default.'
 end
 
 if __FILE__ == $PROGRAM_NAME
@@ -926,6 +954,12 @@ if __FILE__ == $PROGRAM_NAME
     print_usage($stdout)
     exit 0
   end
+
+  options = { select: [], exclude: [] }
+  OptionParser.new do |opts|
+    opts.on('--select TAGS') { |v| options[:select] = v.split(',').map(&:strip) }
+    opts.on('--exclude TAGS') { |v| options[:exclude] = v.split(',').map(&:strip) }
+  end.parse!(ARGV)
 
   config_path = ARGV[0]
   if config_path.nil? || config_path.empty?
@@ -948,19 +982,29 @@ if __FILE__ == $PROGRAM_NAME
   #  values, never <%= $name %> template text.
   tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
 
-  # Order matters here: resolve! runs on the *full* list first, so
-  #  dependency ordering is correct globally regardless of what gets
-  #  selected afterward; select_sections then filters down to the
-  #  requested sections (+ anything they need); dedup! runs *last*,
-  #  within just that filtered set - confirmed directly running dedup!
-  #  before selection is wrong, not just reordered differently:
-  #  selecting a single section (e.g. just "testbox") could lose a step
-  #  entirely if dedup! had already kept some *other*, unselected
-  #  section's identical step as the "first" occurrence instead.
+  # Order matters here: select_by_tags (issue #16) runs first, on the
+  #  *full* list, for the same reason resolve! itself needs the full
+  #  list before select_sections narrows it - a tag-filtered-then-
+  #  resolved order would let resolve! see (and possibly relocate) a
+  #  `meets:` provider that select_by_tags was always going to drop in
+  #  favor of its selected/default alternative, corrupting the very
+  #  ordering resolve! is supposed to guarantee. resolve! runs on the
+  #  now tag-filtered list next, so dependency ordering is correct
+  #  globally regardless of what select_sections narrows afterward;
+  #  dedup! runs *last*, within just that filtered set - confirmed
+  #  directly running dedup! before selection is wrong, not just
+  #  reordered differently: selecting a single section (e.g. just
+  #  "testbox") could lose a step entirely if dedup! had already kept
+  #  some *other*, unselected section's identical step as the "first"
+  #  occurrence instead.
   steps = flatten(tree[name])
-  # Snapshotted before resolve! mutates steps' own order - see
-  #  write_install_script's own comment on why.
+  # Snapshotted before resolve!/select_by_tags mutate/filter steps' own
+  #  order - see write_install_script's own comment on why, and select_
+  #  by_tags/select_sections' own shared reasoning: a filtered `steps`
+  #  may not include every natural-order sibling relocate_cross_
+  #  cutting's own prefix walk looks for.
   natural_steps = steps.dup
+  steps, omitted = select_by_tags(steps, options[:select], options[:exclude])
   resolve!(steps)
   steps = select_sections(steps, expand_selectors(ARGV[1..]))
   dedup!(steps)
@@ -968,9 +1012,17 @@ if __FILE__ == $PROGRAM_NAME
   generated_dir = File.join(__dir__, '..', 'generated')
   FileUtils.mkdir_p(generated_dir)
   dialect = dialect_for(tree, name)
-  out_path = write_install_script(name, steps, tree, dialect, generated_dir, [
+  header_lines = [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
-  ], natural_steps, apt_mirror_for(tree, name))
+  ]
+  # See resolve_order.rb's own select_by_tags - a step whose own needs:
+  #  had no eligible provider at all (not just "wasn't selected this
+  #  run") got dropped rather than emitted as a command guaranteed to
+  #  fail; surfaced here instead of silently disappearing.
+  omitted.each do |step, missing|
+    header_lines << "Omitted: [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
+  end
+  out_path = write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, name))
   puts "wrote #{out_path}"
 end
