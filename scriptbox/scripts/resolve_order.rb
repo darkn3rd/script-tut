@@ -12,6 +12,17 @@ PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman asdf a
 #  richer would just be guessing at semantics no generator can act on.
 VERSION_OPS = ['=', '>='].freeze
 
+# IMPLICIT_NEEDS - a package type's own unconditional prerequisite,
+#  regardless of what any individual step declares - every cpan/cpanm
+#  step needs perl's own bootstrap (system: perl's attached
+#  ubuntu22_cpan_local_setup script, meets: perl) to have already run,
+#  or the first-ever cpan invocation hits a real CPAN FirstTime.pm
+#  reentrancy bug (confirmed directly against a fresh Ubuntu 22.04 box).
+#  A manifest-level needs: perl on every current and future cpan/cpanm
+#  step would say the same thing over and over for no reason - the type
+#  itself already implies it.
+IMPLICIT_NEEDS = { 'cpan' => 'perl', 'cpanm' => 'perl' }.freeze
+
 # RESERVED_KEYS - top-level manifest keys that aren't a platform's own
 #  root key - shared by generate_install_script.rb's and generate_chef_
 #  databag.rb's own root_key, and gen_installer.rb's own --platform
@@ -69,11 +80,20 @@ def flatten(node, path = [])
       type = PACKAGE_TYPES.find { |t| entry.key?(t) } || (ATTACHABLE_KEYS.find { |k| entry.key?(k) })
       next unless type
 
+      # Merged, not just defaulted - an explicit needs: on a cpan/cpanm
+      #  step (e.g. a real, additional prerequisite) still applies on
+      #  top of the implicit one, never silently replaced by it. nil,
+      #  not [], when there's genuinely nothing - several call sites
+      #  downstream do a plain `if step[:needs]` truthiness check, and
+      #  [] is truthy in Ruby.
+      needs = (Array(entry['needs']) + Array(IMPLICIT_NEEDS[type])).uniq
+      needs = nil if needs.empty?
+
       steps << {
         type: type,
         name: entry[type],
         meets: entry['meets'],
-        needs: entry['needs'],
+        needs: needs,
         cmd: entry['cmd'],
         reboot: entry['reboot'],
         apt_repository: entry['apt_repository'],
@@ -555,6 +575,39 @@ end
 #  position, for section_tree to exclude. insert_before maps a step's
 #  object_id to the ordered array of group names that must be called
 #  immediately before it, wherever *it* ends up.
+
+# natural_prefix(provider, natural_steps) - provider's own direct local
+#  siblings that precede it in the *original*, pre-resolve! document
+#  order (see natural_function_order), up to the previous owning-
+#  function boundary - a provider's real implicit local prerequisites
+#  even when they carry no needs:/meets: of their own at all (e.g.
+#  compiled_lang's own `apt: curl`, sitting before `apt: build-essential
+#  meets: make` with nothing connecting the two). Only f's own direct
+#  packages (path ends exactly at f) count - a sibling subsection that
+#  merely inlines into the same function (e.g. compiled_lang.cs,
+#  sitting between compiled_lang's own curl/build-essential and
+#  compiled_lang.java in document order) is not one, and pulling it in
+#  anyway would relocate/select an unrelated install (here, .NET SDK)
+#  for no reason. Returned in natural order (furthest-back first) -
+#  shared by relocate_cross_cutting (call-tree restructuring) and
+#  select_sections (SECTION-filtered generation), which both need the
+#  same answer to "what does this provider's own natural position
+#  already imply comes before it, unstated."
+def natural_prefix(provider, natural_steps)
+  f = owning_function(provider)
+  n_idx = natural_steps.index(provider)
+  prefix = []
+  i = n_idx - 1
+  while i >= 0 && owning_function(natural_steps[i]) == f
+    sibling = natural_steps[i]
+    i -= 1
+    next unless sibling[:path].split('.').last == f
+
+    prefix.unshift(sibling)
+  end
+  prefix
+end
+
 def relocate_cross_cutting(steps, natural_steps, natural_order)
   claimed = Array.new(steps.length, false)
   insert_before = Hash.new { |h, k| h[k] = [] }
@@ -569,23 +622,13 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     unit = steps[start..finish]
     unit.each { |s| claimed[steps.index(s)] = true }
 
-    f = owning_function(provider)
-    n_idx = natural_steps.index(provider)
+    # natural_prefix's own candidates, walked closest-to-provider first
+    #  (reverse_each) so an already-claimed one stops the walk right
+    #  there - nothing further back is unclaimed either, once something
+    #  nearer the provider has already been pulled in by an earlier
+    #  relocation.
     prefix = []
-    i = n_idx - 1
-    while i >= 0 && owning_function(natural_steps[i]) == f
-      sibling = natural_steps[i]
-      i -= 1
-
-      # Only f's *own* direct packages (path ends exactly at f) count as
-      #  an implicit prerequisite - a *sibling* subsection that merely
-      #  inlines into the same function (e.g. compiled_lang.cs, sitting
-      #  between compiled_lang's own curl/build-essential and
-      #  compiled_lang.java in document order) is not one, and pulling
-      #  it in anyway would just relocate an unrelated install (here,
-      #  .NET SDK) for no reason.
-      next unless sibling[:path].split('.').last == f
-
+    natural_prefix(provider, natural_steps).reverse_each do |sibling|
       r_idx = steps.index(sibling)
       # A section-filtered `steps` (see generate_install_script.rb's own
       #  select_sections) may not include this natural-order sibling at
@@ -593,7 +636,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
       #  stopping the whole walk on a step that isn't even part of this
       #  run.
       next if r_idx.nil?
-      break if claimed[r_idx] # already pulled in by an earlier relocation - nothing further back is unclaimed either
+      break if claimed[r_idx]
 
       prefix.unshift(sibling)
       claimed[r_idx] = true

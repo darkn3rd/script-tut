@@ -912,7 +912,32 @@ end
 #  otherwise have brought along automatically - a generated script
 #  missing its own dependency is worse than one with a few extra,
 #  already-idempotent steps in it.
-def select_sections(steps, selectors)
+#
+# Each pulled-in provider brings two things along, not just the bare
+#  provider step:
+#  - its own unit_span (see resolve_order.rb). Confirmed directly this
+#    matters: selecting just "lessons.gen_scripts.groovy" (needs:
+#    cpanm) pulled in perl's own `cpan: App::cpanminus` (meets: cpanm,
+#    implicitly needs: perl - see resolve_order.rb's own IMPLICIT_
+#    NEEDS) and, one loop iteration later, `system: perl` itself (meets:
+#    perl) - but not perl's own attached ubuntu22_cpan_local_setup
+#    script, since that's a *separate* flattened step (attached_to:
+#    'perl') with no needs:/meets: of its own for this loop to ever
+#    match on. Without it, `cpan -i App::cpanminus` ran cold (no
+#    local::lib bootstrap), hitting a real, reproducible CPAN
+#    FirstTime.pm reentrancy bug - confirmed directly against a fresh
+#    Ubuntu 22.04 box.
+#  - its own natural_prefix (see resolve_order.rb) - the same "implicit
+#    local prerequisite" pull-in relocate_cross_cutting already does for
+#    the unfiltered call tree, so a SECTION-filtered one doesn't drop
+#    something relocate_cross_cutting itself would have kept (e.g.
+#    compiled_lang's own `apt: curl` ahead of `apt: build-essential`,
+#    connected by nothing but document order - confirmed directly:
+#    missing from a "lessons.gen_scripts.groovy" selection before this).
+#    Filtered against `steps` (`&`), not natural_steps directly - a
+#    natural-order sibling select_by_tags already dropped for this run
+#    isn't a real candidate to pull back in.
+def select_sections(steps, selectors, natural_steps)
   return steps if selectors.empty?
 
   selected = steps.select { |step| selectors.any? { |sel| path_matches?(step[:path], sel) } }
@@ -921,7 +946,11 @@ def select_sections(steps, selectors)
     providers = steps.select { |s| needed.include?(s[:meets]) && !selected.include?(s) }
     break if providers.empty?
 
-    selected.concat(providers)
+    providers.each do |provider|
+      start, finish = unit_span(steps, steps.index(provider))
+      selected.concat(steps[start..finish] - selected)
+      selected.concat(natural_prefix(provider, natural_steps) & steps - selected)
+    end
   end
   # Preserve steps' own relative order rather than selected's
   #  append-during-pull-in order.
@@ -1028,7 +1057,7 @@ if __FILE__ == $PROGRAM_NAME
   natural_steps = steps.dup
   steps, omitted = select_by_tags(steps, options[:select], options[:exclude])
   resolve!(steps)
-  steps = select_sections(steps, expand_selectors(ARGV[1..]))
+  steps = select_sections(steps, expand_selectors(ARGV[1..]), natural_steps)
   dedup!(steps)
 
   generated_dir = File.join(__dir__, '..', 'generated')
