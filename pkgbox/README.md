@@ -34,6 +34,12 @@ This area is for making and publishing packages that were needed by the script-t
     * https://github.com/sonatype/nexus-public
 * [Ansible Galaxy](https://galaxy.ansible.com/ui/)  
 * [Chef Supermarket](https://github.com/chef/supermarket)
+  * https://github.com/applicationsonline/librarian-chef 
+* Puppet
+  * [Puppet Forge Server](https://github.com/kindredgroup/puppet-forge-server)
+  * https://github.com/voxpupuli/librarian-puppet
+* Bundler Framework
+  * https://github.com/applicationsonline/librarian
 
 
 ### Packagers

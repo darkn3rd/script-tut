@@ -11,8 +11,10 @@
 #       redirected straight into the live GUEST_ROOT mount (not
 #       captured over SSH's own stdout - see fetch_actual_report)
 #    4. compare that against this scenario's own expected/<letter>.
-#       <slug>.json baseline, flattened to {"language" / "language >
-#       tool" => status}
+#       <slug>.json baseline, nested by area then language (see
+#       nested_report/AREA_KEYS/LANGUAGE_KEYS) - {"win_scripts" =>
+#       {"powershell" => {"powershell" => status, "needs" => {"psake"
+#       => status}}}, "gen_scripts" => {"awk" => status, ...}, ...}
 #    5. report PASS/FAIL per item (text/json/yaml, optionally --junit
 #       too), exit 1 on any FAIL
 #    6. vagrant destroy, so the next run starts from a clean VM
@@ -185,22 +187,112 @@ def status_text(entry)
   'MISSING'
 end
 
-# flatten_report(report) - {"Language" => status, "Language > tool" =>
-#  status}, one flat hash regardless of which area a language lives in
-#  - a tool name alone (e.g. "make") isn't unique across languages (C++
-#  and Java both depend on it), so it's always qualified by its own
-#  language.
-def flatten_report(report)
-  flat = {}
-  report[:areas].each do |area|
-    area[:languages].each do |lang|
-      flat[lang[:name]] = status_text(lang)
-      lang[:tools].each do |tool|
-        flat["#{lang[:name]} > #{tool[:name]}"] = status_text(tool)
+# AREA_KEYS/LANGUAGE_KEYS - verify_commands.rb's own human-readable
+#  AREAS names ("Windows Scripts", "Bourne Again Shell (bash)") mapped
+#  to the short, lowercase keys nested_report actually writes - lining
+#  up with scriptbox/config/*.yml's own directory/section names
+#  (win_scripts, gen_scripts.{awk,groovy,perl,...}, shell_scripts.
+#  {bash,csh,ksh,posix,zsh}, compiled_lang.{cs,go,java,rust}) wherever
+#  the manifest actually has a matching section - not a mechanical
+#  slugify (verify_commands.rb's own "C Shell (tcsh)"/"POSIX Shell
+#  (dash/sh)"/"C++"/"C#" have no single automatic rule that gets all
+#  four right at once), an explicit table instead, same reasoning
+#  area/language names get one instead of a guess anywhere else in this
+#  pipeline (e.g. resolve_order.rb's own parse_version_constraint).
+#  Four entries here (Batch, PowerShell, WSH JScript, WSH VBScript,
+#  and C++) have no manifest section of their own to match at all
+#  (Batch/WSH are Windows-builtin, nothing to install; C++ comes from
+#  build-essential, not its own compiled_lang subsection) - given a
+#  short, readable key anyway rather than left out.
+AREA_KEYS = {
+  'Windows Scripts' => 'win_scripts',
+  'Shell Scripts' => 'shell_scripts',
+  'General Scripts' => 'gen_scripts',
+  'Compiled Languages' => 'compiled_lang'
+}.freeze
+
+LANGUAGE_KEYS = {
+  'Batch' => 'batch',
+  'PowerShell' => 'powershell',
+  'WSH JScript' => 'wsh.jscript',
+  'WSH VBScript' => 'wsh.vbscript',
+  'Bourne Again Shell (bash)' => 'bash',
+  'C Shell (tcsh)' => 'csh',
+  'Korn Shell (ksh)' => 'ksh',
+  'POSIX Shell (dash/sh)' => 'posix',
+  'Z Shell (zsh)' => 'zsh',
+  'AWK' => 'awk',
+  'Groovy' => 'groovy',
+  'Perl' => 'perl',
+  'PHP' => 'php',
+  'Python2' => 'python2',
+  'Python3' => 'python3',
+  'Ruby' => 'ruby',
+  'TCL' => 'tcl',
+  'C++' => 'cpp',
+  'C#' => 'cs',
+  'Go' => 'go',
+  'Java' => 'java',
+  'Rust' => 'rust'
+}.freeze
+
+# area_key/language_key - raise on an unmapped name rather than falling
+#  back to some auto-slugified guess, same fail-loud reasoning
+#  parse_version_constraint already applies elsewhere: if verify_
+#  commands.rb's own AREAS ever grows a new language, this should stop
+#  a test run cold with a clear "go add it to the table" message, not
+#  silently write a mis-keyed (or worse, inconsistently-keyed-between-
+#  runs) baseline.
+def area_key(name)
+  AREA_KEYS.fetch(name) { raise "integration_test.rb: no AREA_KEYS entry for #{name.inspect} - add one" }
+end
+
+def language_key(name)
+  LANGUAGE_KEYS.fetch(name) { raise "integration_test.rb: no LANGUAGE_KEYS entry for #{name.inspect} - add one" }
+end
+
+# nested_report(report) - {"win_scripts" => {"powershell" => {
+#  "powershell" => "OK", "needs" => {"psake" => "OK"}}, ...}, ...} -
+#  nested by area then language, matching the manifest's own directory/
+#  section structure (see AREA_KEYS/LANGUAGE_KEYS) rather than
+#  verify_commands.rb's own flat area/language/tool arrays or this
+#  file's own previous flat "Language > tool" string keys. A language
+#  with no tools is just its own bare status string (e.g. "awk" =>
+#  "OK") - the nested {name => status, "needs" => {...}} shape only
+#  shows up where there's actually a "needs" to report, so a baseline
+#  reads as plainly as possible for the common case.
+def nested_report(report)
+  report[:areas].each_with_object({}) do |area, areas_hash|
+    languages = area[:languages].each_with_object({}) do |lang, langs_hash|
+      lkey = language_key(lang[:name])
+      if lang[:tools].empty?
+        langs_hash[lkey] = status_text(lang)
+      else
+        needs = lang[:tools].each_with_object({}) { |tool, h| h[tool[:name]] = status_text(tool) }
+        langs_hash[lkey] = { lkey => status_text(lang), 'needs' => needs }
       end
     end
+    areas_hash[area_key(area[:name])] = languages
   end
-  flat
+end
+
+# flatten_tree(tree, prefix) - a nested_report-shaped Hash (or its own
+#  JSON-round-tripped equivalent - see load_expected, which reads plain
+#  string keys back, not symbols) walked back down into dotted-path
+#  {"win_scripts.powershell.needs.psake" => "OK", ...} pairs - internal
+#  to compare below, not written to disk anywhere; the persisted
+#  expected/actual JSON stays nested (that's the whole point), this is
+#  just the simplest way to line two nested trees up leaf-for-leaf
+#  without writing a bespoke recursive differ.
+def flatten_tree(tree, prefix = [])
+  tree.each_with_object({}) do |(key, value), flat|
+    path = prefix + [key]
+    if value.is_a?(Hash)
+      flat.merge!(flatten_tree(value, path))
+    else
+      flat[path.join('.')] = value
+    end
+  end
 end
 
 def expected_path(letter)
@@ -242,11 +334,13 @@ end
 #  unexpected, not silently ignored or treated as a FAIL - expected
 #  just doesn't have an opinion on it yet.
 def compare(expected, actual)
-  results = expected.map do |name, exp_status|
-    act_status = actual[name]
+  flat_expected = flatten_tree(expected)
+  flat_actual = flatten_tree(actual)
+  results = flat_expected.map do |name, exp_status|
+    act_status = flat_actual[name]
     { name: name, expected: exp_status, actual: act_status || 'MISSING (not reported)', pass: act_status == exp_status }
   end
-  unexpected = actual.keys.map(&:to_s) - expected.keys
+  unexpected = flat_actual.keys - flat_expected.keys
   [results, unexpected]
 end
 
@@ -352,7 +446,7 @@ if __FILE__ == $PROGRAM_NAME
   begin
     script_path = generate_script(config, letter)
     vagrant_up_and_provision(script_path)
-    actual = flatten_report(fetch_actual_report(letter))
+    actual = nested_report(fetch_actual_report(letter))
     save_actual(letter, actual)
 
     if options[:record]
