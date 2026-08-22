@@ -21,25 +21,17 @@ fi
 
 mkdir -p "$outdir"
 
-# Real .deb files (built by dpkg-deb, using GNU ar) store member names
-# with a trailing '/' terminator (e.g. "debian-binary/"). GNU ar's own
-# `ar x`/`ar p <name>` strip that before matching, but macOS's ar (BSD/
-# cctools) does not - it lists these members fine (`ar tv` shows them),
-# but its own -x/-p *name lookup* can't find a member by that same
-# name, and `ar x` with no name filter at all silently extracts
-# nothing (confirmed directly against a real Microsoft-signed .deb:
-# every member reported "No such file or directory" and `ar x` still
-# exited 0 having written zero files - not a fluke, a real empty
-# result). So extraction can't go through ar's own per-member name
-# lookup at all, on macOS. Instead: `ar p` with *no* member argument
-# prints every member's raw bytes concatenated in archive order
-# regardless of name-matching (confirmed directly this excludes ar's
-# own even-byte padding between members - the concatenated output's
-# total length matches the sum of `ar tv`'s own sizes exactly, on both
-# GNU ar and macOS's ar), and `ar tv` lists each member's size and name
-# in that same order - together enough to slice the blob back into
-# individually-named files ourselves, without ever asking ar to look
-# anything up by name on either platform.
+# macOS BSD ar workaround 
+# -----------------------
+# * Context: Real .deb files (built by dpkg-deb, using GNU ar) store 
+#     member names with a trailing '/' terminator (e.g. "debian-binary/").
+#     GNU ar's own `ar x`/`ar p <name>` strip that before matching
+# * Problem: macOS's ar (BSD/cctools) does not strip traling '/'; 
+#     BSD ar -x/-p *name lookup* can't find a member by that same
+#     name, and `ar x` with no name filter at all silently extracts
+#     nothing
+# * Solution: Use `ar tv` to slice blob back into individually named files
+#     without acking `ar` to look anything up by name on either platform
 blob=$(mktemp)
 trap 'rm -f "$blob"' EXIT
 ar p "$deb" > "$blob"
