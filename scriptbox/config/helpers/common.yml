@@ -1,0 +1,52 @@
+# Common Shared functions for any platform
+common:
+  helpers:
+    append_line:
+      cmd: |
+        append_line() {
+          local DEST=$1
+          local LINE=$2
+
+          [ -f "$DEST" ] && { grep -qxF "$LINE" "$DEST" 2>/dev/null || echo "$LINE" >> "$DEST"; } || true
+        }
+      cmd_powershell: |
+        function append_line {
+            param([string]$Dest, [string]$Line)
+            if ((Test-Path $Dest) -and -not ((Get-Content $Dest -ErrorAction SilentlyContinue) -contains $Line)) {
+                Add-Content -Path $Dest -Value $Line
+            }
+        }
+    is_vm_guest:
+      cmd: |
+        is_vm_guest() {
+          case "$(uname -s)" in
+            Linux)
+              if command -v systemd-detect-virt >/dev/null 2>&1; then
+                [ "$(systemd-detect-virt)" != "none" ]
+              elif [ -r /sys/class/dmi/id/product_name ]; then
+                grep -qiE 'vmware|virtualbox|kvm|qemu|hyper-v|xen' /sys/class/dmi/id/product_name
+              else
+                return 1
+              fi
+              ;;
+            Darwin)
+              system_profiler SPHardwareDataType 2>/dev/null | grep -qiE 'Model (Name|Identifier):.*virtual'
+              ;;
+            CYGWIN*|MINGW*|MSYS*)
+              powershell.exe -NoProfile -Command '(Get-CimInstance Win32_ComputerSystem).Model' 2>/dev/null | grep -qiE 'virtual|vmware|kvm|xen'
+              ;;
+            *)
+              return 1
+              ;;
+          esac
+        }
+      # Win32_ComputerSystem.Model check on Windows: 
+      #  * Hyper-V reports "Virtual Machine",
+      #  * VMware "VMware Virtual Platform", 
+      #  * VirtualBox "VirtualBox", 
+      #  * KVM/QEMU usually "KVM"/a "Standard PC (Q35 ...)" board 
+      cmd_powershell: |
+        function is_vm_guest {
+            $model = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
+            return $model -match 'Virtual|VMware|KVM|Xen'
+        }

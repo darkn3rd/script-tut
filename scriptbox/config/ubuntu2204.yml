@@ -56,11 +56,6 @@ ubuntu22:
         awk:
           packages:
             - apt: gawk
-        groovy:
-          packages:
-            - sdkman: groovy
-              needs: java
-              tags: [sdkman]
         perl:
           packages:
             - system: perl
@@ -69,7 +64,16 @@ ubuntu22:
               append: ubuntu22_cpan_local_setup
               needs: make
             - cpan: App::cpanminus
+              meets: cpanm
             - cpanm: Switch
+        groovy:
+          packages:
+            - cpanm: HTTP::Tiny
+              needs: cpanm
+              tags: [sdkman]
+            - sdkman: groovy
+              needs: java
+              tags: [sdkman]
         php:
           packages:
             - apt: php8.1-cli
@@ -143,8 +147,9 @@ ubuntu22:
       win_scripts:
         powershell:
           packages:
-            - script: ubuntu22_powershell
-              meets: powershell
+            - add_apt_repo: ubuntu22_microsoft_prod
+              apt: powershell
+              meets: pwsh
     cibox:
       packages:
         - add_apt_repo: ubuntu22_docker
@@ -173,9 +178,10 @@ ubuntu22:
           args: --platform ruby
     testbox:
       packages:
-        - cmd: pwsh --version
-          needs: powershell
-        - cmd: ruby --version
+        - powershell_cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          needs: pwsh
+        - powershell_module: psake
+        - noop: ruby
           needs: ruby
 
 scripts:
@@ -198,28 +204,6 @@ scripts:
       fi
       mkdir -p "$HOME/.config/powershell"
       source "$HOME/.cargo/env"
-  ubuntu22_powershell:
-    type: bash
-    cmd: |
-      wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \
-        -O packages-microsoft-prod.deb
-      sudo DEBIAN_FRONTEND=noninteractive dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
-
-      # Add Microsoft packages list
-      sudo apt-get update
-
-      # Install PowerShell 7.x (pwsh)
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y powershell
-
-      # psake - win_scripts/powershell lessons run through Invoke-Psake
-      #  (see scriptbox/scripts/run_all_tests.ps1), which needs the
-      #  psake module installed. A plain Install-Module prompts
-      #  "Untrusted repository... Are you sure you want to install
-      #  software from this untrusted source?" the first time PSGallery
-      #  is used - trust it first, then -Force/-SkipPublisherCheck skip
-      #  that confirmation non-interactively.
-      pwsh -NoProfile -Command "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
   ubuntu22_pyenv:
     type: bash
     cmd: |
@@ -414,3 +398,8 @@ add_apt_repos:
     key_url: https://darkn3rd.github.io/script-tut/public.asc
     repo_uri: https://darkn3rd.github.io/script-tut
     distro_string: stable main
+  ubuntu22_microsoft_prod:
+    name: microsoft-prod
+    key_url: https://packages.microsoft.com/keys/microsoft.asc
+    repo_uri: https://packages.microsoft.com/ubuntu/22.04/prod
+    distro_string: "jammy main"

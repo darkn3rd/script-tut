@@ -74,6 +74,7 @@ msys2:
             packages:
               - path: /c/Windows/System32/
     testbox:
+    # path to docker? path to act?
     scriptbox:
       packages:
         - script: msys2_update_gems

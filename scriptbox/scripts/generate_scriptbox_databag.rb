@@ -30,6 +30,7 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
 
   # resolve! runs on the *full* flattened tree, not just scriptbox's own
   #  steps, same as generate_chef_databag.rb's own lessons extraction -

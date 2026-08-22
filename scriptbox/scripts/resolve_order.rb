@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a
@@ -20,7 +20,15 @@ VERSION_OPS = ['=', '>='].freeze
 #  added. Ruby constants aren't file-scoped, so defining this more than
 #  once across files that require each other silently shadows one
 #  definition with the other instead of erroring - one shared source
-#  here avoids that entirely.
+#  here avoids that entirely. `variables:` (see substitute_variables)
+#  is deliberately NOT one of these - unlike scripts:/appends:/files:,
+#  it isn't a cross-platform shared namespace looked up by name from
+#  inside any platform's own tree; it lives *nested inside* each
+#  platform's own root key instead (a sibling of that platform's own
+#  shell:/global: - see dialect_for's own node['shell']), the same way
+#  a version pin means something different per platform and has no
+#  business being visible to, or colliding with, a same-named variable
+#  under some other platform's own key.
 RESERVED_KEYS = %w[scripts files appends add_apt_repos environments].freeze
 
 # ATTACHABLE_KEYS - sibling keys that each add one more step immediately
@@ -36,10 +44,22 @@ ATTACHABLE_KEYS = %w[script file append].freeze
 
 # flatten - walks the macos.yml tree in document order and produces one
 #  array of "steps". A step is either a package (brew/cask/tap/cpan/cpanm/
-#  system) or something from ATTACHABLE_KEYS attached to a package via a
-#  sibling key, which becomes its own step (tagged with attached_to)
-#  immediately following the package they belong to, so a package and
-#  its own follow-ups can be moved together as a unit (see unit_span).
+#  system/... - see PACKAGE_TYPES) or something from ATTACHABLE_KEYS
+#  attached to a package via a sibling key, which becomes its own step
+#  (tagged with attached_to) immediately following the package they
+#  belong to, so a package and its own follow-ups can be moved together
+#  as a unit (see unit_span). `noop` is a package type like any other
+#  here (so it gets its own step, not silently dropped the way an
+#  entry with no recognized type at all is - see the `next unless type`
+#  just below) but installs nothing of its own - see generate_install_
+#  script.rb's own noop_comment. It exists purely to give a meets:/
+#  needs: pair somewhere real to attach to when neither side of that
+#  association is an actual package install on its own - e.g.
+#  windows.yml's own gen_scripts.go, which needs: make but has no
+#  package of its own that isn't already fully described by `choco:
+#  go` - `- noop: go_needs_make\n  needs: make` documents that
+#  dependency (and lets resolve!/relocate_cross_cutting actually see
+#  and act on it) without pretending it's a second install of go.
 def flatten(node, path = [])
   steps = []
   return steps unless node.is_a?(Hash)
@@ -60,6 +80,7 @@ def flatten(node, path = [])
         add_apt_repo: entry['add_apt_repo'],
         version: entry['version'],
         args: entry['args'],
+        condition: entry['condition'],
         path: path.join('.')
       }
 
@@ -124,6 +145,90 @@ def parse_version_constraint(step)
   end
 
   [op, m[2]]
+end
+
+# parse_condition(condition) - step[:condition] (e.g. "is_vm_guest ==
+#  false") split into [fn_name, expected] - expected a real boolean, not
+#  the string "false", so callers (render_step's own guard-wrapping)
+#  never have to worry about Ruby's "false".nil? == false trap silently
+#  treating an inverted condition as truthy. `fn_name` is the name of a
+#  test *function*, not a variable - defined once (bash: exit-status
+#  convention, 0/success == true; PowerShell: `return`s a real
+#  [bool]) the same "define once, call at point of use" way append_line
+#  is (see helpers/common.yml and emit_helper_functions's own `needed`
+#  detection). Raises on anything that isn't exactly `name == true` or
+#  `name == false` - same fail-loud reasoning as parse_version_
+#  constraint's own unsupported-operator check: a manifest author
+#  writing `is_vm_guest != true` or `is_vm_guest` alone (no comparison)
+#  deserves a loud failure at generation time, not a generator quietly
+#  guessing what they meant.
+def parse_condition(condition)
+  m = condition.strip.match(/\A(\w+)\s*==\s*(true|false)\z/)
+  raise "unsupported condition '#{condition}' (expected '<function> == true' or '<function> == false')" unless m
+
+  [m[1], m[2] == 'true']
+end
+
+# VARIABLE_REF - a `<%= $name %>` reference to the manifest's own
+#  top-level variables: block (see RESERVED_KEYS) - substitute_
+#  variables replaces every one of these, anywhere in the tree, with
+#  that name's real value. `<%= %>` (not e.g. `{{ }}`) specifically
+#  because it's a plain YAML scalar with no quoting required: `{` opens
+#  a flow mapping in YAML, so an unquoted `{{ ruby_ver }}` parses as
+#  nested hashes instead of the literal string a manifest author
+#  actually meant - confirmed directly (`YAML.load("v: {{ ruby_ver
+#  }}")` => `{"v"=>{{"ruby_ver"=>nil}=>nil}}`, not the string anyone
+#  writing that line actually intended), which is exactly the state
+#  windows.yml's own ruby version pin was silently sitting in before
+#  this was implemented. `<%= $ruby_ver %>` needs no such quoting
+#  (confirmed directly the same way - parses straight to a plain
+#  String), and this repo's manifests don't otherwise contain a literal
+#  `<%` that this would need to avoid colliding with. The `$` sigil
+#  inside is purely conventional (echoing shell variable syntax for a
+#  human reader) - substitution itself only cares about the `<%= ...
+#  %>` wrapper.
+VARIABLE_REF = /<%=\s*\$(\w+)\s*%>/.freeze
+
+# substitute_variables(value, vars) - `value` (any YAML-parsed node:
+#  String/Hash/Array/scalar) with every VARIABLE_REF in every String it
+#  contains, at any depth, replaced by vars[name] - returns a new
+#  structure rather than mutating in place (simplest given Hash/Array
+#  don't share one uniform in-place update method across both types).
+#  Called on just one platform's own subtree (`tree[name]`, once
+#  root_key/--platform has picked `name` - see each entry point's own
+#  main block), using that same subtree's own `variables:` block (see
+#  RESERVED_KEYS' own comment on why variables: is scoped per-platform,
+#  not a top-level shared block the way appends:/files: are) - so every
+#  field flatten reads out of that platform's tree (name:, version:,
+#  cmd:, an appends:/files: block's own lines:/content:, ...) already
+#  has its real value by the time flatten sees it, without flatten or
+#  any downstream consumer needing to know templating exists at all.
+#  Raises on a name vars doesn't have, rather than leaving the literal
+#  `<%= $name %>` text in the generated script - same fail-loud
+#  reasoning as parse_version_constraint's own unsupported-operator
+#  check: a typo'd variable name deserves a loud failure at generation
+#  time, not a generator that silently writes literal template syntax
+#  into someone's .bashrc. vars[name].to_s - a variable can be authored
+#  as a bare YAML scalar (`ruby_ver: 3.4.10.1`, itself already a String
+#  since it has more than one dot; but `retries: 3` would parse as an
+#  Integer) - always coerced to a String on substitution since it's
+#  being spliced into one.
+def substitute_variables(value, vars)
+  case value
+  when String
+    value.gsub(VARIABLE_REF) do
+      name = Regexp.last_match(1)
+      raise "unknown variable '#{name}' referenced as '<%= $#{name} %>' - not defined in this manifest's own variables: block" unless vars.key?(name)
+
+      vars[name].to_s
+    end
+  when Hash
+    value.transform_values { |v| substitute_variables(v, vars) }
+  when Array
+    value.map { |v| substitute_variables(v, vars) }
+  else
+    value
+  end
 end
 
 # dedup! - drops a later step whose (type, name) already appeared
@@ -389,6 +494,7 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   tree = YAML.load_file(File.join(__dir__, '..', 'config', 'macos.yml'))
+  tree['macos'] = substitute_variables(tree['macos'], tree['macos']['variables'] || {})
   steps = flatten(tree['macos'])
   resolve!(steps)
   steps.each do |s|

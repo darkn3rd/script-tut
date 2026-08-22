@@ -43,6 +43,14 @@ if __FILE__ == $PROGRAM_NAME
     exit 1
   end
 
+  # Resolved right after the platform key itself is confirmed valid,
+  #  before anything below reads a single field out of it - see
+  #  resolve_order.rb's own substitute_variables/RESERVED_KEYS comment
+  #  on why this is scoped to tree[platform] alone, not the whole
+  #  merged tree (variables: lives nested inside each platform's own
+  #  key, not as a top-level shared block visible to every platform).
+  tree[platform] = substitute_variables(tree[platform], tree[platform]['variables'] || {})
+
   # 2. detects this machine's own environment - uname_string/match_platform
   #  (verify_commands.rb) already handle Cygwin/MSYS2/WSL1/Linux distros/
   #  macOS/native Windows correctly (including a native Windows Ruby with
