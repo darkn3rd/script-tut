@@ -10,6 +10,11 @@
 #  the only line replaced besides $version - $url already interpolates
 #  $version (see chocolateyinstall.ps1), so once $version's own line is
 #  rewritten, $url is correct with no separate replace needed.
+#
+# pipx.nuspec's own <releaseNotes> also needs a rule here - it's not one
+#  of the fields au's own Update-Package updates automatically (only
+#  <version>/<id> are), so without this it would silently keep pointing
+#  at whatever release was current when this file was last hand-edited.
 
 function global:au_GetLatest {
     $release = Invoke-RestMethod 'https://api.github.com/repos/pypa/pipx/releases/latest'
@@ -26,6 +31,9 @@ function global:au_SearchReplace {
         '.\tools\chocolateyinstall.ps1' = @{
             "(?i)^(\`$version\s*=\s*)'.*'"  = "`$1'$($Latest.Version)'"
             "(?i)^(\`$checksum\s*=\s*)'.*'" = "`$1'$($Latest.Checksum32)'"
+        }
+        '.\pipx.nuspec'                 = @{
+            "(?i)(<releaseNotes>).*(</releaseNotes>)" = "`$1https://github.com/pypa/pipx/releases/tag/$($Latest.Version)`$2"
         }
     }
 }
