@@ -623,29 +623,39 @@ def emit_section_functions(f, node, children, own_steps, tree, dialect, insert_b
 end
 
 # write_install_script(name, steps, tree, dialect, generated_dir,
-#  header_lines, natural_steps, apt_mirror) - writes generated/
-#  <name>_install.<ext> in the given dialect, shared by generate_install_
-#  script.rb's and gen_installer.rb's own entry points so the two never
-#  drift into writing the file header/footer two different ways. `tree`
-#  - the whole parsed manifest, not just its own scripts: block - so
-#  command_for's own 'file'/'append' cases can reach files:/appends: the
-#  same way 'script' already reaches scripts:, without every function in
-#  this call chain needing its own extra parameter as more of these
-#  named-lookup blocks get added. `natural_steps` - a flatten() snapshot
-#  taken *before* resolve! reorders anything - has to come from the
-#  caller: resolve! has already mutated `steps` in place by the time it
-#  reaches here, and relocate_cross_cutting needs the tree's original,
-#  undisturbed document order (see its own comment, and resolve_order.rb's
+#  header_lines, natural_steps, apt_mirror, out_path:) - writes
+#  generated/<name>_install.<ext> in the given dialect, shared by
+#  generate_install_script.rb's and gen_installer.rb's own entry points
+#  so the two never drift into writing the file header/footer two
+#  different ways. `tree` - the whole parsed manifest, not just its own
+#  scripts: block - so command_for's own 'file'/'append' cases can
+#  reach files:/appends: the same way 'script' already reaches
+#  scripts:, without every function in this call chain needing its own
+#  extra parameter as more of these named-lookup blocks get added.
+#  `natural_steps` - a flatten() snapshot taken *before* resolve!
+#  reorders anything - has to come from the caller: resolve! has
+#  already mutated `steps` in place by the time it reaches here, and
+#  relocate_cross_cutting needs the tree's original, undisturbed
+#  document order (see its own comment, and resolve_order.rb's
 #  natural_function_order). `apt_mirror` - see apt_mirror_for - is
-#  optional. PowerShell gets a real self-elevation check up front rather
-#  than a comment reminding the user to run it as Administrator -
-#  confirmed directly every choco/feature step in practice needs it, and
-#  Start-Process -Verb RunAs relaunching itself once at the top is
-#  simpler and more reliable than trying to elevate per step. Returns
-#  the path written.
-def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
+#  optional. `out_path:` - see each entry point's own --output flag -
+#  overrides the default generated/<name>_install.<ext> location
+#  entirely (any path, not just a different filename in the same
+#  directory) when a caller wants the result somewhere else, e.g.
+#  running two --select variants side by side without one overwriting
+#  the other. Its parent directory is created the same way generated_
+#  dir already is for the default case - a caller passing a brand new
+#  subdirectory shouldn't have to mkdir_p it themselves first.
+#  PowerShell gets a real self-elevation check up front rather than a
+#  comment reminding the user to run it as Administrator - confirmed
+#  directly every choco/feature step in practice needs it, and Start-
+#  Process -Verb RunAs relaunching itself once at the top is simpler
+#  and more reliable than trying to elevate per step. Returns the path
+#  written.
+def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil, out_path: nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
-  out_path = File.join(generated_dir, "#{name}_install.#{ext}")
+  out_path ||= File.join(generated_dir, "#{name}_install.#{ext}")
+  FileUtils.mkdir_p(File.dirname(out_path))
   reboot_steps = steps.select { |s| s[:reboot] }
 
   # 'wb', not 'w' - confirmed directly against a real, serious failure:
@@ -923,7 +933,7 @@ end
 #  a different destination/exit status depending on whether the user
 #  actually asked for it or just forgot an argument.
 def print_usage(stream)
-  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...] [--select TAG,TAG] [--exclude TAG,TAG]"
+  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...] [--select TAG,TAG] [--exclude TAG,TAG] [--output PATH]"
   stream.puts ''
   stream.puts 'Reads one config/*.yml provisioning file, resolves every step into'
   stream.puts 'dependency-correct order (a `needs:` consumer always ends up after'
@@ -947,6 +957,9 @@ def print_usage(stream)
   stream.puts '    one of its own tags is named here, or something already running'
   stream.puts '    needs: it.'
   stream.puts '  --exclude TAG,TAG - veto a tag even over --select/default.'
+  stream.puts '  --output PATH - write here instead of generated/<platform>_install.<ext>'
+  stream.puts '    (any path, not just a different filename - its parent directory is'
+  stream.puts '    created if missing).'
 end
 
 if __FILE__ == $PROGRAM_NAME
@@ -955,10 +968,11 @@ if __FILE__ == $PROGRAM_NAME
     exit 0
   end
 
-  options = { select: [], exclude: [] }
+  options = { select: [], exclude: [], output: nil }
   OptionParser.new do |opts|
     opts.on('--select TAGS') { |v| options[:select] = v.split(',').map(&:strip) }
     opts.on('--exclude TAGS') { |v| options[:exclude] = v.split(',').map(&:strip) }
+    opts.on('--output PATH', 'write here instead of generated/<platform>_install.<ext>') { |v| options[:output] = v }
   end.parse!(ARGV)
 
   config_path = ARGV[0]
@@ -1023,6 +1037,6 @@ if __FILE__ == $PROGRAM_NAME
   omitted.each do |step, missing|
     header_lines << "Omitted: [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
   end
-  out_path = write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, name))
+  out_path = write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, name), out_path: options[:output])
   puts "wrote #{out_path}"
 end

@@ -8,7 +8,7 @@ This script generates an install script: GNU Bash (`.sh`) for POSIX environments
 
 ### Ubuntu 22.04
 
-These are some combinations you would try
+These are some combinations you would try below:
 
 * **A. Baseline (no flags)** — system ruby/python only, `groovy` via sdkman default:
   ```bash
@@ -41,7 +41,15 @@ These are some combinations you would try
     --exclude asdf_groovy
   ```
 
+When you are read to test one of these combinations:
 
+```bash
+REPO=$(realpath ../..)
+pushd $REPO/configbox/bubblegum/hosts/virtualbox/ubuntu22
+vagrant up --no-provision # launch vm
+vagrant provision         # test script
+popd
+```
 
 
 

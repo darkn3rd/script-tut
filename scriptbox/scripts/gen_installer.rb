@@ -23,9 +23,9 @@ def load_merged_config
 end
 
 if __FILE__ == $PROGRAM_NAME
-  options = { select: [], exclude: [] }
+  options = { select: [], exclude: [], output: nil }
   OptionParser.new do |opts|
-    opts.banner = 'usage: gen_installer --platform NAME [--select TAG,TAG] [--exclude TAG,TAG]'
+    opts.banner = 'usage: gen_installer --platform NAME [--select TAG,TAG] [--exclude TAG,TAG] [--output PATH]'
     opts.on('--platform NAME', 'platform key from config/ to generate an installer for') { |v| options[:platform] = v }
     # See resolve_order.rb's own tag_eligible?/select_by_tags (issue
     #  #16) - a tagged package entry (e.g. rbenv/pyenv/asdf alternatives
@@ -33,6 +33,7 @@ if __FILE__ == $PROGRAM_NAME
     #  here, or the literal tag 'default', to be included at all.
     opts.on('--select TAGS', 'comma-separated tags to opt into') { |v| options[:select] = v.split(',').map(&:strip) }
     opts.on('--exclude TAGS', 'comma-separated tags to veto, overriding --select/default') { |v| options[:exclude] = v.split(',').map(&:strip) }
+    opts.on('--output PATH', 'write here instead of generated/<platform>_install.<ext>') { |v| options[:output] = v }
   end.parse!
 
   platform = options[:platform]
@@ -99,6 +100,6 @@ if __FILE__ == $PROGRAM_NAME
   omitted.each do |step, missing|
     header_lines << "Omitted: [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
   end
-  out_path = write_install_script(platform, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, platform))
+  out_path = write_install_script(platform, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, platform), out_path: options[:output])
   puts "wrote #{out_path}"
 end
