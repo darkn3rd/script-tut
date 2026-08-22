@@ -1,0 +1,22 @@
+{
+  "win_scirpts": {
+    "batch": "N/A",
+    "powershell": "MISSING",
+    "wsh.jscript": "N/A",
+    "wsh.vbscript": "N/A"
+
+  },
+  "gen_scripts": {
+    "awk": "OK",
+    "groovy": "OK",
+    "perl": "OK",
+    "perl.cpanm": "OK",
+    "perl.switch": "OK",
+    "php": "OK",
+    "python2": "OK",
+    "python3": "OK",
+    "ruby": "OK",
+    "tcl": "OK"
+  }
+}
+

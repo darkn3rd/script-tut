@@ -87,11 +87,37 @@ def run!(*argv, chdir: ROOT, env: {})
   system(env, *argv, chdir: chdir) || raise("command failed (exit #{$?.exitstatus}): #{argv.join(' ')}")
 end
 
-def generate_script(scenario, letter)
+# effective_config(scenario, options) - scenario's own selector/select/
+#  exclude, each overridden individually by whichever of --selector/
+#  --select/--exclude was actually passed on the command line (nil in
+#  `options` for any that weren't - see the OptionParser block below,
+#  which leaves them nil rather than defaulting to [] precisely so
+#  "not passed" and "passed as an empty value" stay distinguishable
+#  here). Exists so a scenario letter is a starting point, not a wall -
+#  hardcoding select/exclude/selector with no way to override any of
+#  them from the command line was exactly the "have to edit the test's
+#  own code, or reach for another tool" complaint this fixes; a named
+#  scenario still gives every run a sensible, visible default (see
+#  scenarios.rb's own file-level comment), it just doesn't have the
+#  only say any more.
+def effective_config(scenario, options)
+  {
+    selector: options[:selector] || scenario[:selector],
+    select: options[:select] || scenario[:select],
+    exclude: options[:exclude] || scenario[:exclude]
+  }
+end
+
+def generate_script(config, letter)
   script_path = File.join(GENERATED_DIR, "#{name_for(letter)}.sh")
-  argv = ['ruby', 'generate_install_script.rb', '../config/ubuntu2204.yml', SELECTOR, '--output', script_path]
-  argv += ['--select', scenario[:select].join(',')] unless scenario[:select].empty?
-  argv += ['--exclude', scenario[:exclude].join(',')] unless scenario[:exclude].empty?
+  argv = ['ruby', 'generate_install_script.rb', '../config/ubuntu2204.yml']
+  # nil/empty selector - see scenarios.rb's own 'ZZZ' entry - means no
+  #  SECTION argument at all (generate_install_script.rb's own default:
+  #  the whole manifest), not an empty string handed to it as one.
+  argv << config[:selector] if config[:selector] && !config[:selector].empty?
+  argv += ['--output', script_path]
+  argv += ['--select', config[:select].join(',')] unless config[:select].empty?
+  argv += ['--exclude', config[:exclude].join(',')] unless config[:exclude].empty?
   run!(*argv, chdir: SCRIPTS_DIR)
   script_path
 end
@@ -268,49 +294,94 @@ def render_junit(scenario_letter, results)
 end
 
 if __FILE__ == $PROGRAM_NAME
-  options = { format: 'text', record: false, destroy: true, junit: nil }
+  # selector/select/exclude default to nil, not ''/[] - effective_config
+  #  needs to tell "not passed on the command line" apart from "passed
+  #  as deliberately empty" (e.g. --select '' to force nothing tagged
+  #  through even though the scenario itself selects something), which
+  #  a [] default would collapse into the same thing.
+  options = { format: 'text', record: false, destroy: true, junit: nil, selector: nil, select: nil, exclude: nil }
   OptionParser.new do |opts|
     opts.banner = "usage: #{$PROGRAM_NAME} <#{SCENARIOS.keys.join('|')}> [options]"
     opts.on('--record', 'capture actual output as the new expected baseline') { options[:record] = true }
     opts.on('--no-destroy', 'skip vagrant destroy at the end (leave the VM up for inspection)') { options[:destroy] = false }
     opts.on('--format FORMAT', %w[text json yaml], 'text (default), json, or yaml') { |v| options[:format] = v }
     opts.on('--junit PATH', 'also write a JUnit XML report to PATH') { |v| options[:junit] = v }
+    # Overrides a named scenario's own selector/select/exclude (see
+    #  scenarios.rb's own file-level comment) rather than requiring an
+    #  edit to that file (or a whole separate tool) any time someone
+    #  wants to try a variation - a scenario letter is a sensible,
+    #  visible starting point, not the only way to configure a run.
+    opts.on('--selector SELECTOR', 'override this scenario\'s own SECTION selector (empty for the whole manifest)') { |v| options[:selector] = v }
+    opts.on('--select TAGS', 'override this scenario\'s own --select tags') { |v| options[:select] = v.split(',').map(&:strip) }
+    opts.on('--exclude TAGS', 'override this scenario\'s own --exclude tags') { |v| options[:exclude] = v.split(',').map(&:strip) }
   end.parse!(ARGV)
 
   letter = ARGV[0]&.upcase
   scenario = SCENARIOS[letter]
   unless scenario
-    warn "usage: #{$PROGRAM_NAME} <#{SCENARIOS.keys.join('|')}> [--record] [--no-destroy] [--format text|json|yaml] [--junit PATH]"
+    warn "usage: #{$PROGRAM_NAME} <#{SCENARIOS.keys.join('|')}> [--selector SELECTOR] [--select TAG,TAG] [--exclude TAG,TAG] [--record] [--no-destroy] [--format text|json|yaml] [--junit PATH]"
     exit 1
   end
 
+  config = effective_config(scenario, options)
+  overridden = options[:selector] || options[:select] || options[:exclude]
+
+  # Recording an overridden run as a named scenario's own canonical
+  #  baseline would silently bake that override into it - not blocked
+  #  outright (a deliberate, informed re-record is a real use case,
+  #  e.g. widening what a scenario itself covers), just made loud
+  #  enough that doing it by accident takes actually missing this line.
+  warn "#{$PROGRAM_NAME}: recording with an override active (#{[options[:selector] && "selector=#{options[:selector].inspect}", options[:select] && "select=#{options[:select]}", options[:exclude] && "exclude=#{options[:exclude]}"].compact.join(', ')}) - this becomes scenario #{letter}'s own new baseline, not a one-off comparison" if options[:record] && overridden
+
   puts "=== Scenario #{letter}: #{scenario[:label]} (#{name_for(letter)}) ==="
-  script_path = generate_script(scenario, letter)
-  vagrant_up_and_provision(script_path)
-  actual = flatten_report(fetch_actual_report(letter))
-  save_actual(letter, actual)
+  puts "    selector=#{config[:selector].inspect} select=#{config[:select]} exclude=#{config[:exclude]}#{' (overridden)' if overridden}"
 
-  if options[:record]
-    save_expected(letter, actual)
+  # begin/ensure, not a destroy call sitting at the end of each branch -
+  #  confirmed directly this matters: load_expected's own `exit 1` (no
+  #  recorded baseline yet) skipped vagrant_destroy entirely, leaving a
+  #  real VM running - and so would any run!() failure anywhere above
+  #  (vagrant up, provision, ssh), none of which were ever caught either.
+  #  ensure runs on *any* way this begin block ends - a normal fall-
+  #  through, an explicit exit (Kernel#exit raises SystemExit, which
+  #  unwinds through ensure same as any other exception - only exit!
+  #  skips it), or an uncaught exception - so vagrant_destroy (or
+  #  --no-destroy's own skip of it) now applies uniformly no matter
+  #  which of those actually happens, instead of only the two paths
+  #  that happened to remember to call it themselves.
+  exit_code = 0
+  begin
+    script_path = generate_script(config, letter)
+    vagrant_up_and_provision(script_path)
+    actual = flatten_report(fetch_actual_report(letter))
+    save_actual(letter, actual)
+
+    if options[:record]
+      save_expected(letter, actual)
+    else
+      expected = load_expected(letter)
+      results, unexpected = compare(expected, actual)
+
+      case options[:format]
+      when 'json'
+        puts JSON.pretty_generate(results)
+      when 'yaml'
+        puts YAML.dump(JSON.parse(JSON.generate(results)))
+      else
+        puts render_text(letter, results, unexpected)
+      end
+
+      File.write(options[:junit], render_junit(letter, results)) if options[:junit]
+
+      exit_code = results.all? { |r| r[:pass] } ? 0 : 1
+    end
+  ensure
+    # --no-destroy - the option to leave the VM up for a real look at
+    #  what went wrong, not just a log after the fact - applies here
+    #  too, same as the two call sites this replaced already respected
+    #  it: a run you deliberately kept up for inspection stays up
+    #  whether it passed, failed, or blew up outright.
     vagrant_destroy if options[:destroy]
-    exit 0
   end
 
-  expected = load_expected(letter)
-  results, unexpected = compare(expected, actual)
-
-  case options[:format]
-  when 'json'
-    puts JSON.pretty_generate(results)
-  when 'yaml'
-    puts YAML.dump(JSON.parse(JSON.generate(results)))
-  else
-    puts render_text(letter, results, unexpected)
-  end
-
-  File.write(options[:junit], render_junit(letter, results)) if options[:junit]
-
-  vagrant_destroy if options[:destroy]
-
-  exit(results.all? { |r| r[:pass] } ? 0 : 1)
+  exit(exit_code)
 end
