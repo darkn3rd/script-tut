@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a
@@ -81,6 +81,7 @@ def flatten(node, path = [])
         version: entry['version'],
         args: entry['args'],
         condition: entry['condition'],
+        tags: Array(entry['tags']),
         path: path.join('.')
       }
 
@@ -107,8 +108,16 @@ def flatten(node, path = [])
         #  one step per name either way, never one step holding an array
         #  as its own :name (every consumer - append_lines, step_to_
         #  entry - looks up tree['appends'] by a single string key).
+        #  tags: inherited from the entry itself, not re-declared per
+        #  attachment - an append:/file: attached to a tagged package
+        #  (e.g. ubuntu22_asdf's own bootstrap script + its append:
+        #  entries) has to rise or fall with that same package under
+        #  tag-based selection (see select_by_tags), not run
+        #  unconditionally as an untagged step would - appending asdf's
+        #  own PATH lines to .bashrc regardless of whether asdf was
+        #  actually installed would be a real bug, not a harmless extra.
         Array(entry[key]).each do |name|
-          steps << { type: key, name: name, attached_to: entry[type], path: path.join('.') }
+          steps << { type: key, name: name, attached_to: entry[type], tags: Array(entry['tags']), path: path.join('.') }
         end
       end
     end
@@ -120,6 +129,121 @@ def flatten(node, path = [])
   end
 
   steps
+end
+
+# tag_eligible?(step, select_tags, exclude_tags) - whether `step` passes
+#  its own tags: gate on its own, before any needs:/meets: pull-in is
+#  even considered (see select_by_tags) - issue #16's source-of-truth
+#  design for letting a manifest express more than one legitimate path
+#  to the same tool (rbenv/pyenv/asdf vs. Ubuntu's own system ruby/
+#  python packages) without installing all of them at once.
+#  - An untagged step is always eligible - today's behavior, unchanged.
+#  - A tagged step is eligible if it carries the literal tag 'default'
+#    AND select_tags is empty (a genuinely bare invocation, no --select
+#    at all): the manifest author's own declared fallback for a
+#    language that has no untagged/system alternative (e.g. groovy,
+#    which Ubuntu doesn't package - one of sdkman_groovy/asdf_groovy
+#    has to be the zero-flag default, or groovy silently stops
+#    installing the moment its steps gain any tags: at all). Gated on
+#    select_tags being empty, not unconditional - confirmed directly
+#    this matters: `--select asdf_groovy` alone, with 'default' still
+#    honored unconditionally, installed groovy via *both* sdkman
+#    (default) and asdf (selected) at once, exactly the double-install
+#    issue #16 exists to prevent. The moment the user opts into
+#    anything via --select, a 'default'-tagged alternative needs to be
+#    named there too if it's still wanted - it's not a fallback anymore
+#    once a real choice has been made. Where an untagged alternative
+#    *does* already exist (ruby/python's own `system:` entries),
+#    nothing needs a 'default' tag at all - the untagged entry already
+#    is the default (in every case, --select or not), and rbenv/pyenv/
+#    asdf all become genuinely opt-in additions alongside it.
+#  - Otherwise eligible only if at least one of its own tags is named
+#    in select_tags (explicit opt-in).
+#  - exclude_tags overrides all of the above unconditionally - even a
+#    'default'-tagged or select_tags-named entry is dropped if any of
+#    its own tags is excluded.
+def tag_eligible?(step, select_tags, exclude_tags)
+  tags = step[:tags]
+  return true if tags.empty?
+  return false if tags.any? { |t| exclude_tags.include?(t) }
+  return true if select_tags.empty? && tags.include?('default')
+
+  tags.any? { |t| select_tags.include?(t) }
+end
+
+# select_by_tags(steps, select_tags, exclude_tags) - the subset of
+#  `steps` this generation run actually wants, given --select/--exclude
+#  (see tag_eligible?/issue #16). Three passes, each running to a
+#  fixpoint before the next starts:
+#   1. tag_eligible? alone picks the initial set.
+#   2. Transitive needs:/meets: pull-in, the same shape select_sections
+#      already uses for --SECTION - a step this run already wants might
+#      need: something whose *own* tags didn't make it eligible on
+#      their own (the sdkman/asdf bootstrap step itself only ever
+#      carries tags: [sdkman]/[asdf], never 'default' or a tag anyone
+#      would think to --select directly, but anything that needs: it
+#      must still pull it in - "any dependency required to implement
+#      it will be installed... even though those do not have the
+#      default tag" is the whole point of this pass, not an
+#      afterthought). A provider exclude_tags itself vetoes is skipped
+#      here on purpose - an explicit --exclude has to actually remove
+#      that alternative, not have some other step's needs: silently
+#      reinstate it.
+#   3. Omission - after the pull-in settles, a step whose own needs:
+#      still resolves to no provider *at all* in the final set (not
+#      "wasn't selected this run" but genuinely unsatisfiable - nothing
+#      in the whole file meets: it, or the one that did was vetoed by
+#      exclude_tags) can't actually run correctly, so it - and,
+#      transitively, anything that itself needs: *that* step - is
+#      dropped rather than emitted as a command guaranteed to fail on
+#      the box (see generate_install_script.rb's own omission
+#      comments). Repeats to a fixpoint since dropping one step can
+#      cascade into dropping whatever depended on it.
+#  Returns [included, omitted] - included preserves steps' own original
+#  relative order (same reasoning as select_sections' own final pass);
+#  omitted is [[step, missing_need], ...] for write_install_script to
+#  surface as header comments.
+def select_by_tags(steps, select_tags, exclude_tags)
+  included = steps.select { |s| tag_eligible?(s, select_tags, exclude_tags) }
+
+  # One provider per unmet need, not every step that happens to share
+  #  the same meets: value - confirmed directly this matters: with
+  #  both rbenv and asdf tagged entries declaring `meets: ruby` (real
+  #  alternatives for the very same thing), a naive "pull in every
+  #  match" pass here installed *both* of them even with no --select
+  #  at all, exactly the double-install issue #16 exists to prevent.
+  #  `steps.find` (not `.select`) mirrors resolve!'s own "first listed
+  #  provider wins" convention - same rule, same tie-break.
+  loop do
+    met = included.map { |s| s[:meets] }.compact
+    unmet = included.flat_map { |s| Array(s[:needs]) }.uniq - met
+    break if unmet.empty?
+
+    added = false
+    unmet.each do |need|
+      provider = steps.find do |s|
+        s[:meets] == need && !included.include?(s) && (s[:tags] & exclude_tags).empty?
+      end
+      next unless provider
+
+      included << provider
+      added = true
+    end
+    break unless added
+  end
+
+  omitted = []
+  loop do
+    met = included.map { |s| s[:meets] }.compact
+    unmet = included.find { |s| Array(s[:needs]).any? { |need| !met.include?(need) } }
+    break unless unmet
+
+    missing = Array(unmet[:needs]).find { |need| !met.include?(need) }
+    omitted << [unmet, missing]
+    included.delete(unmet)
+  end
+
+  [steps.select { |s| included.include?(s) }, omitted]
 end
 
 # parse_version_constraint(step) - step[:version] (e.g. ">= 2.8.5.201",
@@ -278,10 +402,18 @@ def unit_span(steps, index)
   [start, finish]
 end
 
-# resolve! - for every step with `needs: X`, finds the first step with
-#  `meets: X` (first listed provider wins) and, if that provider currently
-#  sits after the consumer, moves its whole unit to just before it.
-#  Leaves order untouched when the provider already comes first.
+# resolve! - for every step with `needs: X` (X may be a single name or
+#  a list - e.g. groovy's own `needs: [java, sdkman]`, needing both the
+#  JDK *and* the SDKMAN bootstrap before it can run), finds the first
+#  step with `meets: X` for each one (first listed provider wins) and,
+#  if that provider currently sits after the consumer, moves its whole
+#  unit to just before it. Leaves order untouched when the provider
+#  already comes first. Handles multiple needs the same one-move-then-
+#  restart-the-whole-scan way it already handled a single one - moving
+#  any one provider can shift indices out from under the rest of this
+#  pass, so the outer loop simply runs again from scratch until nothing
+#  moves, converging on every need for every consumer regardless of how
+#  many there are.
 def resolve!(steps)
   loop do
     moved = false
@@ -289,16 +421,19 @@ def resolve!(steps)
     steps.each_with_index do |consumer, c_index|
       next unless consumer[:needs]
 
-      p_index = steps.index { |s| s[:meets] == consumer[:needs] }
-      next unless p_index
-      next if p_index < c_index
+      Array(consumer[:needs]).each do |need|
+        p_index = steps.index { |s| s[:meets] == need }
+        next unless p_index
+        next if p_index < c_index
 
-      start, finish = unit_span(steps, p_index)
-      unit = steps.slice!(start, finish - start + 1)
-      insert_at = steps.index(consumer)
-      steps.insert(insert_at, *unit)
-      moved = true
-      break
+        start, finish = unit_span(steps, p_index)
+        unit = steps.slice!(start, finish - start + 1)
+        insert_at = steps.index(consumer)
+        steps.insert(insert_at, *unit)
+        moved = true
+        break
+      end
+      break if moved
     end
 
     break unless moved
@@ -466,14 +601,19 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     # A step within this pulled-along group might itself `need:`
     #  something that also requires relocation - resolve recursively,
     #  inserting immediately before *that* step wherever it lands.
+    #  Array(...) - a need: can be a list (see resolve!'s own comment);
+    #  each one is resolved independently, so a step needing two things
+    #  that both require relocation gets both inserted before it.
     group_steps.each do |s|
       next unless s[:needs]
 
-      dep = steps.find { |x| x[:meets] == s[:needs] }
-      next unless dep && needs_relocation?(dep, s, natural_order)
+      Array(s[:needs]).each do |need|
+        dep = steps.find { |x| x[:meets] == need }
+        next unless dep && needs_relocation?(dep, s, natural_order)
 
-      dep_name = relocate.call(dep)
-      insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+        dep_name = relocate.call(dep)
+        insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+      end
     end
 
     name
@@ -482,11 +622,13 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
   steps.each do |consumer|
     next unless consumer[:needs]
 
-    provider = steps.find { |s| s[:meets] == consumer[:needs] }
-    next unless provider && needs_relocation?(provider, consumer, natural_order)
+    Array(consumer[:needs]).each do |need|
+      provider = steps.find { |s| s[:meets] == need }
+      next unless provider && needs_relocation?(provider, consumer, natural_order)
 
-    group_name = relocate.call(provider)
-    insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+      group_name = relocate.call(provider)
+      insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+    end
   end
 
   [groups, claimed, insert_before]
