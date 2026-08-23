@@ -277,3 +277,102 @@ class TestReadmeScenarios < Minitest::Test
     assert(steps.any? { |s| s[:type] == 'asdf' && s[:path].end_with?('.python3') })
   end
 end
+
+# Real-manifest regression coverage for tag_eligible?'s own two,
+# BOTH-intentional shapes (see its own header comment, "issue #16") -
+# confirmed the hard way this session: an untagged step (system: ruby)
+# being unconditionally eligible regardless of selection was initially
+# misread as a bug ("selecting rbenv shouldn't also install system
+# ruby") and briefly patched by retagging it - the manifest author
+# caught this immediately: system: ruby is a deliberate always-on OS
+# baseline, and rbenv/asdf/rvm are genuinely opt-in ADDITIONS layered on
+# top of it, never replacements. These tests exist so that
+# misdiagnosis can't quietly reappear and get "fixed" again.
+class TestRubyAdditiveAlternatives < Minitest::Test
+  CONFIG_PATH = File.expand_path('../../config/ubuntu2204.yml', __dir__)
+
+  def self.tree
+    @tree ||= begin
+      raw = YAML.load_file(CONFIG_PATH)
+      name = root_key(raw)
+      substitute_variables(raw, raw[name]['variables'] || {})
+    end
+  end
+
+  def ruby_steps_for(select_tags)
+    name = root_key(self.class.tree)
+    steps = flatten(self.class.tree[name])
+    steps, = select_by_tags(steps, select_tags, [])
+    resolve!(steps)
+    steps.select { |s| s[:path].end_with?('.ruby') }
+  end
+
+  def test_no_selection_installs_only_the_system_baseline
+    steps = ruby_steps_for([])
+    assert_equal [['system', 'ruby']], steps.map { |s| [s[:type], s[:name]] }
+  end
+
+  def test_rbenv_installs_alongside_the_system_baseline
+    steps = ruby_steps_for(['rbenv'])
+    assert(steps.any? { |s| s[:type] == 'system' },
+           'system: ruby is an always-on baseline by design - rbenv adds to it, does not replace it')
+    assert(steps.any? { |s| s[:type] == 'rbenv' })
+  end
+
+  def test_asdf_ruby_installs_alongside_the_system_baseline
+    steps = ruby_steps_for(%w[asdf asdf_ruby])
+    assert(steps.any? { |s| s[:type] == 'system' })
+    assert(steps.any? { |s| s[:type] == 'asdf' })
+  end
+
+  def test_rvm_installs_alongside_the_system_baseline
+    steps = ruby_steps_for(['rvm'])
+    assert(steps.any? { |s| s[:type] == 'system' })
+    assert(steps.any? { |s| s[:type] == 'rvm' })
+  end
+end
+
+# Groovy's own two real paths (sdkman, asdf) are the *other* shape -
+# neither is untagged; sdkman's own tags: [sdkman_groovy, default] is
+# the manifest's own declared fallback (groovy has no Ubuntu package of
+# its own, so something has to be the zero-flag default), gated on
+# select_tags being empty per tag_eligible? - so selecting one real
+# path here correctly excludes the other, unlike ruby's additive system
+# baseline above. Confirmed directly - do not assume one of these two
+# classes proves anything about the other.
+class TestGroovyTagGatedAlternatives < Minitest::Test
+  CONFIG_PATH = File.expand_path('../../config/ubuntu2204.yml', __dir__)
+
+  def self.tree
+    @tree ||= begin
+      raw = YAML.load_file(CONFIG_PATH)
+      name = root_key(raw)
+      substitute_variables(raw, raw[name]['variables'] || {})
+    end
+  end
+
+  def groovy_steps_for(select_tags)
+    name = root_key(self.class.tree)
+    steps = flatten(self.class.tree[name])
+    steps, = select_by_tags(steps, select_tags, [])
+    resolve!(steps)
+    steps.select { |s| s[:path].end_with?('.groovy') }
+  end
+
+  def test_asdf_groovy_excludes_sdkman_and_its_own_cpanm_prerequisite
+    steps = groovy_steps_for(%w[asdf asdf_groovy])
+
+    assert_equal [['asdf', 'groovy 5.1.0']], steps.map { |s| [s[:type], s[:name]] }
+    refute(steps.any? { |s| s[:type] == 'sdkman' },
+           'sdkman groovy must not also be installed when asdf_groovy was explicitly chosen')
+    refute(steps.any? { |s| s[:type] == 'cpanm' && s[:name] == 'HTTP::Tiny' },
+           "sdkman's own cpanm prerequisite shouldn't be pulled in either - nothing needs it once sdkman itself isn't selected")
+  end
+
+  def test_sdkman_groovy_excludes_asdf
+    steps = groovy_steps_for(%w[sdkman sdkman_groovy])
+
+    assert(steps.any? { |s| s[:type] == 'sdkman' })
+    refute(steps.any? { |s| s[:type] == 'asdf' })
+  end
+end

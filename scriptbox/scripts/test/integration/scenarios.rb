@@ -75,7 +75,7 @@ SCENARIOS = {
     slug: 'full',
     label: 'Full default install (whole manifest, no selector, no --select/--exclude)',
     selector: nil,
-    select: [],
+    select: %w[rvm],
     exclude: []
   }
 }.freeze

@@ -334,3 +334,140 @@ class TestDedup < Minitest::Test
     assert_equal 1, steps.length
   end
 end
+
+class TestParseNeed < Minitest::Test
+  def test_bare_capability_name_has_no_constraint
+    assert_equal ['ruby', nil, nil], parse_need('ruby')
+  end
+
+  def test_floor_constraint_is_parsed
+    assert_equal ['ruby', '>=', '3.2'], parse_need('ruby >= 3.2')
+  end
+
+  def test_exact_constraint_is_parsed
+    assert_equal ['ruby', '=', '4.0.6'], parse_need('ruby = 4.0.6')
+  end
+
+  def test_unsupported_operator_raises
+    assert_raises(RuntimeError) { parse_need('ruby ~> 3.2') }
+  end
+
+  def test_need_name_strips_the_constraint
+    assert_equal 'ruby', need_name('ruby >= 3.2')
+    assert_equal 'ruby', need_name('ruby')
+  end
+end
+
+class TestParseMeets < Minitest::Test
+  def test_bare_capability_name_has_no_version
+    assert_equal ['java', nil], parse_meets({ meets: 'java' })
+  end
+
+  def test_embedded_version_is_parsed
+    assert_equal ['ruby', '3.0'], parse_meets({ meets: 'ruby 3.0' })
+  end
+
+  def test_meets_name_strips_the_version
+    assert_equal 'ruby', meets_name({ meets: 'ruby 3.0' })
+    assert_equal 'ruby', meets_name({ meets: 'ruby' })
+  end
+
+  def test_no_meets_at_all
+    assert_equal [nil, nil], parse_meets({ meets: nil })
+  end
+end
+
+# The regression this whole class guards against: gem: ratatui_ruby
+# (a real manifest entry) needs a real Ruby >= 3.2, but the default/
+# untagged provider (system: ruby) is Ubuntu 22.04's own 3.0.2 apt
+# package - every existing resolution stage (tag_eligible?, select_by_
+# tags, resolve!, select_sections) only ever matched needs:/meets: by
+# bare capability name, with no notion of a version floor at all, so
+# this passed every one of them silently and only failed live, mid-VM-
+# provision, at the actual `gem install` - confirmed directly against a
+# real vagrant run. check_version_needs! never raises, though - a
+# manifest that can't satisfy one gem's version floor (e.g. a bare
+# build with no modern-ruby tag selected) is a real, expected outcome,
+# not a generator bug, so a hard crash mid-generation was itself wrong
+# (confirmed directly: the manifest author hit this exact crash running
+# a plain, no-tag build and asked for it to generate anyway). Instead
+# the unsatisfied consumer is converted in place into an
+# 'omitted_version_need' step - same position, same relative order,
+# rendering as a runtime warning (see generate_install_script.rb's own
+# bash_install/powershell_install case) instead of a command that would
+# just fail.
+class TestCheckVersionNeeds < Minitest::Test
+  def test_converts_the_consumer_when_the_only_provider_is_below_the_floor
+    steps = [
+      { type: 'system', name: 'ruby', meets: 'ruby 3.0', needs: nil },
+      { type: 'gem', name: 'ratatui_ruby', meets: nil, needs: ['ruby >= 3.2'] }
+    ]
+
+    converted = check_version_needs!(steps)
+
+    assert_equal 1, converted.length
+    consumer = converted.first
+    assert_equal 'omitted_version_need', consumer[:type]
+    assert_equal 'omitted_version_need', steps.last[:type], 'mutated in place, not removed - same position'
+    assert_match(/ratatui_ruby/, consumer[:omitted_reason])
+    assert_match(/ruby >= 3.2/, consumer[:omitted_reason])
+  end
+
+  def test_leaves_the_consumer_untouched_when_the_provider_meets_the_floor
+    steps = [
+      { type: 'rbenv', name: '4.0.6', meets: 'ruby 4.0.6', needs: nil },
+      { type: 'gem', name: 'ratatui_ruby', meets: nil, needs: ['ruby >= 3.2'] }
+    ]
+
+    converted = check_version_needs!(steps)
+
+    assert_empty converted
+    assert_equal 'gem', steps.last[:type]
+  end
+
+  def test_leaves_the_consumer_untouched_when_any_one_of_several_providers_meets_the_floor
+    # An untagged, always-on provider and a tag-selected addition can
+    # legitimately both be present at once (system: ruby is a deliberate
+    # OS baseline, not an alternative - see tag_eligible?'s own comment)
+    # - only *one* of them needs to satisfy the floor.
+    steps = [
+      { type: 'system', name: 'ruby', meets: 'ruby 3.0', needs: nil },
+      { type: 'rbenv', name: '4.0.6', meets: 'ruby 4.0.6', needs: nil },
+      { type: 'gem', name: 'ratatui_ruby', meets: nil, needs: ['ruby >= 3.2'] }
+    ]
+
+    converted = check_version_needs!(steps)
+
+    assert_empty converted
+  end
+
+  def test_converts_the_consumer_when_the_provider_declares_no_version_at_all
+    steps = [
+      { type: 'system', name: 'ruby', meets: 'ruby', needs: nil },
+      { type: 'gem', name: 'ratatui_ruby', meets: nil, needs: ['ruby >= 3.2'] }
+    ]
+
+    converted = check_version_needs!(steps)
+
+    assert_equal 1, converted.length
+    assert_match(/declare a version/, converted.first[:omitted_reason])
+  end
+
+  def test_converts_the_consumer_when_no_provider_meets_the_capability_at_all
+    steps = [{ type: 'gem', name: 'ratatui_ruby', meets: nil, needs: ['ruby >= 3.2'] }]
+
+    converted = check_version_needs!(steps)
+
+    assert_equal 1, converted.length
+    assert_match(/no step in the final resolved output meets/, converted.first[:omitted_reason])
+  end
+
+  def test_unconstrained_needs_are_not_checked_at_all
+    steps = [{ type: 'noop', name: 'ruby', meets: nil, needs: ['ruby'] }]
+
+    converted = check_version_needs!(steps) # no provider at all, but no constraint either
+
+    assert_empty converted
+    assert_equal 'noop', steps.first[:type]
+  end
+end

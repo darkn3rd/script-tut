@@ -78,6 +78,13 @@ def bash_install(step, tree)
   #  rebuild from source unnecessarily).
   when 'pyenv'  then "pyenv install -s #{step[:name]}"
   when 'rbenv'  then "rbenv install -s #{step[:name]}"
+  # rvm install is itself idempotent (a re-run against an already-
+  #  installed version reports it as already present and exits 0, same
+  #  as asdf's own install) - no --skip-existing-style flag needed. The
+  #  "make this the default" step is the manifest's own sibling `cmd:`
+  #  (rvm use ... --default), appended automatically by command_for,
+  #  same as rbenv/asdf's own cmd: siblings.
+  when 'rvm' then "rvm install #{step[:name]}"
   # sdk itself is a shell function, not a real executable - only
   #  defined once sdkman's own init script has been sourced (see the
   #  ubuntu22_sdkman script step, which must run - and its own `source
@@ -174,6 +181,13 @@ def bash_install(step, tree)
         echo "WARNING: expected path not found: #{path}" >&2
       fi
     BASH
+  # A version-constrained needs: (see resolve_order.rb's own check_
+  #  version_needs!) that nothing in the final resolved output actually
+  #  satisfies - runs in this step's own original position (same
+  #  ordering everything else already has), but as a visible runtime
+  #  warning instead of a command that would just fail (or silently
+  #  install against too old a dependency) on the box.
+  when 'omitted_version_need' then %(echo "WARNING: #{step[:omitted_reason]}" >&2)
   end
 end
 
@@ -231,6 +245,8 @@ def powershell_install(step)
   #  PowerShell text runs verbatim here, no pwsh wrapper needed (this
   #  dialect's whole script already runs under PowerShell).
   when 'powershell_cmd' then step[:name]
+  # See bash_install's own 'omitted_version_need' case.
+  when 'omitted_version_need' then %(Write-Warning "#{step[:omitted_reason]}")
   end
 end
 
@@ -999,8 +1015,8 @@ def select_sections(steps, selectors, natural_steps)
   selected.concat(steps.select { |s| ancestor_paths.include?(s[:path]) } - selected)
 
   loop do
-    needed = selected.flat_map { |s| Array(s[:needs]) }.uniq
-    providers = steps.select { |s| needed.include?(s[:meets]) && !selected.include?(s) }
+    needed = selected.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq
+    providers = steps.select { |s| needed.include?(meets_name(s)) && !selected.include?(s) }
     break if providers.empty?
 
     providers.each do |provider|
@@ -1116,6 +1132,7 @@ if __FILE__ == $PROGRAM_NAME
   resolve!(steps)
   steps = select_sections(steps, expand_selectors(ARGV[1..]), natural_steps)
   dedup!(steps)
+  version_omitted = check_version_needs!(steps)
 
   generated_dir = File.join(__dir__, '..', 'generated')
   FileUtils.mkdir_p(generated_dir)
@@ -1130,6 +1147,14 @@ if __FILE__ == $PROGRAM_NAME
   #  fail; surfaced here instead of silently disappearing.
   omitted.each do |step, missing|
     header_lines << "Omitted: [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
+  end
+  # See resolve_order.rb's own check_version_needs! - unlike the plain
+  #  omission above (dropped from the output entirely), these steps are
+  #  still present and still run, just as a runtime warning instead of
+  #  the install they can't actually satisfy - noted here too so it's
+  #  visible without having to read the whole generated script.
+  version_omitted.each do |step|
+    header_lines << "Omitted (version): #{step[:omitted_reason]}"
   end
   out_path = write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, name), out_path: options[:output])
   puts "wrote #{out_path}"

@@ -47,8 +47,15 @@ if __FILE__ == $PROGRAM_NAME
   steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
   warn_omissions(omitted)
   resolve!(steps)
+  # Validated against the *whole* resolved tree, not the scriptbox-only
+  #  subset below - a cross-cookbook need: (scriptbox's own `needs:
+  #  ruby`, met by lessons.gen_scripts.ruby's own provider) never
+  #  survives the owning_function filter at all, so checking after it
+  #  would always see "no provider" and raise a false positive.
+  version_omitted = check_version_needs!(steps)
+  version_omitted.each { |s| warn "#{$PROGRAM_NAME}: #{s[:omitted_reason]}" }
   steps = steps.select { |s| owning_function(s) == 'scriptbox' }
-  steps = steps.reject { |s| s[:type] == 'system' }
+  steps = steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(steps)
 
   entries = steps.map { |s| step_to_entry(s, tree) }

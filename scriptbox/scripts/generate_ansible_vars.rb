@@ -78,6 +78,12 @@ if __FILE__ == $PROGRAM_NAME
   all_steps, omitted = select_by_tags(all_steps, select_tags, exclude_tags)
   warn_omissions(omitted)
   resolve!(all_steps)
+  # Validated once here, against the whole resolved tree, before either
+  #  area/type filtering below - see generate_chef_databag.rb's own
+  #  comment on why checking after either filter would raise a false
+  #  positive against a provider that's still real, just not emitted.
+  version_omitted = check_version_needs!(all_steps)
+  version_omitted.each { |s| warn "#{$PROGRAM_NAME}: #{s[:omitted_reason]}" }
 
   lessons_steps = all_steps.select { |s| (['lessons'] + LESSON_AREAS).include?(owning_function(s)) }
   # A step lessons's own areas need: isn't necessarily scoped to
@@ -86,7 +92,7 @@ if __FILE__ == $PROGRAM_NAME
   #  lessons:, on purpose - its plugins span every area a manifest
   #  might ever have, not just lessons's own four).
   lessons_steps = pull_in_cross_area_deps(lessons_steps, all_steps)
-  lessons_steps = lessons_steps.reject { |s| s[:type] == 'system' }
+  lessons_steps = lessons_steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(lessons_steps)
   lessons_data = { 'id' => name }
   # Not just owning_function(s) == 'lessons' - a step pulled in from
@@ -104,7 +110,7 @@ if __FILE__ == $PROGRAM_NAME
   #  need today, but a future scriptbox step could just as easily
   #  `needs: asdf` as a gen_scripts one already does.
   scriptbox_steps = pull_in_cross_area_deps(scriptbox_steps, all_steps)
-  scriptbox_steps = scriptbox_steps.reject { |s| s[:type] == 'system' }
+  scriptbox_steps = scriptbox_steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(scriptbox_steps)
   scriptbox_data = { 'id' => name, 'packages' => consolidate_apt(scriptbox_steps.map { |s| step_to_entry(s, tree) }) }
 

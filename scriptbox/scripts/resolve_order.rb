@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a
@@ -233,16 +233,25 @@ def select_by_tags(steps, select_tags, exclude_tags)
   #  match" pass here installed *both* of them even with no --select
   #  at all, exactly the double-install issue #16 exists to prevent.
   #  `steps.find` (not `.select`) mirrors resolve!'s own "first listed
-  #  provider wins" convention - same rule, same tie-break.
+  #  provider wins" convention - same rule, same tie-break. Matches on
+  #  need_name(need), never the raw needs: entry - a versioned entry
+  #  like "ruby >= 3.2" (see parse_need) names the exact same
+  #  capability as a plain "ruby" would, just with an added floor
+  #  check_version_needs! verifies separately, later, against whichever
+  #  provider this same by-name matching already picked. Letting a
+  #  version floor change *which* provider gets pulled in here would
+  #  make a manifest's actual installed set depend on floors, not on
+  #  --select/tags/defaults the way every other resolution in this
+  #  file already promises.
   loop do
-    met = included.map { |s| s[:meets] }.compact
-    unmet = included.flat_map { |s| Array(s[:needs]) }.uniq - met
+    met = included.map { |s| meets_name(s) }.compact
+    unmet = included.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq - met
     break if unmet.empty?
 
     added = false
     unmet.each do |need|
       provider = steps.find do |s|
-        s[:meets] == need && !included.include?(s) && (s[:tags] & exclude_tags).empty?
+        meets_name(s) == need && !included.include?(s) && (s[:tags] & exclude_tags).empty?
       end
       next unless provider
 
@@ -254,11 +263,11 @@ def select_by_tags(steps, select_tags, exclude_tags)
 
   omitted = []
   loop do
-    met = included.map { |s| s[:meets] }.compact
-    unmet = included.find { |s| Array(s[:needs]).any? { |need| !met.include?(need) } }
+    met = included.map { |s| meets_name(s) }.compact
+    unmet = included.find { |s| Array(s[:needs]).any? { |need| !met.include?(need_name(need)) } }
     break unless unmet
 
-    missing = Array(unmet[:needs]).find { |need| !met.include?(need) }
+    missing = Array(unmet[:needs]).find { |need| !met.include?(need_name(need)) }
     omitted << [unmet, missing]
     included.delete(unmet)
   end
@@ -289,6 +298,131 @@ def parse_version_constraint(step)
   end
 
   [op, m[2]]
+end
+
+# parse_need(need) - a single needs: entry (e.g. "ruby >= 3.2" or a
+#  bare "ruby") split into [capability_name, op, required_version] -
+#  op/required nil when the entry carries no version constraint at
+#  all, the overwhelmingly common case: "needs *a* provider of this,
+#  whichever one resolution already picked, no floor on which one".
+#  Every place a needs: entry gets matched against a meets: value
+#  (select_by_tags, resolve!, select_sections) has to compare against
+#  need_name(need), never the raw entry - a versioned entry like
+#  "ruby >= 3.2" and a plain provider's own `meets: ruby` name the
+#  same capability, and the whole point of keeping this separate from
+#  that matching is that adding a floor never changes *which* provider
+#  gets selected (see select_by_tags's own comment) - only whether
+#  check_version_needs! later accepts the one that was.
+def parse_need(need)
+  m = need.strip.match(/\A(\S+)\s+([~^<>=!]+)\s*(.+)\z/)
+  return [need.strip, nil, nil] unless m
+
+  name, op, version = m[1], m[2], m[3]
+  unless VERSION_OPS.include?(op)
+    raise "needs '#{need}': unsupported version operator '#{op}' (only #{VERSION_OPS.join('/')} implemented)"
+  end
+
+  [name, op, version]
+end
+
+def need_name(need)
+  parse_need(need)[0]
+end
+
+# parse_meets(step) - step[:meets] (e.g. "ruby 3.0", or a bare "java")
+#  split into [capability_name, version] - version nil when the value
+#  carries none, still the common case for anything nobody has ever
+#  put a version floor on. Every place a meets: value is matched
+#  against a capability name (select_by_tags, resolve!, select_sections,
+#  relocate_cross_cutting, pull_in_cross_area_deps) has to compare
+#  against meets_name(step), never the raw value - "ruby 3.0" and a
+#  plain `needs: ruby` name the same capability; the version half only
+#  matters to check_version_needs!'s own floor check. Space-split, not
+#  parse_need's operator syntax - a provider only ever states what it
+#  concretely *is* ("ruby 3.0"), never a floor/pin of its own.
+def parse_meets(step)
+  spec = step[:meets]
+  return [nil, nil] if spec.nil?
+
+  name, version = spec.split(' ', 2)
+  [name, version]
+end
+
+def meets_name(step)
+  parse_meets(step)[0]
+end
+
+# check_version_needs!(steps) - for every constrained needs: entry
+#  (e.g. "ruby >= 3.2" - see parse_need) in the final, fully-resolved
+#  `steps`, checks whether some step that meets the bare capability
+#  name declares its own version (see parse_meets) satisfying the
+#  constraint. Never raises - a manifest that can't satisfy one gem's
+#  version floor is a real, expected outcome (e.g. a bare/default build
+#  with no modern-ruby tag selected), not a bug in the generator, and a
+#  hard crash mid-generation is worse than a script that installs
+#  everything it *can* and clearly says what it skipped. Confirmed
+#  directly this matters: gem: ratatui_ruby (needs a real Ruby >= 3.2)
+#  silently passed every earlier resolution stage against the default
+#  system: ruby (3.0.2) provider and only failed live, mid-VM-
+#  provision, at the actual `gem install` - raising here instead just
+#  moved *where* it crashed, not whether it did. Instead, an
+#  unsatisfied consumer is converted in place into an 'omitted_version_
+#  need' step (see generate_install_script.rb's own bash_install/
+#  powershell_install case) - same position, same relative order, but
+#  rendering as a runtime warning instead of a command guaranteed to
+#  fail. Never a second selection mechanism either way - this only
+#  ever removes a consumer that can't be satisfied, never swaps in a
+#  *different* provider than the one tags/defaults already chose (see
+#  the no-silent-environment-changes rule). Every step that meets
+#  `name`, not just the first, is checked - an untagged, always-on
+#  provider (e.g. system: ruby) and a tag-selected addition (rbenv/
+#  asdf/rvm) can both legitimately be present in the same resolved
+#  output at once (see tag_eligible?'s own 'issue #16' comment - these
+#  are deliberately additive, not alternatives), so a version floor
+#  only needs *one* of them to satisfy it. Call once, after select_
+#  sections/dedup! have produced the actual final step list a generator
+#  is about to emit - checking against an intermediate list could pass
+#  or fail on a provider that won't even be in the output. Returns the
+#  steps that got converted, for a caller to also report at generation
+#  time (see warn_omissions-style reporting elsewhere).
+def check_version_needs!(steps)
+  converted = []
+
+  steps.each do |consumer|
+    Array(consumer[:needs]).each do |need|
+      name, op, required = parse_need(need)
+      next unless op
+
+      providers = steps.select { |s| meets_name(s) == name }
+      versioned = providers.select { |p| parse_meets(p)[1] }
+      satisfied = versioned.any? do |p|
+        _, actual = parse_meets(p)
+        case op
+        when '=' then Gem::Version.new(actual) == Gem::Version.new(required)
+        when '>=' then Gem::Version.new(actual) >= Gem::Version.new(required)
+        end
+      end
+      next if satisfied
+
+      reason = if providers.empty?
+                 "no step in the final resolved output meets '#{name}' at all"
+               elsif versioned.empty?
+                 found = providers.map { |p| "#{p[:type]} '#{p[:name]}'" }.join(', ')
+                 "none of its providers (#{found}) declare a version of their own (e.g. `meets: #{name} 3.2`) to check against"
+               else
+                 found = versioned.map { |p| "#{p[:type]} '#{p[:name]}' (meets '#{p[:meets]}')" }.join(', ')
+                 "none of its providers satisfy it - found: #{found}"
+               end
+
+      consumer[:omitted_reason] = "#{consumer[:type]} '#{consumer[:name]}': needs '#{need}', but #{reason}"
+      consumer[:cmd] = nil
+      consumer[:type] = 'omitted_version_need'
+      converted << consumer
+      break
+    end
+  end
+
+  converted
 end
 
 # parse_condition(condition) - step[:condition] (e.g. "is_vm_guest ==
@@ -448,7 +582,7 @@ def resolve!(steps)
       next unless consumer[:needs]
 
       Array(consumer[:needs]).each do |need|
-        p_index = steps.index { |s| s[:meets] == need }
+        p_index = steps.index { |s| meets_name(s) == need_name(need) }
         next unless p_index
         next if p_index < c_index
 
@@ -643,7 +777,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     end
 
     group_steps = prefix + unit
-    name = "provider_#{provider[:meets]}"
+    name = "provider_#{meets_name(provider)}"
     group_for[provider.object_id] = name
     groups << { name: name, steps: group_steps }
 
@@ -657,7 +791,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
       next unless s[:needs]
 
       Array(s[:needs]).each do |need|
-        dep = steps.find { |x| x[:meets] == need }
+        dep = steps.find { |x| meets_name(x) == need_name(need) }
         next unless dep && needs_relocation?(dep, s, natural_order)
 
         dep_name = relocate.call(dep)
@@ -672,7 +806,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     next unless consumer[:needs]
 
     Array(consumer[:needs]).each do |need|
-      provider = steps.find { |s| s[:meets] == need }
+      provider = steps.find { |s| meets_name(s) == need_name(need) }
       next unless provider && needs_relocation?(provider, consumer, natural_order)
 
       group_name = relocate.call(provider)

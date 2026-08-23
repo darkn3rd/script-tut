@@ -188,9 +188,9 @@ end
 def pull_in_cross_area_deps(area_steps, all_steps)
   loop do
     names = area_steps.map { |s| s[:name] }
-    needed = area_steps.flat_map { |s| Array(s[:needs]) }.uniq
+    needed = area_steps.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq
     additions = all_steps.reject { |s| area_steps.include?(s) }
-                          .select { |s| needed.include?(s[:meets]) || names.include?(s[:attached_to]) }
+                          .select { |s| needed.include?(meets_name(s)) || names.include?(s[:attached_to]) }
     break if additions.empty?
 
     area_steps += additions
@@ -221,6 +221,13 @@ if __FILE__ == $PROGRAM_NAME
   warn_omissions(omitted)
   resolve!(steps)
   all_steps = steps
+  # Validated against the whole resolved tree before any area/type
+  #  filtering below - a provider later stripped out as type == 'system'
+  #  (or scoped out of lessons: entirely) is still the real, resolved
+  #  install decision; checking after either filter would see "no
+  #  provider" and raise a false positive.
+  version_omitted = check_version_needs!(all_steps)
+  version_omitted.each { |s| warn "#{$PROGRAM_NAME}: #{s[:omitted_reason]}" }
   steps = steps.select { |s| (['lessons'] + LESSON_AREAS).include?(owning_function(s)) }
   # A step lessons's own areas need: isn't necessarily scoped to
   #  lessons at all - see pull_in_cross_area_deps's own comment (asdf's
@@ -229,7 +236,9 @@ if __FILE__ == $PROGRAM_NAME
   # 'system' means "expected to already be provided by the OS" - no
   #  resource, no command, nothing for a recipe to actually consume, so
   #  it's dead weight in the data bag rather than useful documentation.
-  steps = steps.reject { |s| s[:type] == 'system' }
+  #  'omitted_version_need' (see check_version_needs!) is the same idea -
+  #  nothing a recipe could actually run, already warned about above.
+  steps = steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(steps)
 
   data = { 'id' => name }

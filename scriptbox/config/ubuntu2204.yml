@@ -12,7 +12,7 @@ ubuntu22:
       - apt: zsh
         file: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
-      - apt: ['curl','git','make','wget']
+      - apt: ['curl','git','make','wget', 'gnupg2']
         meets: make
       - cmd: mkdir -p $HOME/.local/bin
       - script: ubuntu22_asdf
@@ -55,15 +55,16 @@ ubuntu22:
               - tk-dev
               - xz-utils
               - zlib1g-dev
-            tags: [pyenv,rbenv,asdf_ruby,asdf_python]
-            meets: build_essential
+            tags: [pyenv,rbenv,asdf_ruby,asdf_python,rvm]
           - script: ubuntu22_rbenv
             tags: [rbenv]
             append:
               - ubuntu22_rbenv_bash
               - ubuntu22_rbenv_zsh
             meets: rbenv
-            needs: build_essential
+          - script: ubuntu22_rvm
+            meets: rvm
+            tags: [rvm]
           - script: ubuntu22_pyenv
             append:
               - ubuntu22_pyenv_bash
@@ -127,18 +128,23 @@ ubuntu22:
               tags: [asdf_python]
         ruby:
           packages:
-            - system: ruby # 3.0.x
-              meets: ruby
+            - system: ruby
+              meets: ruby 3.0
             - rbenv: <%= $ruby_ver %>
               cmd: rbenv global <%= $ruby_ver %>
               tags: [rbenv]
-              meets: ruby
+              meets: ruby <%= $ruby_ver %>
               needs: rbenv
             - asdf: ruby <%= $ruby_ver %>
               cmd: asdf set -u ruby <%= $ruby_ver %>
-              meets: ruby
+              meets: ruby <%= $ruby_ver %>
               needs: asdf
               tags: [asdf_ruby]
+            - rvm: <%= $ruby_ver %>
+              cmd: rvm use <%= $ruby_ver %> --default
+              meets: ruby <%= $ruby_ver %>
+              needs: rvm
+              tags: [rvm]              
         tcl:
           packages:
             - system: tcl8.6 # 8.6.12
@@ -217,6 +223,7 @@ ubuntu22:
           # and compile from source using glibc 2.35
         - gem: ratatui_ruby
           args: --platform ruby
+          needs: ruby >= 3.2
     testbox:
       packages:
         - powershell_cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -327,6 +334,26 @@ scripts:
       # ZSH Completions
       mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
       asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
+  ubuntu22_rvm:
+    type: bash
+    cmd: |
+      # GPG2 HKP Workround for IPv6
+      mkdir -p ~/.gnupg
+      chmod 700 ~/.gnupg
+      echo 'disable-ipv6' >> ~/.gnupg/dirmngr.conf
+      gpgconf --kill dirmngr
+
+      gpg2 \
+        --keyserver hkps://keyserver.ubuntu.com \
+        --recv-keys \
+        409B6B1796C275462A1703113804BB82D39DC0E3 \
+        7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+
+      # Stable has up to ruby 3.0; Master will have ruby 4.x
+      curl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles
+
+      export PATH="$PATH:$HOME/.rvm/bin"
+      source "$HOME/.rvm/scripts/rvm"
 
 files:
   ubuntu_default_zshrc:
@@ -461,6 +488,12 @@ appends:
     dest: $HOME/.config/powershell/Microsoft.PowerShell_profile.ps1
     lines:
        - . "$HOME/.config/powershell/asdf.ps1"
+  ubuntu22_rvm:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines: 
+      - export PATH="$PATH:$HOME/.rvm/bin"
+      - source "$HOME/.rvm/scripts/rvm"
+
 
 add_apt_repos:
   ubuntu22_corretto:
