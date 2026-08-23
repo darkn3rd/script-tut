@@ -41,7 +41,16 @@ while read -r size name; do
   # GNU ar's own trailing '/' name terminator - see above. A no-op
   # where it's absent (macOS's `ar tv` doesn't add one).
   name=${name%/}
-  tail -c "+$((offset + 1))" "$blob" | head -c "$size" > "$outdir/$name"
+  # pipefail disabled just for this line, in its own subshell - `head`
+  #  exits the moment it has read $size bytes, closing its end of the
+  #  pipe while `tail` is usually still writing the rest of the blob
+  #  (every member but the last). tail then dies of SIGPIPE (141), and
+  #  with pipefail on on that reads as this pipeline failing, killing
+  #  the whole script under set -e right after the first (smallest)
+  #  member - even though the bytes already written are correct.
+  #  Confirmed directly: a real groovy_2.4.21-1_all.deb only ever
+  #  produced its own debian-binary member before silently dying here.
+  (set +o pipefail; tail -c "+$((offset + 1))" "$blob" | head -c "$size" > "$outdir/$name")
   offset=$((offset + size))
 done < <(ar tv "$deb" | awk '{print $3, $NF}')
 
