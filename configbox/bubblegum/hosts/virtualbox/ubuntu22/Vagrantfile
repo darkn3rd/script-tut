@@ -10,24 +10,13 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
     vb.cpus = 4
-    #vb.gui = true
 
-    # This host runs with VBS (Virtualization-based security) active -
-    #  confirmed directly via `systeminfo`/`bcdedit /enum` showing
-    #  hypervisorlaunchtype Auto, independent of whether Docker Desktop/
-    #  WSL2 happen to be running. VirtualBox has to coexist with that
-    #  hypervisor layer either way; telling it to use Hyper-V's own
-    #  paravirt interface instead of guessing is the standard fix for
-    #  the resulting early-boot hangs/slowness, without needing to
-    #  disable VBS itself (a bigger, reboot-required change with real
-    #  security tradeoffs).
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that reults in hangs or slowness. 
     vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
   end
 
-  # TEST_PATH - which generated install script to provision with, for
-  #  scriptbox/scripts/test/integration/'s own per-scenario named
-  #  scripts. Unset (a plain `vagrant provision`) still runs the same
-  #  default script it always has.
+  # Optional TEST_PATH env var used for integration testing. 
   config.vm.provision "shell",
     path: ENV.fetch("TEST_PATH", DEFAULT_INSTALL_SCRIPT),
     privileged: false
