@@ -111,6 +111,69 @@ class TestSelectSectionsRegression < Minitest::Test
   end
 end
 
+# The other real bug select_sections has had, repeatedly: an ancestor
+# level of a selected path (e.g. "global.lessons.gen_scripts" is an
+# ancestor of "global.lessons.gen_scripts.python3") must be included
+# unconditionally, the same way it would run in the unfiltered whole-
+# manifest build - NOT only when some selected leaf happens to `needs:`
+# one specific ancestor step by name. That second, needs:/meets:-gated
+# version is what actually shipped (asdf's own `asdf_plugin: <lang>`
+# steps, sitting at gen_scripts' own ancestor level with no needs:/
+# meets: link to the leaf asdf: <lang> steps at all, were silently
+# dropped from every narrow per-language SECTION selection - confirmed
+# directly against a live VM: `asdf install groovy` failed with "Plugin
+# named groovy not installed" because `asdf plugin add groovy` had never
+# run). A sibling subsection at the same ancestor level (here, `ruby`
+# sitting next to `python3` under gen_scripts) must NOT be pulled in the
+# same way - only genuine ancestors of the selected path, never a
+# sibling branch off of one.
+class TestSelectSectionsHierarchy < Minitest::Test
+  def tree
+    {
+      'global' => {
+        'packages' => [{ 'apt' => 'root_level_pkg' }],
+        'lessons' => {
+          'packages' => [{ 'apt' => 'lessons_level_pkg' }],
+          'gen_scripts' => {
+            # No needs:/meets: on this at all - nothing for a leaf to
+            # ever "need" by name, same as asdf_plugin's own real shape.
+            'packages' => [{ 'apt' => 'gen_scripts_level_pkg' }],
+            'python3' => {
+              'packages' => [{ 'system' => 'python' }]
+            },
+            'ruby' => {
+              'packages' => [{ 'system' => 'ruby' }]
+            }
+          }
+        }
+      }
+    }
+  end
+
+  def selected_for(selector)
+    steps = flatten(tree)
+    natural_steps = steps.dup
+    resolve!(steps)
+    select_sections(steps, expand_selectors([selector]), natural_steps)
+  end
+
+  def test_pulls_in_every_ancestor_levels_own_untagged_packages
+    steps = selected_for('lessons.gen_scripts.python3')
+
+    assert(steps.any? { |s| s[:name] == 'root_level_pkg' }, 'expected global-level own package, unconditionally')
+    assert(steps.any? { |s| s[:name] == 'lessons_level_pkg' }, 'expected lessons-level own package, unconditionally')
+    assert(steps.any? { |s| s[:name] == 'gen_scripts_level_pkg' },
+           'expected gen_scripts-level own package, unconditionally - it has no needs:/meets: link to python3 at all')
+  end
+
+  def test_does_not_pull_in_a_sibling_subsections_own_packages
+    steps = selected_for('lessons.gen_scripts.python3')
+
+    refute(steps.any? { |s| s[:name] == 'ruby' },
+           "ruby is a sibling of python3 under gen_scripts, not an ancestor - selecting python3 shouldn't include it")
+  end
+end
+
 # Formalizes README.md's own "combinations you would try" table for
 # generate_install_script.rb - each scenario run against the *real*
 # manifest (scriptbox/config/ubuntu2204.yml), not a synthetic fixture,
@@ -174,6 +237,17 @@ class TestReadmeScenarios < Minitest::Test
     steps, = run_scenario(%w[asdf asdf_ruby asdf_python asdf_groovy], [])
 
     assert(steps.any? { |s| s[:type] == 'script' && s[:meets] == 'asdf' }, 'expected the asdf bootstrap script')
+    # asdf_plugin steps live at gen_scripts' own level (an ancestor of
+    # ruby/python3/groovy, not nested under any one of them) with no
+    # needs:/meets: link of their own to the leaf asdf: <lang> steps -
+    # this is the actual regression the test's own name always claimed
+    # to cover but never asserted: they were silently missing from this
+    # scenario's real output until select_sections' hierarchy pull-in
+    # was fixed to include ancestor-level packages unconditionally (see
+    # TestSelectSectionsHierarchy).
+    assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('ruby ') }, 'expected asdf plugin add ruby')
+    assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('python ') }, 'expected asdf plugin add python')
+    assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('groovy ') }, 'expected asdf plugin add groovy')
     assert(steps.any? { |s| s[:type] == 'asdf' && s[:path].end_with?('.ruby') })
     assert(steps.any? { |s| s[:type] == 'asdf' && s[:path].end_with?('.python3') })
     assert(steps.any? { |s| s[:type] == 'asdf' && s[:path].end_with?('.groovy') })

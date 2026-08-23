@@ -251,7 +251,24 @@ end
 def file_write(step, tree)
   entry = tree['files'][step[:name]]
   content = entry['content'].end_with?("\n") ? entry['content'] : "#{entry['content']}\n"
-  "cat <<'EOF' > #{entry['dest']}\n#{content}EOF"
+  # mkdir -p the destination's own directory first - a heredoc redirect
+  #  creates the *file* if missing but never a missing parent directory
+  #  (confirmed directly via a real `vagrant provision` failure: the
+  #  manifest's own ubuntu22_asdf_ps1 writes to $HOME/.config/powershell/
+  #  asdf.ps1, a directory nothing else creates before this step runs
+  #  under a narrow --SECTION selection that pulls in asdf's own
+  #  global-level unit without win_scripts/rust's own scripts alongside
+  #  it - "No such file or directory" from bash's own `>`, not a Ruby-
+  #  side bug). Chef's own 'file' case (helpers.rb) already has to do
+  #  this for the identical reason - this brings the bash generator to
+  #  parity with it rather than leaving file: steps one directory-
+  #  existence assumption away from crashing depending on which other
+  #  steps happened to run first. File.dirname is purely textual (no
+  #  filesystem access at generation time) - safe on a $HOME-containing
+  #  path like this one, which doesn't exist as a real directory on the
+  #  machine running this generator anyway.
+  dir = File.dirname(entry['dest'])
+  "mkdir -p \"#{dir}\"\ncat <<'EOF' > #{entry['dest']}\n#{content}EOF"
 end
 
 # append_lines(step, tree) - an 'append' step (see resolve_order.rb's
@@ -903,18 +920,47 @@ def expand_selectors(argv)
 end
 
 # select_sections(steps, selectors) - the subset of steps whose own
-#  path matches at least one selector, plus (transitively) any step
-#  elsewhere in the file that a selected step `needs:` - confirmed
-#  directly this matters: selecting a single narrow leaf (e.g. just
-#  "lessons.compiled_lang.go") must not silently drop a prerequisite
-#  declared at a *sibling* path (compiled_lang's own shared
-#  `apt: build-essential meets: make`) that a broader selection would
-#  otherwise have brought along automatically - a generated script
-#  missing its own dependency is worse than one with a few extra,
-#  already-idempotent steps in it.
+#  path matches at least one selector, PLUS two independent kinds of
+#  implicit pull-in - hierarchy and cross-branch needs. Conflating
+#  these two (making hierarchy inclusion ride on the needs/meets loop
+#  below, as a side effect of whatever a selected leaf happens to
+#  `need:` by name) is exactly the recurring bug this function has had:
+#  a selector like "lessons.gen_scripts.python3" implicitly means
+#  "everything global.packages, global.lessons.packages and
+#  global.lessons.gen_scripts.packages would already have run by the
+#  time this ran" - unconditionally, regardless of whether python3's
+#  own steps happen to `need:` any one of them by name. Patching in an
+#  extra needs:/meets: pair every time some ancestor-level step (asdf's
+#  own plugin-add, in particular) got silently dropped is treating a
+#  hierarchy problem as a cross-branch-dependency problem - it only
+#  works for whichever one ancestor a maintainer remembered to wire up
+#  by hand, and leaves every other undeclared ancestor step just as
+#  droppable as before.
 #
-# Each pulled-in provider brings two things along, not just the bare
-#  provider step:
+# So this is two separate passes:
+#
+# 1) Hierarchy (unconditional, no needs:/meets: involved) - for every
+#    directly-selected step's own path (e.g.
+#    "global.lessons.gen_scripts.python3"), every strict PREFIX of that
+#    path ("global", "global.lessons", "global.lessons.gen_scripts") is
+#    an ancestor level, and every step declared exactly at one of those
+#    levels is included, full stop - it already survived select_by_
+#    tags (default-or-selected-for-tag), so tag semantics are untouched;
+#    this pass only adds back the "runs before I do, unconditionally"
+#    steps tag-filtering never should have made conditional on a
+#    needs:/meets: link in the first place.
+#
+# 2) Cross-branch needs (the original loop) - for a step declared
+#    somewhere else in the file entirely (a genuine *sibling* branch,
+#    not an ancestor - e.g. groovy's own `cpanm: HTTP::Tiny` needing
+#    perl's `cpan: App::cpanminus`, a completely different lesson
+#    subsection), only a real `needs:` naming that provider's `meets:`
+#    pulls it in. This is the part that's supposed to require an
+#    explicit needs:/meets: pair - a hierarchy relationship never
+#    should have needed one to begin with.
+#
+# Each cross-branch pulled-in provider brings two things along, not
+#  just the bare provider step:
 #  - its own unit_span (see resolve_order.rb). Confirmed directly this
 #    matters: selecting just "lessons.gen_scripts.groovy" (needs:
 #    cpanm) pulled in perl's own `cpan: App::cpanminus` (meets: cpanm,
@@ -936,11 +982,22 @@ end
 #    missing from a "lessons.gen_scripts.groovy" selection before this).
 #    Filtered against `steps` (`&`), not natural_steps directly - a
 #    natural-order sibling select_by_tags already dropped for this run
-#    isn't a real candidate to pull back in.
+#    isn't a real candidate to pull back in. (This is itself a hierarchy
+#    pull-in, just scoped to the one provider's own owning function -
+#    it does not need to walk multiple ancestor levels the way pass 1
+#    above does, since a provider found here is always local to a
+#    single level.)
 def select_sections(steps, selectors, natural_steps)
   return steps if selectors.empty?
 
   selected = steps.select { |step| selectors.any? { |sel| path_matches?(step[:path], sel) } }
+
+  ancestor_paths = selected.flat_map do |step|
+    segments = step[:path].split('.')
+    (0...segments.length).map { |i| segments[0...i].join('.') }
+  end.uniq
+  selected.concat(steps.select { |s| ancestor_paths.include?(s[:path]) } - selected)
+
   loop do
     needed = selected.flat_map { |s| Array(s[:needs]) }.uniq
     providers = steps.select { |s| needed.include?(s[:meets]) && !selected.include?(s) }

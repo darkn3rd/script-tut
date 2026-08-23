@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
     vb.cpus = 4
-    vb.gui = true
+    #vb.gui = true
 
     # This host runs with VBS (Virtualization-based security) active -
     #  confirmed directly via `systeminfo`/`bcdedit /enum` showing
