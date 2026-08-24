@@ -28,7 +28,6 @@ ubuntu22:
         - script: ubuntu22_sdkman
           append: ubuntu22_sdkman
           tags: [sdkman_groovy,sdkman_java]
-          meets: sdkman
       gen_scripts:
         packages:
           # Shared requirements for cpan, rbenv, pyenv
