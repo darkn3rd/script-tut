@@ -307,9 +307,24 @@ class TestRubyAdditiveAlternatives < Minitest::Test
     steps.select { |s| s[:path].end_with?('.ruby') }
   end
 
-  def test_no_selection_installs_only_the_system_baseline
+  def test_no_selection_installs_the_system_baseline_and_rvms_own_default
+    # rvm carries tags: [rvm, default] - its own group's default,
+    # since nothing else in that same group (rbenv/asdf_ruby) was
+    # selected. Group-scoped default resolution (see compute_default_
+    # wins) means this activates independent of system's own additive
+    # baseline - the two coexist, same as any other tag-selected
+    # alternative would alongside system.
     steps = ruby_steps_for([])
-    assert_equal [['system', 'ruby']], steps.map { |s| [s[:type], s[:name]] }
+    assert_equal [['system', 'ruby'], ['rvm', '4.0.6']], steps.map { |s| [s[:type], s[:name]] }
+  end
+
+  def test_selecting_rbenv_suppresses_rvms_own_default
+    # rbenv is in the *same* group as rvm (gen_scripts.ruby.packages) -
+    # explicitly selecting rbenv means that group's own default no
+    # longer wins, so rvm drops out even though nothing named it in
+    # --exclude.
+    steps = ruby_steps_for(['rbenv'])
+    refute(steps.any? { |s| s[:type] == 'rvm' })
   end
 
   def test_rbenv_installs_alongside_the_system_baseline

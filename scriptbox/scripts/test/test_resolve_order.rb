@@ -325,6 +325,66 @@ class TestSelectByTags < Minitest::Test
   end
 end
 
+# The regression this whole class guards against: --select rvm (ruby's
+# own group) was silently shutting off groovy's entirely unrelated
+# sdkman default, because the old design gated 'default' on whether
+# *anything at all* was selected, globally, rather than whether
+# something in that *same* group was. 'default' resolution has to be
+# scoped per containing packages: array (see compute_default_wins),
+# and an ancestor-level bootstrap reached purely through tag membership
+# (no needs:/meets: link at all) has to keep working the same way,
+# regardless of what an unrelated group selected.
+class TestGroupScopedDefaultTagResolution < Minitest::Test
+  def tree
+    {
+      'packages' => [
+        { 'script' => 'bootstrap', 'meets' => 'toolkit', 'tags' => %w[fam_a fam_b] }
+      ],
+      'a' => {
+        'packages' => [
+          { 'apt' => 'a_default', 'tags' => %w[fam_a default] },
+          { 'apt' => 'a_alt', 'tags' => ['a_alt'] }
+        ]
+      },
+      'b' => {
+        'packages' => [
+          { 'apt' => 'b_only', 'tags' => ['b_only'] }
+        ]
+      }
+    }
+  end
+
+  def names_for(select_tags)
+    steps = flatten(tree)
+    included, = select_by_tags(steps, select_tags, [])
+    included.map { |s| s[:name] }
+  end
+
+  def test_ancestor_bootstrap_included_via_tag_propagation_alone
+    names = names_for([])
+
+    assert_includes names, 'bootstrap',
+                     "the bootstrap's own tags overlap a's winning default - no needs:/meets: link required"
+    assert_includes names, 'a_default'
+  end
+
+  def test_unrelated_select_does_not_suppress_a_different_groups_default
+    names = names_for(['b_only'])
+
+    assert_includes names, 'a_default', "b_only has nothing to do with a's own group - its default must survive"
+    assert_includes names, 'bootstrap'
+    assert_includes names, 'b_only'
+  end
+
+  def test_selecting_within_the_same_group_suppresses_its_default
+    names = names_for(['a_alt'])
+
+    refute_includes names, 'a_default'
+    refute_includes names, 'bootstrap', "nothing propagates fam_a once a's own group picked a_alt instead"
+    assert_includes names, 'a_alt'
+  end
+end
+
 class TestDedup < Minitest::Test
   def test_drops_an_exact_duplicate_keeping_the_first
     tree = { 'packages' => [{ 'apt' => 'curl' }, { 'apt' => 'curl' }] }

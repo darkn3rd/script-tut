@@ -151,64 +151,105 @@ def flatten(node, path = [])
   steps
 end
 
-# tag_eligible?(step, select_tags, exclude_tags) - whether `step` passes
-#  its own tags: gate on its own, before any needs:/meets: pull-in is
-#  even considered (see select_by_tags) - issue #16's source-of-truth
-#  design for letting a manifest express more than one legitimate path
-#  to the same tool (rbenv/pyenv/asdf vs. Ubuntu's own system ruby/
-#  python packages) without installing all of them at once.
+# compute_default_wins(steps, select_tags) - path -> true/false, one
+#  entry per distinct containing packages: array (step[:path]) - the
+#  natural "alternatives for the same thing" scope (rbenv/asdf/rvm all
+#  under gen_scripts.ruby.packages; sdkman_groovy/asdf_groovy both under
+#  gen_scripts.groovy.packages). True means nothing in that *same*
+#  group's own tags overlaps the raw select_tags at all, so whichever
+#  member(s) carry the literal tag 'default' win it. Scoped per group,
+#  not globally - an unrelated --select naming a tag in a *different*
+#  group must never suppress it. Confirmed directly this matters:
+#  `--select rvm` (ruby's own group) was silently shutting off groovy's
+#  entirely unrelated sdkman default, under the old design where any
+#  --select at all disabled every 'default' tag in the whole manifest,
+#  not just the ones actually competing with what was selected.
+def compute_default_wins(steps, select_tags)
+  steps.group_by { |s| s[:path] }.transform_values do |group|
+    tags_in_group = group.flat_map { |s| s[:tags] }.uniq
+    (tags_in_group & select_tags).empty?
+  end
+end
+
+# compute_enabled_tags(steps, select_tags, default_wins) - select_tags,
+#  expanded to include every *other* tag (never the literal string
+#  'default' itself) belonging to a step whose own group's default won
+#  (see compute_default_wins). 'default' is a marker meaningful only
+#  within one group's own resolution, never a real capability name -
+#  propagating the bare word itself would let it leak across completely
+#  unrelated groups the instant *any* group's default won (confirmed
+#  directly: ruby's own rvm winning promoted the bare word 'default'
+#  into the enabled set, which then also matched groovy's unrelated
+#  sdkman path, since it too carries a literal 'default' tag - the exact
+#  cross-category leak compute_default_wins' own per-group scoping was
+#  supposed to prevent, just reintroduced one level down). tag_eligible?
+#  checks every step in the whole tree against this set for its *other*
+#  tags, regardless of position - but still checks 'default' itself
+#  only via default_wins, per group, never via this flat set (see
+#  tag_eligible?'s own comment on why a step whose only tag is
+#  'default' - nothing else to propagate - still needs to remain
+#  eligible in its own group).
+def compute_enabled_tags(steps, select_tags, default_wins)
+  propagated = steps.select { |s| s[:tags].include?('default') && default_wins[s[:path]] }
+                     .flat_map { |s| s[:tags] - ['default'] }
+  (select_tags + propagated).uniq
+end
+
+# tag_eligible?(step, enabled_tags, default_wins, exclude_tags) - whether
+#  `step` passes its own tags: gate on its own, before any needs:/meets:
+#  pull-in is even considered (see select_by_tags) - issue #16's source-
+#  of-truth design for letting a manifest express more than one
+#  legitimate path to the same tool (rbenv/pyenv/asdf vs. Ubuntu's own
+#  system ruby/python packages) without installing all of them at once.
 #  - An untagged step is always eligible - today's behavior, unchanged.
-#  - A tagged step is eligible if it carries the literal tag 'default'
-#    AND select_tags is empty (a genuinely bare invocation, no --select
-#    at all): the manifest author's own declared fallback for a
-#    language that has no untagged/system alternative (e.g. groovy,
-#    which Ubuntu doesn't package - one of sdkman_groovy/asdf_groovy
-#    has to be the zero-flag default, or groovy silently stops
-#    installing the moment its steps gain any tags: at all). Gated on
-#    select_tags being empty, not unconditional - confirmed directly
-#    this matters: `--select asdf_groovy` alone, with 'default' still
-#    honored unconditionally, installed groovy via *both* sdkman
-#    (default) and asdf (selected) at once, exactly the double-install
-#    issue #16 exists to prevent. The moment the user opts into
-#    anything via --select, a 'default'-tagged alternative needs to be
-#    named there too if it's still wanted - it's not a fallback anymore
-#    once a real choice has been made. Where an untagged alternative
-#    *does* already exist (ruby/python's own `system:` entries),
-#    nothing needs a 'default' tag at all - the untagged entry already
-#    is the default (in every case, --select or not), and rbenv/pyenv/
-#    asdf all become genuinely opt-in additions alongside it.
-#  - Otherwise eligible only if at least one of its own tags is named
-#    in select_tags (explicit opt-in).
-#  - exclude_tags overrides all of the above unconditionally - even a
-#    'default'-tagged or select_tags-named entry is dropped if any of
-#    its own tags is excluded.
-def tag_eligible?(step, select_tags, exclude_tags)
+#  - A tagged step is eligible if any of its own tags is in
+#    `enabled_tags` (see compute_enabled_tags - select_tags itself, plus
+#    every *other* tag propagated from a step whose own group's default
+#    won). Tree position plays no part in this at all - an ancestor-
+#    level bootstrap (e.g. a sdkman install script tagged the same
+#    sdkman_groovy/sdkman_java a descendant leaf uses) is eligible the
+#    instant one of its own tags is enabled, the same as any other step
+#    - no needs:/meets: link required, and no special-casing for "this
+#    step happens to sit above the one that actually chose the tag."
+#    Execution ORDER is a completely separate concern (see resolve!/
+#    select_sections), unaffected by any of this.
+#  - Otherwise, still eligible if it carries 'default' and its own
+#    group's default won (see compute_default_wins) - checked
+#    separately from enabled_tags, not via flat tag-string membership,
+#    since a step whose *only* tag is 'default' (nothing else to
+#    propagate to compute_enabled_tags at all) still needs to remain
+#    eligible within its own group.
+#  - exclude_tags overrides all of the above unconditionally - even an
+#    enabled entry is dropped if any of its own tags is excluded.
+def tag_eligible?(step, enabled_tags, default_wins, exclude_tags)
   tags = step[:tags]
   return true if tags.empty?
   return false if tags.any? { |t| exclude_tags.include?(t) }
-  return true if select_tags.empty? && tags.include?('default')
+  return true if tags.any? { |t| enabled_tags.include?(t) }
 
-  tags.any? { |t| select_tags.include?(t) }
+  tags.include?('default') && default_wins[step[:path]]
 end
 
 # select_by_tags(steps, select_tags, exclude_tags) - the subset of
 #  `steps` this generation run actually wants, given --select/--exclude
 #  (see tag_eligible?/issue #16). Three passes, each running to a
 #  fixpoint before the next starts:
-#   1. tag_eligible? alone picks the initial set.
+#   1. tag_eligible? alone picks the initial set - including any step
+#      reached purely through tag propagation (compute_enabled_tags),
+#      with no needs:/meets: link at all (e.g. an ancestor-level
+#      bootstrap carrying the same tag a descendant leaf's own winning
+#      default uses).
 #   2. Transitive needs:/meets: pull-in, the same shape select_sections
 #      already uses for --SECTION - a step this run already wants might
-#      need: something whose *own* tags didn't make it eligible on
-#      their own (the sdkman/asdf bootstrap step itself only ever
-#      carries tags: [sdkman]/[asdf], never 'default' or a tag anyone
-#      would think to --select directly, but anything that needs: it
-#      must still pull it in - "any dependency required to implement
-#      it will be installed... even though those do not have the
-#      default tag" is the whole point of this pass, not an
-#      afterthought). A provider exclude_tags itself vetoes is skipped
-#      here on purpose - an explicit --exclude has to actually remove
-#      that alternative, not have some other step's needs: silently
-#      reinstate it.
+#      need: something whose own tags *still* don't make it eligible
+#      even after tag propagation (a genuine cross-branch dependency,
+#      not an alternative-selection relationship at all - e.g. groovy's
+#      own needs: java, met by a completely different lesson area) -
+#      "any dependency required to implement it will be installed"
+#      is the whole point of this pass, not an afterthought. A provider
+#      exclude_tags itself vetoes is skipped here on purpose - an
+#      explicit --exclude has to actually remove that alternative, not
+#      have some other step's needs: silently reinstate it.
 #   3. Omission - after the pull-in settles, a step whose own needs:
 #      still resolves to no provider *at all* in the final set (not
 #      "wasn't selected this run" but genuinely unsatisfiable - nothing
@@ -224,7 +265,9 @@ end
 #  omitted is [[step, missing_need], ...] for write_install_script to
 #  surface as header comments.
 def select_by_tags(steps, select_tags, exclude_tags)
-  included = steps.select { |s| tag_eligible?(s, select_tags, exclude_tags) }
+  default_wins = compute_default_wins(steps, select_tags)
+  enabled_tags = compute_enabled_tags(steps, select_tags, default_wins)
+  included = steps.select { |s| tag_eligible?(s, enabled_tags, default_wins, exclude_tags) }
 
   # One provider per unmet need, not every step that happens to share
   #  the same meets: value - confirmed directly this matters: with
