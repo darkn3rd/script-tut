@@ -1,13 +1,10 @@
 # pipx (Chocolatey)
 
-A Chocolatey port of the upstream Scoop bucket manifest for pipx:
-https://github.com/ScoopInstaller/Main/blob/master/bucket/pipx.json
-
 pipx itself isn't distributed as a Windows installer - upstream ships a
 single architecture-independent `pipx.pyz` zipapp and expects the host's
-own Python to run it. Both the Scoop manifest and this package follow the
-same shape: download `pipx.pyz`, generate a `pipx.bat` launcher that
-invokes it via `python`/`py`, and put that launcher on PATH.
+own Python to run it. This package downloads `pipx.pyz`, generates a
+`pipx.bat` launcher that invokes it via `python`/`py`, and puts that
+launcher on PATH.
 
 The Chocolatey package declares `python3` (Python 3.9 or newer) as a
 dependency, so Chocolatey installs a suitable Python runtime when needed.

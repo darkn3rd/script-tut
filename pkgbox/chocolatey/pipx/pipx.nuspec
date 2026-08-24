@@ -18,7 +18,7 @@
     <summary>Install and run Python applications in isolated environments</summary>
     <description>pipx installs and runs Python command-line applications in isolated virtual environments, without polluting the global site-packages.
 
-This package downloads the official `pipx.pyz` zipapp release and wraps it with a `pipx` shim that launches it against a Python interpreter already on PATH (`py` or `python`) - the same approach as the upstream Scoop bucket manifest this package is ported from: https://github.com/ScoopInstaller/Main/blob/master/bucket/pipx.json
+This package downloads the official `pipx.pyz` zipapp release and wraps it with a `pipx` shim that launches it against a Python interpreter already on PATH (`py` or `python`).
 
 Python itself is not installed by this package; install it separately (e.g. `choco install python`) first.</description>
     <releaseNotes>https://github.com/pypa/pipx/releases/tag/1.16.7</releaseNotes>
