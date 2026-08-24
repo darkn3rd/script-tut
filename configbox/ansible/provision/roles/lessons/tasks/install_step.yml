@@ -1,17 +1,15 @@
 #SPDX-License-Identifier: MPL-2.0
 ---
 # One step from a lessons_data area array (see ../../../group_vars/all/
-#  generated.yml's own lessons: map) dispatched to the matching Ansible
-#  module - included once per step by
-#  ../tasks/main.yml's own loops, `step` set via loop_control.loop_var.
-#  Mirrors ../../../../chef/cookbooks/lessons/libraries/helpers.rb's own
-#  lessons_install dispatch, type for type, except pyenv/rbenv/cpan/
-#  cpanm, which there dispatch to real sous-chefs cookbook resources -
-#  no Ansible-native equivalent is assumed to exist for pyenv/rbenv (see
-#  ../../README.md's own "no established dedicated role/module" note),
-#  so those two fall back to the same `pyenv install -s`/`rbenv install
-#  -s` commands scriptbox/scripts/generate_install_script.rb's own bash
-#  generator already uses.
+#  generated.yml's own lessons: map), included once per step by
+#  ../tasks/main.yml's own loops (`step` set via loop_control.loop_var).
+#  Ansible has no native switch/case, so dispatch to the right action is
+#  a flat list of tasks below, each gated with `when: step.type == ...` -
+#  exactly one matches per inclusion. Most types map onto a real Ansible
+#  module (apt, cpan/cpanm via community.general.cpanm, etc.); pyenv and
+#  rbenv have no established Ansible-native module (see ../../README.md's
+#  own version-managers note), so those two instead shell out directly
+#  to `pyenv install -s`/`rbenv install -s`.
 
 - name: "apt repository (ppa)"
   when: step.type == 'apt' and step.apt_repository is defined
@@ -107,9 +105,8 @@
 # ubuntu22_powershell - the manifest's own script downloads and installs
 #  a vendor .deb that configures apt itself (packages-microsoft-prod.deb),
 #  not a plain PPA - get_url + apt(deb=) is the faithful native
-#  equivalent, same reasoning the Chef version gives for remote_file +
-#  dpkg_package over apt_repository (which has no way to represent
-#  "install this specific local .deb").
+#  equivalent; apt_repository has no way to represent "install this
+#  specific local .deb".
 - name: "special script: ubuntu22_powershell"
   when: step.type == 'script' and step.name == 'ubuntu22_powershell'
   become: true
@@ -142,9 +139,9 @@
       changed_when: false
 
     # psake needs installing for the *lessons user*, not this task's own
-    #  invoking user - same correction the Chef pwsh_package resource
-    #  this mirrors already makes (see its own comment on -Scope
-    #  CurrentUser landing under the wrong home directory otherwise).
+    #  invoking user - become_user/HOME here keep -Scope CurrentUser
+    #  landing in the right home directory rather than whichever
+    #  account happened to run the playbook.
     - name: Install psake PowerShell module for {{ lessons_user }}
       become_user: "{{ lessons_user }}"
       environment:
@@ -156,9 +153,8 @@
       when: "'present' not in lessons_psake_check.stdout"
 
 # ubuntu22_rust - rustup's own installer script, same as the manifest.
-#  `creates` is the Ansible idiom for the Chef version's own `not_if
-#  { File.exist?(...) }` guard - both skip re-running the installer once
-#  cargo already exists for this user.
+#  `creates` skips re-running the installer once cargo already exists
+#  for this user.
 - name: "special script: ubuntu22_rust"
   when: step.type == 'script' and step.name == 'ubuntu22_rust'
   become: true
@@ -174,11 +170,10 @@
 
 # sdk is a shell function, not a binary - only defined once sdkman's own
 #  init script has been sourced (see the ubuntu22_sdkman common step,
-#  which must already have run). No idempotency guard here, matching the
-#  Chef bash resource this mirrors (which has none either) - relies on
+#  which must already have run). No idempotency guard here - relies on
 #  sdkman_auto_answer=true (set by that same common step) plus `sdk
-#  install`'s own already-installed handling, not a Chef/Ansible-level
-#  not_if/creates.
+#  install`'s own already-installed handling, not a `creates`/`changed_
+#  when` check at this level.
 - name: "sdkman"
   when: step.type == 'sdkman'
   become: true
@@ -193,14 +188,10 @@
 
 # community.general.cpanm always *uses* cpanm to install something - it
 #  never installs cpanm itself, including for the manifest's own `cpan:
-#  App::cpanminus` step (conceptually "install cpanm"). Chef's own
-#  cpan_module resource has the identical always-cpanm-under-the-hood
-#  shape - covered there by lessons's own `include_recipe 'perl'` (see
-#  ../../../../chef/cookbooks/lessons/recipes/gen_scripts.rb), whose
-#  perl cookbook's default recipe installs the cpanminus apt package as
-#  a prerequisite. apt: cpanminus is that same prerequisite here -
-#  idempotent (a no-op once already installed), so running it ahead of
-#  every cpan/cpanm step (not just the App::cpanminus one) is harmless.
+#  App::cpanminus` step (conceptually "install cpanm"). apt: cpanminus
+#  is that real prerequisite - idempotent (a no-op once already
+#  installed), so running it ahead of every cpan/cpanm step (not just
+#  the App::cpanminus one) is harmless.
 - name: Ensure cpanm is available
   when: step.type in ['cpan', 'cpanm']
   become: true
@@ -218,12 +209,11 @@
     name: "{{ step.name }}"
 
 # No Ansible-native pyenv module exists (see ../../README.md's own
-#  version-managers table) - `pyenv install -s`/pyenv global, the same
-#  commands scriptbox/scripts/generate_install_script.rb's own bash
-#  generator already produces, PATH-scoped to reach the pyenv binary
-#  itself (installed by the ubuntu22_pyenv common step) without needing
-#  a login shell's own eval "$(pyenv init -)".  `creates` gives this the
-#  idempotency pyenv_python's own Chef resource gets for free.
+#  version-managers table) - `pyenv install -s`/pyenv global instead,
+#  PATH-scoped to reach the pyenv binary itself (installed by the
+#  ubuntu22_pyenv common step) without needing a login shell's own
+#  eval "$(pyenv init -)". `creates` gives this its own idempotency
+#  guard, since the raw command has none of its own.
 - name: "pyenv"
   when: step.type == 'pyenv'
   become: true
@@ -257,6 +247,51 @@
         creates: "{{ lessons_home }}/.rbenv/versions/{{ step.name }}"
 
     - name: rbenv global (follow-up command)
+      ansible.builtin.command: "{{ step.cmd }}"
+      when: step.cmd is defined
+      changed_when: true
+
+# "<name> <repo_url>" (e.g. "ruby https://github.com/asdf-vm/asdf-
+#  ruby.git") - no Ansible-native asdf module exists (see ../../
+#  README.md's own version-managers note), so this is plain shell.
+#  `asdf plugin add` itself errors out if the plugin's already
+#  registered, unlike sdkman/pyenv/rbenv above - so this checks
+#  `plugin list` first, the same guard both of those already use.
+- name: "asdf_plugin"
+  when: step.type == 'asdf_plugin'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  vars:
+    lessons_asdf_plugin: "{{ step.name.split(' ')[0] }}"
+    lessons_asdf_repo: "{{ step.name.split(' ')[1] }}"
+  ansible.builtin.shell: >-
+    asdf plugin list | grep -qx "{{ lessons_asdf_plugin }}" ||
+    asdf plugin add {{ lessons_asdf_plugin }} {{ lessons_asdf_repo }}
+  args:
+    executable: /bin/bash
+
+# "<language> <version>" (e.g. "ruby 4.0.6") - `asdf install` already
+#  skips a version that's already installed, no `creates`-style guard
+#  needed the way pyenv/rbenv above get from their own install command.
+#  step.cmd - the manifest's own follow-up "asdf set -u ..." (making
+#  this the active version) - same idea as pyenv/rbenv's own follow-up
+#  command above, just run inline rather than a dedicated module, since
+#  no native "asdf global"-equivalent Ansible module exists to hand it
+#  to.
+- name: "asdf"
+  when: step.type == 'asdf'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  block:
+    - name: Install language version via asdf
+      ansible.builtin.command: "asdf install {{ step.name }}"
+      changed_when: true
+
+    - name: asdf set (follow-up command)
       ansible.builtin.command: "{{ step.cmd }}"
       when: step.cmd is defined
       changed_when: true
@@ -330,7 +365,21 @@
     pwsh -NoProfile -Command
     "Install-Module -Name {{ step.name }}{{ (' ' + step.args) if step.args is defined else '' }} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
 
+# One raw PowerShell command/expression - the escape hatch for whatever
+#  powershell_package_provider/powershell_module above don't cover (e.g.
+#  Set-PSRepository's own repository-trust call). This role only
+#  targets ubuntu22 today, which has no native PowerShell host, so this
+#  always goes through the pwsh wrapper.
+- name: "powershell_cmd"
+  when: step.type == 'powershell_cmd'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: >-
+    pwsh -NoProfile -Command "{{ step.name }}"
+
 - name: "unsupported lessons step type"
-  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'choco_local', 'powershell_package_provider', 'powershell_module']
+  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'asdf_plugin', 'asdf', 'choco_local', 'powershell_package_provider', 'powershell_module', 'powershell_cmd']
   ansible.builtin.debug:
     msg: "lessons: unsupported package type '{{ step.type }}' for '{{ step.name }}'"

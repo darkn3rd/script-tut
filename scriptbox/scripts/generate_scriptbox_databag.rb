@@ -17,20 +17,20 @@ require_relative 'generate_chef_databag' # for strip_comments/step_to_entry/cons
 #  *output shape* actually differ between the two.
 
 if __FILE__ == $PROGRAM_NAME
-  config_path = ARGV[0]
-  if config_path.nil? || config_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json>"
-    exit 1
-  end
-  out_path = ARGV[1]
-  if out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json>"
+  config_path, out_path, select_tags, exclude_tags = parse_databag_args(ARGV)
+  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json> [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
-  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
+  # Whole tree, not just tree[name] - see generate_chef_databag.rb's
+  #  own comment on this same fix (scripts:/files:/appends: are top-
+  #  level RESERVED_KEYS blocks, not nested inside tree[name], so a
+  #  <%= $name %> reference in a script body sat unsubstituted before
+  #  this widened past tree[name] alone).
+  tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   # resolve! runs on the *full* flattened tree, not just scriptbox's own
   #  steps, same as generate_chef_databag.rb's own lessons extraction -
@@ -44,9 +44,18 @@ if __FILE__ == $PROGRAM_NAME
   #  owning_function(s) == 'scriptbox' below never pulls in the rbenv/
   #  ruby provider step itself, only scriptbox's own three steps.
   steps = flatten(tree[name])
+  steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
+  warn_omissions(omitted)
   resolve!(steps)
+  # Validated against the *whole* resolved tree, not the scriptbox-only
+  #  subset below - a cross-cookbook need: (scriptbox's own `needs:
+  #  ruby`, met by lessons.gen_scripts.ruby's own provider) never
+  #  survives the owning_function filter at all, so checking after it
+  #  would always see "no provider" and raise a false positive.
+  version_omitted = check_version_needs!(steps)
+  version_omitted.each { |s| warn "#{$PROGRAM_NAME}: #{s[:omitted_reason]}" }
   steps = steps.select { |s| owning_function(s) == 'scriptbox' }
-  steps = steps.reject { |s| s[:type] == 'system' }
+  steps = steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(steps)
 
   entries = steps.map { |s| step_to_entry(s, tree) }

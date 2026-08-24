@@ -5,11 +5,14 @@
     <version>1.16.7</version>
     <title>pipx</title>
     <authors>pypa</authors>
+    <owners>darkn3rd</owners>
     <projectUrl>https://pipx.pypa.io/</projectUrl>
+    <iconUrl>https://pipx.pypa.io/stable/_static/logo.svg</iconUrl>
     <projectSourceUrl>https://github.com/pypa/pipx</projectSourceUrl>
+    <packageSourceUrl>https://github.com/darkn3rd/script-tut/tree/master/pkgbox/chocolatey/pipx</packageSourceUrl>
     <docsUrl>https://pipx.pypa.io/</docsUrl>
     <bugTrackerUrl>https://github.com/pypa/pipx/issues</bugTrackerUrl>
-    <licenseUrl>https://github.com/pypa/pipx/blob/1.16.7/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/pypa/pipx/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>pipx python cli venv</tags>
     <summary>Install and run Python applications in isolated environments</summary>
@@ -18,6 +21,7 @@
 This package downloads the official `pipx.pyz` zipapp release and wraps it with a `pipx` shim that launches it against a Python interpreter already on PATH (`py` or `python`) - the same approach as the upstream Scoop bucket manifest this package is ported from: https://github.com/ScoopInstaller/Main/blob/master/bucket/pipx.json
 
 Python itself is not installed by this package; install it separately (e.g. `choco install python`) first.</description>
+    <releaseNotes>https://github.com/pypa/pipx/releases/tag/1.16.7</releaseNotes>
     <dependencies>
       <dependency id="python3" version="[3.9.0,)" />
     </dependencies>

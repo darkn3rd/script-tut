@@ -1,0 +1,70 @@
+{
+  "win_scripts": {
+    "batch": "N/A",
+    "powershell": "MISSING",
+    "wsh.jscript": "N/A",
+    "wsh.vbscript": "N/A"
+  },
+  "shell_scripts": {
+    "bash": {
+      "bash": "OK",
+      "needs": {
+        "bc": "OK",
+        "getopt": "OK"
+      }
+    },
+    "csh": "MISSING",
+    "ksh": "MISSING",
+    "posix": {
+      "posix": "OK",
+      "needs": {
+        "bc": "OK",
+        "getopt": "OK",
+        "perl": "OK"
+      }
+    },
+    "zsh": {
+      "zsh": "OK",
+      "needs": {
+        "bc": "OK"
+      }
+    }
+  },
+  "gen_scripts": {
+    "awk": "OK",
+    "groovy": {
+      "groovy": "OK",
+      "needs": {
+        "java": "MISSING"
+      }
+    },
+    "perl": {
+      "perl": "OK",
+      "needs": {
+        "cpanm": "MISSING"
+      }
+    },
+    "php": "MISSING",
+    "python2": "MISSING",
+    "python3": "OK",
+    "ruby": {
+      "ruby": "OK",
+      "needs": {
+        "rake": "OK"
+      }
+    },
+    "tcl": "OK"
+  },
+  "compiled_lang": {
+    "cpp": {
+      "cpp": "OK",
+      "needs": {
+        "make": "OK"
+      }
+    },
+    "cs": "MISSING",
+    "go": "MISSING",
+    "java": "MISSING",
+    "rust": "MISSING"
+  }
+}

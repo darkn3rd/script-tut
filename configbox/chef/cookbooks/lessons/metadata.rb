@@ -17,3 +17,8 @@ depends 'ruby_rbenv', '~> 4.0.0'
 depends 'perl', '~> 8.0.15'
 depends 'line', '~> 5.0.1'
 depends 'chocolatey'
+# Local cookbook (../asdf), not Supermarket's own asdf-chef/asdf - see
+#  ../asdf/README.md for why (its bootstrap and :global action both
+#  predate asdf's own 0.16.0 rewrite and don't work against a modern
+#  asdf, e.g. this manifest's own pinned asdf_ver).
+depends 'asdf'

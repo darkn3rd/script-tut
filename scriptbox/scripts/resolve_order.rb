@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a
@@ -11,6 +11,17 @@ PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv sdkman choco 
 #  own `choco install --version=` is always exact), so parsing anything
 #  richer would just be guessing at semantics no generator can act on.
 VERSION_OPS = ['=', '>='].freeze
+
+# IMPLICIT_NEEDS - a package type's own unconditional prerequisite,
+#  regardless of what any individual step declares - every cpan/cpanm
+#  step needs perl's own bootstrap (system: perl's attached
+#  ubuntu22_cpan_local_setup script, meets: perl) to have already run,
+#  or the first-ever cpan invocation hits a real CPAN FirstTime.pm
+#  reentrancy bug (confirmed directly against a fresh Ubuntu 22.04 box).
+#  A manifest-level needs: perl on every current and future cpan/cpanm
+#  step would say the same thing over and over for no reason - the type
+#  itself already implies it.
+IMPLICIT_NEEDS = { 'cpan' => 'perl', 'cpanm' => 'perl' }.freeze
 
 # RESERVED_KEYS - top-level manifest keys that aren't a platform's own
 #  root key - shared by generate_install_script.rb's and generate_chef_
@@ -69,11 +80,20 @@ def flatten(node, path = [])
       type = PACKAGE_TYPES.find { |t| entry.key?(t) } || (ATTACHABLE_KEYS.find { |k| entry.key?(k) })
       next unless type
 
+      # Merged, not just defaulted - an explicit needs: on a cpan/cpanm
+      #  step (e.g. a real, additional prerequisite) still applies on
+      #  top of the implicit one, never silently replaced by it. nil,
+      #  not [], when there's genuinely nothing - several call sites
+      #  downstream do a plain `if step[:needs]` truthiness check, and
+      #  [] is truthy in Ruby.
+      needs = (Array(entry['needs']) + Array(IMPLICIT_NEEDS[type])).uniq
+      needs = nil if needs.empty?
+
       steps << {
         type: type,
         name: entry[type],
         meets: entry['meets'],
-        needs: entry['needs'],
+        needs: needs,
         cmd: entry['cmd'],
         reboot: entry['reboot'],
         apt_repository: entry['apt_repository'],
@@ -81,6 +101,7 @@ def flatten(node, path = [])
         version: entry['version'],
         args: entry['args'],
         condition: entry['condition'],
+        tags: Array(entry['tags']),
         path: path.join('.')
       }
 
@@ -107,8 +128,16 @@ def flatten(node, path = [])
         #  one step per name either way, never one step holding an array
         #  as its own :name (every consumer - append_lines, step_to_
         #  entry - looks up tree['appends'] by a single string key).
+        #  tags: inherited from the entry itself, not re-declared per
+        #  attachment - an append:/file: attached to a tagged package
+        #  (e.g. ubuntu22_asdf's own bootstrap script + its append:
+        #  entries) has to rise or fall with that same package under
+        #  tag-based selection (see select_by_tags), not run
+        #  unconditionally as an untagged step would - appending asdf's
+        #  own PATH lines to .bashrc regardless of whether asdf was
+        #  actually installed would be a real bug, not a harmless extra.
         Array(entry[key]).each do |name|
-          steps << { type: key, name: name, attached_to: entry[type], path: path.join('.') }
+          steps << { type: key, name: name, attached_to: entry[type], tags: Array(entry['tags']), path: path.join('.') }
         end
       end
     end
@@ -120,6 +149,173 @@ def flatten(node, path = [])
   end
 
   steps
+end
+
+# compute_default_wins(steps, select_tags) - path -> true/false, one
+#  entry per distinct containing packages: array (step[:path]) - the
+#  natural "alternatives for the same thing" scope (rbenv/asdf/rvm all
+#  under gen_scripts.ruby.packages; sdkman_groovy/asdf_groovy both under
+#  gen_scripts.groovy.packages). True means nothing in that *same*
+#  group's own tags overlaps the raw select_tags at all, so whichever
+#  member(s) carry the literal tag 'default' win it. Scoped per group,
+#  not globally - an unrelated --select naming a tag in a *different*
+#  group must never suppress it. Confirmed directly this matters:
+#  `--select rvm` (ruby's own group) was silently shutting off groovy's
+#  entirely unrelated sdkman default, under the old design where any
+#  --select at all disabled every 'default' tag in the whole manifest,
+#  not just the ones actually competing with what was selected.
+def compute_default_wins(steps, select_tags)
+  steps.group_by { |s| s[:path] }.transform_values do |group|
+    tags_in_group = group.flat_map { |s| s[:tags] }.uniq
+    (tags_in_group & select_tags).empty?
+  end
+end
+
+# compute_enabled_tags(steps, select_tags, default_wins) - select_tags,
+#  expanded to include every *other* tag (never the literal string
+#  'default' itself) belonging to a step whose own group's default won
+#  (see compute_default_wins). 'default' is a marker meaningful only
+#  within one group's own resolution, never a real capability name -
+#  propagating the bare word itself would let it leak across completely
+#  unrelated groups the instant *any* group's default won (confirmed
+#  directly: ruby's own rvm winning promoted the bare word 'default'
+#  into the enabled set, which then also matched groovy's unrelated
+#  sdkman path, since it too carries a literal 'default' tag - the exact
+#  cross-category leak compute_default_wins' own per-group scoping was
+#  supposed to prevent, just reintroduced one level down). tag_eligible?
+#  checks every step in the whole tree against this set for its *other*
+#  tags, regardless of position - but still checks 'default' itself
+#  only via default_wins, per group, never via this flat set (see
+#  tag_eligible?'s own comment on why a step whose only tag is
+#  'default' - nothing else to propagate - still needs to remain
+#  eligible in its own group).
+def compute_enabled_tags(steps, select_tags, default_wins)
+  propagated = steps.select { |s| s[:tags].include?('default') && default_wins[s[:path]] }
+                     .flat_map { |s| s[:tags] - ['default'] }
+  (select_tags + propagated).uniq
+end
+
+# tag_eligible?(step, enabled_tags, default_wins, exclude_tags) - whether
+#  `step` passes its own tags: gate on its own, before any needs:/meets:
+#  pull-in is even considered (see select_by_tags) - issue #16's source-
+#  of-truth design for letting a manifest express more than one
+#  legitimate path to the same tool (rbenv/pyenv/asdf vs. Ubuntu's own
+#  system ruby/python packages) without installing all of them at once.
+#  - An untagged step is always eligible - today's behavior, unchanged.
+#  - A tagged step is eligible if any of its own tags is in
+#    `enabled_tags` (see compute_enabled_tags - select_tags itself, plus
+#    every *other* tag propagated from a step whose own group's default
+#    won). Tree position plays no part in this at all - an ancestor-
+#    level bootstrap (e.g. a sdkman install script tagged the same
+#    sdkman_groovy/sdkman_java a descendant leaf uses) is eligible the
+#    instant one of its own tags is enabled, the same as any other step
+#    - no needs:/meets: link required, and no special-casing for "this
+#    step happens to sit above the one that actually chose the tag."
+#    Execution ORDER is a completely separate concern (see resolve!/
+#    select_sections), unaffected by any of this.
+#  - Otherwise, still eligible if it carries 'default' and its own
+#    group's default won (see compute_default_wins) - checked
+#    separately from enabled_tags, not via flat tag-string membership,
+#    since a step whose *only* tag is 'default' (nothing else to
+#    propagate to compute_enabled_tags at all) still needs to remain
+#    eligible within its own group.
+#  - exclude_tags overrides all of the above unconditionally - even an
+#    enabled entry is dropped if any of its own tags is excluded.
+def tag_eligible?(step, enabled_tags, default_wins, exclude_tags)
+  tags = step[:tags]
+  return true if tags.empty?
+  return false if tags.any? { |t| exclude_tags.include?(t) }
+  return true if tags.any? { |t| enabled_tags.include?(t) }
+
+  tags.include?('default') && default_wins[step[:path]]
+end
+
+# select_by_tags(steps, select_tags, exclude_tags) - the subset of
+#  `steps` this generation run actually wants, given --select/--exclude
+#  (see tag_eligible?/issue #16). Three passes, each running to a
+#  fixpoint before the next starts:
+#   1. tag_eligible? alone picks the initial set - including any step
+#      reached purely through tag propagation (compute_enabled_tags),
+#      with no needs:/meets: link at all (e.g. an ancestor-level
+#      bootstrap carrying the same tag a descendant leaf's own winning
+#      default uses).
+#   2. Transitive needs:/meets: pull-in, the same shape select_sections
+#      already uses for --SECTION - a step this run already wants might
+#      need: something whose own tags *still* don't make it eligible
+#      even after tag propagation (a genuine cross-branch dependency,
+#      not an alternative-selection relationship at all - e.g. groovy's
+#      own needs: java, met by a completely different lesson area) -
+#      "any dependency required to implement it will be installed"
+#      is the whole point of this pass, not an afterthought. A provider
+#      exclude_tags itself vetoes is skipped here on purpose - an
+#      explicit --exclude has to actually remove that alternative, not
+#      have some other step's needs: silently reinstate it.
+#   3. Omission - after the pull-in settles, a step whose own needs:
+#      still resolves to no provider *at all* in the final set (not
+#      "wasn't selected this run" but genuinely unsatisfiable - nothing
+#      in the whole file meets: it, or the one that did was vetoed by
+#      exclude_tags) can't actually run correctly, so it - and,
+#      transitively, anything that itself needs: *that* step - is
+#      dropped rather than emitted as a command guaranteed to fail on
+#      the box (see generate_install_script.rb's own omission
+#      comments). Repeats to a fixpoint since dropping one step can
+#      cascade into dropping whatever depended on it.
+#  Returns [included, omitted] - included preserves steps' own original
+#  relative order (same reasoning as select_sections' own final pass);
+#  omitted is [[step, missing_need], ...] for write_install_script to
+#  surface as header comments.
+def select_by_tags(steps, select_tags, exclude_tags)
+  default_wins = compute_default_wins(steps, select_tags)
+  enabled_tags = compute_enabled_tags(steps, select_tags, default_wins)
+  included = steps.select { |s| tag_eligible?(s, enabled_tags, default_wins, exclude_tags) }
+
+  # One provider per unmet need, not every step that happens to share
+  #  the same meets: value - confirmed directly this matters: with
+  #  both rbenv and asdf tagged entries declaring `meets: ruby` (real
+  #  alternatives for the very same thing), a naive "pull in every
+  #  match" pass here installed *both* of them even with no --select
+  #  at all, exactly the double-install issue #16 exists to prevent.
+  #  `steps.find` (not `.select`) mirrors resolve!'s own "first listed
+  #  provider wins" convention - same rule, same tie-break. Matches on
+  #  need_name(need), never the raw needs: entry - a versioned entry
+  #  like "ruby >= 3.2" (see parse_need) names the exact same
+  #  capability as a plain "ruby" would, just with an added floor
+  #  check_version_needs! verifies separately, later, against whichever
+  #  provider this same by-name matching already picked. Letting a
+  #  version floor change *which* provider gets pulled in here would
+  #  make a manifest's actual installed set depend on floors, not on
+  #  --select/tags/defaults the way every other resolution in this
+  #  file already promises.
+  loop do
+    met = included.map { |s| meets_name(s) }.compact
+    unmet = included.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq - met
+    break if unmet.empty?
+
+    added = false
+    unmet.each do |need|
+      provider = steps.find do |s|
+        meets_name(s) == need && !included.include?(s) && (s[:tags] & exclude_tags).empty?
+      end
+      next unless provider
+
+      included << provider
+      added = true
+    end
+    break unless added
+  end
+
+  omitted = []
+  loop do
+    met = included.map { |s| meets_name(s) }.compact
+    unmet = included.find { |s| Array(s[:needs]).any? { |need| !met.include?(need_name(need)) } }
+    break unless unmet
+
+    missing = Array(unmet[:needs]).find { |need| !met.include?(need_name(need)) }
+    omitted << [unmet, missing]
+    included.delete(unmet)
+  end
+
+  [steps.select { |s| included.include?(s) }, omitted]
 end
 
 # parse_version_constraint(step) - step[:version] (e.g. ">= 2.8.5.201",
@@ -145,6 +341,131 @@ def parse_version_constraint(step)
   end
 
   [op, m[2]]
+end
+
+# parse_need(need) - a single needs: entry (e.g. "ruby >= 3.2" or a
+#  bare "ruby") split into [capability_name, op, required_version] -
+#  op/required nil when the entry carries no version constraint at
+#  all, the overwhelmingly common case: "needs *a* provider of this,
+#  whichever one resolution already picked, no floor on which one".
+#  Every place a needs: entry gets matched against a meets: value
+#  (select_by_tags, resolve!, select_sections) has to compare against
+#  need_name(need), never the raw entry - a versioned entry like
+#  "ruby >= 3.2" and a plain provider's own `meets: ruby` name the
+#  same capability, and the whole point of keeping this separate from
+#  that matching is that adding a floor never changes *which* provider
+#  gets selected (see select_by_tags's own comment) - only whether
+#  check_version_needs! later accepts the one that was.
+def parse_need(need)
+  m = need.strip.match(/\A(\S+)\s+([~^<>=!]+)\s*(.+)\z/)
+  return [need.strip, nil, nil] unless m
+
+  name, op, version = m[1], m[2], m[3]
+  unless VERSION_OPS.include?(op)
+    raise "needs '#{need}': unsupported version operator '#{op}' (only #{VERSION_OPS.join('/')} implemented)"
+  end
+
+  [name, op, version]
+end
+
+def need_name(need)
+  parse_need(need)[0]
+end
+
+# parse_meets(step) - step[:meets] (e.g. "ruby 3.0", or a bare "java")
+#  split into [capability_name, version] - version nil when the value
+#  carries none, still the common case for anything nobody has ever
+#  put a version floor on. Every place a meets: value is matched
+#  against a capability name (select_by_tags, resolve!, select_sections,
+#  relocate_cross_cutting, pull_in_cross_area_deps) has to compare
+#  against meets_name(step), never the raw value - "ruby 3.0" and a
+#  plain `needs: ruby` name the same capability; the version half only
+#  matters to check_version_needs!'s own floor check. Space-split, not
+#  parse_need's operator syntax - a provider only ever states what it
+#  concretely *is* ("ruby 3.0"), never a floor/pin of its own.
+def parse_meets(step)
+  spec = step[:meets]
+  return [nil, nil] if spec.nil?
+
+  name, version = spec.split(' ', 2)
+  [name, version]
+end
+
+def meets_name(step)
+  parse_meets(step)[0]
+end
+
+# check_version_needs!(steps) - for every constrained needs: entry
+#  (e.g. "ruby >= 3.2" - see parse_need) in the final, fully-resolved
+#  `steps`, checks whether some step that meets the bare capability
+#  name declares its own version (see parse_meets) satisfying the
+#  constraint. Never raises - a manifest that can't satisfy one gem's
+#  version floor is a real, expected outcome (e.g. a bare/default build
+#  with no modern-ruby tag selected), not a bug in the generator, and a
+#  hard crash mid-generation is worse than a script that installs
+#  everything it *can* and clearly says what it skipped. Confirmed
+#  directly this matters: gem: ratatui_ruby (needs a real Ruby >= 3.2)
+#  silently passed every earlier resolution stage against the default
+#  system: ruby (3.0.2) provider and only failed live, mid-VM-
+#  provision, at the actual `gem install` - raising here instead just
+#  moved *where* it crashed, not whether it did. Instead, an
+#  unsatisfied consumer is converted in place into an 'omitted_version_
+#  need' step (see generate_install_script.rb's own bash_install/
+#  powershell_install case) - same position, same relative order, but
+#  rendering as a runtime warning instead of a command guaranteed to
+#  fail. Never a second selection mechanism either way - this only
+#  ever removes a consumer that can't be satisfied, never swaps in a
+#  *different* provider than the one tags/defaults already chose (see
+#  the no-silent-environment-changes rule). Every step that meets
+#  `name`, not just the first, is checked - an untagged, always-on
+#  provider (e.g. system: ruby) and a tag-selected addition (rbenv/
+#  asdf/rvm) can both legitimately be present in the same resolved
+#  output at once (see tag_eligible?'s own 'issue #16' comment - these
+#  are deliberately additive, not alternatives), so a version floor
+#  only needs *one* of them to satisfy it. Call once, after select_
+#  sections/dedup! have produced the actual final step list a generator
+#  is about to emit - checking against an intermediate list could pass
+#  or fail on a provider that won't even be in the output. Returns the
+#  steps that got converted, for a caller to also report at generation
+#  time (see warn_omissions-style reporting elsewhere).
+def check_version_needs!(steps)
+  converted = []
+
+  steps.each do |consumer|
+    Array(consumer[:needs]).each do |need|
+      name, op, required = parse_need(need)
+      next unless op
+
+      providers = steps.select { |s| meets_name(s) == name }
+      versioned = providers.select { |p| parse_meets(p)[1] }
+      satisfied = versioned.any? do |p|
+        _, actual = parse_meets(p)
+        case op
+        when '=' then Gem::Version.new(actual) == Gem::Version.new(required)
+        when '>=' then Gem::Version.new(actual) >= Gem::Version.new(required)
+        end
+      end
+      next if satisfied
+
+      reason = if providers.empty?
+                 "no step in the final resolved output meets '#{name}' at all"
+               elsif versioned.empty?
+                 found = providers.map { |p| "#{p[:type]} '#{p[:name]}'" }.join(', ')
+                 "none of its providers (#{found}) declare a version of their own (e.g. `meets: #{name} 3.2`) to check against"
+               else
+                 found = versioned.map { |p| "#{p[:type]} '#{p[:name]}' (meets '#{p[:meets]}')" }.join(', ')
+                 "none of its providers satisfy it - found: #{found}"
+               end
+
+      consumer[:omitted_reason] = "#{consumer[:type]} '#{consumer[:name]}': needs '#{need}', but #{reason}"
+      consumer[:cmd] = nil
+      consumer[:type] = 'omitted_version_need'
+      converted << consumer
+      break
+    end
+  end
+
+  converted
 end
 
 # parse_condition(condition) - step[:condition] (e.g. "is_vm_guest ==
@@ -194,15 +515,21 @@ VARIABLE_REF = /<%=\s*\$(\w+)\s*%>/.freeze
 #  contains, at any depth, replaced by vars[name] - returns a new
 #  structure rather than mutating in place (simplest given Hash/Array
 #  don't share one uniform in-place update method across both types).
-#  Called on just one platform's own subtree (`tree[name]`, once
-#  root_key/--platform has picked `name` - see each entry point's own
-#  main block), using that same subtree's own `variables:` block (see
-#  RESERVED_KEYS' own comment on why variables: is scoped per-platform,
-#  not a top-level shared block the way appends:/files: are) - so every
-#  field flatten reads out of that platform's tree (name:, version:,
-#  cmd:, an appends:/files: block's own lines:/content:, ...) already
-#  has its real value by the time flatten sees it, without flatten or
-#  any downstream consumer needing to know templating exists at all.
+#  Called on the *whole* parsed tree, not just one platform's own
+#  subtree (`tree[name]`) - even though `vars` itself always comes from
+#  just that one platform's own `variables:` block (see RESERVED_KEYS'
+#  own comment on why variables: is scoped per-platform). Confirmed
+#  directly this has to be the whole tree, not tree[name] alone:
+#  scripts:/files:/appends: are themselves top-level RESERVED_KEYS
+#  blocks, siblings of tree[name] rather than nested inside it, so a
+#  <%= $name %> reference in a script body (e.g. ubuntu22_asdf's own
+#  `ASDF_VERSION="<%= $asdf_ver %>"`) sat there completely unsubstituted
+#  - verbatim template text, in every generated output - for as long as
+#  every entry point here only ever substituted tree[name]. Every field
+#  flatten reads out of that platform's tree (name:, version:, cmd:, an
+#  appends:/files: block's own lines:/content:, ...) has its real value
+#  by the time flatten sees it either way, without flatten or any
+#  downstream consumer needing to know templating exists at all.
 #  Raises on a name vars doesn't have, rather than leaving the literal
 #  `<%= $name %>` text in the generated script - same fail-loud
 #  reasoning as parse_version_constraint's own unsupported-operator
@@ -278,10 +605,18 @@ def unit_span(steps, index)
   [start, finish]
 end
 
-# resolve! - for every step with `needs: X`, finds the first step with
-#  `meets: X` (first listed provider wins) and, if that provider currently
-#  sits after the consumer, moves its whole unit to just before it.
-#  Leaves order untouched when the provider already comes first.
+# resolve! - for every step with `needs: X` (X may be a single name or
+#  a list - e.g. groovy's own `needs: [java, sdkman]`, needing both the
+#  JDK *and* the SDKMAN bootstrap before it can run), finds the first
+#  step with `meets: X` for each one (first listed provider wins) and,
+#  if that provider currently sits after the consumer, moves its whole
+#  unit to just before it. Leaves order untouched when the provider
+#  already comes first. Handles multiple needs the same one-move-then-
+#  restart-the-whole-scan way it already handled a single one - moving
+#  any one provider can shift indices out from under the rest of this
+#  pass, so the outer loop simply runs again from scratch until nothing
+#  moves, converging on every need for every consumer regardless of how
+#  many there are.
 def resolve!(steps)
   loop do
     moved = false
@@ -289,16 +624,19 @@ def resolve!(steps)
     steps.each_with_index do |consumer, c_index|
       next unless consumer[:needs]
 
-      p_index = steps.index { |s| s[:meets] == consumer[:needs] }
-      next unless p_index
-      next if p_index < c_index
+      Array(consumer[:needs]).each do |need|
+        p_index = steps.index { |s| meets_name(s) == need_name(need) }
+        next unless p_index
+        next if p_index < c_index
 
-      start, finish = unit_span(steps, p_index)
-      unit = steps.slice!(start, finish - start + 1)
-      insert_at = steps.index(consumer)
-      steps.insert(insert_at, *unit)
-      moved = true
-      break
+        start, finish = unit_span(steps, p_index)
+        unit = steps.slice!(start, finish - start + 1)
+        insert_at = steps.index(consumer)
+        steps.insert(insert_at, *unit)
+        moved = true
+        break
+      end
+      break if moved
     end
 
     break unless moved
@@ -414,6 +752,39 @@ end
 #  position, for section_tree to exclude. insert_before maps a step's
 #  object_id to the ordered array of group names that must be called
 #  immediately before it, wherever *it* ends up.
+
+# natural_prefix(provider, natural_steps) - provider's own direct local
+#  siblings that precede it in the *original*, pre-resolve! document
+#  order (see natural_function_order), up to the previous owning-
+#  function boundary - a provider's real implicit local prerequisites
+#  even when they carry no needs:/meets: of their own at all (e.g.
+#  compiled_lang's own `apt: curl`, sitting before `apt: build-essential
+#  meets: make` with nothing connecting the two). Only f's own direct
+#  packages (path ends exactly at f) count - a sibling subsection that
+#  merely inlines into the same function (e.g. compiled_lang.cs,
+#  sitting between compiled_lang's own curl/build-essential and
+#  compiled_lang.java in document order) is not one, and pulling it in
+#  anyway would relocate/select an unrelated install (here, .NET SDK)
+#  for no reason. Returned in natural order (furthest-back first) -
+#  shared by relocate_cross_cutting (call-tree restructuring) and
+#  select_sections (SECTION-filtered generation), which both need the
+#  same answer to "what does this provider's own natural position
+#  already imply comes before it, unstated."
+def natural_prefix(provider, natural_steps)
+  f = owning_function(provider)
+  n_idx = natural_steps.index(provider)
+  prefix = []
+  i = n_idx - 1
+  while i >= 0 && owning_function(natural_steps[i]) == f
+    sibling = natural_steps[i]
+    i -= 1
+    next unless sibling[:path].split('.').last == f
+
+    prefix.unshift(sibling)
+  end
+  prefix
+end
+
 def relocate_cross_cutting(steps, natural_steps, natural_order)
   claimed = Array.new(steps.length, false)
   insert_before = Hash.new { |h, k| h[k] = [] }
@@ -428,23 +799,13 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     unit = steps[start..finish]
     unit.each { |s| claimed[steps.index(s)] = true }
 
-    f = owning_function(provider)
-    n_idx = natural_steps.index(provider)
+    # natural_prefix's own candidates, walked closest-to-provider first
+    #  (reverse_each) so an already-claimed one stops the walk right
+    #  there - nothing further back is unclaimed either, once something
+    #  nearer the provider has already been pulled in by an earlier
+    #  relocation.
     prefix = []
-    i = n_idx - 1
-    while i >= 0 && owning_function(natural_steps[i]) == f
-      sibling = natural_steps[i]
-      i -= 1
-
-      # Only f's *own* direct packages (path ends exactly at f) count as
-      #  an implicit prerequisite - a *sibling* subsection that merely
-      #  inlines into the same function (e.g. compiled_lang.cs, sitting
-      #  between compiled_lang's own curl/build-essential and
-      #  compiled_lang.java in document order) is not one, and pulling
-      #  it in anyway would just relocate an unrelated install (here,
-      #  .NET SDK) for no reason.
-      next unless sibling[:path].split('.').last == f
-
+    natural_prefix(provider, natural_steps).reverse_each do |sibling|
       r_idx = steps.index(sibling)
       # A section-filtered `steps` (see generate_install_script.rb's own
       #  select_sections) may not include this natural-order sibling at
@@ -452,28 +813,33 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
       #  stopping the whole walk on a step that isn't even part of this
       #  run.
       next if r_idx.nil?
-      break if claimed[r_idx] # already pulled in by an earlier relocation - nothing further back is unclaimed either
+      break if claimed[r_idx]
 
       prefix.unshift(sibling)
       claimed[r_idx] = true
     end
 
     group_steps = prefix + unit
-    name = "provider_#{provider[:meets]}"
+    name = "provider_#{meets_name(provider)}"
     group_for[provider.object_id] = name
     groups << { name: name, steps: group_steps }
 
     # A step within this pulled-along group might itself `need:`
     #  something that also requires relocation - resolve recursively,
     #  inserting immediately before *that* step wherever it lands.
+    #  Array(...) - a need: can be a list (see resolve!'s own comment);
+    #  each one is resolved independently, so a step needing two things
+    #  that both require relocation gets both inserted before it.
     group_steps.each do |s|
       next unless s[:needs]
 
-      dep = steps.find { |x| x[:meets] == s[:needs] }
-      next unless dep && needs_relocation?(dep, s, natural_order)
+      Array(s[:needs]).each do |need|
+        dep = steps.find { |x| meets_name(x) == need_name(need) }
+        next unless dep && needs_relocation?(dep, s, natural_order)
 
-      dep_name = relocate.call(dep)
-      insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+        dep_name = relocate.call(dep)
+        insert_before[s.object_id] << dep_name unless insert_before[s.object_id].include?(dep_name)
+      end
     end
 
     name
@@ -482,11 +848,13 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
   steps.each do |consumer|
     next unless consumer[:needs]
 
-    provider = steps.find { |s| s[:meets] == consumer[:needs] }
-    next unless provider && needs_relocation?(provider, consumer, natural_order)
+    Array(consumer[:needs]).each do |need|
+      provider = steps.find { |s| meets_name(s) == need_name(need) }
+      next unless provider && needs_relocation?(provider, consumer, natural_order)
 
-    group_name = relocate.call(provider)
-    insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+      group_name = relocate.call(provider)
+      insert_before[consumer.object_id] << group_name unless insert_before[consumer.object_id].include?(group_name)
+    end
   end
 
   [groups, claimed, insert_before]
@@ -494,7 +862,10 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   tree = YAML.load_file(File.join(__dir__, '..', 'config', 'macos.yml'))
-  tree['macos'] = substitute_variables(tree['macos'], tree['macos']['variables'] || {})
+  # Whole tree, not just tree['macos'] - see generate_chef_databag.rb's
+  #  own comment on why (scripts:/files:/appends: are top-level
+  #  RESERVED_KEYS blocks, not nested inside tree['macos']).
+  tree = substitute_variables(tree, tree['macos']['variables'] || {})
   steps = flatten(tree['macos'])
   resolve!(steps)
   steps.each do |s|

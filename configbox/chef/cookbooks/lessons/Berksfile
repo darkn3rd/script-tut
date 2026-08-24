@@ -10,7 +10,11 @@ metadata
 cookbook 'scriptbox', path: '../scriptbox'
 cookbook 'sdkman', path: '../sdkman'
 
-# chocolatey IS a real dependency (see ../lessons's own metadata.rb) -
-#  pinned to this local path so Berkshelf resolves it here instead of
-#  fetching Supermarket's own stale `chocolatey` cookbook.
+# chocolatey/asdf ARE real dependencies (see ../lessons's own
+#  metadata.rb) - pinned to these local paths so Berkshelf resolves them
+#  here instead of fetching Supermarket's own stale cookbooks of the
+#  same name (asdf-chef/asdf in particular predates asdf's own 0.16.0
+#  rewrite and doesn't work against a modern asdf - see ../asdf/
+#  README.md).
 cookbook 'chocolatey', path: '../chocolatey'
+cookbook 'asdf', path: '../asdf'

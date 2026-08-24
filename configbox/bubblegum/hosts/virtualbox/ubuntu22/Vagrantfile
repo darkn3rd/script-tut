@@ -1,12 +1,23 @@
-SCRIPT_TUT_PATH="../../../../.."
+SCRIPT_TUT_REPO_PATH = File.realpath("../../../../..", __dir__)
+DEFAULT_INSTALL_SCRIPT = "#{SCRIPT_TUT_REPO_PATH}/scriptbox/generated/ubuntu22_install.sh"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
 
-  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
-  
+  config.vm.synced_folder "#{SCRIPT_TUT_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that reults in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  # Optional TEST_PATH env var used for integration testing. 
   config.vm.provision "shell",
-    path: "#{SCRIPT_TUT_PATH}/scriptbox/generated/ubuntu22_install.sh",
+    path: ENV.fetch("TEST_PATH", DEFAULT_INSTALL_SCRIPT),
     privileged: false
 end

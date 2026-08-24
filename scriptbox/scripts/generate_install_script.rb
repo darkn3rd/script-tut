@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'yaml'
 require 'fileutils'
+require 'optparse'
 require_relative 'resolve_order'
 
 # arg_suffix(step) - step[:args] (see resolve_order.rb's own flatten)
@@ -77,6 +78,13 @@ def bash_install(step, tree)
   #  rebuild from source unnecessarily).
   when 'pyenv'  then "pyenv install -s #{step[:name]}"
   when 'rbenv'  then "rbenv install -s #{step[:name]}"
+  # rvm install is itself idempotent (a re-run against an already-
+  #  installed version reports it as already present and exits 0, same
+  #  as asdf's own install) - no --skip-existing-style flag needed. The
+  #  "make this the default" step is the manifest's own sibling `cmd:`
+  #  (rvm use ... --default), appended automatically by command_for,
+  #  same as rbenv/asdf's own cmd: siblings.
+  when 'rvm' then "rvm install #{step[:name]}"
   # sdk itself is a shell function, not a real executable - only
   #  defined once sdkman's own init script has been sourced (see the
   #  ubuntu22_sdkman script step, which must run - and its own `source
@@ -91,6 +99,23 @@ def bash_install(step, tree)
   #  which already sets it) - that's the real, documented
   #  non-interactive mechanism, not a per-command flag.
   when 'sdkman' then "sdk install #{step[:name]}"
+  # asdf_plugin: "<name> <repo_url>" (e.g. "ruby https://github.com/
+  #  asdf-vm/asdf-ruby.git") - `asdf plugin add` itself errors out if
+  #  the plugin's already registered (unlike sdkman/pyenv/rbenv's own
+  #  install commands, none of which need an explicit guard for
+  #  re-provisioning), so this checks `plugin list` first rather than
+  #  relying on --skip-existing-style flag asdf's own `plugin add` has
+  #  no equivalent of.
+  when 'asdf_plugin'
+    plugin, repo = step[:name].split(' ', 2)
+    %(asdf plugin list | grep -qx "#{plugin}" || asdf plugin add #{plugin} #{repo})
+  # asdf: "<language> <version>" (e.g. "ruby 4.0.6") - `asdf install`
+  #  already skips a version that's installed, no --skip-existing-style
+  #  flag needed the way pyenv/rbenv's own `-s`/`--skip-existing` is.
+  #  Setting it as the active version (asdf's own `set -u`/`global`) is
+  #  a separate concern, same as pyenv/rbenv's own `cmd:` sibling for
+  #  "make this the default" - not this step's own job.
+  when 'asdf' then "asdf install #{step[:name]}"
   when 'gem'    then "gem install #{step[:name]}#{arg_suffix(step)}"
   when 'pipx'   then "pipx install #{step[:name]}#{arg_suffix(step)}"
   # pwsh, not native PowerShell - a bash-dialect platform (ubuntu2204.yml)
@@ -156,6 +181,13 @@ def bash_install(step, tree)
         echo "WARNING: expected path not found: #{path}" >&2
       fi
     BASH
+  # A version-constrained needs: (see resolve_order.rb's own check_
+  #  version_needs!) that nothing in the final resolved output actually
+  #  satisfies - runs in this step's own original position (same
+  #  ordering everything else already has), but as a visible runtime
+  #  warning instead of a command that would just fail (or silently
+  #  install against too old a dependency) on the box.
+  when 'omitted_version_need' then %(echo "WARNING: #{step[:omitted_reason]}" >&2)
   end
 end
 
@@ -213,6 +245,8 @@ def powershell_install(step)
   #  PowerShell text runs verbatim here, no pwsh wrapper needed (this
   #  dialect's whole script already runs under PowerShell).
   when 'powershell_cmd' then step[:name]
+  # See bash_install's own 'omitted_version_need' case.
+  when 'omitted_version_need' then %(Write-Warning "#{step[:omitted_reason]}")
   end
 end
 
@@ -233,7 +267,24 @@ end
 def file_write(step, tree)
   entry = tree['files'][step[:name]]
   content = entry['content'].end_with?("\n") ? entry['content'] : "#{entry['content']}\n"
-  "cat <<'EOF' > #{entry['dest']}\n#{content}EOF"
+  # mkdir -p the destination's own directory first - a heredoc redirect
+  #  creates the *file* if missing but never a missing parent directory
+  #  (confirmed directly via a real `vagrant provision` failure: the
+  #  manifest's own ubuntu22_asdf_ps1 writes to $HOME/.config/powershell/
+  #  asdf.ps1, a directory nothing else creates before this step runs
+  #  under a narrow --SECTION selection that pulls in asdf's own
+  #  global-level unit without win_scripts/rust's own scripts alongside
+  #  it - "No such file or directory" from bash's own `>`, not a Ruby-
+  #  side bug). Chef's own 'file' case (helpers.rb) already has to do
+  #  this for the identical reason - this brings the bash generator to
+  #  parity with it rather than leaving file: steps one directory-
+  #  existence assumption away from crashing depending on which other
+  #  steps happened to run first. File.dirname is purely textual (no
+  #  filesystem access at generation time) - safe on a $HOME-containing
+  #  path like this one, which doesn't exist as a real directory on the
+  #  machine running this generator anyway.
+  dir = File.dirname(entry['dest'])
+  "mkdir -p \"#{dir}\"\ncat <<'EOF' > #{entry['dest']}\n#{content}EOF"
 end
 
 # append_lines(step, tree) - an 'append' step (see resolve_order.rb's
@@ -319,7 +370,7 @@ end
 def noop_comment(step)
   extra = []
   extra << "meets: #{step[:meets]}" if step[:meets]
-  extra << "needs: #{step[:needs]}" if step[:needs]
+  extra << "needs: #{Array(step[:needs]).join(', ')}" if step[:needs]
   "# noop#{extra.empty? ? '' : " (#{extra.join(', ')})"}"
 end
 
@@ -605,29 +656,39 @@ def emit_section_functions(f, node, children, own_steps, tree, dialect, insert_b
 end
 
 # write_install_script(name, steps, tree, dialect, generated_dir,
-#  header_lines, natural_steps, apt_mirror) - writes generated/
-#  <name>_install.<ext> in the given dialect, shared by generate_install_
-#  script.rb's and gen_installer.rb's own entry points so the two never
-#  drift into writing the file header/footer two different ways. `tree`
-#  - the whole parsed manifest, not just its own scripts: block - so
-#  command_for's own 'file'/'append' cases can reach files:/appends: the
-#  same way 'script' already reaches scripts:, without every function in
-#  this call chain needing its own extra parameter as more of these
-#  named-lookup blocks get added. `natural_steps` - a flatten() snapshot
-#  taken *before* resolve! reorders anything - has to come from the
-#  caller: resolve! has already mutated `steps` in place by the time it
-#  reaches here, and relocate_cross_cutting needs the tree's original,
-#  undisturbed document order (see its own comment, and resolve_order.rb's
+#  header_lines, natural_steps, apt_mirror, out_path:) - writes
+#  generated/<name>_install.<ext> in the given dialect, shared by
+#  generate_install_script.rb's and gen_installer.rb's own entry points
+#  so the two never drift into writing the file header/footer two
+#  different ways. `tree` - the whole parsed manifest, not just its own
+#  scripts: block - so command_for's own 'file'/'append' cases can
+#  reach files:/appends: the same way 'script' already reaches
+#  scripts:, without every function in this call chain needing its own
+#  extra parameter as more of these named-lookup blocks get added.
+#  `natural_steps` - a flatten() snapshot taken *before* resolve!
+#  reorders anything - has to come from the caller: resolve! has
+#  already mutated `steps` in place by the time it reaches here, and
+#  relocate_cross_cutting needs the tree's original, undisturbed
+#  document order (see its own comment, and resolve_order.rb's
 #  natural_function_order). `apt_mirror` - see apt_mirror_for - is
-#  optional. PowerShell gets a real self-elevation check up front rather
-#  than a comment reminding the user to run it as Administrator -
-#  confirmed directly every choco/feature step in practice needs it, and
-#  Start-Process -Verb RunAs relaunching itself once at the top is
-#  simpler and more reliable than trying to elevate per step. Returns
-#  the path written.
-def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil)
+#  optional. `out_path:` - see each entry point's own --output flag -
+#  overrides the default generated/<name>_install.<ext> location
+#  entirely (any path, not just a different filename in the same
+#  directory) when a caller wants the result somewhere else, e.g.
+#  running two --select variants side by side without one overwriting
+#  the other. Its parent directory is created the same way generated_
+#  dir already is for the default case - a caller passing a brand new
+#  subdirectory shouldn't have to mkdir_p it themselves first.
+#  PowerShell gets a real self-elevation check up front rather than a
+#  comment reminding the user to run it as Administrator - confirmed
+#  directly every choco/feature step in practice needs it, and Start-
+#  Process -Verb RunAs relaunching itself once at the top is simpler
+#  and more reliable than trying to elevate per step. Returns the path
+#  written.
+def write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror = nil, out_path: nil)
   ext = dialect == 'powershell' ? 'ps1' : 'sh'
-  out_path = File.join(generated_dir, "#{name}_install.#{ext}")
+  out_path ||= File.join(generated_dir, "#{name}_install.#{ext}")
+  FileUtils.mkdir_p(File.dirname(out_path))
   reboot_steps = steps.select { |s| s[:reboot] }
 
   # 'wb', not 'w' - confirmed directly against a real, serious failure:
@@ -875,25 +936,94 @@ def expand_selectors(argv)
 end
 
 # select_sections(steps, selectors) - the subset of steps whose own
-#  path matches at least one selector, plus (transitively) any step
-#  elsewhere in the file that a selected step `needs:` - confirmed
-#  directly this matters: selecting a single narrow leaf (e.g. just
-#  "lessons.compiled_lang.go") must not silently drop a prerequisite
-#  declared at a *sibling* path (compiled_lang's own shared
-#  `apt: build-essential meets: make`) that a broader selection would
-#  otherwise have brought along automatically - a generated script
-#  missing its own dependency is worse than one with a few extra,
-#  already-idempotent steps in it.
-def select_sections(steps, selectors)
+#  path matches at least one selector, PLUS two independent kinds of
+#  implicit pull-in - hierarchy and cross-branch needs. Conflating
+#  these two (making hierarchy inclusion ride on the needs/meets loop
+#  below, as a side effect of whatever a selected leaf happens to
+#  `need:` by name) is exactly the recurring bug this function has had:
+#  a selector like "lessons.gen_scripts.python3" implicitly means
+#  "everything global.packages, global.lessons.packages and
+#  global.lessons.gen_scripts.packages would already have run by the
+#  time this ran" - unconditionally, regardless of whether python3's
+#  own steps happen to `need:` any one of them by name. Patching in an
+#  extra needs:/meets: pair every time some ancestor-level step (asdf's
+#  own plugin-add, in particular) got silently dropped is treating a
+#  hierarchy problem as a cross-branch-dependency problem - it only
+#  works for whichever one ancestor a maintainer remembered to wire up
+#  by hand, and leaves every other undeclared ancestor step just as
+#  droppable as before.
+#
+# So this is two separate passes:
+#
+# 1) Hierarchy (unconditional, no needs:/meets: involved) - for every
+#    directly-selected step's own path (e.g.
+#    "global.lessons.gen_scripts.python3"), every strict PREFIX of that
+#    path ("global", "global.lessons", "global.lessons.gen_scripts") is
+#    an ancestor level, and every step declared exactly at one of those
+#    levels is included, full stop - it already survived select_by_
+#    tags (default-or-selected-for-tag), so tag semantics are untouched;
+#    this pass only adds back the "runs before I do, unconditionally"
+#    steps tag-filtering never should have made conditional on a
+#    needs:/meets: link in the first place.
+#
+# 2) Cross-branch needs (the original loop) - for a step declared
+#    somewhere else in the file entirely (a genuine *sibling* branch,
+#    not an ancestor - e.g. groovy's own `cpanm: HTTP::Tiny` needing
+#    perl's `cpan: App::cpanminus`, a completely different lesson
+#    subsection), only a real `needs:` naming that provider's `meets:`
+#    pulls it in. This is the part that's supposed to require an
+#    explicit needs:/meets: pair - a hierarchy relationship never
+#    should have needed one to begin with.
+#
+# Each cross-branch pulled-in provider brings two things along, not
+#  just the bare provider step:
+#  - its own unit_span (see resolve_order.rb). Confirmed directly this
+#    matters: selecting just "lessons.gen_scripts.groovy" (needs:
+#    cpanm) pulled in perl's own `cpan: App::cpanminus` (meets: cpanm,
+#    implicitly needs: perl - see resolve_order.rb's own IMPLICIT_
+#    NEEDS) and, one loop iteration later, `system: perl` itself (meets:
+#    perl) - but not perl's own attached ubuntu22_cpan_local_setup
+#    script, since that's a *separate* flattened step (attached_to:
+#    'perl') with no needs:/meets: of its own for this loop to ever
+#    match on. Without it, `cpan -i App::cpanminus` ran cold (no
+#    local::lib bootstrap), hitting a real, reproducible CPAN
+#    FirstTime.pm reentrancy bug - confirmed directly against a fresh
+#    Ubuntu 22.04 box.
+#  - its own natural_prefix (see resolve_order.rb) - the same "implicit
+#    local prerequisite" pull-in relocate_cross_cutting already does for
+#    the unfiltered call tree, so a SECTION-filtered one doesn't drop
+#    something relocate_cross_cutting itself would have kept (e.g.
+#    compiled_lang's own `apt: curl` ahead of `apt: build-essential`,
+#    connected by nothing but document order - confirmed directly:
+#    missing from a "lessons.gen_scripts.groovy" selection before this).
+#    Filtered against `steps` (`&`), not natural_steps directly - a
+#    natural-order sibling select_by_tags already dropped for this run
+#    isn't a real candidate to pull back in. (This is itself a hierarchy
+#    pull-in, just scoped to the one provider's own owning function -
+#    it does not need to walk multiple ancestor levels the way pass 1
+#    above does, since a provider found here is always local to a
+#    single level.)
+def select_sections(steps, selectors, natural_steps)
   return steps if selectors.empty?
 
   selected = steps.select { |step| selectors.any? { |sel| path_matches?(step[:path], sel) } }
+
+  ancestor_paths = selected.flat_map do |step|
+    segments = step[:path].split('.')
+    (0...segments.length).map { |i| segments[0...i].join('.') }
+  end.uniq
+  selected.concat(steps.select { |s| ancestor_paths.include?(s[:path]) } - selected)
+
   loop do
-    needed = selected.map { |s| s[:needs] }.compact.uniq
-    providers = steps.select { |s| needed.include?(s[:meets]) && !selected.include?(s) }
+    needed = selected.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq
+    providers = steps.select { |s| needed.include?(meets_name(s)) && !selected.include?(s) }
     break if providers.empty?
 
-    selected.concat(providers)
+    providers.each do |provider|
+      start, finish = unit_span(steps, steps.index(provider))
+      selected.concat(steps[start..finish] - selected)
+      selected.concat(natural_prefix(provider, natural_steps) & steps - selected)
+    end
   end
   # Preserve steps' own relative order rather than selected's
   #  append-during-pull-in order.
@@ -905,7 +1035,7 @@ end
 #  a different destination/exit status depending on whether the user
 #  actually asked for it or just forgot an argument.
 def print_usage(stream)
-  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...]"
+  stream.puts "usage: #{$PROGRAM_NAME} <config.yml> [SECTION ...] [--select TAG,TAG] [--exclude TAG,TAG] [--output PATH]"
   stream.puts ''
   stream.puts 'Reads one config/*.yml provisioning file, resolves every step into'
   stream.puts 'dependency-correct order (a `needs:` consumer always ends up after'
@@ -919,6 +1049,19 @@ def print_usage(stream)
   stream.puts '    "lessons.{compiled_lang,shell_scripts}" - matches any step whose'
   stream.puts '    own path contains it as a consecutive segment run. No SECTION'
   stream.puts '    args installs everything in the file.'
+  stream.puts ''
+  stream.puts '  --select TAG,TAG - opt in to a tagged alternative (e.g. rbenv/pyenv/'
+  stream.puts '    asdf_ruby/asdf_python vs. Ubuntu\'s own system ruby/python) - see'
+  stream.puts '    resolve_order.rb\'s own tag_eligible?/select_by_tags (issue #16).'
+  stream.puts '    An untagged entry always runs regardless. A tagged entry runs if'
+  stream.puts '    it carries the literal tag \'default\' (the manifest author\'s own'
+  stream.puts '    declared fallback where no untagged alternative exists), at least'
+  stream.puts '    one of its own tags is named here, or something already running'
+  stream.puts '    needs: it.'
+  stream.puts '  --exclude TAG,TAG - veto a tag even over --select/default.'
+  stream.puts '  --output PATH - write here instead of generated/<platform>_install.<ext>'
+  stream.puts '    (any path, not just a different filename - its parent directory is'
+  stream.puts '    created if missing).'
 end
 
 if __FILE__ == $PROGRAM_NAME
@@ -926,6 +1069,13 @@ if __FILE__ == $PROGRAM_NAME
     print_usage($stdout)
     exit 0
   end
+
+  options = { select: [], exclude: [], output: nil }
+  OptionParser.new do |opts|
+    opts.on('--select TAGS') { |v| options[:select] = v.split(',').map(&:strip) }
+    opts.on('--exclude TAGS') { |v| options[:exclude] = v.split(',').map(&:strip) }
+    opts.on('--output PATH', 'write here instead of generated/<platform>_install.<ext>') { |v| options[:output] = v }
+  end.parse!(ARGV)
 
   config_path = ARGV[0]
   if config_path.nil? || config_path.empty?
@@ -939,38 +1089,73 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
-  # Resolved right after root_key picks `name`, before flatten ever
-  #  walks the tree - see resolve_order.rb's own substitute_variables/
-  #  RESERVED_KEYS comment on why this is scoped to tree[name] alone
-  #  (variables: lives nested inside the platform's own root key, not
-  #  as a top-level shared block) - so every downstream consumer
-  #  (flatten, scripts:/appends:/files: lookups) already sees real
-  #  values, never <%= $name %> template text.
-  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
+  # Substitutes across the *whole* tree, not just tree[name] - even
+  #  though variables: itself lives nested inside the platform's own
+  #  root key (see resolve_order.rb's own RESERVED_KEYS comment on why
+  #  that part is scoped per-platform), scripts:/files:/appends: are
+  #  themselves top-level RESERVED_KEYS blocks, siblings of tree[name],
+  #  not nested inside it - a <%= $name %> reference in a script body
+  #  (e.g. ubuntu22_asdf's own `ASDF_VERSION="<%= $asdf_ver %>"`) sat
+  #  there unsubstituted, verbatim, in every generated output until
+  #  this was widened from tree[name] alone - confirmed directly, not
+  #  theoretical: `grep ASDF_VERSION generated/ubuntu22_install.sh`
+  #  showed the literal template text, not a version number, before
+  #  this fix. Values still come from just this one platform's own
+  #  variables: block - a name only a *different* platform's own
+  #  scripts: entry happened to reference would still raise (no such
+  #  manifest does today).
+  tree = substitute_variables(tree, tree[name]['variables'] || {})
 
-  # Order matters here: resolve! runs on the *full* list first, so
-  #  dependency ordering is correct globally regardless of what gets
-  #  selected afterward; select_sections then filters down to the
-  #  requested sections (+ anything they need); dedup! runs *last*,
-  #  within just that filtered set - confirmed directly running dedup!
-  #  before selection is wrong, not just reordered differently:
-  #  selecting a single section (e.g. just "testbox") could lose a step
-  #  entirely if dedup! had already kept some *other*, unselected
-  #  section's identical step as the "first" occurrence instead.
+  # Order matters here: select_by_tags (issue #16) runs first, on the
+  #  *full* list, for the same reason resolve! itself needs the full
+  #  list before select_sections narrows it - a tag-filtered-then-
+  #  resolved order would let resolve! see (and possibly relocate) a
+  #  `meets:` provider that select_by_tags was always going to drop in
+  #  favor of its selected/default alternative, corrupting the very
+  #  ordering resolve! is supposed to guarantee. resolve! runs on the
+  #  now tag-filtered list next, so dependency ordering is correct
+  #  globally regardless of what select_sections narrows afterward;
+  #  dedup! runs *last*, within just that filtered set - confirmed
+  #  directly running dedup! before selection is wrong, not just
+  #  reordered differently: selecting a single section (e.g. just
+  #  "testbox") could lose a step entirely if dedup! had already kept
+  #  some *other*, unselected section's identical step as the "first"
+  #  occurrence instead.
   steps = flatten(tree[name])
-  # Snapshotted before resolve! mutates steps' own order - see
-  #  write_install_script's own comment on why.
+  # Snapshotted before resolve!/select_by_tags mutate/filter steps' own
+  #  order - see write_install_script's own comment on why, and select_
+  #  by_tags/select_sections' own shared reasoning: a filtered `steps`
+  #  may not include every natural-order sibling relocate_cross_
+  #  cutting's own prefix walk looks for.
   natural_steps = steps.dup
+  steps, omitted = select_by_tags(steps, options[:select], options[:exclude])
   resolve!(steps)
-  steps = select_sections(steps, expand_selectors(ARGV[1..]))
+  steps = select_sections(steps, expand_selectors(ARGV[1..]), natural_steps)
   dedup!(steps)
+  version_omitted = check_version_needs!(steps)
 
   generated_dir = File.join(__dir__, '..', 'generated')
   FileUtils.mkdir_p(generated_dir)
   dialect = dialect_for(tree, name)
-  out_path = write_install_script(name, steps, tree, dialect, generated_dir, [
+  header_lines = [
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
-  ], natural_steps, apt_mirror_for(tree, name))
+  ]
+  # See resolve_order.rb's own select_by_tags - a step whose own needs:
+  #  had no eligible provider at all (not just "wasn't selected this
+  #  run") got dropped rather than emitted as a command guaranteed to
+  #  fail; surfaced here instead of silently disappearing.
+  omitted.each do |step, missing|
+    header_lines << "Omitted: [#{step[:path]}] #{step[:type]}: #{step[:name]} - needs '#{missing}', no eligible provider (check --select/--exclude, or the manifest's own default tags)"
+  end
+  # See resolve_order.rb's own check_version_needs! - unlike the plain
+  #  omission above (dropped from the output entirely), these steps are
+  #  still present and still run, just as a runtime warning instead of
+  #  the install they can't actually satisfy - noted here too so it's
+  #  visible without having to read the whole generated script.
+  version_omitted.each do |step|
+    header_lines << "Omitted (version): #{step[:omitted_reason]}"
+  end
+  out_path = write_install_script(name, steps, tree, dialect, generated_dir, header_lines, natural_steps, apt_mirror_for(tree, name), out_path: options[:output])
   puts "wrote #{out_path}"
 end

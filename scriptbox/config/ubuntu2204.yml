@@ -1,4 +1,10 @@
 ubuntu22:
+  variables: 
+    ruby_ver: 4.0.6
+    python_ver: 3.14.7
+    python2_ver: 2.7.18
+    asdf_ver: v0.20.0
+    groovy_ver: 5.1.0
   apt_mirror: https://archive.ubuntu.com/ubuntu/
   global:
     packages:
@@ -6,13 +12,22 @@ ubuntu22:
       - apt: zsh
         file: ubuntu_default_zshrc
       - script: unbuntu22_wsl2_clean
-      - apt: ['curl','git','make','wget']
+      - apt: ['curl','git','make','wget', 'gnupg2']
         meets: make
+      - cmd: mkdir -p $HOME/.local/bin
+      - script: ubuntu22_asdf
+        file: ubuntu22_asdf_ps1
+        append:
+          - ubuntu22_asdf_bash
+          - ubuntu22_asdf_zsh
+          - ubuntu22_asdf_ps1
+        meets: asdf
+        tags: [asdf]
     lessons:
       packages:
         - script: ubuntu22_sdkman
           append: ubuntu22_sdkman
-          tags: [sdkman]
+          tags: [sdkman_groovy,sdkman_java]
       gen_scripts:
         packages:
           # Shared requirements for cpan, rbenv, pyenv
@@ -39,20 +54,30 @@ ubuntu22:
               - tk-dev
               - xz-utils
               - zlib1g-dev
-            tags: [pyenv,rbenv]
-            meets: build_essential
+            tags: [pyenv,rbenv,asdf_ruby,asdf_python,rvm]
           - script: ubuntu22_rbenv
-            append: 
+            tags: [rbenv]
+            append:
               - ubuntu22_rbenv_bash
               - ubuntu22_rbenv_zsh
-            tags: [rbenv]
             meets: rbenv
-            needs: build_essential
+          - script: ubuntu22_rvm
+            meets: rvm
+            tags: [rvm]
           - script: ubuntu22_pyenv
-            append: 
+            append:
               - ubuntu22_pyenv_bash
               - ubuntu22_pyenv_zsh
             tags: [pyenv]
+          - asdf_plugin: ruby https://github.com/asdf-vm/asdf-ruby.git
+            tags: [asdf_ruby]
+            needs: asdf
+          - asdf_plugin: python https://github.com/asdf-community/asdf-python.git
+            tags: [asdf_python]
+            needs: asdf
+          - asdf_plugin: groovy https://github.com/weibemoura/asdf-groovy.git
+            tags: [asdf_groovy]
+            needs: asdf
         awk:
           packages:
             - apt: gawk
@@ -70,37 +95,58 @@ ubuntu22:
           packages:
             - cpanm: HTTP::Tiny
               needs: cpanm
-              tags: [sdkman]
-            - sdkman: groovy
+              tags: [sdkman_groovy, default]
+            - sdkman: groovy <%= $groovy_ver %>
+              cmd: sdk default groovy <%= $groovy_ver %>
               needs: java
-              tags: [sdkman]
+              tags: [sdkman_groovy, default]
+            - asdf: groovy <%= $groovy_ver %>
+              cmd: asdf set -u groovy <%= $groovy_ver %>
+              needs: asdf
+              tags: [asdf_groovy]
         php:
           packages:
             - apt: php8.1-cli
         python2:
           packages:
-            - pyenv: 2.7.18
-              cmd: pyenv global 3.14.7 2.7.18
+            - pyenv: <%= $python2_ver %>
+              cmd: pyenv global <%= $python_ver %>  <%= $python2_ver %>
               needs: pyenv3
               tags: [pyenv,python2]
         python3:
           packages:
             - system: python # 3.10.x
-            - pyenv: 3.14.7
-              cmd: pyenv global 3.14.7
+            - pyenv: <%= $python_ver %>
+              cmd: pyenv global <%= $python_ver %>
               meets: pyenv3
               tags: [pyenv]
+            - asdf: python <%= $python_ver %>
+              cmd: asdf set -u python <%= $python_ver %>
+              meets: pyenv3
+              needs: asdf
+              tags: [asdf_python]
         ruby:
           packages:
-            - system: ruby # 3.0.x
-            - rbenv: 4.0.6
-              cmd: rbenv global 4.0.6
+            - system: ruby
+              meets: ruby 3.0
+            - rbenv: <%= $ruby_ver %>
+              cmd: rbenv global <%= $ruby_ver %>
               tags: [rbenv]
-              meets: ruby
+              meets: ruby <%= $ruby_ver %>
               needs: rbenv
+            - asdf: ruby <%= $ruby_ver %>
+              cmd: asdf set -u ruby <%= $ruby_ver %>
+              meets: ruby <%= $ruby_ver %>
+              needs: asdf
+              tags: [asdf_ruby]
+            - rvm: <%= $ruby_ver %>
+              cmd: rvm use <%= $ruby_ver %> --default
+              meets: ruby <%= $ruby_ver %>
+              needs: rvm
+              tags: [rvm, default]              
         tcl:
           packages:
-            - apt: tcl8.6
+            - system: tcl8.6 # 8.6.12
       shell_scripts:
         bash:
             packages: 
@@ -132,6 +178,10 @@ ubuntu22:
           packages:
             - apt: openjdk-17-jdk
               meets: java
+            - sdkman: java 17.0.20-amzn
+              cmd: sdk default java 17.0.20-amzn
+              meets: java
+              tags: [sdkman_java]
         go:
           packages:
             - apt_repository: ppa:longsleep/golang-backports
@@ -176,6 +226,7 @@ ubuntu22:
           # and compile from source using glibc 2.35
         - gem: ratatui_ruby
           args: --platform ruby
+          needs: ruby >= 3.2
     testbox:
       packages:
         - powershell_cmd: Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -271,6 +322,41 @@ scripts:
       fi
 
       source "$HOME/.sdkman/bin/sdkman-init.sh"
+  ubuntu22_asdf:
+    type: bash
+    cmd: |
+      ASDF_VERSION="<%= $asdf_ver %>"
+      curl -LO "https://github.com/asdf-vm/asdf/releases/download/${ASDF_VERSION}/asdf-${ASDF_VERSION}-linux-amd64.tar.gz"
+      
+      tar -xzf "asdf-${ASDF_VERSION}-linux-amd64.tar.gz"
+      sudo install -m 755 asdf /usr/local/bin/asdf
+      rm "asdf-${ASDF_VERSION}-linux-amd64.tar.gz"
+
+      export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+
+      # ZSH Completions
+      mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
+      asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
+  ubuntu22_rvm:
+    type: bash
+    cmd: |
+      # GPG2 HKP Workround for IPv6
+      mkdir -p ~/.gnupg
+      chmod 700 ~/.gnupg
+      echo 'disable-ipv6' >> ~/.gnupg/dirmngr.conf
+      gpgconf --kill dirmngr
+
+      gpg2 \
+        --keyserver hkps://keyserver.ubuntu.com \
+        --recv-keys \
+        409B6B1796C275462A1703113804BB82D39DC0E3 \
+        7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+
+      # Stable has up to ruby 3.0; Master will have ruby 4.x
+      curl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles
+
+      export PATH="$PATH:$HOME/.rvm/bin"
+      source "$HOME/.rvm/scripts/rvm"
 
 files:
   ubuntu_default_zshrc:
@@ -320,12 +406,26 @@ files:
   ubuntu22_rust_ps1:
      dest: $HOME/.cargo/env.ps1
      content: |
-        # rustup shell setup
-        # affix colons on either side of $env:PATH to simplify matching
-        if (":${env:PATH}:" -notlike "*:$HOME/.cargo/bin:*") {
-            # Prepending path in case a system-installed rustc needs to be overridden
-            $env:PATH = "$HOME/.cargo/bin:$env:PATH"
-        }
+       # rustup shell setup
+       # affix colons on either side of $env:PATH to simplify matching
+       if (":${env:PATH}:" -notlike "*:$HOME/.cargo/bin:*") {
+           # Prepending path in case a system-installed rustc needs to be overridden
+           $env:PATH = "$HOME/.cargo/bin:$env:PATH"
+       }
+  ubuntu22_asdf_ps1:
+     dest: $HOME/.config/powershell/asdf.ps1
+     content: |
+       # Determine the location of the shims directory
+       if ($null -eq $ASDF_DATA_DIR -or $ASDF_DATA_DIR -eq '') {
+         $_asdf_shims = "${env:HOME}/.asdf/shims"
+       } 
+       else {
+         $_asdf_shims = "$ASDF_DATA_DIR/shims"
+       }
+
+       # Then add it to path
+       $env:PATH = "${_asdf_shims}:${env:PATH}"
+       
 
 appends:
   ubuntu22_go:
@@ -376,6 +476,27 @@ appends:
     lines:
       - eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       - export PATH=$HOME/perl5/bin:$PATH
+  ubuntu22_asdf_bash:
+    dest: $HOME/.bashrc
+    lines:
+      - export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+      - source <(asdf completion bash)
+  ubuntu22_asdf_zsh:
+    dest: $HOME/.zshrc
+    lines:
+      - export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+      - fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
+      - autoload -Uz compinit && compinit
+  ubuntu22_asdf_ps1:
+    dest: $HOME/.config/powershell/Microsoft.PowerShell_profile.ps1
+    lines:
+       - . "$HOME/.config/powershell/asdf.ps1"
+  ubuntu22_rvm:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines: 
+      - export PATH="$PATH:$HOME/.rvm/bin"
+      - source "$HOME/.rvm/scripts/rvm"
+
 
 add_apt_repos:
   ubuntu22_corretto:

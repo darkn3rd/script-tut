@@ -45,16 +45,20 @@ def deep_stringify_keys(obj)
 end
 
 if __FILE__ == $PROGRAM_NAME
-  config_path = ARGV[0]
-  out_path = ARGV[1]
+  config_path, out_path, select_tags, exclude_tags = parse_databag_args(ARGV)
   if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.yml>"
+    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.yml> [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
-  tree[name] = substitute_variables(tree[name], tree[name]['variables'] || {})
+  # Whole tree, not just tree[name] - see generate_chef_databag.rb's
+  #  own comment on this same fix (scripts:/files:/appends: are top-
+  #  level RESERVED_KEYS blocks, not nested inside tree[name], so a
+  #  <%= $name %> reference in a script body sat unsubstituted before
+  #  this widened past tree[name] alone).
+  tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   # resolve! runs once on the *full* flattened tree (a needs:/meets:
   #  pair spanning areas still needs the whole tree to resolve), but
@@ -71,20 +75,42 @@ if __FILE__ == $PROGRAM_NAME
   #  and its file step vanished from the generated lessons vars file
   #  entirely until this was split back out per target.
   all_steps = flatten(tree[name])
+  all_steps, omitted = select_by_tags(all_steps, select_tags, exclude_tags)
+  warn_omissions(omitted)
   resolve!(all_steps)
+  # Validated once here, against the whole resolved tree, before either
+  #  area/type filtering below - see generate_chef_databag.rb's own
+  #  comment on why checking after either filter would raise a false
+  #  positive against a provider that's still real, just not emitted.
+  version_omitted = check_version_needs!(all_steps)
+  version_omitted.each { |s| warn "#{$PROGRAM_NAME}: #{s[:omitted_reason]}" }
 
   lessons_steps = all_steps.select { |s| (['lessons'] + LESSON_AREAS).include?(owning_function(s)) }
-  lessons_steps = lessons_steps.reject { |s| s[:type] == 'system' }
+  # A step lessons's own areas need: isn't necessarily scoped to
+  #  lessons at all - see generate_chef_databag.rb's own pull_in_cross_
+  #  area_deps comment (asdf's bootstrap sits on global.packages, not
+  #  lessons:, on purpose - its plugins span every area a manifest
+  #  might ever have, not just lessons's own four).
+  lessons_steps = pull_in_cross_area_deps(lessons_steps, all_steps)
+  lessons_steps = lessons_steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(lessons_steps)
   lessons_data = { 'id' => name }
-  lessons_data[COMMON_AREA] = consolidate_apt(lessons_steps.select { |s| owning_function(s) == 'lessons' }.map { |s| step_to_entry(s, tree) })
+  # Not just owning_function(s) == 'lessons' - a step pulled in from
+  #  outside lessons: entirely isn't 'lessons' either, but still
+  #  belongs in the shared, ungated common area alongside sdkman's own
+  #  bootstrap, not nowhere.
+  lessons_data[COMMON_AREA] = consolidate_apt(lessons_steps.reject { |s| LESSON_AREAS.include?(owning_function(s)) }.map { |s| step_to_entry(s, tree) })
   LESSON_AREAS.each do |area|
     entries = lessons_steps.select { |s| owning_function(s) == area }.map { |s| step_to_entry(s, tree) }
     lessons_data[area] = consolidate_apt(entries)
   end
 
   scriptbox_steps = all_steps.select { |s| owning_function(s) == 'scriptbox' }
-  scriptbox_steps = scriptbox_steps.reject { |s| s[:type] == 'system' }
+  # Same cross-area pull-in as lessons above - scriptbox has no such
+  #  need today, but a future scriptbox step could just as easily
+  #  `needs: asdf` as a gen_scripts one already does.
+  scriptbox_steps = pull_in_cross_area_deps(scriptbox_steps, all_steps)
+  scriptbox_steps = scriptbox_steps.reject { |s| %w[system omitted_version_need].include?(s[:type]) }
   dedup!(scriptbox_steps)
   scriptbox_data = { 'id' => name, 'packages' => consolidate_apt(scriptbox_steps.map { |s| step_to_entry(s, tree) }) }
 

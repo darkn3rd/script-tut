@@ -32,6 +32,11 @@ make update-pipx
 
 # Run AU for every package that contains update.ps1.
 make update
+
+# Push one already-built package to the public Chocolatey Community
+# Repository. Only ever per-package, by name - there is deliberately no
+# bare `publish` target that pushes everything at once.
+make publish-pipx
 ```
 
 Package output under `*/vendor/` is generated locally and ignored by Git.
@@ -41,6 +46,13 @@ The update targets require the AU PowerShell module. Install it once with
 directory before running its `update.ps1`, allowing AU's relative search-and-
 replace paths to resolve correctly. AU updates the package source files; run
 `make <package>` afterward to build the updated `.nupkg`.
+
+`publish-<package>` pushes `<package>/vendor/<package>.<nuspec version>.nupkg`
+straight to `https://push.chocolatey.org/` - public and moderated, but
+visible the moment it's pushed, so it's worth running deliberately, not
+as part of a routine build. Requires an API key configured once beforehand
+(`choco apikey add --source https://push.chocolatey.org/ --key <key>`) and
+the package already built (`make <package>` first).
 
 ### Building without GNU Make
 
