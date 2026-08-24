@@ -11,8 +11,9 @@ require_relative 'generate_chef_databag' # for strip_comments/step_to_entry/cons
 #  group_vars/all/ file instead of the two Chef cookbooks' own
 #  data_bags/*/<platform>.json. One invocation produces the combined file
 #  (rather than mirroring the Chef side's two separate scripts) since
-#  both halves need the exact same flatten/resolve! pass over the whole
-#  tree anyway - no reason to parse the manifest twice for one YAML file.
+#  both halves need the exact same flatten/topological_order pass over
+#  the whole tree anyway - no reason to parse the manifest twice for
+#  one YAML file.
 #
 #  Written as {'lessons' => {platform => {...}}, 'scriptbox' => {platform
 #  => {...}}} under group_vars/all/, which Ansible auto-loads for every
@@ -60,8 +61,9 @@ if __FILE__ == $PROGRAM_NAME
   #  this widened past tree[name] alone).
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
-  # resolve! runs once on the *full* flattened tree (a needs:/meets:
-  #  pair spanning areas still needs the whole tree to resolve), but
+  # topological_order runs once on the *full* flattened tree (a
+  #  needs:/meets: pair spanning areas still needs the whole tree to
+  #  resolve), but
   #  the owning_function select has to happen *before* dedup! and stay
   #  scoped separately per target, exactly like each of the two Chef
   #  generators does on its own - not one dedup! over the combined
@@ -75,9 +77,9 @@ if __FILE__ == $PROGRAM_NAME
   #  and its file step vanished from the generated lessons vars file
   #  entirely until this was split back out per target.
   all_steps = flatten(tree[name])
-  all_steps, omitted = select_by_tags(all_steps, select_tags, exclude_tags)
+  all_steps, omitted = resolve_included(all_steps, select_tags, exclude_tags)
   warn_omissions(omitted)
-  resolve!(all_steps)
+  topological_order(all_steps)
   # Validated once here, against the whole resolved tree, before either
   #  area/type filtering below - see generate_chef_databag.rb's own
   #  comment on why checking after either filter would raise a false

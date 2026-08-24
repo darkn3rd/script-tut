@@ -665,9 +665,10 @@ end
 #  reach files:/appends: the same way 'script' already reaches
 #  scripts:, without every function in this call chain needing its own
 #  extra parameter as more of these named-lookup blocks get added.
-#  `natural_steps` - a flatten() snapshot taken *before* resolve!
-#  reorders anything - has to come from the caller: resolve! has
-#  already mutated `steps` in place by the time it reaches here, and
+#  `natural_steps` - a flatten() snapshot taken *before* topological_
+#  order reorders anything - has to come from the caller: topological_
+#  order has already mutated `steps` in place by the time it reaches
+#  here, and
 #  relocate_cross_cutting needs the tree's original, undisturbed
 #  document order (see its own comment, and resolve_order.rb's
 #  natural_function_order). `apt_mirror` - see apt_mirror_for - is
@@ -935,101 +936,6 @@ def expand_selectors(argv)
   end
 end
 
-# select_sections(steps, selectors) - the subset of steps whose own
-#  path matches at least one selector, PLUS two independent kinds of
-#  implicit pull-in - hierarchy and cross-branch needs. Conflating
-#  these two (making hierarchy inclusion ride on the needs/meets loop
-#  below, as a side effect of whatever a selected leaf happens to
-#  `need:` by name) is exactly the recurring bug this function has had:
-#  a selector like "lessons.gen_scripts.python3" implicitly means
-#  "everything global.packages, global.lessons.packages and
-#  global.lessons.gen_scripts.packages would already have run by the
-#  time this ran" - unconditionally, regardless of whether python3's
-#  own steps happen to `need:` any one of them by name. Patching in an
-#  extra needs:/meets: pair every time some ancestor-level step (asdf's
-#  own plugin-add, in particular) got silently dropped is treating a
-#  hierarchy problem as a cross-branch-dependency problem - it only
-#  works for whichever one ancestor a maintainer remembered to wire up
-#  by hand, and leaves every other undeclared ancestor step just as
-#  droppable as before.
-#
-# So this is two separate passes:
-#
-# 1) Hierarchy (unconditional, no needs:/meets: involved) - for every
-#    directly-selected step's own path (e.g.
-#    "global.lessons.gen_scripts.python3"), every strict PREFIX of that
-#    path ("global", "global.lessons", "global.lessons.gen_scripts") is
-#    an ancestor level, and every step declared exactly at one of those
-#    levels is included, full stop - it already survived select_by_
-#    tags (default-or-selected-for-tag), so tag semantics are untouched;
-#    this pass only adds back the "runs before I do, unconditionally"
-#    steps tag-filtering never should have made conditional on a
-#    needs:/meets: link in the first place.
-#
-# 2) Cross-branch needs (the original loop) - for a step declared
-#    somewhere else in the file entirely (a genuine *sibling* branch,
-#    not an ancestor - e.g. groovy's own `cpanm: HTTP::Tiny` needing
-#    perl's `cpan: App::cpanminus`, a completely different lesson
-#    subsection), only a real `needs:` naming that provider's `meets:`
-#    pulls it in. This is the part that's supposed to require an
-#    explicit needs:/meets: pair - a hierarchy relationship never
-#    should have needed one to begin with.
-#
-# Each cross-branch pulled-in provider brings two things along, not
-#  just the bare provider step:
-#  - its own unit_span (see resolve_order.rb). Confirmed directly this
-#    matters: selecting just "lessons.gen_scripts.groovy" (needs:
-#    cpanm) pulled in perl's own `cpan: App::cpanminus` (meets: cpanm,
-#    implicitly needs: perl - see resolve_order.rb's own IMPLICIT_
-#    NEEDS) and, one loop iteration later, `system: perl` itself (meets:
-#    perl) - but not perl's own attached ubuntu22_cpan_local_setup
-#    script, since that's a *separate* flattened step (attached_to:
-#    'perl') with no needs:/meets: of its own for this loop to ever
-#    match on. Without it, `cpan -i App::cpanminus` ran cold (no
-#    local::lib bootstrap), hitting a real, reproducible CPAN
-#    FirstTime.pm reentrancy bug - confirmed directly against a fresh
-#    Ubuntu 22.04 box.
-#  - its own natural_prefix (see resolve_order.rb) - the same "implicit
-#    local prerequisite" pull-in relocate_cross_cutting already does for
-#    the unfiltered call tree, so a SECTION-filtered one doesn't drop
-#    something relocate_cross_cutting itself would have kept (e.g.
-#    compiled_lang's own `apt: curl` ahead of `apt: build-essential`,
-#    connected by nothing but document order - confirmed directly:
-#    missing from a "lessons.gen_scripts.groovy" selection before this).
-#    Filtered against `steps` (`&`), not natural_steps directly - a
-#    natural-order sibling select_by_tags already dropped for this run
-#    isn't a real candidate to pull back in. (This is itself a hierarchy
-#    pull-in, just scoped to the one provider's own owning function -
-#    it does not need to walk multiple ancestor levels the way pass 1
-#    above does, since a provider found here is always local to a
-#    single level.)
-def select_sections(steps, selectors, natural_steps)
-  return steps if selectors.empty?
-
-  selected = steps.select { |step| selectors.any? { |sel| path_matches?(step[:path], sel) } }
-
-  ancestor_paths = selected.flat_map do |step|
-    segments = step[:path].split('.')
-    (0...segments.length).map { |i| segments[0...i].join('.') }
-  end.uniq
-  selected.concat(steps.select { |s| ancestor_paths.include?(s[:path]) } - selected)
-
-  loop do
-    needed = selected.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq
-    providers = steps.select { |s| needed.include?(meets_name(s)) && !selected.include?(s) }
-    break if providers.empty?
-
-    providers.each do |provider|
-      start, finish = unit_span(steps, steps.index(provider))
-      selected.concat(steps[start..finish] - selected)
-      selected.concat(natural_prefix(provider, natural_steps) & steps - selected)
-    end
-  end
-  # Preserve steps' own relative order rather than selected's
-  #  append-during-pull-in order.
-  steps.select { |step| selected.include?(step) }
-end
-
 # print_usage(stream) - shared between --help (stdout, exit 0) and a
 #  missing config_path (stderr, exit 1) - same message either way, just
 #  a different destination/exit status depending on whether the user
@@ -1052,7 +958,7 @@ def print_usage(stream)
   stream.puts ''
   stream.puts '  --select TAG,TAG - opt in to a tagged alternative (e.g. rbenv/pyenv/'
   stream.puts '    asdf_ruby/asdf_python vs. Ubuntu\'s own system ruby/python) - see'
-  stream.puts '    resolve_order.rb\'s own tag_eligible?/select_by_tags (issue #16).'
+  stream.puts '    resolve_order.rb\'s own tag_eligible?/resolve_included (issue #16).'
   stream.puts '    An untagged entry always runs regardless. A tagged entry runs if'
   stream.puts '    it carries the literal tag \'default\' (the manifest author\'s own'
   stream.puts '    declared fallback where no untagged alternative exists), at least'
@@ -1106,31 +1012,29 @@ if __FILE__ == $PROGRAM_NAME
   #  manifest does today).
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
-  # Order matters here: select_by_tags (issue #16) runs first, on the
-  #  *full* list, for the same reason resolve! itself needs the full
-  #  list before select_sections narrows it - a tag-filtered-then-
-  #  resolved order would let resolve! see (and possibly relocate) a
-  #  `meets:` provider that select_by_tags was always going to drop in
-  #  favor of its selected/default alternative, corrupting the very
-  #  ordering resolve! is supposed to guarantee. resolve! runs on the
-  #  now tag-filtered list next, so dependency ordering is correct
-  #  globally regardless of what select_sections narrows afterward;
-  #  dedup! runs *last*, within just that filtered set - confirmed
-  #  directly running dedup! before selection is wrong, not just
-  #  reordered differently: selecting a single section (e.g. just
+  # Order matters here: resolve_included (issue #16 tag-activation,
+  #  hierarchy expansion, and SECTION-selector narrowing, all in one
+  #  pass) runs first, on the *full* list, for the same reason
+  #  topological_order itself needs the full list before dedup! narrows
+  #  it - a filtered-then-ordered order would let topological_order see
+  #  (and possibly relocate) a `meets:` provider that resolve_included
+  #  was always going to drop in favor of its selected/default
+  #  alternative, corrupting the very ordering topological_order is
+  #  supposed to guarantee. topological_order runs on the now-filtered
+  #  list next; dedup! runs *last*, within just that filtered set -
+  #  confirmed directly running dedup! before selection is wrong, not
+  #  just reordered differently: selecting a single section (e.g. just
   #  "testbox") could lose a step entirely if dedup! had already kept
   #  some *other*, unselected section's identical step as the "first"
   #  occurrence instead.
   steps = flatten(tree[name])
-  # Snapshotted before resolve!/select_by_tags mutate/filter steps' own
-  #  order - see write_install_script's own comment on why, and select_
-  #  by_tags/select_sections' own shared reasoning: a filtered `steps`
-  #  may not include every natural-order sibling relocate_cross_
-  #  cutting's own prefix walk looks for.
+  # Snapshotted before resolve_included/topological_order mutate/filter
+  #  steps' own order - see write_install_script's own comment on why -
+  #  a filtered `steps` may not include every natural-order sibling
+  #  relocate_cross_cutting's own prefix walk looks for.
   natural_steps = steps.dup
-  steps, omitted = select_by_tags(steps, options[:select], options[:exclude])
-  resolve!(steps)
-  steps = select_sections(steps, expand_selectors(ARGV[1..]), natural_steps)
+  steps, omitted = resolve_included(steps, options[:select], options[:exclude], selectors: expand_selectors(ARGV[1..]))
+  topological_order(steps)
   dedup!(steps)
   version_omitted = check_version_needs!(steps)
 
@@ -1141,7 +1045,7 @@ if __FILE__ == $PROGRAM_NAME
     "Generated from #{config_path} by #{$PROGRAM_NAME} - do not edit by hand.",
     'Installs everything in the file, in dependency-resolved order.'
   ]
-  # See resolve_order.rb's own select_by_tags - a step whose own needs:
+  # See resolve_order.rb's own resolve_included - a step whose own needs:
   #  had no eligible provider at all (not just "wasn't selected this
   #  run") got dropped rather than emitted as a command guaranteed to
   #  fail; surfaced here instead of silently disappearing.

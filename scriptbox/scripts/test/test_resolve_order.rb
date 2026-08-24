@@ -1,11 +1,11 @@
 require_relative 'test_helper'
 
 # Small synthetic manifests, not the real scriptbox/config/*.yml - these
-#  tests are about the pipeline mechanism itself (flatten/resolve!/
-#  select_by_tags/unit_span/natural_prefix), which should stay correct
-#  independent of whatever the real manifest's own content happens to
-#  look like on any given day. See test_generate_install_script.rb for
-#  tests against the real manifest.
+#  tests are about the pipeline mechanism itself (flatten/
+#  topological_order/resolve_included/unit_span/natural_prefix), which
+#  should stay correct independent of whatever the real manifest's own
+#  content happens to look like on any given day. See test_generate_
+#  install_script.rb for tests against the real manifest.
 class TestFlatten < Minitest::Test
   def test_extracts_basic_package_fields
     tree = { 'packages' => [{ 'apt' => 'curl', 'meets' => 'curl', 'tags' => ['x'] }] }
@@ -203,35 +203,115 @@ class TestNaturalPrefix < Minitest::Test
   end
 end
 
-class TestResolveBang < Minitest::Test
+# topological_order - a real topological sort (DFS-based) over the
+# needs:/meets: graph, replacing the old find-one-unmet-edge-and-move-it
+# loop; additionally detects a real needs:/meets: cycle instead of
+# looping forever.
+class TestTopologicalOrder < Minitest::Test
+  def order_for(tree)
+    steps = flatten(tree)
+    topological_order(steps)
+    steps.map { |s| [s[:type], s[:name]] }
+  end
+
   def test_moves_a_consumer_after_its_provider
-    tree = {
+    result = order_for(
       'packages' => [
         { 'apt' => 'thing', 'needs' => 'toolchain' },
         { 'apt' => 'build-essential', 'meets' => 'toolchain' }
       ]
-    }
-    steps = flatten(tree)
-    resolve!(steps)
+    )
 
-    assert_equal %w[build-essential thing], steps.map { |s| s[:name] }
+    assert_equal [%w[apt build-essential], %w[apt thing]], result
   end
 
   def test_leaves_already_correct_order_alone
-    tree = {
+    result = order_for(
       'packages' => [
         { 'apt' => 'build-essential', 'meets' => 'toolchain' },
         { 'apt' => 'thing', 'needs' => 'toolchain' }
       ]
-    }
-    steps = flatten(tree)
-    resolve!(steps)
+    )
 
-    assert_equal %w[build-essential thing], steps.map { |s| s[:name] }
+    assert_equal [%w[apt build-essential], %w[apt thing]], result
+  end
+
+  def test_resolves_a_multi_hop_transitive_chain
+    # Mirrors TestResolveIncludedSectionRegression's own groovy/perl/
+    # cpanm tree - two hops (groovy needs cpanm, cpanm's own type
+    # implicitly needs perl - see IMPLICIT_NEEDS), both providers
+    # starting out *after* their consumer in document order.
+    result = order_for(
+      'lessons' => {
+        'gen_scripts' => {
+          'perl' => {
+            'packages' => [
+              { 'cpanm' => 'HTTP::Tiny', 'needs' => 'cpanm' }
+            ]
+          },
+          'perl_setup' => {
+            'packages' => [
+              { 'cpan' => 'App::cpanminus', 'meets' => 'cpanm' },
+              { 'system' => 'perl', 'meets' => 'perl', 'script' => 'cpan_setup' }
+            ]
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      %w[system perl], %w[script cpan_setup], %w[cpan App::cpanminus], %w[cpanm HTTP::Tiny]
+    ], result
+  end
+
+  def test_provider_with_its_own_attached_steps_moves_as_one_unit
+    result = order_for(
+      'packages' => [
+        { 'apt' => 'thing', 'needs' => 'toolchain' },
+        { 'system' => 'gcc', 'meets' => 'toolchain', 'script' => 'setup', 'append' => 'setup' }
+      ]
+    )
+
+    assert_equal [%w[system gcc], %w[script setup], %w[append setup], %w[apt thing]], result
+  end
+
+  def test_provider_with_a_leading_tap_moves_as_one_unit
+    # A cask's own tap must stay right before it (see unit_span's own
+    # comment) - confirmed directly this was broken for compute_units
+    # specifically: the tap step's own index is always reached first
+    # in ascending iteration order, and unit_span called *from the
+    # tap's own index* has no way to look forward for the cask that's
+    # actually going to claim it (its own backward-looking tap search
+    # only works when called from the cask's index) - a real bug
+    # against a real manifest (macos.yml's own wine-stable cask) before
+    # compute_units' own forward peek was added.
+    result = order_for(
+      'packages' => [
+        { 'apt' => 'thing', 'needs' => 'toolchain' },
+        { 'tap' => 'some/tap' },
+        { 'cask' => 'some-app', 'meets' => 'toolchain' }
+      ]
+    )
+
+    assert_equal [%w[tap some/tap], %w[cask some-app], %w[apt thing]], result
+  end
+
+  def test_raises_a_clear_error_on_a_real_cycle
+    steps = flatten(
+      'packages' => [
+        { 'apt' => 'a', 'meets' => 'a', 'needs' => 'b' },
+        { 'apt' => 'b', 'meets' => 'b', 'needs' => 'a' }
+      ]
+    )
+
+    err = assert_raises(RuntimeError) { topological_order(steps) }
+    assert_match(/cycle/, err.message)
+    assert_match(/'a'/, err.message)
+    assert_match(/'b'/, err.message)
   end
 end
 
-class TestSelectByTags < Minitest::Test
+class TestResolveIncluded < Minitest::Test
   def rbenv_asdf_tree
     {
       'packages' => [
@@ -246,8 +326,8 @@ class TestSelectByTags < Minitest::Test
   def test_untagged_step_is_always_included_regardless_of_selection
     steps = flatten(rbenv_asdf_tree)
 
-    no_select, = select_by_tags(steps, [], [])
-    with_select, = select_by_tags(steps, ['rbenv'], [])
+    no_select, = resolve_included(steps, [], [])
+    with_select, = resolve_included(steps, ['rbenv'], [])
 
     assert_includes no_select.map { |s| s[:name] }, 'ruby'
     assert_includes with_select.map { |s| s[:name] }, 'ruby'
@@ -255,21 +335,21 @@ class TestSelectByTags < Minitest::Test
 
   def test_no_selection_excludes_every_tagged_alternative
     steps = flatten(rbenv_asdf_tree)
-    included, = select_by_tags(steps, [], [])
+    included, = resolve_included(steps, [], [])
 
     assert_equal ['ruby'], included.map { |s| s[:name] }
   end
 
   def test_select_pulls_in_the_matching_tagged_alternative
     steps = flatten(rbenv_asdf_tree)
-    included, = select_by_tags(steps, ['rbenv'], [])
+    included, = resolve_included(steps, ['rbenv'], [])
 
     assert_includes included.map { |s| s[:name] }, '4.0.6'
   end
 
   def test_select_transitively_pulls_in_an_untagged_prerequisite_of_a_tagged_step
     steps = flatten(rbenv_asdf_tree)
-    included, = select_by_tags(steps, ['asdf_ruby'], [])
+    included, = resolve_included(steps, ['asdf_ruby'], [])
     names = included.map { |s| s[:name] }
 
     # asdf_plugin's own needs: asdf has no eligible provider on tag_
@@ -293,7 +373,7 @@ class TestSelectByTags < Minitest::Test
       ]
     }
     steps = flatten(tree)
-    included, = select_by_tags(steps, [], [])
+    included, = resolve_included(steps, [], [])
     names = included.map { |s| s[:name] }
 
     assert_includes names, 'bundler'
@@ -303,7 +383,7 @@ class TestSelectByTags < Minitest::Test
 
   def test_exclude_vetoes_even_a_selected_tag
     steps = flatten(rbenv_asdf_tree)
-    included, = select_by_tags(steps, ['rbenv'], ['rbenv'])
+    included, = resolve_included(steps, ['rbenv'], ['rbenv'])
 
     refute_includes included.map { |s| s[:name] }, '4.0.6'
   end
@@ -316,7 +396,7 @@ class TestSelectByTags < Minitest::Test
       ]
     }
     steps = flatten(tree)
-    _included, omitted = select_by_tags(steps, [], ['asdf'])
+    _included, omitted = resolve_included(steps, [], ['asdf'])
 
     assert_equal 1, omitted.length
     omitted_step, missing = omitted.first
@@ -356,7 +436,7 @@ class TestGroupScopedDefaultTagResolution < Minitest::Test
 
   def names_for(select_tags)
     steps = flatten(tree)
-    included, = select_by_tags(steps, select_tags, [])
+    included, = resolve_included(steps, select_tags, [])
     included.map { |s| s[:name] }
   end
 
@@ -440,9 +520,9 @@ end
 # The regression this whole class guards against: gem: ratatui_ruby
 # (a real manifest entry) needs a real Ruby >= 3.2, but the default/
 # untagged provider (system: ruby) is Ubuntu 22.04's own 3.0.2 apt
-# package - every existing resolution stage (tag_eligible?, select_by_
-# tags, resolve!, select_sections) only ever matched needs:/meets: by
-# bare capability name, with no notion of a version floor at all, so
+# package - every existing resolution stage (tag_eligible?,
+# resolve_included, topological_order) only ever matched needs:/meets:
+# by bare capability name, with no notion of a version floor at all, so
 # this passed every one of them silently and only failed live, mid-VM-
 # provision, at the actual `gem install` - confirmed directly against a
 # real vagrant run. check_version_needs! never raises, though - a
