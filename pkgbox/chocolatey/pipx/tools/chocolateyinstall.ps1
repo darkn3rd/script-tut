@@ -14,10 +14,8 @@ Get-ChocolateyWebFile -PackageName $packageName `
   -ChecksumType 'sha256'
 
 # pipx.pyz is a zipapp, not something Chocolatey's own shimgen can launch
-#  directly - same problem the upstream Scoop manifest's own pre_install
-#  block solves with a generated .bat wrapper (see bucket/pipx.json's
-#  pre_install/bin keys, ported here as-is). Try `python` then `py`,
-#  same order as upstream.
+#  directly - a generated .bat wrapper wraps it instead. Try `python`
+#  then `py`.
 $pythonCmd = $null
 foreach ($candidate in @('python', 'py')) {
     if (Get-Command $candidate -ErrorAction SilentlyContinue) {
@@ -33,6 +31,5 @@ $launcherPath = Join-Path $toolsDir 'pipx.bat'
 Set-Content -Path $launcherPath -Value "@$pythonCmd `"%~dp0pipx.pyz`" %*" -Encoding ASCII
 
 # Chocolatey only auto-shims .exe files dropped in tools\ - pipx.bat
-#  needs an explicit shim, the Install-BinFile/Uninstall-BinFile pair
-#  being Chocolatey's own equivalent of Scoop's `"bin": "pipx.bat"`.
+#  needs an explicit shim via Install-BinFile/Uninstall-BinFile.
 Install-BinFile -Name 'pipx' -Path $launcherPath
