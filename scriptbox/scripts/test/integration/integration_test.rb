@@ -319,7 +319,7 @@ end
 
 def save_expected(letter, flat)
   FileUtils.mkdir_p(EXPECTED_DIR)
-  File.write(expected_path(letter), JSON.pretty_generate(flat))
+  File.write(expected_path(letter), "#{JSON.pretty_generate(flat)}\n")
   puts "wrote #{expected_path(letter)}"
 end
 
@@ -329,7 +329,7 @@ end
 #  useful on its own for debugging a FAIL without re-running anything.
 def save_actual(letter, flat)
   FileUtils.mkdir_p(ACTUAL_DIR)
-  File.write(actual_path(letter), JSON.pretty_generate(flat))
+  File.write(actual_path(letter), "#{JSON.pretty_generate(flat)}\n")
   puts "wrote #{actual_path(letter)}"
 end
 
