@@ -74,8 +74,15 @@ SCENARIOS = {
   'ZZZ' => {
     slug: 'full',
     label: 'Full default install (whole manifest, no selector, no --select/--exclude)',
+    # select:/exclude: are always real arrays here, never nil - unlike
+    #  selector: (where nil means "no SECTION argument at all"), an
+    #  empty array is exactly what "no --select/--exclude" already
+    #  means for these two, and generate_script's own `config[:select].
+    #  empty?` assumes exactly that. Confirmed directly: a scenario
+    #  select: nil crashes there with NoMethodError, since nil has no
+    #  empty? method.
     selector: nil,
-    select: nil,
+    select: [],
     exclude: []
   }
 }.freeze

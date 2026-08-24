@@ -47,7 +47,12 @@
   },
   "gen_scripts": {
     "awk": "OK",
-    "groovy": "MISSING",
+    "groovy": {
+      "groovy": "OK",
+      "needs": {
+        "java": "OK"
+      }
+    },
     "perl": {
       "perl": "OK",
       "needs": {

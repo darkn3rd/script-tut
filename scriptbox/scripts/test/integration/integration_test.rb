@@ -105,8 +105,13 @@ end
 def effective_config(scenario, options)
   {
     selector: options[:selector] || scenario[:selector],
-    select: options[:select] || scenario[:select],
-    exclude: options[:exclude] || scenario[:exclude]
+    # Array(...) - unlike selector: (nil means something real: no
+    #  SECTION argument at all), select:/exclude: only ever mean "no
+    #  --select/--exclude", i.e. an empty array - a scenario's own
+    #  select: nil crashes generate_script's own `config[:select].
+    #  empty?` otherwise (confirmed directly against a real ZZZ run).
+    select: Array(options[:select] || scenario[:select]),
+    exclude: Array(options[:exclude] || scenario[:exclude])
   }
 end
 
