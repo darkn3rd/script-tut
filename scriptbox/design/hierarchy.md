@@ -1,3 +1,4 @@
+# Notes Describing the Provisioning Schema 
 What is a good model (such as datastructure) for this:
 
 I am defining a manifest schema for installing packages on a given operating system.
@@ -144,15 +145,21 @@ global.lessons.gen_scripts.python3   # an item has asdf_python tag
 
 The global.lessons.gen_scripts.packages[2] acts as a bridge, as it is a leaf that implments the `asdf_python`, but it is a child with `asdf` and a parent with `asdf`.  Even though `asdf` was not specified, because it is an `asdf` child, it would need to have its parent in the list of things to run.
 
-The challenge will happen if there's a needs/meets, so different leafs in two branches.
+The challenge will happen if there's a needs/meets, so different leafs in two branches.  
 
-Another example is groovy installed with sdkman. I can specify the tag `sdkman_groovy`, but because this item has  `[sdkman_groovy,sdkman]`, it will walk up the tree and install anything with the `sdkman` tag.  This item has a needs: java, and there's a compiled_lang.java that has the tags `sdkman_java,sdkman`, so now that sdkman is included, and that this java item has the tag sdkman and meets java, it can get installed ahead of groovy.  So in this scenario:
+The user selects `sdkman_groovy` adn `sdkman_java`.  
+
+In this example, the user wants to use SDKMan! for installing Java and Groovy, so selects tags `sdkman_groovy` adn `sdkman_java`.
+
+Groovy (`global.lessons.gen_scripts.groovy.packages`) will have the tag `sdk_groovy`, but also has a `needs: java`.  The java and it's hierarchy will have to be installed, so it will install packages in global.lessons.compiled_lang.java.packages, including ones with the tag `sdk_java`.  It's hierarhy would come before, so it will walk up the tree and install any default, and anything with `sdk_java`, which includes sdkman.  For groovy, everything in its tree will be before, so everything in its hierarchy should including, including ones with the tag `sdk_groovy`. 
+
+So in this scenario, the order would be to install all default packages, and packages with tags of either `sdkman_java` and `sdkman_groovy`.  Java gets moved up before groovy.
 
 ```
 global.packages
-global.lessons.packages                     # script: ubuntu_sdkman_install with tag sdkman
+global.lessons.packages                     # script: ubuntu_sdkman_install with tags [sdkman_java,sdkman_groovy]
 global.lessons.compiled_lang.packages
-global.lessons.compiled_lang.java.packages  # items with `sdkman,sdkman_java` and meets: java
+global.lessons.compiled_lang.java.packages  # items with `sdkman_java` and meets: java
 global.lessons.gen_scripts.packages
-global.lessons.gen_scripts.groovy.packages  # items with `sdkman,sdkman_groovy` and needs java
+global.lessons.gen_scripts.groovy.packages  # items with `sdkman_groovy` and needs java
 ```

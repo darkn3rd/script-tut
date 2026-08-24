@@ -27,7 +27,7 @@ ubuntu22:
       packages:
         - script: ubuntu22_sdkman
           append: ubuntu22_sdkman
-          tags: [sdkman]
+          tags: [sdkman_groovy,sdkman_java]
           meets: sdkman
       gen_scripts:
         packages:
@@ -99,7 +99,7 @@ ubuntu22:
               tags: [sdkman_groovy, default]
             - sdkman: groovy <%= $groovy_ver %>
               cmd: sdk default groovy <%= $groovy_ver %>
-              needs: [java, sdkman]
+              needs: java
               tags: [sdkman_groovy, default]
             - asdf: groovy <%= $groovy_ver %>
               cmd: asdf set -u groovy <%= $groovy_ver %>
@@ -144,7 +144,7 @@ ubuntu22:
               cmd: rvm use <%= $ruby_ver %> --default
               meets: ruby <%= $ruby_ver %>
               needs: rvm
-              tags: [rvm]              
+              tags: [rvm, default]              
         tcl:
           packages:
             - system: tcl8.6 # 8.6.12
@@ -179,6 +179,10 @@ ubuntu22:
           packages:
             - apt: openjdk-17-jdk
               meets: java
+            - sdkman: java 17.0.20-amzn
+              cmd: sdk default java 17.0.20-amzn
+              meets: java
+              tags: [sdkman_java]
         go:
           packages:
             - apt_repository: ppa:longsleep/golang-backports

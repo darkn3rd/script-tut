@@ -1,3 +1,5 @@
+# Notes on data structure that would be good for this model
+
 What you have is no longer just a tree. The YAML is a good **authoring hierarchy**, but the execution model is really an **ordered dependency graph**.
 
 The cleanest model is:
