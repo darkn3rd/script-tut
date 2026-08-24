@@ -69,7 +69,7 @@ ATTACHABLE_KEYS = %w[script file append].freeze
 #  windows.yml's own gen_scripts.go, which needs: make but has no
 #  package of its own that isn't already fully described by `choco:
 #  go` - `- noop: go_needs_make\n  needs: make` documents that
-#  dependency (and lets resolve!/relocate_cross_cutting actually see
+#  dependency (and lets topological_order/relocate_cross_cutting actually see
 #  and act on it) without pretending it's a second install of go.
 def flatten(node, path = [])
   steps = []
@@ -132,7 +132,7 @@ def flatten(node, path = [])
         #  attachment - an append:/file: attached to a tagged package
         #  (e.g. ubuntu22_asdf's own bootstrap script + its append:
         #  entries) has to rise or fall with that same package under
-        #  tag-based selection (see select_by_tags), not run
+        #  tag-based selection (see resolve_included), not run
         #  unconditionally as an untagged step would - appending asdf's
         #  own PATH lines to .bashrc regardless of whether asdf was
         #  actually installed would be a real bug, not a harmless extra.
@@ -197,7 +197,7 @@ end
 
 # tag_eligible?(step, enabled_tags, default_wins, exclude_tags) - whether
 #  `step` passes its own tags: gate on its own, before any needs:/meets:
-#  pull-in is even considered (see select_by_tags) - issue #16's source-
+#  pull-in is even considered (see resolve_included) - issue #16's source-
 #  of-truth design for letting a manifest express more than one
 #  legitimate path to the same tool (rbenv/pyenv/asdf vs. Ubuntu's own
 #  system ruby/python packages) without installing all of them at once.
@@ -211,8 +211,8 @@ end
 #    instant one of its own tags is enabled, the same as any other step
 #    - no needs:/meets: link required, and no special-casing for "this
 #    step happens to sit above the one that actually chose the tag."
-#    Execution ORDER is a completely separate concern (see resolve!/
-#    select_sections), unaffected by any of this.
+#    Execution ORDER is a completely separate concern (see topological_order/
+#    resolve_included), unaffected by any of this.
 #  - Otherwise, still eligible if it carries 'default' and its own
 #    group's default won (see compute_default_wins) - checked
 #    separately from enabled_tags, not via flat tag-string membership,
@@ -230,62 +230,87 @@ def tag_eligible?(step, enabled_tags, default_wins, exclude_tags)
   tags.include?('default') && default_wins[step[:path]]
 end
 
-# select_by_tags(steps, select_tags, exclude_tags) - the subset of
-#  `steps` this generation run actually wants, given --select/--exclude
-#  (see tag_eligible?/issue #16). Three passes, each running to a
-#  fixpoint before the next starts:
-#   1. tag_eligible? alone picks the initial set - including any step
-#      reached purely through tag propagation (compute_enabled_tags),
-#      with no needs:/meets: link at all (e.g. an ancestor-level
-#      bootstrap carrying the same tag a descendant leaf's own winning
-#      default uses).
-#   2. Transitive needs:/meets: pull-in, the same shape select_sections
-#      already uses for --SECTION - a step this run already wants might
-#      need: something whose own tags *still* don't make it eligible
-#      even after tag propagation (a genuine cross-branch dependency,
-#      not an alternative-selection relationship at all - e.g. groovy's
-#      own needs: java, met by a completely different lesson area) -
-#      "any dependency required to implement it will be installed"
-#      is the whole point of this pass, not an afterthought. A provider
-#      exclude_tags itself vetoes is skipped here on purpose - an
-#      explicit --exclude has to actually remove that alternative, not
-#      have some other step's needs: silently reinstate it.
-#   3. Omission - after the pull-in settles, a step whose own needs:
-#      still resolves to no provider *at all* in the final set (not
-#      "wasn't selected this run" but genuinely unsatisfiable - nothing
-#      in the whole file meets: it, or the one that did was vetoed by
-#      exclude_tags) can't actually run correctly, so it - and,
-#      transitively, anything that itself needs: *that* step - is
-#      dropped rather than emitted as a command guaranteed to fail on
-#      the box (see generate_install_script.rb's own omission
-#      comments). Repeats to a fixpoint since dropping one step can
-#      cascade into dropping whatever depended on it.
-#  Returns [included, omitted] - included preserves steps' own original
-#  relative order (same reasoning as select_sections' own final pass);
-#  omitted is [[step, missing_need], ...] for write_install_script to
-#  surface as header comments.
-def select_by_tags(steps, select_tags, exclude_tags)
+# expand_hierarchy(candidates, included) - `included` grown to also
+#  contain every step from `candidates` declared exactly at a strict-
+#  prefix ancestor path of anything already in `included` (e.g.
+#  selecting something at "global.lessons.gen_scripts.python3" also
+#  includes whatever's declared directly at "global", "global.lessons",
+#  and "global.lessons.gen_scripts") - no needs:/meets: check involved,
+#  but NOT tag-blind either: `candidates` must already be the tag-
+#  eligible subset (see resolve_included's own call site), never the
+#  raw, unfiltered step list - confirmed directly this matters: passing
+#  the unfiltered list here pulled in a *tag-gated* ancestor step whose
+#  own tags didn't match anything selected at all, which is exactly the
+#  "hierarchy bypasses tags" bug this design has never wanted (tags
+#  still gate every step, ancestor or not - hierarchy only stops tag-
+#  eligible ancestors from being dropped by *path*-based narrowing on
+#  top of that). Hierarchy expansion is a property of resolution
+#  itself, not something that only exists when a SECTION selector
+#  happens to be in play - directly closing the gap that caused a real
+#  regression this session (asdf_plugin steps silently missing under a
+#  narrow SECTION selector, before this existed). For a section-less
+#  (whole-manifest) run this is a no-op: every tag-eligible ancestor
+#  step is already in `included` itself, with no path-based filtering
+#  to have excluded it in the first place - confirmed directly by
+#  every existing tag-only test
+#  still producing the same included set through resolve_included. The
+#  benefit only shows up once a SECTION selector also narrows what's
+#  directly selected (see resolve_included's own selectors: param).
+def expand_hierarchy(candidates, included)
+  ancestor_paths = included.flat_map do |step|
+    segments = step[:path].split('.')
+    (0...segments.length).map { |i| segments[0...i].join('.') }
+  end.uniq
+  included + (candidates.select { |s| ancestor_paths.include?(s[:path]) } - included)
+end
+
+# resolve_included(steps, select_tags, exclude_tags, selectors: []) - the
+#  single inclusion entry point for all four generators: tag-activation
+#  (tag_eligible?/compute_default_wins/compute_enabled_tags - group-
+#  scoped `default` resolution only, no general tag co-occurrence
+#  propagation, see resolve_order.rb's own header comment on why that
+#  was rejected), hierarchy expansion (expand_hierarchy, unconditional -
+#  not gated on whether `selectors` was given), and needs:/meets:
+#  pull-in, all three applying together regardless of whether a step
+#  was reached by tag, by SECTION path, or by ancestry - previously
+#  three separate passes (tag-only inclusion, generate_install_
+#  script.rb's own now-removed select_sections doing its own separate
+#  ancestor-pass and pull-in loop under a SECTION selector) that each
+#  re-derived fragments of the others. `selectors` (SECTION path
+#  prefixes, e.g. "lessons.gen_scripts.python3") is optional and, when
+#  given, ALSO seeds the initial included set by path match. Returns
+#  [included, omitted]: included preserves steps' own original relative
+#  order; omitted is [[step, missing_need], ...] for write_install_
+#  script to surface as header comments.
+def resolve_included(steps, select_tags, exclude_tags, selectors: [])
   default_wins = compute_default_wins(steps, select_tags)
   enabled_tags = compute_enabled_tags(steps, select_tags, default_wins)
-  included = steps.select { |s| tag_eligible?(s, enabled_tags, default_wins, exclude_tags) }
+  tag_eligible_steps = steps.select { |s| tag_eligible?(s, enabled_tags, default_wins, exclude_tags) }
+  included = tag_eligible_steps
+  included &= steps.select { |s| selectors.any? { |sel| path_matches?(s[:path], sel) } } if selectors.any?
 
-  # One provider per unmet need, not every step that happens to share
-  #  the same meets: value - confirmed directly this matters: with
-  #  both rbenv and asdf tagged entries declaring `meets: ruby` (real
-  #  alternatives for the very same thing), a naive "pull in every
-  #  match" pass here installed *both* of them even with no --select
-  #  at all, exactly the double-install issue #16 exists to prevent.
-  #  `steps.find` (not `.select`) mirrors resolve!'s own "first listed
-  #  provider wins" convention - same rule, same tie-break. Matches on
-  #  need_name(need), never the raw needs: entry - a versioned entry
-  #  like "ruby >= 3.2" (see parse_need) names the exact same
-  #  capability as a plain "ruby" would, just with an added floor
-  #  check_version_needs! verifies separately, later, against whichever
-  #  provider this same by-name matching already picked. Letting a
-  #  version floor change *which* provider gets pulled in here would
-  #  make a manifest's actual installed set depend on floors, not on
-  #  --select/tags/defaults the way every other resolution in this
-  #  file already promises.
+  included = expand_hierarchy(tag_eligible_steps, included)
+
+  # One provider per unmet need (steps.find, not .select) - the "issue
+  #  #16" tie-break: confirmed directly a first attempt using .select
+  #  pulled in *every* step sharing a meets: value for an unmet need,
+  #  double-installing (rbenv AND asdf_plugin both installed for the
+  #  same plain `needs: ruby`, with neither tag actually selected).
+  #  Each pulled-in provider gets its own unit_span (its attached
+  #  script:/file:/append: steps) *and* its own natural_prefix (local
+  #  siblings document order alone implies come first, no needs:/
+  #  meets: of their own) - needed regardless of whether a step is
+  #  reached via a SECTION selector or a tag-only run, since both need
+  #  the same completeness. natural_prefix reads `steps` itself, not a
+  #  separate pre-ordering snapshot - inclusion always runs before
+  #  topological_order now, so `steps` is still in its own natural
+  #  document order here regardless. Intersected against
+  #  `tag_eligible_steps`, not raw `steps` - confirmed directly this
+  #  matters: intersecting against the *unfiltered* list let a
+  #  natural_prefix candidate back in even when its own tag was never
+  #  selected at all (a synthetic flat tree with no real
+  #  FUNCTION_SECTIONS boundary walked all the way back to the start,
+  #  pulling in an explicitly-untagged-for-this-run rbenv step).
   loop do
     met = included.map { |s| meets_name(s) }.compact
     unmet = included.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq - met
@@ -293,12 +318,12 @@ def select_by_tags(steps, select_tags, exclude_tags)
 
     added = false
     unmet.each do |need|
-      provider = steps.find do |s|
-        meets_name(s) == need && !included.include?(s) && (s[:tags] & exclude_tags).empty?
-      end
+      provider = steps.find { |s| meets_name(s) == need && !included.include?(s) && (s[:tags] & exclude_tags).empty? }
       next unless provider
 
-      included << provider
+      start, finish = unit_span(steps, steps.index(provider))
+      included += (steps[start..finish] - included)
+      included += (natural_prefix(provider, steps) & tag_eligible_steps - included)
       added = true
     end
     break unless added
@@ -349,12 +374,12 @@ end
 #  all, the overwhelmingly common case: "needs *a* provider of this,
 #  whichever one resolution already picked, no floor on which one".
 #  Every place a needs: entry gets matched against a meets: value
-#  (select_by_tags, resolve!, select_sections) has to compare against
+#  (resolve_included, topological_order) has to compare against
 #  need_name(need), never the raw entry - a versioned entry like
 #  "ruby >= 3.2" and a plain provider's own `meets: ruby` name the
 #  same capability, and the whole point of keeping this separate from
 #  that matching is that adding a floor never changes *which* provider
-#  gets selected (see select_by_tags's own comment) - only whether
+#  gets selected (see resolve_included's own comment) - only whether
 #  check_version_needs! later accepts the one that was.
 def parse_need(need)
   m = need.strip.match(/\A(\S+)\s+([~^<>=!]+)\s*(.+)\z/)
@@ -376,8 +401,8 @@ end
 #  split into [capability_name, version] - version nil when the value
 #  carries none, still the common case for anything nobody has ever
 #  put a version floor on. Every place a meets: value is matched
-#  against a capability name (select_by_tags, resolve!, select_sections,
-#  relocate_cross_cutting, pull_in_cross_area_deps) has to compare
+#  against a capability name (resolve_included, topological_order,
+#  relocate_cross_cutting) has to compare
 #  against meets_name(step), never the raw value - "ruby 3.0" and a
 #  plain `needs: ruby` name the same capability; the version half only
 #  matters to check_version_needs!'s own floor check. Space-split, not
@@ -605,43 +630,122 @@ def unit_span(steps, index)
   [start, finish]
 end
 
-# resolve! - for every step with `needs: X` (X may be a single name or
-#  a list - e.g. groovy's own `needs: [java, sdkman]`, needing both the
-#  JDK *and* the SDKMAN bootstrap before it can run), finds the first
-#  step with `meets: X` for each one (first listed provider wins) and,
-#  if that provider currently sits after the consumer, moves its whole
-#  unit to just before it. Leaves order untouched when the provider
-#  already comes first. Handles multiple needs the same one-move-then-
-#  restart-the-whole-scan way it already handled a single one - moving
-#  any one provider can shift indices out from under the rest of this
-#  pass, so the outer loop simply runs again from scratch until nothing
-#  moves, converging on every need for every consumer regardless of how
-#  many there are.
-def resolve!(steps)
-  loop do
-    moved = false
+# compute_units(steps) - steps grouped into the same atomic [start,
+#  finish] spans unit_span already identifies (a provider plus its own
+#  attached tap:/script:/file:/append: steps) - each span becomes ONE
+#  node for topological_order, since those steps only ever make sense
+#  moving together (see unit_span's own comment - an append: separated
+#  from the package it configures is just wrong, wherever the package
+#  ends up). Iterates ascending index order and skips anything already
+#  claimed by an earlier unit's own forward span, so a unit's own
+#  attachments are never independently re-visited as if they were
+#  their own unit.
+#  A leading tap: needs its own extra check going forward, not just
+#  the claimed[] skip going backward - confirmed directly this matters:
+#  unit_span's own backward-looking tap search only works when *called
+#  from the cask's own index* (walking backward to find it); called on
+#  the tap step's own index first (which ascending iteration order
+#  always reaches first, since the tap always sits earlier), unit_span
+#  has no way to look forward for the cask that's actually going to
+#  claim it, so it returned a spurious tap-only unit before the cask
+#  ever got a chance to absorb it - a real, visible bug for a real
+#  cask (macos.yml's own wine-stable, tap: homebrew/cask-versions)
+#  before this forward peek was added. A tap
+#  immediately followed by a same-path step defers to whatever unit
+#  claims that next step instead of claiming itself here.
+def compute_units(steps)
+  units = []
+  claimed = Array.new(steps.length, false)
+  steps.each_index do |i|
+    next if claimed[i]
+    next if steps[i][:type] == 'tap' && steps[i + 1] && steps[i + 1][:path] == steps[i][:path]
 
-    steps.each_with_index do |consumer, c_index|
-      next unless consumer[:needs]
+    start, finish = unit_span(steps, i)
+    (start..finish).each { |j| claimed[j] = true }
+    units << steps[start..finish]
+  end
+  units
+end
 
-      Array(consumer[:needs]).each do |need|
-        p_index = steps.index { |s| meets_name(s) == need_name(need) }
-        next unless p_index
-        next if p_index < c_index
+# topological_order(steps) - `steps` reordered so every needs:/meets:
+#  pair holds (a provider always ends up before every consumer of it) -
+#  a real topological sort, DFS-based (visit dependencies-first,
+#  recursively, in natural document-index order), rather than Kahn's
+#  algorithm. Confirmed directly this matters: a first attempt using
+#  Kahn's algorithm (process whichever "ready" unit has the lowest
+#  natural index at each step) is *also* a technically-valid
+#  topological order, but pulls the ordering toward a different anchor:
+#  it leaves each provider at its own natural position until its own
+#  turn comes up and only then unblocks the consumer, instead of
+#  pulling the provider up to sit just before its earliest consumer -
+#  visibly different generated scripts across several real scenarios
+#  (java/groovy ordering diverged), even though both orders satisfy
+#  every needs:/meets: pair. Walking units in natural order and
+#  recursively visiting each one's own not-yet-placed dependencies
+#  *before* placing itself produces the "pull dependencies up to
+#  wherever they're first needed" order instead, confirmed directly
+#  against every real scenario across the whole manifest.
+#  Ties - anything with no needs:/meets: forcing it elsewhere - stay in
+#  original document position, so a run with no needs:/meets: at all
+#  reproduces the input order exactly; hierarchy (ancestors before
+#  descendants) needs no separate handling here at all, since
+#  flatten()'s own pre-order walk already guarantees an ancestor's
+#  natural index is lower than any of its descendants' - the same free
+#  guarantee relocate_cross_cutting's own natural_prefix already relies
+#  on, confirmed directly this session (an ancestor-level provider
+#  reaches every descendant branch before it, for free, regardless of
+#  which branch a cross-cutting consumer sits in - no explicit
+#  "hierarchy edge" needed, only real needs:/meets: pairs are).
+#  Operates on whole units (see compute_units), not bare steps, so a
+#  provider's own attached script:/file:/append: steps always move
+#  with it. Raises with the actual cycle named, rather than looping
+#  forever or silently producing a wrong order, if the needs:/meets:
+#  graph actually has one. Mutates and returns `steps`.
+def topological_order(steps)
+  units = compute_units(steps)
 
-        start, finish = unit_span(steps, p_index)
-        unit = steps.slice!(start, finish - start + 1)
-        insert_at = steps.index(consumer)
-        steps.insert(insert_at, *unit)
-        moved = true
-        break
-      end
-      break if moved
+  provider_unit_of = {}
+  units.each do |unit|
+    unit.each do |s|
+      name = meets_name(s)
+      next unless name
+
+      provider_unit_of[name] ||= unit
+    end
+  end
+
+  state = {} # unit.object_id => :visiting or :done
+  stack = []
+  ordered_units = []
+
+  visit = lambda do |unit|
+    next if state[unit.object_id] == :done
+
+    if state[unit.object_id] == :visiting
+      cycle = stack.drop_while { |u| !u.equal?(unit) } + [unit]
+      names = cycle.map { |u| u.map { |s| "#{s[:type]} '#{s[:name]}'" }.join('+') }
+      raise "needs:/meets: cycle detected: #{names.join(' -> ')}"
     end
 
-    break unless moved
+    state[unit.object_id] = :visiting
+    stack.push(unit)
+
+    needed = unit.flat_map { |s| Array(s[:needs]).map { |n| need_name(n) } }.uniq
+    needed.each do |need|
+      provider_unit = provider_unit_of[need]
+      next if provider_unit.nil? || provider_unit.equal?(unit)
+
+      visit.call(provider_unit)
+    end
+
+    stack.pop
+    state[unit.object_id] = :done
+    ordered_units << unit
   end
-  steps
+
+  units.each { |u| visit.call(u) }
+
+  steps.replace(ordered_units.flat_map { |u| u })
 end
 
 # FUNCTION_SECTIONS - the tree keys that become their own generated
@@ -665,13 +769,13 @@ def owning_function(step)
 end
 
 # natural_function_order(raw_steps) - the order function boundaries are
-#  first encountered in the *original*, pre-resolve! document order -
+#  first encountered in the *original*, pre-topological_order document order -
 #  i.e. the order the underlying tree's own hash keys were actually
 #  written in, which is what the generated call tree (see
 #  generate_install_script.rb's section_tree/emit_section_functions)
 #  actually calls its own children in. Deliberately computed from
-#  flatten()'s own raw output, not the post-resolve! steps list -
-#  resolve! moves *individual* steps earlier (e.g. compiled_lang's own
+#  flatten()'s own raw output, not the post-topological_order steps list -
+#  topological_order moves *individual* steps earlier (e.g. compiled_lang's own
 #  `meets: java` step gets moved to sit right before gen_scripts's own
 #  `needs: java` consumer), which would make compiled_lang look like it
 #  starts early even though the rest of its own content still runs much
@@ -690,7 +794,7 @@ end
 # needs_relocation?(provider, consumer, natural_order) - true if the
 #  generated call tree can't be trusted to already run `provider` before
 #  `consumer` on its own, so generate_install_script.rb has to actually
-#  move it. Same owning_function: false - resolve! already puts them in
+#  move it. Same owning_function: false - topological_order already puts them in
 #  the right relative order within that one function's own local body
 #  (see relocate_cross_cutting). Different owning_function, but
 #  provider's whole function is a strictly earlier sibling/ancestor in
@@ -727,12 +831,12 @@ end
 #  own `apt: curl` isn't declared as anything java needs, but it does
 #  sit before java in compiled_lang's own local sequence, so it has to
 #  go along too or java's relocated call would run without it. Found by
-#  walking backward through `natural_steps` - the *pre-resolve!* snapshot
+#  walking backward through `natural_steps` - the *pre-topological_order* snapshot
 #  (see natural_function_order) - specifically because `steps` itself
-#  can't answer this anymore: resolve! has already physically moved
+#  can't answer this anymore: topological_order has already physically moved
 #  `provider` away from those very neighbors (that's the whole reason it
 #  needs relocating at all), so looking at what's immediately before it
-#  in `steps` would find whatever resolve! happened to splice in next to
+#  in `steps` would find whatever topological_order happened to splice in next to
 #  it instead, not its real local siblings.
 #  Placing the call inside the *consumer's* function, rather than some
 #  separate pre-phase, is what keeps this correct without having to
@@ -754,7 +858,7 @@ end
 #  immediately before it, wherever *it* ends up.
 
 # natural_prefix(provider, natural_steps) - provider's own direct local
-#  siblings that precede it in the *original*, pre-resolve! document
+#  siblings that precede it in the *original*, pre-topological_order document
 #  order (see natural_function_order), up to the previous owning-
 #  function boundary - a provider's real implicit local prerequisites
 #  even when they carry no needs:/meets: of their own at all (e.g.
@@ -767,7 +871,7 @@ end
 #  anyway would relocate/select an unrelated install (here, .NET SDK)
 #  for no reason. Returned in natural order (furthest-back first) -
 #  shared by relocate_cross_cutting (call-tree restructuring) and
-#  select_sections (SECTION-filtered generation), which both need the
+#  resolve_included (SECTION-filtered generation), which both need the
 #  same answer to "what does this provider's own natural position
 #  already imply comes before it, unstated."
 def natural_prefix(provider, natural_steps)
@@ -808,7 +912,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     natural_prefix(provider, natural_steps).reverse_each do |sibling|
       r_idx = steps.index(sibling)
       # A section-filtered `steps` (see generate_install_script.rb's own
-      #  select_sections) may not include this natural-order sibling at
+      #  resolve_included) may not include this natural-order sibling at
       #  all - skip it and keep looking further back rather than
       #  stopping the whole walk on a step that isn't even part of this
       #  run.
@@ -827,7 +931,7 @@ def relocate_cross_cutting(steps, natural_steps, natural_order)
     # A step within this pulled-along group might itself `need:`
     #  something that also requires relocation - resolve recursively,
     #  inserting immediately before *that* step wherever it lands.
-    #  Array(...) - a need: can be a list (see resolve!'s own comment);
+    #  Array(...) - a need: can be a single name or a list;
     #  each one is resolved independently, so a step needing two things
     #  that both require relocation gets both inserted before it.
     group_steps.each do |s|
@@ -867,7 +971,7 @@ if __FILE__ == $PROGRAM_NAME
   #  RESERVED_KEYS blocks, not nested inside tree['macos']).
   tree = substitute_variables(tree, tree['macos']['variables'] || {})
   steps = flatten(tree['macos'])
-  resolve!(steps)
+  topological_order(steps)
   steps.each do |s|
     extra = []
     extra << "meets:#{s[:meets]}" if s[:meets]

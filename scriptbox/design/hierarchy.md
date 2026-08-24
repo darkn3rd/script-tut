@@ -1,11 +1,15 @@
-# Notes Describing the Provisioning Schema 
-What is a good model (such as datastructure) for this:
+# Notes Describing the Provisioning Schema
 
-I am defining a manifest schema for installing packages on a given operating system.
+This describes the resolution model actually implemented in
+`scriptbox/scripts/resolve_order.rb` - `resolve_included` (inclusion) and
+`topological_order` (ordering). It replaced an earlier, informal draft of
+this same document (see "Why not tag co-occurrence" below for the one place
+the original draft's own worked example turned out to describe an unsafe
+mechanism) and an earlier multi-pass pipeline (`select_by_tags` + `resolve!`
++ `select_sections`, each re-deriving fragments of the others) that produced
+several real bugs before being replaced.
 
-This is my structure that I have developed
-
-The structure is this:
+## The manifest shape
 
 ```yaml
 system_type:
@@ -29,10 +33,6 @@ system_type:
       packages: []
     pkgbox:
       packages: []
-      chocolatey:
-        packages: []
-      debian:
-        packages: []
     testbox:
       packages: []
     buildbox:
@@ -41,11 +41,40 @@ scripts: []
 files: []
 appends: []
 add_apt_repos: []
-common.helpers: []
-debian.helpers: []
 ```
 
-Under system_type, there's an implicit hierarchy, so that items will be executed in this order.
+`flatten()` walks this tree in document order and produces one flat array of
+"steps" - a step is a package entry, or a `script:`/`file:`/`append:` key
+attached to one (see `ATTACHABLE_KEYS`), carrying its own dotted `path:`
+(e.g. `"global.lessons.gen_scripts.python3"`).
+
+There are exactly three relationships between steps, computed and applied
+together by `resolve_included`/`topological_order` rather than as separate
+sequential passes:
+
+1. **Hierarchy** - structural, no manifest annotation needed.
+2. **Tag-activation** - from `tags:`, decides which of several alternatives
+   for the same thing get included.
+3. **needs:/meets:** - real, directed dependency, independent of tags or
+   hierarchy.
+
+## 1. Hierarchy
+
+An ancestor path's own packages run before any descendant's. `flatten()`'s
+pre-order walk already guarantees this for free - an ancestor's natural
+array index is always lower than any of its descendants' - so ordering
+needs no special handling for it at all (see `topological_order`'s own
+comment). Inclusion is the part that needs an explicit step:
+`expand_hierarchy` pulls every tag-eligible step declared at a strict-prefix
+ancestor path back into the included set, unconditionally, regardless of
+whether a SECTION selector or tag selection would otherwise have narrowed it
+out. This is a real behavior, not just a document-order coincidence - a step
+sitting at `global.lessons.gen_scripts` runs before *everything* under
+`global.lessons.gen_scripts.*`, with no `needs:`/`meets:` link required
+at all.
+
+For example, `global.lessons.gen_scripts.python3.packages` runs after every
+strict-prefix ancestor's own packages, unconditionally:
 
 ```
 global.packages
@@ -54,17 +83,24 @@ global.lessons.gen_scripts.packages
 global.lessons.gen_scripts.python3.packages
 ```
 
-In each leaf, item items in packages are executed in order 
-
-If an item needs a package as a prerequisite, it can find in any tree the package, and install it.  So for example, groovy requires java.
-
-There will be 
+If an item needs a package as a prerequisite, that's a *different*
+relationship (see needs:/meets: below), found anywhere in the tree, not just
+an ancestor. `groovy` needs `java`, which lives under a sibling branch
+(`compiled_lang`, not an ancestor of `gen_scripts`):
 
 ```
-global.lessons.gen_scripts.groovy.packages
+global.packages
+global.lessons.packages
+global.lessons.compiled_lang.packages
+global.lessons.compiled_lang.java.packages   # provides "java"
+global.lessons.gen_scripts.packages
+global.lessons.gen_scripts.groovy.packages   # needs: java
 ```
 
-But because it needs java, and there's a leaf that says meets java, this will run before, but as they have implicit hierarchy, this would be the full order for groovy.
+Combining two such needs:/meets: pulls (groovy needing java, posix needing
+perl) is exactly what `topological_order`'s DFS produces - each provider's
+whole unit pulled up to sit just before its earliest consumer, hierarchy
+among the rest unaffected:
 
 ```
 global.packages
@@ -72,94 +108,100 @@ global.lessons.packages
 global.lessons.compiled_lang.packages
 global.lessons.compiled_lang.java.packages
 global.lessons.gen_scripts.packages
-global.lessons.gen_scripts.groovy.packages
-```
-
-Let's also say I was installing posix, which requires perl, then this would be the order for posix. 
-
-```
-global.packages
-global.lessons.packages
-global.lessons.gen_scripts.packages
 global.lessons.gen_scripts.perl.packages
+global.lessons.gen_scripts.groovy.packages
 global.lessons.shell_scripts.packages
 global.lessons.shell_scripts.posix.packages
 ```
 
-Combining the two, groovy + posix, we'd have 
+## 2. Tag-activation
 
+Package list items can have `tags:`. Tags let a manifest express more than
+one legitimate way to install the same thing (e.g. python3 via `pyenv` or
+`asdf`) without installing every alternative at once (see `tag_eligible?`'s
+own "issue #16" comment). An untagged step is always included, regardless of
+selection - it's a baseline, not one of the alternatives. A tagged step is
+included if `--select` names one of its own tags, or if it carries the
+literal tag `default` and nothing else in its *own* `path:` group was
+selected (`compute_default_wins`/`compute_enabled_tags` - see below on why
+this is scoped per group, not global).
 
-```
-global.packages
-global.lessons.packages
-global.lessons.compiled_lang.packages
-global.lessons.compiled_lang.java.packages
-global.lessons.gen_scripts.packages
-global.lessons.gen_scripts.groovy.packages
-global.lessons.gen_scripts.perl.packages
-global.lessons.shell_scripts.packages
-global.lessons.shell_scripts.posix.packages
-```
+### Group-scoped `default`, not a global switch
 
+`default` resolves independently per containing `packages:` array
+(`step[:path]`), not manifest-wide. A real regression this fixed: `--select
+rvm` (ruby's own group) was silently shutting off groovy's entirely
+unrelated sdkman default, under an earlier design that gated every
+`default` tag on whether *anything at all* was selected, globally, rather
+than whether something in that *same* group competed with it.
 
-Package list items can have tags.  Tags allow there to be 2+ paths to install an item that different from a default (or not included is there is no item in packages list, or no item with an explicit default tag).
+### Why not tag co-occurrence ("the bridge")
 
-So python3 for can have a tag of `pyenv` or `asdf`.  Both can install python.
+An earlier draft of this document proposed a different mechanism for
+letting an ancestor-level bootstrap step get pulled in purely through tag
+membership: two tags co-occurring on the same step would be "connected" in
+a symmetric graph, and activating one would propagate to everything
+connected to it. Its own worked example was exactly the case that turned
+out to be unsafe: SDKMAN's bootstrap step tagged `[sdkman_groovy,
+sdkman_java]` (two independent language selectors on one step). Under a
+co-occurrence graph, selecting `sdkman_groovy` alone would propagate through
+that step to `sdkman_java` too - silently activating Java's SDKMAN path
+even though only Groovy was ever asked for. Confirmed directly this isn't
+hypothetical: this is precisely the shape the real manifest used to have.
 
-As an examples
+The actual fix wasn't a smarter propagation rule - it was recognizing that
+"the bootstrap must run before this language's install" is a needs:/meets:
+relationship, not a tag relationship. The manifest now gives the SDKMAN
+bootstrap `meets: sdkman`, `tags: [sdkman]` (dropping the per-language tags
+entirely), and each language step that uses it declares `needs: sdkman`
+explicitly - the same explicit-dependency mechanism `groovy`'s own `needs:
+java` always used. `resolve_included`'s tag-activation stays exactly the
+group-scoped `default` rule above; general tag co-occurrence propagation
+was deliberately not built, since every real cross-branch "reach" this
+document's original draft cited (asdf's own plugin-add steps, sdkman's
+bootstrap) is now expressed as an explicit `needs:`/`meets:` edge instead,
+with nothing left in the manifest that actually needs it.
 
-```
-# asdf tag
-global.packages[3] # script: ubuntu22_asdf_install
-global.lessons.gen_scripts.packages[2] # asdf_plugin: python
+## 3. needs:/meets:
 
-# asdf_python tag
-global.lessons.gen_scripts.packages[2] # asdf_plugin: python
-global.lessons.gen_scripts.python3.packages[2] # asdf: python 3.14.7
+A step's `needs:` (one name or a list) is satisfied by whichever other
+step's `meets:` matches, by capability name (see `parse_need`/`parse_meets`
+- an optional version floor like `needs: ruby >= 3.2` is checked separately,
+after resolution, by `check_version_needs!`). This is real, directed
+dependency, independent of both hierarchy and tags:
 
+- **Inclusion**: if a step this run already wants `needs:` a capability no
+  tag-eligible or hierarchy-included step yet provides, `resolve_included`
+  pulls in the first-listed provider (`.find`, not `.select` - installing
+  every step that happens to share a `meets:` value would double-install
+  real alternatives, "issue #16" again) - along with that provider's own
+  `unit_span` (its attached `script:`/`file:`/`append:` steps - a provider
+  reached purely through `needs:` still needs its own shell-integration
+  lines, not just its bare install command) and its own `natural_prefix`
+  (local siblings implied by document order alone, with no `needs:`/`meets:`
+  of their own). A step whose `needs:` still resolves to no provider at all
+  once this settles is dropped (not emitted as a command guaranteed to
+  fail), reported as an omission.
+- **Ordering**: `topological_order` is a real topological sort (DFS-based)
+  over these edges - a provider unit always ends up before every consumer
+  of it, pulled up to sit just before its *earliest* consumer, with a real
+  cycle raising a clear, named error instead of looping forever.
 
-# pyenv tag
-global.lessons.gen_scripts.packages[1] # script: ubuntu22_pyenv_install
-global.lessons.gen_scripts.python3.packages[1] # pyenv: 3.14.7
-```
+## Function reference
 
-If the tag is set for `pyenv`, then all items with `pyenv` as well as untagged (which are `default`) are installed
-
-```
-global.packages
-global.lessons.packages
-global.lessons.gen_scripts.packages           # an item has pyenv tag
-global.lessons.gen_scripts.python3.packages   # an item has pyenv tag
-```
-
-if the tag is set for `asdf_python`, then all items with that tag as well as untagged are installed. Because one of the intermediary has two tags, `asdf` and `asdf_python`, any ancestors with `asdf` will be installed. 
-
-So these get installed 
-
-``` 
-global.packages                      # an item has asdf tag
-global.lessons.packages
-global.lessons.gen_scripts.packages  # an item has [asdf_python,asdf] tags
-global.lessons.gen_scripts.python3   # an item has asdf_python tag
-```
-
-The global.lessons.gen_scripts.packages[2] acts as a bridge, as it is a leaf that implments the `asdf_python`, but it is a child with `asdf` and a parent with `asdf`.  Even though `asdf` was not specified, because it is an `asdf` child, it would need to have its parent in the list of things to run.
-
-The challenge will happen if there's a needs/meets, so different leafs in two branches.  
-
-The user selects `sdkman_groovy` adn `sdkman_java`.  
-
-In this example, the user wants to use SDKMan! for installing Java and Groovy, so selects tags `sdkman_groovy` adn `sdkman_java`.
-
-Groovy (`global.lessons.gen_scripts.groovy.packages`) will have the tag `sdk_groovy`, but also has a `needs: java`.  The java and it's hierarchy will have to be installed, so it will install packages in global.lessons.compiled_lang.java.packages, including ones with the tag `sdk_java`.  It's hierarhy would come before, so it will walk up the tree and install any default, and anything with `sdk_java`, which includes sdkman.  For groovy, everything in its tree will be before, so everything in its hierarchy should including, including ones with the tag `sdk_groovy`. 
-
-So in this scenario, the order would be to install all default packages, and packages with tags of either `sdkman_java` and `sdkman_groovy`.  Java gets moved up before groovy.
-
-```
-global.packages
-global.lessons.packages                     # script: ubuntu_sdkman_install with tags [sdkman_java,sdkman_groovy]
-global.lessons.compiled_lang.packages
-global.lessons.compiled_lang.java.packages  # items with `sdkman_java` and meets: java
-global.lessons.gen_scripts.packages
-global.lessons.gen_scripts.groovy.packages  # items with `sdkman_groovy` and needs java
-```
+- `expand_hierarchy` - relationship 1.
+- `tag_eligible?` / `compute_default_wins` / `compute_enabled_tags` -
+  relationship 2.
+- `resolve_included`'s own needs:/meets: pull-in loop, and
+  `topological_order` - relationship 3, for inclusion and ordering
+  respectively.
+- `resolve_included(steps, select_tags, exclude_tags, selectors: [])` -
+  the single inclusion entry point combining all three (an optional
+  `selectors:` list of SECTION path prefixes also seeds the initial
+  included set by path match, unifying what used to be a separate,
+  duplicate pass).
+- `relocate_cross_cutting` - a separate, later, code-generation-only
+  concern (which providers become their own generated bash/PowerShell
+  function, and where a call to one gets inserted) - not part of this
+  resolution model; it consumes `topological_order`'s already-resolved
+  output.

@@ -137,7 +137,7 @@ end
 #  generators (this file's own lessons bag, generate_scriptbox_
 #  databag.rb, generate_ansible_vars.rb) so their --select/--exclude
 #  semantics can never drift from generate_install_script.rb's own (see
-#  resolve_order.rb's own tag_eligible?/select_by_tags, issue #16) -
+#  resolve_order.rb's own tag_eligible?/resolve_included, issue #16) -
 #  without this, a manifest using rbenv/pyenv/asdf-style alternatives
 #  would have every alternative installed by the generated shell
 #  script (which does filter) while the Chef/Ansible side still saw -
@@ -151,7 +151,7 @@ def parse_databag_args(argv)
   [argv[0], argv[1], options[:select], options[:exclude]]
 end
 
-# warn_omissions(omitted) - one stderr line per step select_by_tags
+# warn_omissions(omitted) - one stderr line per step resolve_included
 #  dropped for lacking any eligible provider (see its own comment) -
 #  these generators have no header-comment mechanism the way a
 #  generated shell script does (see generate_install_script.rb's own
@@ -167,9 +167,9 @@ end
 #  filtered down to whichever areas this generator's own JSON covers -
 #  lessons's four, or scriptbox's one) plus (transitively) any step
 #  elsewhere in the *whole* manifest that a step already in `area_steps`
-#  needs: - the exact same shape select_sections (generate_install_
-#  script.rb) already uses for --SECTION, just seeded by area instead of
-#  by path selector. Exists because a bootstrap tool isn't necessarily
+#  needs: - the exact same shape resolve_included's own needs:/meets:
+#  pull-in loop uses for --SECTION, just seeded by area instead of by
+#  path selector. Exists because a bootstrap tool isn't necessarily
 #  scoped to any one area at all - e.g. asdf, whose own bootstrap step
 #  sits directly on `global.packages` (not nested under `lessons:`)
 #  specifically *because* its plugins span every area a manifest might
@@ -217,9 +217,9 @@ if __FILE__ == $PROGRAM_NAME
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   steps = flatten(tree[name])
-  steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
+  steps, omitted = resolve_included(steps, select_tags, exclude_tags)
   warn_omissions(omitted)
-  resolve!(steps)
+  topological_order(steps)
   all_steps = steps
   # Validated against the whole resolved tree before any area/type
   #  filtering below - a provider later stripped out as type == 'system'

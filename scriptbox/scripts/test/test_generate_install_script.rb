@@ -49,7 +49,7 @@ class TestExpandSelectors < Minitest::Test
   end
 end
 
-class TestSelectSectionsRegression < Minitest::Test
+class TestResolveIncludedSectionRegression < Minitest::Test
   # The real bug this whole file guards against: selecting a narrow
   # SECTION whose own needs:/meets: chain reaches into a completely
   # different part of the tree (groovy needing perl's own cpanm) must
@@ -82,9 +82,9 @@ class TestSelectSectionsRegression < Minitest::Test
 
   def selected_for(selector)
     steps = flatten(tree)
-    natural_steps = steps.dup
-    resolve!(steps)
-    select_sections(steps, expand_selectors([selector]), natural_steps)
+    included, = resolve_included(steps, [], [], selectors: expand_selectors([selector]))
+    topological_order(included)
+    included
   end
 
   def test_pulls_in_the_providers_own_unit_span
@@ -111,23 +111,23 @@ class TestSelectSectionsRegression < Minitest::Test
   end
 end
 
-# The other real bug select_sections has had, repeatedly: an ancestor
-# level of a selected path (e.g. "global.lessons.gen_scripts" is an
-# ancestor of "global.lessons.gen_scripts.python3") must be included
-# unconditionally, the same way it would run in the unfiltered whole-
-# manifest build - NOT only when some selected leaf happens to `needs:`
-# one specific ancestor step by name. That second, needs:/meets:-gated
-# version is what actually shipped (asdf's own `asdf_plugin: <lang>`
-# steps, sitting at gen_scripts' own ancestor level with no needs:/
-# meets: link to the leaf asdf: <lang> steps at all, were silently
-# dropped from every narrow per-language SECTION selection - confirmed
-# directly against a live VM: `asdf install groovy` failed with "Plugin
-# named groovy not installed" because `asdf plugin add groovy` had never
-# run). A sibling subsection at the same ancestor level (here, `ruby`
-# sitting next to `python3` under gen_scripts) must NOT be pulled in the
-# same way - only genuine ancestors of the selected path, never a
-# sibling branch off of one.
-class TestSelectSectionsHierarchy < Minitest::Test
+# The other real bug hierarchy expansion has had, repeatedly: an
+# ancestor level of a selected path (e.g. "global.lessons.gen_scripts"
+# is an ancestor of "global.lessons.gen_scripts.python3") must be
+# included unconditionally, the same way it would run in the unfiltered
+# whole-manifest build - NOT only when some selected leaf happens to
+# `needs:` one specific ancestor step by name. That second, needs:/
+# meets:-gated version is what actually shipped (asdf's own
+# `asdf_plugin: <lang>` steps, sitting at gen_scripts' own ancestor
+# level with no needs:/meets: link to the leaf asdf: <lang> steps at
+# all, were silently dropped from every narrow per-language SECTION
+# selection - confirmed directly against a live VM: `asdf install
+# groovy` failed with "Plugin named groovy not installed" because `asdf
+# plugin add groovy` had never run). A sibling subsection at the same
+# ancestor level (here, `ruby` sitting next to `python3` under
+# gen_scripts) must NOT be pulled in the same way - only genuine
+# ancestors of the selected path, never a sibling branch off of one.
+class TestResolveIncludedHierarchy < Minitest::Test
   def tree
     {
       'global' => {
@@ -152,9 +152,9 @@ class TestSelectSectionsHierarchy < Minitest::Test
 
   def selected_for(selector)
     steps = flatten(tree)
-    natural_steps = steps.dup
-    resolve!(steps)
-    select_sections(steps, expand_selectors([selector]), natural_steps)
+    included, = resolve_included(steps, [], [], selectors: expand_selectors([selector]))
+    topological_order(included)
+    included
   end
 
   def test_pulls_in_every_ancestor_levels_own_untagged_packages
@@ -198,10 +198,8 @@ class TestReadmeScenarios < Minitest::Test
   def run_scenario(select_tags, exclude_tags)
     name = root_key(self.class.tree)
     steps = flatten(self.class.tree[name])
-    natural_steps = steps.dup
-    steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
-    resolve!(steps)
-    steps = select_sections(steps, expand_selectors(SELECTOR), natural_steps)
+    steps, omitted = resolve_included(steps, select_tags, exclude_tags, selectors: expand_selectors(SELECTOR))
+    topological_order(steps)
     dedup!(steps)
     [steps, omitted]
   end
@@ -242,9 +240,9 @@ class TestReadmeScenarios < Minitest::Test
     # needs:/meets: link of their own to the leaf asdf: <lang> steps -
     # this is the actual regression the test's own name always claimed
     # to cover but never asserted: they were silently missing from this
-    # scenario's real output until select_sections' hierarchy pull-in
-    # was fixed to include ancestor-level packages unconditionally (see
-    # TestSelectSectionsHierarchy).
+    # scenario's real output until hierarchy expansion was fixed to
+    # include ancestor-level packages unconditionally (see
+    # TestResolveIncludedHierarchy).
     assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('ruby ') }, 'expected asdf plugin add ruby')
     assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('python ') }, 'expected asdf plugin add python')
     assert(steps.any? { |s| s[:type] == 'asdf_plugin' && s[:name].start_with?('groovy ') }, 'expected asdf plugin add groovy')
@@ -302,8 +300,8 @@ class TestRubyAdditiveAlternatives < Minitest::Test
   def ruby_steps_for(select_tags)
     name = root_key(self.class.tree)
     steps = flatten(self.class.tree[name])
-    steps, = select_by_tags(steps, select_tags, [])
-    resolve!(steps)
+    steps, = resolve_included(steps, select_tags, [])
+    topological_order(steps)
     steps.select { |s| s[:path].end_with?('.ruby') }
   end
 
@@ -369,8 +367,8 @@ class TestGroovyTagGatedAlternatives < Minitest::Test
   def groovy_steps_for(select_tags)
     name = root_key(self.class.tree)
     steps = flatten(self.class.tree[name])
-    steps, = select_by_tags(steps, select_tags, [])
-    resolve!(steps)
+    steps, = resolve_included(steps, select_tags, [])
+    topological_order(steps)
     steps.select { |s| s[:path].end_with?('.groovy') }
   end
 

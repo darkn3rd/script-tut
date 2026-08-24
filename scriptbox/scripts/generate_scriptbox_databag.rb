@@ -32,8 +32,9 @@ if __FILE__ == $PROGRAM_NAME
   #  this widened past tree[name] alone).
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
-  # resolve! runs on the *full* flattened tree, not just scriptbox's own
-  #  steps, same as generate_chef_databag.rb's own lessons extraction -
+  # topological_order runs on the *full* flattened tree, not just
+  #  scriptbox's own steps, same as generate_chef_databag.rb's own
+  #  lessons extraction -
   #  a needs:/meets: pair *within* scriptbox stays correctly ordered
   #  either way. A cross-cookbook one (scriptbox's own `needs: ruby`,
   #  met by lessons.gen_scripts.ruby's own rbenv install) is NOT
@@ -44,9 +45,9 @@ if __FILE__ == $PROGRAM_NAME
   #  owning_function(s) == 'scriptbox' below never pulls in the rbenv/
   #  ruby provider step itself, only scriptbox's own three steps.
   steps = flatten(tree[name])
-  steps, omitted = select_by_tags(steps, select_tags, exclude_tags)
+  steps, omitted = resolve_included(steps, select_tags, exclude_tags)
   warn_omissions(omitted)
-  resolve!(steps)
+  topological_order(steps)
   # Validated against the *whole* resolved tree, not the scriptbox-only
   #  subset below - a cross-cookbook need: (scriptbox's own `needs:
   #  ruby`, met by lessons.gen_scripts.ruby's own provider) never

@@ -27,7 +27,8 @@ ubuntu22:
       packages:
         - script: ubuntu22_sdkman
           append: ubuntu22_sdkman
-          tags: [sdkman_groovy,sdkman_java]
+          meets: sdkman
+          tags: [sdkman]
       gen_scripts:
         packages:
           # Shared requirements for cpan, rbenv, pyenv
@@ -98,7 +99,7 @@ ubuntu22:
               tags: [sdkman_groovy, default]
             - sdkman: groovy <%= $groovy_ver %>
               cmd: sdk default groovy <%= $groovy_ver %>
-              needs: java
+              needs: [java, sdkman]
               tags: [sdkman_groovy, default]
             - asdf: groovy <%= $groovy_ver %>
               cmd: asdf set -u groovy <%= $groovy_ver %>
@@ -181,6 +182,7 @@ ubuntu22:
             - sdkman: java 17.0.20-amzn
               cmd: sdk default java 17.0.20-amzn
               meets: java
+              needs: sdkman
               tags: [sdkman_java]
         go:
           packages:

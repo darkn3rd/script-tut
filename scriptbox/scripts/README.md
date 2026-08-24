@@ -6,8 +6,8 @@ These are some notes on using these scripts.
 
 `test/` formalizes the scenarios documented below as Minitest cases -
 `test_resolve_order.rb` covers the pipeline mechanism itself
-(flatten/resolve!/select_by_tags/unit_span/natural_prefix) against small
-synthetic fixtures, `test_generate_install_script.rb` covers
+(flatten/topological_order/resolve_included/unit_span/natural_prefix)
+against small synthetic fixtures, `test_generate_install_script.rb` covers
 path_matches?/expand_selectors plus the actual A-E scenarios below run
 against the real `../config/ubuntu2204.yml`. Pure functions over plain
 data - no VM, no file writes - so this runs in milliseconds and is safe
