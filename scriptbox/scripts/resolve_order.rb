@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd sysctl pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a

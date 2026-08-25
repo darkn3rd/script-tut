@@ -20,6 +20,13 @@ node 'ubuntu22' {
         ],
       },
       {
+        'type' => 'sysctl',
+        'name' => [
+          'net.ipv6.conf.all.disable_ipv6=1',
+          'net.ipv6.conf.default.disable_ipv6=1',
+        ],
+      },
+      {
         'type' => 'script',
         'name' => 'ubuntu22_sdkman',
         'cmd' => 'if [ ! -d "$HOME/.sdkman" ]; then

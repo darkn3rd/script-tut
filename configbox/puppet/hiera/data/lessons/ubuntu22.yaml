@@ -8,6 +8,10 @@ lessons::common_steps:
   - make
   - wget
   - gnupg2
+- type: sysctl
+  name:
+  - net.ipv6.conf.all.disable_ipv6=1
+  - net.ipv6.conf.default.disable_ipv6=1
 - type: script
   name: ubuntu22_sdkman
   cmd: |

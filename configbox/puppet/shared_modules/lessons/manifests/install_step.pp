@@ -96,6 +96,22 @@ define lessons::install_step (
       }
     }
 
+    # A raw "key=value" string (or an array of them) - deliberately just
+    #  that one string, not a {key:, value:} hash, so the manifest's own
+    #  data reads as a plain sysctl -w argument, the same shape every
+    #  other CM tool's own sysctl-equivalent primitive expects.
+    'sysctl': {
+      any2array($step_name).each |String $kv| {
+        $parts = split($kv, '=')
+        $key   = $parts[0]
+        $value = $parts[1, -1].join('=')
+        exec { "${title}: ${kv}":
+          command => "/usr/sbin/sysctl -w '${kv}'",
+          unless  => "/usr/sbin/sysctl -n '${key}' | /bin/grep -qx '${value}'",
+        }
+      }
+    }
+
     'file': {
       $dest = regsubst($step['dest'], '\$HOME', $home)
       ensure_resource('file', dirname($dest), { 'ensure' => 'directory', 'owner' => $user, 'mode' => '0755' })
