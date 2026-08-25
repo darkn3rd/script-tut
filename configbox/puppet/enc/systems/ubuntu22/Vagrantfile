@@ -1,0 +1,39 @@
+SCRIPT_TUT_PATH = File.realpath("../../../../..", __dir__)
+
+# Install ENC (/etc/puppetlabs/puppet/)
+INSTALL_ENC = <<-SHELL
+  cp -r /var/script-tut/configbox/puppet/enc/data /etc/puppetlabs/puppet/data
+  cp /var/script-tut/configbox/puppet/enc/node_classifier.rb /etc/puppetlabs/puppet/enc.sh
+  chmod +x /etc/puppetlabs/puppet/enc.sh
+SHELL
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "puppet-enc-node-01.test"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that reults in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_openvox8_bootstrap.sh"
+
+  config.vm.provision "enc", type: "shell", inline: INSTALL_ENC
+
+  # External Node Classifier
+  config.vm.provision "apply", type: "puppet" do |puppet|
+    puppet.binary_path    = "/opt/puppetlabs/bin"
+    puppet.manifests_path = "../../manifests"
+    puppet.manifest_file  = "site.pp"
+    puppet.module_path    = ["../../../shared_modules", "../../../.forge-vendor"]
+    puppet.options         = "--verbose --debug --node_terminus=exec --external_nodes=/etc/puppetlabs/puppet/enc.sh --certname=ubuntu22"
+  end
+end

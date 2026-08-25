@@ -1,0 +1,9 @@
+---
+# Hand-written - never touched by generate_puppet.rb. Merged into the
+#  generated classes.lessons block by ../node_classifier.rb at request
+#  time.
+user: vagrant
+gen_scripts: true
+shell_scripts: true
+compiled_lang: true
+win_scripts: true

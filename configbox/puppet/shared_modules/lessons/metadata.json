@@ -1,0 +1,17 @@
+{
+  "name": "scriptbox-lessons",
+  "version": "0.1.0",
+  "author": "scriptbox",
+  "summary": "Manifest-driven lesson environment (gen_scripts/shell_scripts/compiled_lang/win_scripts), data supplied by whichever classifier scriptbox/scripts/generate_puppet.rb targeted (site/hiera/enc).",
+  "license": "MPL-2.0",
+  "source": "",
+  "dependencies": [
+    { "name": "puppetlabs/stdlib", "version_requirement": ">= 10.0.0 < 11.0.0" }
+  ],
+  "operatingsystem_support": [
+    { "operatingsystem": "Ubuntu", "operatingsystemrelease": ["22.04"] }
+  ],
+  "requirements": [
+    { "name": "puppet", "version_requirement": ">= 7.0.0" }
+  ]
+}

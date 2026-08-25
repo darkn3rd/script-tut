@@ -100,11 +100,194 @@ These are modules that are being currently evaluated:
 * **Version Managers**: `asdf`, `sdkman`
 * **Langauge Modules**: `gem`, PowerShell Gallery
 
+## Installing Forge Modules
+
+The modules that you download will be vendored into `.forge-vendor`.  
+
+### Installing a Single Module
+
+Here is an example how you can install `puppetlabs-stdlib` requirement.
+
+* PowerShell
+  ```pwsh
+  $RepoPath = Resolve-Path "..\.."
+  $ForgeApi = "https://forgeapi.puppet.com"
+  $Latest = (Invoke-RestMethod `
+    "$ForgeApi/v3/modules/puppetlabs-stdlib").current_release.version
+
+  # Install a single module using puppet command
+  puppet module install puppetlabs-stdlib `
+    --version $Latest `
+    --target-dir $RepoPath/configbox/puppet/.forge-vendor
+
+  # Install a single module directly using the Forge REST API
+  Push-Location "$RepoPath\configbox\puppet\.forge-vendor"
+  $ForgeApi = "https://forgeapi.puppet.com"
+  $LatestFileUri = (Invoke-RestMethod `
+    "$ForgeApi/v3/modules/puppetlabs-stdlib").current_release.file_uri
+  
+  # download
+  Invoke-WebRequest -Uri "$ForgeApi$LatestFileUri" -OutFile stdlib.tar.gz
+  tar -xzf stdlib.tar.gz
+  Move-Item "puppetlabs-stdlib-$Latest" stdlib
+  Remove-Item stdlib.tar.gz
+  Pop-Location
+  ```
+* Bash
+  ```bash
+  REPO_PATH=$(realpath ../..)
+  FORGE_API="https://forgeapi.puppet.com"
+  LATEST="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
+    | jq -r '.current_release.version')"
+    
+  # Install a single module using puppet command
+  puppet module install "puppetlabs-stdlib" \
+    --version $LATEST \
+    --target-dir $REPO_PATH/configbox/puppet/.forge-vendor
+  
+  # Install a single module directly using the Forge REST API
+  pushd $REPO_PATH/configbox/puppet/.forge-vendor
+  FORGE_API="https://forgeapi.puppet.com"
+  LATEST_FILE_URI="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
+    | jq -r '.current_release.file_uri')"
+    
+  # download
+  curl -sL -o stdlib.tar.gz "${FORGE_API}${LATEST_FILE_URI}"
+  tar -xzf stdlib.tar.gz
+  mv puppetlabs-stdlib-$LATEST stdlib
+  rm stdlib.tar.gz
+  popd
+  ```
+
+### Installing All Modules specified in Puppetfile
+
+[r10k](https://github.com/puppetlabs/r10k) and [g10k](https://github.com/voxpupuli/g10k) can install the modules specified in the `Puppetfile`.  It will not install module's dependencies themselves.
+
+* Powershell
+  ```pwsh
+  # Install all required modules using r10k
+  # Note: this will not resolve module dependencies, only what's specified 
+  #       in the Puppetfile. 
+  gem install r10k
+  r10k puppetfile install `
+    -moduledir configbox\puppet\.forge-vendor `
+    -puppetfile "$RepoPath\configbox\puppet\Puppetfile"
+  ```
+* Bash
+  ```sh
+  # Install all required modules using r10k
+  # Note: this will not resolve module dependencies, only what is specified 
+  #       in the Puppetfile.   
+  gem install r10k
+  r10k puppetfile install \
+    -moduledir configbox/puppet/.forge-vendor \
+    -puppetfile "$REPO_PATH/configbox/puppet/Puppetfile"
+  ```
+
+### Automatic Module Management
+
+You can use [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) to automtically install modules specified in Puppetfile, but also manage the module's dependencies as well.
+
+```sh
+REPO_PATH=$(realpath ../..)
+cd "$REPO_PATH/configbox/puppet/"
+
+# install librarian
+gem install librarian-puppet
+
+# setup
+librarian-puppet config path .forge-vendor --local
+librarian-puppet install
+```
+
+
+
+
+## Configbox Configuration Items
+
+There are four lesson areas (`gen_scripts`, `shell_scripts`, `compiled_lang`, and `win_scripts`) are implemented in the reusable `lessons` modules under `shared_modules`.  There are three demos at use Puppet with one of the following classiers:
+
+* Node Definitions using a site manifest (site.pp)
+* External Node Classifier (ENC)
+* Hiera
+
+The input parameters, hiera data, or dynamic ENC script, are generated using `generate_puppet.rb` script:
+
+```bash 
+scriptbox/scripts/generate_puppet.rb <config.yml> <out_path> [--classifier site|hiera|enc] [--select TAG,TAG] [--exclude TAG,TAG]
+```
+
+Comparison of the different types of classifiers:
+
+| Classifier        | Output                                    | How the module gets its data                                            |
+| ----------------- | ------------------------------------------| ----------------------------------------------------------------------- |
+| `hiera` (default) | `hiera/data/lessons/<platform>.yaml`      | class-parameter lookup (`lessons::gen_scripts::steps`, ...)             |
+| `enc`             | `enc/data/<platform>.yaml`                | External Node Classifier (`enc/node_classifier.rb`, `node_terminus = exec`) <br>prints a `classes:`/`parameters:` document per node at compile time |
+| `site`            | `node_defs/manifests/nodes/<platform>.pp` | Inline data with `class { 'lessons::...': steps => [...] }` declarations |
+
+There are four area gates that are specified and not generated
+
+* Hiera - `hiera/data/common.yaml`
+* ENC (External Node Classifier) - `enc/data/common.yaml`
+
+## Addendum: Highlighting Errors
+
+Here are some methods to match everything and highlight in place. 
+
+* Bash + Grep
+  ```bash
+  vagrant provision 2>&1 | grep -i --color=always -E "error|$"
+  ```
+* Powershell 7.x
+  ```pwsh
+  # ForEach-Object Pipe 
+  vagrant provision 2>&1 | ForEach-Object {
+    if ($_ -match 'error') {
+      $_ -replace '(?i)error', "`e[31m`$0`e[0m"
+    } else {
+      $_
+    }
+  }
+
+  # ForEach-Object in Function
+  function Show-Highlighted {
+    param([string]$Pattern = 'error')
+    $input | ForEach-Object {
+      if ($_ -match $Pattern) {
+        $_ -replace "(?i)($Pattern)", "`e[31m`$1`e[0m"
+      } else {
+        $_
+      }
+    }
+  }
+
+  vagrant provision 2>&1 | Show-Highlighted
+
+  # Condensed Foreach-Object 
+  vagrant provision 2>&1 `
+    | % { $_ -replace '(?i)(error)', "`e[31m`$1`e[0m" }
+  ```
+* PowerShell 5.x safe
+  ```pwsh
+  vagrant provision 2>&1 `
+    | % { $_ -replace '(?i)(error)', "$([char]27)[31m`$1$([char]27)[0m" }
+  ```
+
+For filtering in only the errors:
+
+* Bash + Grep
+  ```bash
+  vagrant provision 2>&1 | grep -i --color=always error
+  ```
+* PowerShell 
+  ```pwsh
+  vagrant provision 2>&1 | Select-String -Pattern "error"
+  ```
+
 ## Links
 
 * Puppet Open Source
   * [Puppet Bolt](https://github.com/puppetlabs/bolt) - remote execution
-  * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
   * [puppet](https://github.com/puppetlabs/puppet)
   * [PDK](https://github.com/puppetlabs/pdk)
 * Community Open Source Solutions
@@ -116,8 +299,15 @@ These are modules that are being currently evaluated:
   * [jig](https://github.com/voxpupuli/jig) - is a go-based reimplementation of PDK
     * [Scaffolding New Content with Jig](https://docs.openvoxproject.org/ecosystem/latest/devkit/jig.html)
     * [Migrating Away from the PDK](https://docs.openvoxproject.org/ecosystem/latest/devkit/migrating.html)
-  * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
   * [Beaker](https://github.com/voxpupuli/beaker) - Puppet Acceptance Testing Harness 
 * Other
   * [Vox Pupuli](https://voxpupuli.org/) - collective of Puppet module, tooling and documentation authors
   *  [Puppet’s Open Source Community Plans to Fork the Program](https://thenewstack.io/puppets-open-source-community-plans-to-fork-the-program/) 
+
+  * Module Dependencies
+    * [The four ways to install Puppet modules](https://www.puppeteers.net/blog/the-four-ways-to-install-puppet-modules/) by Samuli Seppänen on April 13, 2021
+    * [Installing and managing modules from the command line](https://www.puppet.com/docs/puppet/7/modules_installing.html)
+    * Tools
+      * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
+      * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
+      * [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) - automatic dependency management

@@ -343,8 +343,24 @@
 #  on its own for powershell_module (see the Set-PSRepository/
 #  Install-Module discussion this followed) - no separate repository-
 #  trust step needed.
-- name: "powershell_package_provider"
+# check tasks below match the psake check earlier in this same file
+#  (ubuntu22_powershell's own lessons_psake_check) - without one, these
+#  two would shell out to Install-PackageProvider/Install-Module on
+#  every single run, reporting changed every time even when nothing
+#  changed. changed_when: false on the check itself - it's a read, not
+#  a mutation, regardless of its own rc.
+- name: "powershell_package_provider: check {{ step.name }}"
   when: step.type == 'powershell_package_provider'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: pwsh -NoProfile -Command "if (Get-PackageProvider -Name {{ step.name }} -ErrorAction SilentlyContinue) { 'present' } else { 'absent' }"
+  register: lessons_powershell_provider_check
+  changed_when: false
+
+- name: "powershell_package_provider"
+  when: step.type == 'powershell_package_provider' and 'present' not in lessons_powershell_provider_check.stdout
   become: true
   become_user: "{{ lessons_user }}"
   environment:
@@ -355,8 +371,18 @@
     pwsh -NoProfile -Command
     "Install-PackageProvider -Name {{ step.name }}{{ (' -MinimumVersion ' + lessons_ps_version) if lessons_ps_version else '' }} -Force"
 
-- name: "powershell_module"
+- name: "powershell_module: check {{ step.name }}"
   when: step.type == 'powershell_module'
+  become: true
+  become_user: "{{ lessons_user }}"
+  environment:
+    HOME: "{{ lessons_home }}"
+  ansible.builtin.shell: pwsh -NoProfile -Command "if (Get-Module -ListAvailable -Name {{ step.name }}) { 'present' } else { 'absent' }"
+  register: lessons_powershell_module_check
+  changed_when: false
+
+- name: "powershell_module"
+  when: step.type == 'powershell_module' and 'present' not in lessons_powershell_module_check.stdout
   become: true
   become_user: "{{ lessons_user }}"
   environment:

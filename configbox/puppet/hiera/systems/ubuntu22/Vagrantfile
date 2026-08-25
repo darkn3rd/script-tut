@@ -1,0 +1,42 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "puppet-hiera-node-01.test"
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that results in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  #  Mount Hiera data under wokring_directory
+  config.vm.synced_folder "../../data", "/tmp/vagrant-puppet/data"
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_openvox8_bootstrap.sh"
+
+  # hiera classifier
+  # * hierarchy specified in hiera.yaml goes through puppet's
+  #   automatic class-parameter lookup
+  config.vm.provision "apply", type: "puppet" do |puppet|
+    puppet.binary_path        = "/opt/puppetlabs/bin"
+    # Hiera Configuration
+    # https://developer.hashicorp.com/vagrant/docs/provisioning/puppet_apply#configuring-hiera
+    puppet.working_directory  = "/tmp/vagrant-puppet"
+    puppet.hiera_config_path  = "../../hiera.yaml"
+
+    # General Puppet Configuration
+    puppet.manifests_path     = ["guest", "/var/script-tut/configbox/puppet/hiera/manifests"]
+    puppet.manifest_file      = "site.pp"
+    puppet.module_path        = ["../../../shared_modules", "../../../.forge-vendor"]
+
+    puppet.options             = "--verbose --debug"
+  end
+end

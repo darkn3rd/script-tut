@@ -1,0 +1,203 @@
+---
+lessons::platform: ubuntu22
+lessons::common_steps:
+- type: apt
+  name:
+  - curl
+  - git
+  - make
+  - wget
+  - gnupg2
+- type: sysctl
+  name:
+  - net.ipv6.conf.all.disable_ipv6=1
+  - net.ipv6.conf.default.disable_ipv6=1
+- type: script
+  name: ubuntu22_sdkman
+  cmd: |
+    if [ ! -d "$HOME/.sdkman" ]; then
+      curl -s "https://get.sdkman.io" | bash
+      sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' "$HOME/.sdkman/etc/config"
+    fi
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+- type: append
+  name: ubuntu22_sdkman
+  dest:
+  - "$HOME/.bashrc"
+  - "$HOME/.zshrc"
+  lines:
+  - '[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"'
+lessons::gen_scripts::steps:
+- type: apt
+  name:
+  - autoconf
+  - bison
+  - build-essential
+  - libbz2-dev
+  - libdb-dev
+  - libffi-dev
+  - libgdbm6
+  - libgdbm-dev
+  - liblzma-dev
+  - libncurses5-dev
+  - libncursesw5-dev
+  - libreadline6-dev
+  - libreadline-dev
+  - libsqlite3-dev
+  - libssl-dev
+  - libxml2-dev
+  - libxmlsec1-dev
+  - libyaml-dev
+  - llvm
+  - tk-dev
+  - xz-utils
+  - zlib1g-dev
+  - gawk
+  - php8.1-cli
+- type: script
+  name: ubuntu22_rvm
+  cmd: |
+    mkdir -p ~/.gnupg
+    chmod 700 ~/.gnupg
+    echo 'disable-ipv6' >> ~/.gnupg/dirmngr.conf
+    gpgconf --kill dirmngr
+    gpg2 \
+      --keyserver hkps://keyserver.ubuntu.com \
+      --recv-keys \
+      409B6B1796C275462A1703113804BB82D39DC0E3 \
+      7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+    curl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles
+    export PATH="$PATH:$HOME/.rvm/bin"
+    source "$HOME/.rvm/scripts/rvm"
+- type: script
+  name: ubuntu22_cpan_local_setup
+  cmd: |
+    PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
+    eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+    export PATH=$HOME/perl5/bin:$PATH
+- type: append
+  name: ubuntu22_cpan_local_setup
+  dest:
+  - "$HOME/.bashrc"
+  - "$HOME/.zshrc"
+  lines:
+  - eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+  - export PATH=$HOME/perl5/bin:$PATH
+- type: cpan
+  name: App::cpanminus
+- type: cpanm
+  name: Switch
+- type: cpanm
+  name: HTTP::Tiny
+- type: sdkman
+  name: groovy 5.1.0
+  cmd: sdk default groovy 5.1.0
+- type: rvm
+  name: 4.0.6
+  cmd: rvm use 4.0.6 --default
+lessons::shell_scripts::steps:
+- type: apt
+  name:
+  - tcsh
+  - ksh93u+m
+  - zsh
+- type: file
+  name: ubuntu_default_zshrc
+  dest: "$HOME/.zshrc"
+  content: |
+    # Set up the prompt
+
+    autoload -Uz promptinit
+    promptinit
+    prompt adam1
+
+    setopt histignorealldups sharehistory
+
+    # Use emacs keybindings even if our EDITOR is set to vi
+    bindkey -e
+
+    # Keep 1000 lines of history within the shell and save it to ~/.zsh_history:
+    HISTSIZE=1000
+    SAVEHIST=1000
+    HISTFILE=~/.zsh_history
+
+    # Use modern completion system
+    autoload -Uz compinit
+    compinit
+
+    zstyle ':completion:*' auto-description 'specify: %d'
+    zstyle ':completion:*' completer _expand _complete _correct _approximate
+    zstyle ':completion:*' format 'Completing %d'
+    zstyle ':completion:*' group-name ''
+    zstyle ':completion:*' menu select=2
+    eval "$(dircolors -b)"
+    zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+    zstyle ':completion:*' list-colors ''
+    zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+    zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+    zstyle ':completion:*' menu select=long
+    zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+    zstyle ':completion:*' use-compctl false
+    zstyle ':completion:*' verbose true
+
+    zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+    zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+lessons::compiled_lang::steps:
+- type: apt
+  name:
+  - openjdk-17-jdk
+  - curl
+  - build-essential
+- type: apt
+  name: dotnet-sdk-10.0
+  apt_repository: ppa:dotnet/backports
+- type: apt
+  name: golang-go
+  apt_repository: ppa:longsleep/golang-backports
+- type: append
+  name: ubuntu22_go
+  dest:
+  - "$HOME/.bashrc"
+  - "$HOME/.zshrc"
+  lines:
+  - export GOPATH=$(go env GOPATH)
+  - export PATH=$GOPATH/bin:$PATH
+- type: script
+  name: ubuntu22_rust
+  cmd: |
+    if [ ! -d "$HOME/.cargo" ]; then
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --profile minimal --no-modify-path
+    fi
+    mkdir -p "$HOME/.config/powershell"
+    source "$HOME/.cargo/env"
+- type: file
+  name: ubuntu22_rust_ps1
+  dest: "$HOME/.cargo/env.ps1"
+  content: |
+    # rustup shell setup
+    # affix colons on either side of $env:PATH to simplify matching
+    if (":${env:PATH}:" -notlike "*:$HOME/.cargo/bin:*") {
+        # Prepending path in case a system-installed rustc needs to be overridden
+        $env:PATH = "$HOME/.cargo/bin:$env:PATH"
+    }
+- type: append
+  name: ubuntu22_rust_shell
+  dest:
+  - "$HOME/.bashrc"
+  - "$HOME/.zshrc"
+  lines:
+  - source "$HOME/.cargo/env"
+- type: append
+  name: ubuntu22_rust_ps1
+  dest: "$HOME/.config/powershell/Microsoft.PowerShell_profile.ps1"
+  lines:
+  - . "$HOME/.cargo/env.ps1"
+lessons::win_scripts::steps:
+- type: apt
+  name: powershell
+  add_apt_repo:
+    name: microsoft-prod
+    key_url: https://packages.microsoft.com/keys/microsoft.asc
+    repo_uri: https://packages.microsoft.com/ubuntu/22.04/prod
+    distro_string: jammy main

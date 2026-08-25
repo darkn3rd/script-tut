@@ -25,6 +25,19 @@ ubuntu22:
         tags: [asdf]
     lessons:
       packages:
+        # Some networks (a home router with no real IPv6 uplink;
+        #  VirtualBox's own NAT adapter, which hands out a dead ULA
+        #  address) leave this host with an IPv6 address that's
+        #  configured but goes nowhere. glibc's own getaddrinfo() still
+        #  prefers it over IPv4, and not every client falls back to IPv4
+        #  cleanly when it doesn't route - gpg2/dirmngr's keyserver
+        #  lookups (see ubuntu22_rvm below) are a known example.
+        #  Disabling IPv6 at the kernel level here, first, covers every
+        #  later step at once instead of chasing down and patching each
+        #  client's own no-IPv6/prefer-IPv4 knob individually.
+        - sysctl:
+            - net.ipv6.conf.all.disable_ipv6=1
+            - net.ipv6.conf.default.disable_ipv6=1
         - script: ubuntu22_sdkman
           append: ubuntu22_sdkman
           meets: sdkman
