@@ -183,6 +183,61 @@ scriptbox/scripts/generate_puppet.rb <config.yml> <out_path> [--classifier site|
 
 Hand-written knobs (`lessons::user`, the four area gates) live in `hiera/data/common.yaml` / `enc/data/common.yaml` - never touched by the generator.
 
+## Addendum: Highlighting Errors
+
+Here are some methods to match everything and highlight in place. 
+
+* Bash + Grep
+  ```bash
+  vagrant provision 2>&1 | grep -i --color=always -E "error|$"
+  ```
+* Powershell 7.x
+  ```pwsh
+  # ForEach-Object Pipe 
+  vagrant provision 2>&1 | ForEach-Object {
+    if ($_ -match 'error') {
+      $_ -replace '(?i)error', "`e[31m`$0`e[0m"
+    } else {
+      $_
+    }
+  }
+
+  # ForEach-Object in Function
+  function Show-Highlighted {
+    param([string]$Pattern = 'error')
+    $input | ForEach-Object {
+      if ($_ -match $Pattern) {
+        $_ -replace "(?i)($Pattern)", "`e[31m`$1`e[0m"
+      } else {
+        $_
+      }
+    }
+  }
+
+  vagrant provision 2>&1 | Show-Highlighted
+
+  # Condensed Foreach-Object 
+  vagrant provision 2>&1 `
+    | % { $_ -replace '(?i)(error)', "`e[31m`$1`e[0m" }
+  ```
+* PowerShell 5.x safe
+  ```pwsh
+  vagrant provision 2>&1 `
+    | % { $_ -replace '(?i)(error)', "$([char]27)[31m`$1$([char]27)[0m" }
+  ```
+
+For filtering in only the errors:
+
+* Bash + Grep
+  ```bash
+  vagrant provision 2>&1 | grep -i --color=always error
+  ```
+* PowerShell 
+  ```pwsh
+  vagrant provision 2>&1 | Select-String -Pattern "error"
+  ```
+
+
 ## Links
 
 * Puppet Open Source
