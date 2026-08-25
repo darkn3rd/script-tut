@@ -49,7 +49,7 @@ define lessons::install_step (
           unless  => "/bin/grep -rqF '${ppa_slug}' /etc/apt/sources.list.d/",
           before  => Package[$step_name],
         }
-        ensure_packages([$step_name])
+        stdlib::ensure_packages([$step_name])
       } elsif 'add_apt_repo' in $step {
         # add_apt_repo - the manifest's own raw signed-by key + list
         #  file (Corretto, Docker, ...), not a PPA - see scriptbox/
@@ -90,9 +90,9 @@ define lessons::install_step (
           before      => Package[$step_name],
         }
 
-        ensure_packages([$step_name])
+        stdlib::ensure_packages([$step_name])
       } else {
-        ensure_packages(any2array($step_name))
+        stdlib::ensure_packages(any2array($step_name))
       }
     }
 
@@ -258,9 +258,9 @@ define lessons::install_step (
 
     'cpan', 'cpanm': {
       # cpanminus - the real prerequisite every cpan/cpanm step needs;
-      #  ensure_packages dedups automatically across every step that
-      #  calls it, so running it ahead of each is harmless.
-      ensure_packages(['cpanminus'])
+      #  stdlib::ensure_packages dedups automatically across every step
+      #  that calls it, so running it ahead of each is harmless.
+      stdlib::ensure_packages(['cpanminus'])
       exec { $title:
         command     => "/bin/bash -c 'cpanm ${step_name}'",
         unless      => "/bin/bash -c \"perl -M'${step_name}' -e 1\"",
@@ -370,6 +370,16 @@ define lessons::install_step (
     #  pwsh wrapper. -Force covers the untrusted-PSGallery prompt on its
     #  own for powershell_module - no separate repository-trust step
     #  needed.
+    # unless guards below match chef/cookbooks/lessons/resources/
+    #  pwsh_package.rb's own Get-Module check exactly - that resource
+    #  exists specifically because Chef's *built-in* powershell_package
+    #  looks cross-platform but isn't (its provider only ever calls
+    #  Chef::Mixin::PowershellExec, empty on non-Windows) - it's the
+    #  genuine cross-platform fallback, and unlike a bare exec, it's
+    #  actually idempotent. Without a guard here, both of these would
+    #  re-run Install-Module/Install-PackageProvider on every single
+    #  apply, reporting a false "changed" every time even when nothing
+    #  changed.
     'powershell_package_provider': {
       $ps_version = 'version' in $step ? {
         true    => " -MinimumVersion ${regsubst($step['version'], '^(>=|=)\s*', '')}",
@@ -377,6 +387,7 @@ define lessons::install_step (
       }
       exec { $title:
         command     => "pwsh -NoProfile -Command \"Install-PackageProvider -Name ${step_name}${ps_version} -Force\"",
+        unless      => "pwsh -NoProfile -Command \"if (Get-PackageProvider -Name ${step_name} -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }\"",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -386,6 +397,7 @@ define lessons::install_step (
       $ps_args = 'args' in $step ? { true => " ${step['args']}", default => '' }
       exec { $title:
         command     => "pwsh -NoProfile -Command \"Install-Module -Name ${step_name}${ps_args} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber\"",
+        unless      => "pwsh -NoProfile -Command \"if (Get-Module -ListAvailable -Name ${step_name}) { exit 0 } else { exit 1 }\"",
         user        => $user,
         environment => ["HOME=${home}"],
       }
