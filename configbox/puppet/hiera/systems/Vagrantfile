@@ -1,4 +1,4 @@
-SCRIPT_TUT_PATH = "../../../.."
+HOST_REPO_PATH = File.realpath("../../../..", __dir__)
 
 # puppet-agent isn't on generic/ubuntu2204 - the puppet_apply provisioner
 #  requires it already present in the guest, it does not install Puppet
@@ -16,34 +16,59 @@ Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2204"
   config.vm.box_version = "4.3.12"
   config.vm.hostname = "puppet-hiera-node-01.test"
-  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that results in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
 
   # ../data - GENERATED lessons/ubuntu22.yaml (scriptbox/scripts/
   #  generate_puppet.rb --classifier hiera) plus hand-written
   #  common.yaml - synced explicitly, at the exact guest path
   #  ../hiera.yaml's own `datadir: data` resolves against once
-  #  hiera.yaml itself lands in working_directory below (Hiera 5
-  #  resolves a relative datadir relative to hiera.yaml's own
-  #  directory) - manifests_path/module_path get copied by the puppet
-  #  provisioner itself, but hiera_config_path only carries the one
-  #  hiera.yaml file, not its sibling data/ directory, so this can't be
-  #  left implicit the way the other paths below are.
+  #  hiera.yaml itself lands under working_directory below. Unlike
+  #  manifests_path/module_path (each backed by a real config.vm.
+  #  synced_folder the puppet provisioner registers on our behalf -
+  #  confirmed directly in hashicorp/vagrant's own plugins/provisioners/
+  #  puppet/provisioner/puppet.rb#configure), hiera_config_path has no
+  #  synced_folder registration at all - it's a one-time file .upload(),
+  #  so its sibling data/ directory can't ride along the way ../manifests
+  #  below does; this has to be synced separately, by hand.
   config.vm.synced_folder "../data", "/tmp/vagrant-puppet/data"
 
   config.vm.provision "shell", inline: INSTALL_PUPPET
 
-  # hiera classifier - see ../../README.md's own "Configbox Configuration
-  #  Items" table. ../manifests/site.pp is just `include lessons`; every
-  #  parameter (platform/common_steps/steps/user/area gates) comes from
-  #  ../hiera.yaml's own hierarchy via Puppet's automatic class-parameter
-  #  lookup - nothing below carries per-platform data of its own.
+  # hiera classifier
+  # * hierarchy specified in hiera.yaml goes through puppet's
+  #   automatic class-parameter lookup
   config.vm.provision "puppet" do |puppet|
     puppet.binary_path        = "/opt/puppetlabs/bin"
-    puppet.manifests_path     = "../manifests"
+    # Hiera Configuration
+    # https://developer.hashicorp.com/vagrant/docs/provisioning/puppet_apply#configuring-hiera
+    puppet.working_directory  = "/tmp/vagrant-puppet"
+    puppet.hiera_config_path  = "../hiera.yaml"
+
+    # manifests_path as a ["guest", ...] tuple - confirmed in the
+    #  plugin's own config/puppet.rb, the check is `== :host`, not an
+    #  enum of :host/:vm, so any other first element (the docs' own
+    #  "vm", or "guest" here - same effect either way) skips both host-
+    #  side validation and the synced_folder registration mentioned
+    #  above, and reads straight from ../../.. (mounted at
+    #  /var/script-tut already) instead of mounting a second, redundant
+    #  copy at /tmp/vagrant-puppet/manifests-<md5> the way it did before
+    #  this change. module_path has no such mode (expanded_module_paths
+    #  has no branch for it at all) - its own two mounts are unavoidable
+    #  with this provisioner, so only this one goes away.
+
+    puppet.manifests_path     = ["guest", "/var/script-tut/configbox/puppet/hiera/manifests"]
     puppet.manifest_file      = "site.pp"
     puppet.module_path        = ["../../shared_modules", "../../.forge-vendor"]
-    puppet.hiera_config_path  = "../hiera.yaml"
-    puppet.working_directory  = "/tmp/vagrant-puppet" # matches the synced_folder above
+
     puppet.options             = "--verbose --debug"
   end
 end
