@@ -77,7 +77,17 @@ define lessons::install_step (
           ensure  => file,
           content => "deb [signed-by=${key_path}] ${repo['repo_uri']} ${repo_suite} ${repo_components}\n",
           require => Exec["${title}: key"],
-          before  => Package[$step_name],
+        }
+
+        # add-apt-repository (the 'apt_repository' branch above) refreshes
+        #  the apt cache itself; a raw key+list file doesn't, so without
+        #  this the package below installs against a stale cache that has
+        #  never heard of the new repo.
+        exec { "${title}: update":
+          command     => '/usr/bin/apt-get update',
+          subscribe   => File[$list_path],
+          refreshonly => true,
+          before      => Package[$step_name],
         }
 
         ensure_packages([$step_name])
@@ -102,12 +112,41 @@ define lessons::install_step (
       $raw_dests = $step['dest'] =~ String ? { true => [$step['dest']], default => $step['dest'] }
       $dests = $raw_dests.map |$d| { regsubst($d, '\$HOME', $home) }
       $dests.each |$d| {
-        ensure_resource('file', dirname($d), { 'ensure' => 'directory', 'owner' => $user, 'mode' => '0755' })
+        $dir = dirname($d)
+        # ensure_resource on $dir alone only covers one level - not enough
+        #  for a target like ~/.config/powershell/... where ~/.config
+        #  itself doesn't exist yet either. Walk every ancestor under $home.
+        $rel_dir = regsubst($dir, "^${home}/", '')
+        if $rel_dir != $dir {
+          split($rel_dir, '/').reduce($home) |$parent, $seg| {
+            $cur = "${parent}/${seg}"
+            ensure_resource('file', $cur, { 'ensure' => 'directory', 'owner' => $user, 'mode' => '0755' })
+            $cur
+          }
+        } else {
+          ensure_resource('file', $dir, { 'ensure' => 'directory', 'owner' => $user, 'mode' => '0755' })
+        }
+        # file_line manages a line *within* a file - it doesn't create the
+        #  file itself, so a target that doesn't pre-exist (like a
+        #  PowerShell profile nothing has run yet to generate) errors out
+        #  with a plain ENOENT unless something ensures the file first. An
+        #  exec+touch (not a file resource) on purpose - some of these
+        #  destinations (.bashrc/.zshrc) are *also* the target of a 'file'
+        #  step elsewhere with real content, and two `file { $d: }`
+        #  declarations for the same path is a duplicate-declaration
+        #  error regardless of which runs first; a distinct resource
+        #  type/title never collides, and `file`'s content still wins
+        #  either way since it overwrites whatever touch left behind.
+        exec { "${title}: ensure ${d} exists":
+          command => "/usr/bin/touch '${d}'",
+          creates => $d,
+          require => File[$dir],
+        }
         $step['lines'].each |Integer $li, String $line| {
           file_line { "${title}: ${d} #${li}":
             path    => $d,
             line    => $line,
-            require => File[dirname($d)],
+            require => Exec["${title}: ensure ${d} exists"],
           }
         }
       }
@@ -163,12 +202,28 @@ define lessons::install_step (
         #  Ansible's own generic 'script' case: whatever the manifest's
         #  own cmd body does about re-runs is all there is.
         default: {
+          # provider => shell always runs via /bin/sh -c "<command>" - a
+          #  shebang embedded in that string is just a comment to sh, not
+          #  an actual interpreter switch, so it never gets to bash. These
+          #  scripts (see scriptbox/config/ubuntu2204.yml's own per-script
+          #  `type: bash`, dropped by the generator before reaching here)
+          #  rely on bash-only syntax like `source`, which dash lacks.
+          #  Writing the script to a real file with its own shebang and
+          #  executing that file directly is the only way to actually get
+          #  bash, without having to shell-quote arbitrary cmd content
+          #  (which may itself contain stray single quotes).
+          $script_path = "/tmp/lessons_${step_name}.sh"
+          file { $script_path:
+            ensure  => file,
+            content => "#!/bin/bash\n${step['cmd']}",
+            mode    => '0755',
+          }
           exec { $title:
-            command     => $step['cmd'],
-            provider    => shell,
+            command     => $script_path,
             user        => $user,
             environment => ["HOME=${home}"],
             cwd         => $home,
+            require     => File[$script_path],
           }
         }
       }
