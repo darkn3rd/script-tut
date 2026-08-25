@@ -41,6 +41,10 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
         ],
       },
     ],
+    gen_scripts => false,
+    shell_scripts => false,
+    compiled_lang => false,
+    win_scripts => false,
   }
 
   class { 'lessons::gen_scripts':

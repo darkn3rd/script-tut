@@ -35,9 +35,18 @@ define lessons::install_step (
         #  generate_puppet.rb deliberately excludes an apt_repository-
         #  carrying entry from the plain-package merge specifically so
         #  that holds here too.
+        #
+        # unless checks the actual sources.list.d files, not `apt-cache
+        #  policy` output - policy prints the repo's real URL/label
+        #  (e.g. "o=LP-PPA-dotnet-backports"), never the literal
+        #  "ppa:owner/name" shorthand, so grepping policy output for
+        #  that string never matches and this exec would otherwise
+        #  re-run add-apt-repository (hitting Launchpad's API) on every
+        #  single provision, PPA already added or not.
+        $ppa_slug = regsubst($step['apt_repository'], '^ppa:', '')
         exec { "${title}: ppa":
           command => "/usr/bin/add-apt-repository -y '${step['apt_repository']}'",
-          unless  => "/usr/bin/apt-cache policy | /bin/grep -qF '${step['apt_repository']}'",
+          unless  => "/bin/grep -rqF '${ppa_slug}' /etc/apt/sources.list.d/",
           before  => Package[$step_name],
         }
         ensure_packages([$step_name])
