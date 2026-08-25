@@ -296,6 +296,8 @@ For filtering in only the errors:
 
   * Module Dependencies
     * [The four ways to install Puppet modules](https://www.puppeteers.net/blog/the-four-ways-to-install-puppet-modules/) by Samuli Seppänen on April 13, 2021
-    * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
-    * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
-    * [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) - automatic dependency management
+    * [Installing and managing modules from the command line](https://www.puppet.com/docs/puppet/7/modules_installing.html)
+    * Tools
+      * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
+      * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
+      * [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) - automatic dependency management
