@@ -94,6 +94,14 @@ def write_site(name, lessons_data, out_path)
   lines << "  class { 'lessons':"
   lines << "    platform     => #{pp_string(name)},"
   lines << "    common_steps => #{to_pp(lessons_data[COMMON_AREA], 2)},"
+  # Every area below is declared explicitly, right here, with its own
+  #  real $steps - so the parent class must not also auto-`contain` it
+  #  (that's what its area-gate params are for). Skipping this leaves
+  #  lessons::init.pp's own `if $gen_scripts { contain lessons::gen_
+  #  scripts }` (default true) to declare the class first with no
+  #  steps, and the explicit declaration below then collides with it as
+  #  a duplicate declaration.
+  LESSON_AREAS.each { |area| lines << "    #{area} => false," }
   lines << '  }'
   LESSON_AREAS.each do |area|
     lines << ''
@@ -104,7 +112,15 @@ def write_site(name, lessons_data, out_path)
   lines << '}'
 
   FileUtils.mkdir_p(File.dirname(out_path))
-  File.write(out_path, "#{lines.join("\n")}\n")
+  # mode: 'wb' - on a native-Windows Ruby (RUBY_PLATFORM x64-mingw-ucrt,
+  #  the default on this repo's Windows dev box), text-mode File.write
+  #  silently translates every \n to \r\n. That's invisible for the .pp
+  #  syntax itself, but multi-line step 'cmd' bodies get embedded \r\n
+  #  along with it - and \r right before a keyword like `fi`/`then`
+  #  isn't the same token to bash, so the *generated script* breaks even
+  #  though the *manifest* parses fine. Binary mode keeps \n literal
+  #  regardless of host OS.
+  File.write(out_path, "#{lines.join("\n")}\n", mode: 'wb')
 end
 
 # write_hiera(name, lessons_data, out_path) - see CLASSIFIERS's own
@@ -121,7 +137,7 @@ def write_hiera(name, lessons_data, out_path)
   LESSON_AREAS.each { |area| data["lessons::#{area}::steps"] = lessons_data[area] }
 
   FileUtils.mkdir_p(File.dirname(out_path))
-  File.write(out_path, "---\n#{data.to_yaml.sub(/\A---\n/, '')}")
+  File.write(out_path, "---\n#{data.to_yaml.sub(/\A---\n/, '')}", mode: 'wb')
 end
 
 # write_enc(name, lessons_data, out_path) - see CLASSIFIERS's own 'enc'
@@ -142,7 +158,7 @@ def write_enc(name, lessons_data, out_path)
   doc = { 'classes' => classes, 'parameters' => { 'lessons_platform' => name } }
 
   FileUtils.mkdir_p(File.dirname(out_path))
-  File.write(out_path, "---\n#{doc.to_yaml.sub(/\A---\n/, '')}")
+  File.write(out_path, "---\n#{doc.to_yaml.sub(/\A---\n/, '')}", mode: 'wb')
 end
 
 # parse_puppet_args(argv) - <config.yml> <out_path> [--classifier
