@@ -89,6 +89,35 @@ These are modules that are being currently evaluated:
 
 **Note:** none of the above are vendored into `.forge-vendor` yet (currently empty). `puppetlabs-stdlib` is also an implicit dependency - `lessons::install_step`'s `apt` branch calls `any2array`/`ensure_packages`/`ensure_resource`, which errors at `vagrant provision` time until stdlib is installed there too.
 
+```bash
+REPO_PATH=$(realpath ../..)
+FORGE_API="https://forgeapi.puppet.com"
+LATEST="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib | jq -r '.current_release.version')"
+
+# using puppet
+puppet module install puppetlabs-stdlib \
+  --version $LATEST \
+  --target-dir $REPO_PATH/configbox/puppet/.forge-vendor
+
+# using r10k
+gem install r10k
+r10k puppetfile install \
+  -moduledir configbox/puppet/.forge-vendor \
+  -puppetfile $REPO_PATH/configbox/puppet/Puppetfile
+
+# Forge REST API
+pushd $REPO_PATH/configbox/puppet/.forge-vendor
+FORGE_API="https://forgeapi.puppet.com"
+LATEST_FILE_URI="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
+  | jq -r '.current_release.file_uri')"
+# download
+curl -sL -o stdlib.tar.gz "${FORGE_API}${LATEST_FILE_URI}"
+tar -xzf stdlib.tar.gz
+mv puppetlabs-stdlib-$LATEST stdlib
+rm stdlib.tar.gz
+popd
+```
+
 ## Archived or Not Maintained
 
 * Version Manager
