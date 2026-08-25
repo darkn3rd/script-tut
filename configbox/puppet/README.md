@@ -89,34 +89,68 @@ These are modules that are being currently evaluated:
 
 **Note:** none of the above are vendored into `.forge-vendor` yet (currently empty). `puppetlabs-stdlib` is also an implicit dependency - `lessons::install_step`'s `apt` branch calls `any2array`/`ensure_packages`/`ensure_resource`, which errors at `vagrant provision` time until stdlib is installed there too.
 
-```bash
-REPO_PATH=$(realpath ../..)
-FORGE_API="https://forgeapi.puppet.com"
-LATEST="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib | jq -r '.current_release.version')"
+* PowerShell
+  ```pwsh
+  $RepoPath = Resolve-Path "..\.."
+  $ForgeApi = "https://forgeapi.puppet.com"
+  $Latest = (Invoke-RestMethod `
+    "$ForgeApi/v3/modules/puppetlabs-stdlib").current_release.version
 
-# using puppet
-puppet module install puppetlabs-stdlib \
-  --version $LATEST \
-  --target-dir $REPO_PATH/configbox/puppet/.forge-vendor
+  # Install Using Puppet
+  puppet module install puppetlabs-stdlib `
+    --version $Latest `
+    --target-dir $RepoPath/configbox/puppet/.forge-vendor
+  
+  # using r10k
+  gem install r10k
+  r10k puppetfile install `
+    -moduledir configbox\puppet\.forge-vendor `
+    -puppetfile "$RepoPath\configbox\puppet\Puppetfile"
 
-# using r10k
-gem install r10k
-r10k puppetfile install \
-  -moduledir configbox/puppet/.forge-vendor \
-  -puppetfile $REPO_PATH/configbox/puppet/Puppetfile
+  # Forge REST API
+  Push-Location "$RepoPath\configbox\puppet\.forge-vendor"
+  $ForgeApi = "https://forgeapi.puppet.com"
+  $LatestFileUri = (Invoke-RestMethod `
+    "$ForgeApi/v3/modules/puppetlabs-stdlib").current_release.file_uri
+  
+  # download
+  Invoke-WebRequest -Uri "$ForgeApi$LatestFileUri" -OutFile stdlib.tar.gz
+  tar -xzf stdlib.tar.gz
+  Move-Item "puppetlabs-stdlib-$Latest" stdlib
+  Remove-Item stdlib.tar.gz
+  Pop-Location
+  ```
+* Bash
+  ```bash
+  REPO_PATH=$(realpath ../..)
+  FORGE_API="https://forgeapi.puppet.com"
+  LATEST="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
+    | jq -r '.current_release.version')"
+    
+  # using puppet
+  puppet module install puppetlabs-stdlib \
+    --version $LATEST \
+    --target-dir $REPO_PATH/configbox/puppet/.forge-vendor
 
-# Forge REST API
-pushd $REPO_PATH/configbox/puppet/.forge-vendor
-FORGE_API="https://forgeapi.puppet.com"
-LATEST_FILE_URI="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
-  | jq -r '.current_release.file_uri')"
-# download
-curl -sL -o stdlib.tar.gz "${FORGE_API}${LATEST_FILE_URI}"
-tar -xzf stdlib.tar.gz
-mv puppetlabs-stdlib-$LATEST stdlib
-rm stdlib.tar.gz
-popd
-```
+  # using r10k
+  gem install r10k
+  r10k puppetfile install \
+    -moduledir configbox/puppet/.forge-vendor \
+    -puppetfile $REPO_PATH/configbox/puppet/Puppetfile
+  
+  # Forge REST API
+  pushd $REPO_PATH/configbox/puppet/.forge-vendor
+  FORGE_API="https://forgeapi.puppet.com"
+  LATEST_FILE_URI="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
+    | jq -r '.current_release.file_uri')"
+    
+  # download
+  curl -sL -o stdlib.tar.gz "${FORGE_API}${LATEST_FILE_URI}"
+  tar -xzf stdlib.tar.gz
+  mv puppetlabs-stdlib-$LATEST stdlib
+  rm stdlib.tar.gz
+  popd
+  ```
 
 ## Archived or Not Maintained
 
