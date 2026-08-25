@@ -1,0 +1,57 @@
+SCRIPT_TUT_PATH = "../../../.."
+
+# puppet-agent isn't on generic/ubuntu2204 - the puppet_apply provisioner
+#  requires it already present in the guest, it does not install Puppet
+#  itself (see https://developer.hashicorp.com/vagrant/docs/provisioning/
+#  puppet_apply). ruby - ../node_classifier.rb's own shebang; not needed
+#  by the hiera/node_defs boxes, only this one actually executes a
+#  script during catalog compilation. Idempotent - skips straight to
+#  exit 0 on a re-provision.
+INSTALL_PUPPET = <<-SHELL
+  test -x /opt/puppetlabs/bin/puppet && exit 0
+  curl -sL https://apt.puppet.com/puppet8-release-jammy.deb -o /tmp/puppet8-release.deb
+  dpkg -i /tmp/puppet8-release.deb
+  apt-get update
+  apt-get install -y puppet-agent ruby
+SHELL
+
+# Copied to a real Puppet-conventional path (/etc/puppetlabs/puppet/),
+#  not referenced in place under the SCRIPT_TUT_PATH synced folder -
+#  vboxsf mounts don't reliably preserve the executable bit
+#  node_terminus=exec needs (`puppet apply` execs this file directly,
+#  same requirement chmod +x here satisfies explicitly regardless of
+#  what the mount preserved). data/ comes along too - ../node_
+#  classifier.rb's own __dir__ lookup expects it as a sibling, not
+#  just the script alone.
+INSTALL_ENC = <<-SHELL
+  cp -r /var/script-tut/configbox/puppet/enc/data /etc/puppetlabs/puppet/data
+  cp /var/script-tut/configbox/puppet/enc/node_classifier.rb /etc/puppetlabs/puppet/enc.sh
+  chmod +x /etc/puppetlabs/puppet/enc.sh
+SHELL
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "puppet-enc-node-01.test"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+
+  config.vm.provision "shell", inline: INSTALL_PUPPET
+  config.vm.provision "shell", inline: INSTALL_ENC
+
+  # enc classifier - see ../../README.md's own "Configbox Configuration
+  #  Items" table. ../manifests/site.pp is deliberately near-empty
+  #  (`node default { }`) - every class and every one of its parameters
+  #  (platform/common_steps/steps/user/area gates) comes from
+  #  /etc/puppetlabs/puppet/enc.sh's own classes:/parameters: YAML
+  #  instead, via node_terminus=exec below - --certname pins the
+  #  certname enc.sh classifies against to ubuntu22 explicitly, rather
+  #  than relying on its own PLATFORM_FOR_CERTNAME fallback picking
+  #  ubuntu22 by default for whatever this box's real hostname resolves to.
+  config.vm.provision "puppet" do |puppet|
+    puppet.binary_path    = "/opt/puppetlabs/bin"
+    puppet.manifests_path = "../manifests"
+    puppet.manifest_file  = "site.pp"
+    puppet.module_path    = ["../../shared_modules", "../../.forge-vendor"]
+    puppet.options         = "--verbose --debug --node_terminus=exec --external_nodes=/etc/puppetlabs/puppet/enc.sh --certname=ubuntu22"
+  end
+end

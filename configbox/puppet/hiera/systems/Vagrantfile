@@ -1,0 +1,49 @@
+SCRIPT_TUT_PATH = "../../../.."
+
+# puppet-agent isn't on generic/ubuntu2204 - the puppet_apply provisioner
+#  requires it already present in the guest, it does not install Puppet
+#  itself (see https://developer.hashicorp.com/vagrant/docs/provisioning/
+#  puppet_apply). Idempotent - skips straight to exit 0 on a re-provision.
+INSTALL_PUPPET = <<-SHELL
+  test -x /opt/puppetlabs/bin/puppet && exit 0
+  curl -sL https://apt.puppet.com/puppet8-release-jammy.deb -o /tmp/puppet8-release.deb
+  dpkg -i /tmp/puppet8-release.deb
+  apt-get update
+  apt-get install -y puppet-agent
+SHELL
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "puppet-hiera-node-01.test"
+  config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+
+  # ../data - GENERATED lessons/ubuntu22.yaml (scriptbox/scripts/
+  #  generate_puppet.rb --classifier hiera) plus hand-written
+  #  common.yaml - synced explicitly, at the exact guest path
+  #  ../hiera.yaml's own `datadir: data` resolves against once
+  #  hiera.yaml itself lands in working_directory below (Hiera 5
+  #  resolves a relative datadir relative to hiera.yaml's own
+  #  directory) - manifests_path/module_path get copied by the puppet
+  #  provisioner itself, but hiera_config_path only carries the one
+  #  hiera.yaml file, not its sibling data/ directory, so this can't be
+  #  left implicit the way the other paths below are.
+  config.vm.synced_folder "../data", "/tmp/vagrant-puppet/data"
+
+  config.vm.provision "shell", inline: INSTALL_PUPPET
+
+  # hiera classifier - see ../../README.md's own "Configbox Configuration
+  #  Items" table. ../manifests/site.pp is just `include lessons`; every
+  #  parameter (platform/common_steps/steps/user/area gates) comes from
+  #  ../hiera.yaml's own hierarchy via Puppet's automatic class-parameter
+  #  lookup - nothing below carries per-platform data of its own.
+  config.vm.provision "puppet" do |puppet|
+    puppet.binary_path        = "/opt/puppetlabs/bin"
+    puppet.manifests_path     = "../manifests"
+    puppet.manifest_file      = "site.pp"
+    puppet.module_path        = ["../../shared_modules", "../../.forge-vendor"]
+    puppet.hiera_config_path  = "../hiera.yaml"
+    puppet.working_directory  = "/tmp/vagrant-puppet" # matches the synced_folder above
+    puppet.options             = "--verbose --debug"
+  end
+end

@@ -100,6 +100,24 @@ These are modules that are being currently evaluated:
 * **Version Managers**: `asdf`, `sdkman`
 * **Langauge Modules**: `gem`, PowerShell Gallery
 
+## Configbox Configuration Items
+
+Same `lessons` area (gen_scripts/shell_scripts/compiled_lang/win_scripts) as the [Chef cookbook](../chef/cookbooks/lessons) and [Ansible role](../ansible/provision/roles/lessons), implemented once in `shared_modules/lessons` (classifier-agnostic - see its own `manifests/init.pp`; named `shared_modules`, not `modules`, so it sorts after `enc`/`hiera`/`node_defs` - it's the one thing all three classifier trees point at, not one of them) and fed by `scriptbox/scripts/generate_puppet.rb`, the Puppet analogue of `generate_chef_databag.rb`/`generate_ansible_vars.rb`.
+
+No real deployment runs all three of Puppet's classifier methods at once, so the generator produces exactly one shape per invocation via `--classifier`:
+
+```
+scriptbox/scripts/generate_puppet.rb <config.yml> <out_path> [--classifier site|hiera|enc] [--select TAG,TAG] [--exclude TAG,TAG]
+```
+
+| `--classifier` | Output                                  | How the module gets its data                                          |
+| -------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
+| `hiera` (default) | `hiera/data/lessons/<platform>.yaml`  | Automatic class-parameter lookup (`lessons::gen_scripts::steps`, ...) - data and code never touch. Puppet's own recommended default. |
+| `enc`          | `enc/data/<platform>.yaml`               | An External Node Classifier (`enc/node_classifier.rb`, `node_terminus = exec`) prints a `classes:`/`parameters:` document per node at compile time - data is *pushed*, not looked up. |
+| `site`         | `node_defs/manifests/nodes/<platform>.pp` | The full step data inlined as literal `class { 'lessons::...': steps => [...] }` declarations inside a generated `node '<platform>' { ... }` block - oldest/least idiomatic of the three, kept for parity/comparison. |
+
+Hand-written knobs (`lessons::user`, the four area gates) live in `hiera/data/common.yaml` / `enc/data/common.yaml` - never touched by the generator, same split as Chef's `attributes/default.rb` and Ansible's `defaults/main.yml`.
+
 ## Links
 
 * Puppet Open Source

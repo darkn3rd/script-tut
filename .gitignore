@@ -41,6 +41,15 @@ pkgbox/chocolatey/*/vendor/*
 configbox/ansible/provision/.galaxy-vendor/*
 !configbox/ansible/provision/.galaxy-vendor/.gitkeep
 
+# configbox/puppet/.forge-vendor/ holds a Puppet Forge fetch (`puppet
+# module install`, r10k, or a plain forgeapi.puppet.com download) for
+# configbox/puppet/shared_modules/lessons's own metadata.json dependency -
+# puppetlabs-stdlib (ensure_packages/ensure_resource/any2array/dirname/
+# file_line) - fetched on demand, not part of this repo's own source,
+# same reasoning as .berks-vendor/ and .galaxy-vendor/ above.
+configbox/puppet/.forge-vendor/*
+!configbox/puppet/.forge-vendor/.gitkeep
+
 # Locally built Debian packages and their staged binaries; regenerate
 # with `make` (pkgbox/deb) / `update.sh` per package.
 pkgbox/deb/*/vendor/*
