@@ -20,6 +20,15 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: INSTALL_PUPPET
 
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that reults in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
   # site manifest classifier - see ../../README.md's own "Configbox
   #  Configuration Items" table. manifests_path/manifest_file point
   #  straight at the GENERATED ../manifests/nodes/ubuntu22.pp (see

@@ -19,11 +19,9 @@ require 'yaml'
 #  classifier keeps common.yaml and lessons/ubuntu22.yaml separate.
 #
 # PLATFORM_FOR_CERTNAME - only ubuntu22 has a generated data/ entry
-#  today, same single-platform scope the Chef cookbook and Ansible role
-#  this mirrors currently cover (see ../hiera/hiera.yaml's own comment
-#  on the same limitation). Any certname not listed here falls back to
-#  'ubuntu22' rather than erroring - add a real entry once a second
-#  platform exists.
+#  today (see ../hiera/hiera.yaml's own comment on the same limitation).
+#  Any certname not listed here falls back to 'ubuntu22' rather than
+#  erroring - add a real entry once a second platform exists.
 PLATFORM_FOR_CERTNAME = {}.freeze
 
 data_dir = File.join(__dir__, 'data')

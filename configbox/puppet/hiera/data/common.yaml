@@ -3,8 +3,7 @@
 #  ../../shared_modules/lessons/manifests/init.pp's own parameter defaults
 #  would play with no hiera involved at all; kept here instead so an
 #  operator can override per-environment/per-node without editing the
-#  module. Mirrors Chef's default['lessons']['user']/area gates and
-#  Ansible's lessons_user/lessons_<area> defaults exactly.
+#  module.
 lessons::user: vagrant
 lessons::gen_scripts: true
 lessons::shell_scripts: true

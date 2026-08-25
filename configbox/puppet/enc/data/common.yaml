@@ -1,8 +1,7 @@
 ---
 # Hand-written - never touched by generate_puppet.rb. Merged into the
 #  generated classes.lessons block by ../node_classifier.rb at request
-#  time. Mirrors Chef's default['lessons']['user']/area gates and
-#  Ansible's lessons_user/lessons_<area> defaults exactly.
+#  time.
 user: vagrant
 gen_scripts: true
 shell_scripts: true

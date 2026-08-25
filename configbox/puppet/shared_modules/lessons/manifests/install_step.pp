@@ -3,20 +3,11 @@
 # One step from a $steps array (see ./gen_scripts.pp and friends),
 #  applied once per resource title by their own each() loops ($step -
 #  the whole step hash - and $user passed straight through). Puppet has
-#  no native switch/case-over-a-hash the way Chef dispatches through
-#  helpers.rb's own lessons_install or Ansible's install_step.yml does
-#  with `when: step.type == ...` - one case($type) block plays the same
-#  role here. Same type vocabulary and same per-type behavior as
-#  ../../../ansible/provision/roles/lessons/tasks/install_step.yml (the
-#  newer, more complete of the two existing sibling implementations) -
-#  see that file's own per-type comments for the *why* behind each
-#  choice; this only repeats what's genuinely Puppet-specific.
+#  no native switch/case-over-a-hash, so one case($type) block dispatches
+#  on $step['type'] and handles every step shape the generator can emit.
 #
 # $home is computed here rather than looked up (getent-style) because
-#  every current platform (ubuntu22) is a fixed, known Vagrant test
-#  user - same scope Ansible's own lessons_home currently covers, via
-#  getent there instead only because Ansible had a convenient module
-#  for it.
+#  every current platform (ubuntu22) is a fixed, known Vagrant test user.
 #
 # Exec { path => [...] } at the top is a resource default, scoped to
 #  just this define's own body - every bare-command exec below can stay
@@ -41,9 +32,9 @@ define lessons::install_step (
       if 'apt_repository' in $step {
         # apt_repository - a PPA (add-apt-repository) - always paired
         #  1:1 with a single package name; consolidate_apt in
-        #  generate_puppet.rb/generate_chef_databag.rb deliberately
-        #  excludes an apt_repository-carrying entry from the plain-
-        #  package merge specifically so that holds here too.
+        #  generate_puppet.rb deliberately excludes an apt_repository-
+        #  carrying entry from the plain-package merge specifically so
+        #  that holds here too.
         exec { "${title}: ppa":
           command => "/usr/bin/add-apt-repository -y '${step['apt_repository']}'",
           unless  => "/usr/bin/apt-cache policy | /bin/grep -qF '${step['apt_repository']}'",
@@ -186,9 +177,8 @@ define lessons::install_step (
           }
         }
 
-        # ubuntu22_rust - rustup's own installer script, same as the
-        #  manifest. creates gives this its own idempotency guard, the
-        #  same way Ansible's own special-cased ubuntu22_rust does.
+        # ubuntu22_rust - rustup's own installer script, which has no
+        #  idempotency guard of its own; creates gives it one here.
         'ubuntu22_rust': {
           exec { $title:
             command     => "/bin/bash -c \"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path\"",
@@ -198,9 +188,8 @@ define lessons::install_step (
           }
         }
 
-        # Generic script - no idempotency guard here either, same as
-        #  Ansible's own generic 'script' case: whatever the manifest's
-        #  own cmd body does about re-runs is all there is.
+        # Generic script - no idempotency guard here either: whatever
+        #  the manifest's own cmd body does about re-runs is all there is.
         default: {
           # provider => shell always runs via /bin/sh -c "<command>" - a
           #  shebang embedded in that string is just a comment to sh, not
@@ -299,8 +288,7 @@ define lessons::install_step (
 
     # "<plugin> <repo_url>" - asdf plugin add errors out if the plugin's
     #  already registered, unlike sdkman/pyenv/rbenv above - so this
-    #  checks `plugin list` first, same guard Ansible's own asdf_plugin
-    #  task uses.
+    #  checks `plugin list` first.
     'asdf_plugin': {
       $asdf_parts = split($step_name, ' ')
       exec { $title:
@@ -354,9 +342,9 @@ define lessons::install_step (
 
     # pwsh, not native PowerShell - every current platform (ubuntu22)
     #  has no native PowerShell host, so this always goes through the
-    #  pwsh wrapper, same as Ansible's own powershell_* tasks. -Force
-    #  covers the untrusted-PSGallery prompt on its own for
-    #  powershell_module - no separate repository-trust step needed.
+    #  pwsh wrapper. -Force covers the untrusted-PSGallery prompt on its
+    #  own for powershell_module - no separate repository-trust step
+    #  needed.
     'powershell_package_provider': {
       $ps_version = 'version' in $step ? {
         true    => " -MinimumVersion ${regsubst($step['version'], '^(>=|=)\s*', '')}",

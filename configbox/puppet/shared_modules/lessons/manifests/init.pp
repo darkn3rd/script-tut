@@ -6,15 +6,11 @@
 #  `classes:` block, or an explicit `class { 'lessons': ... }`
 #  resource-like declaration in a generated node manifest. The class
 #  bodies here never know or care which one - see scriptbox/scripts/
-#  generate_puppet.rb --classifier [site|hiera|enc] (default hiera),
-#  the Puppet analogue of Chef's data_bag_item('lessons', node['lessons']
-#  ['platform']) and Ansible's group_vars-backed lessons[lessons_platform].
+#  generate_puppet.rb --classifier [site|hiera|enc] (default hiera).
 #
 # Area gates ($gen_scripts/$shell_scripts/$compiled_lang/$win_scripts,
-#  all default true) mirror Chef's default['lessons'][area] and
-#  Ansible's lessons_<area> vars - override per node/hiera-level/ENC
-#  entry to skip an area entirely without touching this class or any
-#  area class itself.
+#  all default true) override per node/hiera-level/ENC entry to skip an
+#  area entirely without touching this class or any area class itself.
 class lessons (
   String[1]   $platform      = 'ubuntu22',
   String[1]   $user          = 'vagrant',
@@ -32,11 +28,9 @@ class lessons (
   }
 
   # 'common' - steps that live directly on the manifest's own lessons.
-  #  packages, not nested under any one of the four gated areas below
-  #  (see scriptbox/scripts/generate_chef_databag.rb's own COMMON_AREA) -
+  #  packages, not nested under any one of the four gated areas below -
   #  e.g. the sdkman bootstrap, which gen_scripts's own `sdkman: groovy`
-  #  step depends on already having run. Always applied, ungated - same
-  #  as Chef's default.rb and Ansible's main.yml.
+  #  step depends on already having run. Always applied, ungated.
   $common_steps.each |Integer $i, Hash $step| {
     lessons::install_step { "lessons common ${i}: ${step['type']}/${step['name']}":
       step => $step,
