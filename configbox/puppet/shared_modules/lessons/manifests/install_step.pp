@@ -34,7 +34,7 @@ define lessons::install_step (
     default   => "/home/${user}",
   }
   $type = $step['type']
-  $name = $step['name']
+  $step_name = $step['name']
 
   case $type {
     'apt': {
@@ -47,9 +47,9 @@ define lessons::install_step (
         exec { "${title}: ppa":
           command => "/usr/bin/add-apt-repository -y '${step['apt_repository']}'",
           unless  => "/usr/bin/apt-cache policy | /bin/grep -qF '${step['apt_repository']}'",
-          before  => Package[$name],
+          before  => Package[$step_name],
         }
-        ensure_packages([$name])
+        ensure_packages([$step_name])
       } elsif 'add_apt_repo' in $step {
         # add_apt_repo - the manifest's own raw signed-by key + list
         #  file (Corretto, Docker, ...), not a PPA - see scriptbox/
@@ -77,12 +77,12 @@ define lessons::install_step (
           ensure  => file,
           content => "deb [signed-by=${key_path}] ${repo['repo_uri']} ${repo_suite} ${repo_components}\n",
           require => Exec["${title}: key"],
-          before  => Package[$name],
+          before  => Package[$step_name],
         }
 
-        ensure_packages([$name])
+        ensure_packages([$step_name])
       } else {
-        ensure_packages(any2array($name))
+        ensure_packages(any2array($step_name))
       }
     }
 
@@ -114,7 +114,7 @@ define lessons::install_step (
     }
 
     'script': {
-      case $name {
+      case $step_name {
         # ubuntu22_powershell - the manifest's own script downloads and
         #  installs a vendor .deb that configures apt itself, not a
         #  plain PPA - get_url-equivalent (exec+creates) + package{deb}
@@ -181,7 +181,7 @@ define lessons::install_step (
     #  common step) plus `sdk install`'s own already-installed handling.
     'sdkman': {
       exec { $title:
-        command     => "/bin/bash -c 'source ${home}/.sdkman/bin/sdkman-init.sh && sdk install ${name}'",
+        command     => "/bin/bash -c 'source ${home}/.sdkman/bin/sdkman-init.sh && sdk install ${step_name}'",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -193,8 +193,8 @@ define lessons::install_step (
       #  calls it, so running it ahead of each is harmless.
       ensure_packages(['cpanminus'])
       exec { $title:
-        command     => "/bin/bash -c 'cpanm ${name}'",
-        unless      => "/bin/bash -c \"perl -M'${name}' -e 1\"",
+        command     => "/bin/bash -c 'cpanm ${step_name}'",
+        unless      => "/bin/bash -c \"perl -M'${step_name}' -e 1\"",
         user        => $user,
         environment => ["HOME=${home}"],
         require     => Package['cpanminus'],
@@ -208,8 +208,8 @@ define lessons::install_step (
     #  own idempotency guard, since the raw command has none of its own.
     'pyenv': {
       exec { "${title}: install":
-        command     => "/bin/bash -c 'PYENV_ROOT=${home}/.pyenv PATH=${home}/.pyenv/bin:${home}/.pyenv/shims:$PATH pyenv install -s ${name}'",
-        creates     => "${home}/.pyenv/versions/${name}",
+        command     => "/bin/bash -c 'PYENV_ROOT=${home}/.pyenv PATH=${home}/.pyenv/bin:${home}/.pyenv/shims:\$PATH pyenv install -s ${step_name}'",
+        creates     => "${home}/.pyenv/versions/${step_name}",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -226,8 +226,8 @@ define lessons::install_step (
 
     'rbenv': {
       exec { "${title}: install":
-        command     => "/bin/bash -c 'PATH=${home}/.rbenv/bin:${home}/.rbenv/shims:$PATH rbenv install -s ${name}'",
-        creates     => "${home}/.rbenv/versions/${name}",
+        command     => "/bin/bash -c 'PATH=${home}/.rbenv/bin:${home}/.rbenv/shims:\$PATH rbenv install -s ${step_name}'",
+        creates     => "${home}/.rbenv/versions/${step_name}",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -247,7 +247,7 @@ define lessons::install_step (
     #  checks `plugin list` first, same guard Ansible's own asdf_plugin
     #  task uses.
     'asdf_plugin': {
-      $asdf_parts = split($name, ' ')
+      $asdf_parts = split($step_name, ' ')
       exec { $title:
         command     => "/bin/bash -c 'asdf plugin list | grep -qx \"${asdf_parts[0]}\" || asdf plugin add ${asdf_parts[0]} ${asdf_parts[1]}'",
         user        => $user,
@@ -260,7 +260,7 @@ define lessons::install_step (
     #  pyenv/rbenv above get from their own install command.
     'asdf': {
       exec { "${title}: install":
-        command     => "/bin/bash -c 'asdf install ${name}'",
+        command     => "/bin/bash -c 'asdf install ${step_name}'",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -281,18 +281,18 @@ define lessons::install_step (
     #  --version has no floor semantics, so '>=' is rejected outright.
     'choco_local': {
       if 'version' in $step and $step['version'] =~ /^>=/ {
-        fail("lessons::install_step '${title}': choco_local '${name}' version must be an exact pin ('=' or a bare version) - choco install --version has no floor semantics")
+        fail("lessons::install_step '${title}': choco_local '${step_name}' version must be an exact pin ('=' or a bare version) - choco install --version has no floor semantics")
       }
-      $choco_dir = "pkgbox/chocolatey/${name}"
+      $choco_dir = "pkgbox/chocolatey/${step_name}"
       $choco_version_flag = 'version' in $step ? {
         true    => " --version=${regsubst($step['version'], '^=\s*', '')}",
         default => '',
       }
       exec { "${title}: pack":
-        command => "choco pack ${choco_dir}/${name}.nuspec --output-directory=${choco_dir}/vendor",
+        command => "choco pack ${choco_dir}/${step_name}.nuspec --output-directory=${choco_dir}/vendor",
       }
       exec { "${title}: install":
-        command => "choco install ${name} --source=${choco_dir}/vendor${choco_version_flag} --yes",
+        command => "choco install ${step_name} --source=${choco_dir}/vendor${choco_version_flag} --yes",
         require => Exec["${title}: pack"],
       }
     }
@@ -308,7 +308,7 @@ define lessons::install_step (
         default => '',
       }
       exec { $title:
-        command     => "pwsh -NoProfile -Command \"Install-PackageProvider -Name ${name}${ps_version} -Force\"",
+        command     => "pwsh -NoProfile -Command \"Install-PackageProvider -Name ${step_name}${ps_version} -Force\"",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -317,7 +317,7 @@ define lessons::install_step (
     'powershell_module': {
       $ps_args = 'args' in $step ? { true => " ${step['args']}", default => '' }
       exec { $title:
-        command     => "pwsh -NoProfile -Command \"Install-Module -Name ${name}${ps_args} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber\"",
+        command     => "pwsh -NoProfile -Command \"Install-Module -Name ${step_name}${ps_args} -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber\"",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -328,7 +328,7 @@ define lessons::install_step (
     #  don't cover (e.g. Set-PSRepository's own repository-trust call).
     'powershell_cmd': {
       exec { $title:
-        command     => "pwsh -NoProfile -Command \"${name}\"",
+        command     => "pwsh -NoProfile -Command \"${step_name}\"",
         user        => $user,
         environment => ["HOME=${home}"],
       }
@@ -336,7 +336,7 @@ define lessons::install_step (
 
     default: {
       notify { "${title}: unsupported step type":
-        message => "lessons: unsupported step type '${type}' for '${name}'",
+        message => "lessons: unsupported step type '${type}' for '${step_name}'",
       }
     }
   }

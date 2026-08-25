@@ -1,4 +1,4 @@
-SCRIPT_TUT_PATH = "../../../.."
+SCRIPT_TUT_PATH = File.realpath("../../../..", __dir__)
 
 # puppet-agent isn't on generic/ubuntu2204 - the puppet_apply provisioner
 #  requires it already present in the guest, it does not install Puppet
@@ -34,6 +34,15 @@ Vagrant.configure("2") do |config|
   config.vm.box_version = "4.3.12"
   config.vm.hostname = "puppet-enc-node-01.test"
   config.vm.synced_folder "#{SCRIPT_TUT_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of 
+    # guessing that reults in hangs or slowness. 
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
 
   config.vm.provision "shell", inline: INSTALL_PUPPET
   config.vm.provision "shell", inline: INSTALL_ENC

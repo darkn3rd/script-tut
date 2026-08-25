@@ -87,6 +87,8 @@ These are modules that are being currently evaluated:
   * [windowsfeature](https://forge.puppet.com/modules/puppet/windowsfeature/) by Vox Pupuli
   * [powershell](https://forge.puppet.com/modules/puppetlabs/powershell/) by PuppetLabs (PDK)
 
+**Note:** none of the above are vendored into `.forge-vendor` yet (currently empty). `puppetlabs-stdlib` is also an implicit dependency - `lessons::install_step`'s `apt` branch calls `any2array`/`ensure_packages`/`ensure_resource`, which errors at `vagrant provision` time until stdlib is installed there too.
+
 ## Archived or Not Maintained
 
 * Version Manager
