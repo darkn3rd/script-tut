@@ -87,7 +87,13 @@ These are modules that are being currently evaluated:
   * [windowsfeature](https://forge.puppet.com/modules/puppet/windowsfeature/) by Vox Pupuli
   * [powershell](https://forge.puppet.com/modules/puppetlabs/powershell/) by PuppetLabs (PDK)
 
-**Note:** none of the above are vendored into `.forge-vendor` yet (currently empty). `puppetlabs-stdlib` is also an implicit dependency - `lessons::install_step`'s `apt` branch calls `any2array`/`ensure_packages`/`ensure_resource`, which errors at `vagrant provision` time until stdlib is installed there too.
+## Installing Forge Modules
+
+The modules that you download will be vendored into `.forge-vendor`.  
+
+### Installing a Single Module
+
+Here is an example how you can install `puppetlabs-stdlib` requirement.
 
 * PowerShell
   ```pwsh
@@ -96,18 +102,12 @@ These are modules that are being currently evaluated:
   $Latest = (Invoke-RestMethod `
     "$ForgeApi/v3/modules/puppetlabs-stdlib").current_release.version
 
-  # Install Using Puppet
+  # Install a single module using puppet command
   puppet module install puppetlabs-stdlib `
     --version $Latest `
     --target-dir $RepoPath/configbox/puppet/.forge-vendor
-  
-  # using r10k
-  gem install r10k
-  r10k puppetfile install `
-    -moduledir configbox\puppet\.forge-vendor `
-    -puppetfile "$RepoPath\configbox\puppet\Puppetfile"
 
-  # Forge REST API
+  # Install a single module directly using the Forge REST API
   Push-Location "$RepoPath\configbox\puppet\.forge-vendor"
   $ForgeApi = "https://forgeapi.puppet.com"
   $LatestFileUri = (Invoke-RestMethod `
@@ -127,18 +127,12 @@ These are modules that are being currently evaluated:
   LATEST="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
     | jq -r '.current_release.version')"
     
-  # using puppet
-  puppet module install puppetlabs-stdlib \
+  # Install a single module using puppet command
+  puppet module install "puppetlabs-stdlib" \
     --version $LATEST \
     --target-dir $REPO_PATH/configbox/puppet/.forge-vendor
-
-  # using r10k
-  gem install r10k
-  r10k puppetfile install \
-    -moduledir configbox/puppet/.forge-vendor \
-    -puppetfile $REPO_PATH/configbox/puppet/Puppetfile
   
-  # Forge REST API
+  # Install a single module directly using the Forge REST API
   pushd $REPO_PATH/configbox/puppet/.forge-vendor
   FORGE_API="https://forgeapi.puppet.com"
   LATEST_FILE_URI="$(curl -s $FORGE_API/v3/modules/puppetlabs-stdlib \
@@ -151,6 +145,48 @@ These are modules that are being currently evaluated:
   rm stdlib.tar.gz
   popd
   ```
+
+### Installing All Modules specified in Puppetfile
+
+[r10k](https://github.com/puppetlabs/r10k) and [g10k](https://github.com/voxpupuli/g10k) can install the modules specified in the `Puppetfile`.  It will not install module's dependencies themselves.
+
+* Powershell
+  ```pwsh
+  # Install all required modules using r10k
+  # Note: this will not resolve module dependencies, only what's specified 
+  #       in the Puppetfile. 
+  gem install r10k
+  r10k puppetfile install `
+    -moduledir configbox\puppet\.forge-vendor `
+    -puppetfile "$RepoPath\configbox\puppet\Puppetfile"
+  ```
+* Bash
+  ```sh
+  # Install all required modules using r10k
+  # Note: this will not resolve module dependencies, only what is specified 
+  #       in the Puppetfile.   
+  gem install r10k
+  r10k puppetfile install \
+    -moduledir configbox/puppet/.forge-vendor \
+    -puppetfile "$REPO_PATH/configbox/puppet/Puppetfile"
+  ```
+
+### Automatic Module Management
+
+You can use [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) to automtically install modules specified in Puppetfile, but also manage the module's dependencies as well.
+
+```sh
+REPO_PATH=$(realpath ../..)
+cd "$REPO_PATH/configbox/puppet/"
+
+# install librarian
+gem install librarian-puppet
+
+# setup
+librarian-puppet config path .forge-vendor --local
+librarian-puppet install
+```
+
 
 ## Archived or Not Maintained
 
@@ -242,7 +278,6 @@ For filtering in only the errors:
 
 * Puppet Open Source
   * [Puppet Bolt](https://github.com/puppetlabs/bolt) - remote execution
-  * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
   * [puppet](https://github.com/puppetlabs/puppet)
   * [PDK](https://github.com/puppetlabs/pdk)
 * Community Open Source Solutions
@@ -254,8 +289,13 @@ For filtering in only the errors:
   * [jig](https://github.com/voxpupuli/jig) - is a go-based reimplementation of PDK
     * [Scaffolding New Content with Jig](https://docs.openvoxproject.org/ecosystem/latest/devkit/jig.html)
     * [Migrating Away from the PDK](https://docs.openvoxproject.org/ecosystem/latest/devkit/migrating.html)
-  * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
   * [Beaker](https://github.com/voxpupuli/beaker) - Puppet Acceptance Testing Harness 
 * Other
   * [Vox Pupuli](https://voxpupuli.org/) - collective of Puppet module, tooling and documentation authors
   *  [Puppet’s Open Source Community Plans to Fork the Program](https://thenewstack.io/puppets-open-source-community-plans-to-fork-the-program/) 
+
+  * Module Dependencies
+    * [The four ways to install Puppet modules](https://www.puppeteers.net/blog/the-four-ways-to-install-puppet-modules/) by Samuli Seppänen on April 13, 2021
+    * [r10k](https://github.com/puppetlabs/r10k) - puppet environment and module deployment
+    * [g10k](https://github.com/voxpupuli/g10k) - go-based reimplementaiton of r10k
+    * [librarian-puppet](https://github.com/voxpupuli/librarian-puppet) - automatic dependency management

@@ -1,0 +1,15 @@
+forge 'https://forgeapi.puppet.com'
+
+# puppetlabs-stdlib - the one real dependency today (see shared_modules/
+#  lessons/metadata.json) - lessons::install_step's own apt branch calls
+#  ensure_packages/ensure_resource/any2array, and its append branch uses
+#  the file_line resource type, all from here.
+mod 'puppetlabs-stdlib', '10.0.2'
+
+# Everything under ../README.md's own "Forge Modules Used" section is
+#  still being evaluated, not yet called from any manifest in
+#  shared_modules/lessons - add a real `mod` line here (and to that
+#  module's own metadata.json dependencies) once install_step.pp
+#  actually switches a case branch over to it, same as stdlib above.
+#  Vendoring a module nothing calls yet would just be dead weight in
+#  .forge-vendor for no functional benefit.
