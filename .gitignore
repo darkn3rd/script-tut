@@ -50,6 +50,15 @@ configbox/ansible/provision/.galaxy-vendor/*
 configbox/puppet/.forge-vendor/*
 !configbox/puppet/.forge-vendor/.gitkeep
 
+# configbox/salt/.formula-vendor/ holds a saltstack-formulas fetch
+# (e.g. `git clone --depth 1 https://github.com/saltstack-formulas/
+# golang-formula` then keep just its own golang/ subtree) - see
+# configbox/salt/README.md's own "Vendoring Formulas" section. Fetched
+# on demand, not part of this repo's own source, same reasoning as
+# .berks-vendor/, .galaxy-vendor/, and .forge-vendor/ above.
+configbox/salt/.formula-vendor/*
+!configbox/salt/.formula-vendor/.gitkeep
+
 # Locally built Debian packages and their staged binaries; regenerate
 # with `make` (pkgbox/deb) / `update.sh` per package.
 pkgbox/deb/*/vendor/*

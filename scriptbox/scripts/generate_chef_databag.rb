@@ -70,6 +70,7 @@ def step_to_entry(step, tree)
   entry[:cmd] = strip_comments(step[:cmd]) if step[:cmd]
   entry[:apt_repository] = step[:apt_repository] if step[:apt_repository]
   entry[:add_apt_repo] = (tree['add_apt_repos'] || {})[step[:add_apt_repo]] if step[:add_apt_repo]
+  entry[:formula_pillar] = step[:formula_pillar] if step[:formula_pillar]
   # parse_version_constraint validates, but its own [op, number] split is
   #  discarded here - the raw string is what's stored, since a data bag
   #  consumer (Chef's own helpers.rb, Ansible's own install_step.yml)

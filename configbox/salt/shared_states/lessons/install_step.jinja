@@ -1,0 +1,177 @@
+{#- install_step.jinja
+
+  One step from a steps array (see ./init.sls and friends), rendered
+  once per array entry by their own for-loops (title/step/user/home
+  passed straight through). Salt has no native switch/case over an
+  arbitrary dict, so this one macro's own if/elif chain is where every
+  step "type" this tree currently understands turns into real Salt
+  state IDs - apt/apt_repository/add_apt_repo, sysctl, file, append,
+  script. Anything else (a version-manager step, a language-specific
+  installer, ...) isn't handled yet - add a new {% raw %}{% elif %}{% endraw %}
+  branch here following the same shape rather than bolting a special
+  case onto a caller.
+
+  step[...] throughout, deliberately, not step.foo - grains data comes
+  back as an OrderedDict, and unlike a plain dict, Salt's own Jinja
+  environment does NOT fall back gracefully to Undefined for a missing
+  key accessed via dot-notation (confirmed directly: `step.apt_repository`
+  on a step that has no such key raised a hard render error instead of
+  just being falsy). `.get('key')` is used for any field a step might
+  legitimately not carry. #}
+
+{%- macro install_step(title, step, user, home) %}
+{%- if step['type'] == 'apt' %}
+{%- if step.get('apt_repository') %}
+{#- apt_repository - a PPA. pkgrepo.managed understands the ppa:
+  shorthand natively (resolves and imports its signing key itself),
+  so there's no separate key-fetch step to write here at all. #}
+{%- set ppa_slug = step['apt_repository'] | replace('ppa:', '') %}
+{{ title }}-ppa:
+  pkgrepo.managed:
+    - ppa: {{ ppa_slug }}
+
+{{ title }}:
+  pkg.installed:
+    - name: {{ step['name'] }}
+    - require:
+      - pkgrepo: {{ title }}-ppa
+{%- elif step.get('add_apt_repo') %}
+{#- add_apt_repo - a raw signed-by key + repo line (not a PPA) - one
+  pkgrepo.managed resource covers the key fetch, the sources.list
+  entry, and the follow-up apt-get update together. #}
+{%- set repo = step['add_apt_repo'] %}
+{{ title }}:
+  pkgrepo.managed:
+    - name: "deb [signed-by=/etc/apt/keyrings/{{ repo['name'] }}.gpg] {{ repo['repo_uri'] }} {{ repo['distro_string'] }}"
+    - file: /etc/apt/sources.list.d/{{ repo['name'] }}.list
+    - key_url: {{ repo['key_url'] }}
+    - signedby: /etc/apt/keyrings/{{ repo['name'] }}.gpg
+    - aptkey: False
+    - refresh: True
+
+{{ title }}-pkg:
+  pkg.installed:
+    - name: {{ step['name'] }}
+    - require:
+      - pkgrepo: {{ title }}
+{%- else %}
+{{ title }}:
+  pkg.installed:
+    - pkgs: {{ step['name'] if (step['name'] is iterable and step['name'] is not string) else [step['name']] }}
+{%- endif %}
+
+{%- elif step['type'] == 'sysctl' %}
+{#- A raw "key=value" string, or a list of them - sysctl.present is a
+  real core state, so no idempotency guard needs writing here. #}
+{%- set kvs = [step['name']] if step['name'] is string else step['name'] %}
+{%- for kv in kvs %}
+{%- set key, value = kv.split('=', 1) %}
+{{ title }}-{{ loop.index0 }}:
+  sysctl.present:
+    - name: {{ key }}
+    - value: "{{ value }}"
+{%- endfor %}
+
+{%- elif step['type'] == 'file' %}
+{%- set dest = step['dest'] | replace('$HOME', home) %}
+{{ title }}-dir:
+  file.directory:
+    - name: {{ dest.rsplit('/', 1)[0] }}
+    - user: {{ user }}
+    - mode: '0755'
+    - makedirs: True
+
+{{ title }}:
+  file.managed:
+    - name: {{ dest }}
+    - contents: |
+        {{ step['content'] | indent(8) }}
+    - user: {{ user }}
+    - mode: '0644'
+    - require:
+      - file: {{ title }}-dir
+
+{%- elif step['type'] == 'append' %}
+{#- file.append is already idempotent on its own - it checks for the
+  exact line before adding it - but the destination file has to exist
+  first, and file.append doesn't create it, so a plain file.managed
+  (replace: False - never touch content that's already there) with its
+  own directory guard comes first. order: last on the append itself
+  (not the dir/touch guards, which are order-independent either way)
+  matters for real: a 'file' step elsewhere in this same run can target
+  the identical path with its own full content, and there's no natural
+  ordering between two steps living in different areas' own files -
+  confirmed directly, an append landing before that kind of full
+  rewrite gets silently wiped by it and never stabilizes, re-adding
+  itself forever. Pinning every append to run dead last guarantees it
+  always lands after any full-content rewrite, wherever that happens
+  to live. #}
+{%- set dests = [step['dest']] if step['dest'] is string else step['dest'] %}
+{%- for dest in dests %}
+{%- set d = dest | replace('$HOME', home) %}
+{{ title }}-{{ loop.index0 }}-dir:
+  file.directory:
+    - name: {{ d.rsplit('/', 1)[0] }}
+    - user: {{ user }}
+    - mode: '0755'
+    - makedirs: True
+
+{{ title }}-{{ loop.index0 }}-touch:
+  file.managed:
+    - name: {{ d }}
+    - replace: False
+    - user: {{ user }}
+    - require:
+      - file: {{ title }}-{{ loop.index0 }}-dir
+
+{{ title }}-{{ loop.index0 }}:
+  file.append:
+    - name: {{ d }}
+    - text: {{ step['lines'] }}
+    - order: last
+    - require:
+      - file: {{ title }}-{{ loop.index0 }}-touch
+{%- endfor %}
+
+{%- elif step['type'] == 'script' %}
+{#- Generic script - written to a real file with its own shebang and
+  executed directly, rather than handed to cmd.run as an inline
+  string: these bodies rely on bash-only syntax (source, [[ ]]) a
+  plain sh -c wouldn't understand, so the shebang has to actually be
+  honored by the kernel, not just present in a string a shell reads
+  from stdin. #}
+{{ title }}-file:
+  file.managed:
+    - name: /tmp/lessons_{{ step['name'] }}.sh
+    - contents: |
+        #!/bin/bash
+        {{ step['cmd'] | indent(8) }}
+    - mode: '0755'
+
+{{ title }}:
+  cmd.run:
+    - name: /tmp/lessons_{{ step['name'] }}.sh
+    - runas: {{ user }}
+    - env:
+      - HOME: {{ home }}
+    - cwd: {{ home }}
+    - require:
+      - file: {{ title }}-file
+
+{%- elif step['type'] == 'salt_formula' %}
+{#- salt_formula - deliberately emits nothing here. Pulling in a
+  vendored formula means an `include:` line, and Salt requires
+  `include:` as a top-level SLS directive - not something a macro
+  call mid-loop can emit - so the caller (init.sls and friends)
+  collects these by name and includes them once, up front, instead of
+  calling this macro for them at all. This branch only exists so a
+  step of this type reaching here some other way is silently skipped
+  rather than falling through to the warning below. #}
+
+{%- else %}
+{{ title }}-unsupported:
+  test.show_notification:
+    - text: "lessons: unsupported step type '{{ step['type'] }}' for '{{ step['name'] }}'"
+    - changes: False
+{%- endif %}
+{%- endmacro %}
