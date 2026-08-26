@@ -7,7 +7,7 @@
     <authors>pypa</authors>
     <owners>darkn3rd</owners>
     <projectUrl>https://pipx.pypa.io/</projectUrl>
-    <iconUrl>https://pipx.pypa.io/stable/_static/logo.svg</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/darkn3rd/script-tut/refs/heads/master/pkgbox/icons/pipx.png</iconUrl>
     <projectSourceUrl>https://github.com/pypa/pipx</projectSourceUrl>
     <packageSourceUrl>https://github.com/darkn3rd/script-tut/tree/master/pkgbox/chocolatey/pipx</packageSourceUrl>
     <docsUrl>https://pipx.pypa.io/</docsUrl>
