@@ -1,12 +1,14 @@
 # shell_scripts.cf - see lessons.cf's own header. One step per
 #  def.lessons[areas][shell_scripts][steps] entry, applied through
-#  install_step.cf's shared dispatcher.
+#  install_step.cf's shared dispatcher - which does its own path-based
+#  lookup internally (see its own header comment), so this bundle only
+#  ever needs to hand it the path, never the step data itself.
 bundle agent lessons_shell_scripts(user, home)
 {
   vars:
       "i" slist => getindices("def.lessons[areas][shell_scripts][steps]");
-      "step" data => mergedata("{}", "def.lessons[areas][shell_scripts][steps][$(i)]");
 
   methods:
-      "shell_scripts $(i)" usebundle => lessons_install_step("@(step)", "$(user)", "$(home)");
+      "shell_scripts $(i)"
+        usebundle => lessons_install_step("def.lessons[areas][shell_scripts][steps][$(i)]", "$(user)", "$(home)");
 }

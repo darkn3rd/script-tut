@@ -7,38 +7,71 @@
 #  "is_<type>" class per possible step[type] value (set via strcmp), then
 #  one packages:/files:/commands:/methods: block per type guarded by
 #  that class - covering every step shape scriptbox/config/*.yml can
-#  currently emit into this tree's own augments file.
+#  currently emit into this tree's own augments file. `append`-typed
+#  steps are handled elsewhere entirely - see lessons.cf's own
+#  lessons_append_file bundle and generate_cfengine.rb's own
+#  extract_appends! for why: they're pre-merged per destination file
+#  before this bundle ever sees them, rather than each appending step
+#  calling in here on its own.
 #
 # generate_cfengine.rb always writes an `apt`/`sysctl` step's own `name`
 #  as a list (even a single package/key=value pair becomes a one-element
-#  list) and an `append` step's own `dest` the same way, specifically so
-#  every promise below can iterate uniformly instead of needing a
-#  separate scalar-vs-list branch the way a hand-authored step file
-#  would.
+#  list), specifically so every promise below can iterate uniformly
+#  instead of needing a separate scalar-vs-list branch the way a hand-
+#  authored step file would.
 #
 # Add a new step type: add one more "is_<type>" class below, then one
 #  more class-guarded promise block for whatever that type needs to do -
 #  following this same pattern.
-bundle agent lessons_install_step(step, user, home)
+#
+# Takes step_path (a string path INTO def.lessons, e.g. "def.lessons
+#  [areas][gen_scripts][steps][3]"), not the step container itself -
+#  confirmed directly that a caller-side `data =>` variable re-derived
+#  once per value of an *outer* slist only actually resolves for that
+#  slist's first value; every other iteration silently kept the first
+#  one's data. A plain string parameter has no such ambiguity, so the
+#  mergedata() lookup below - now genuinely local to *this* invocation,
+#  not entangled with whatever outer loop the caller used - resolves
+#  fresh and correctly every single time.
+bundle agent lessons_install_step(step_path, user, home)
 {
   vars:
+      "step" data => mergedata("{}", "$(step_path)");
       "step_type" string => "$(step[type])";
 
+  # scope => "bundle" on every class below - without it, CFEngine classes
+  #  are global/persistent for the rest of the *entire* cf-agent run, not
+  #  reset between separate invocations of this bundle. Confirmed
+  #  directly: the first step anywhere in the tree that has its own
+  #  add_apt_repo/apt_repository left has_add_apt_repo/has_apt_repository
+  #  stuck "true" for every later step processed afterward (in this or a
+  #  later internal convergence pass), silently breaking every plain
+  #  apt install's own !has_apt_repository.!has_add_apt_repo guard from
+  #  that point on.
   classes:
-      "is_apt"     expression => strcmp("$(step_type)", "apt");
-      "is_apt_pin" expression => strcmp("$(step_type)", "apt_pin");
-      "is_sysctl"  expression => strcmp("$(step_type)", "sysctl");
-      "is_file"    expression => strcmp("$(step_type)", "file");
-      "is_append"  expression => strcmp("$(step_type)", "append");
-      "is_script"  expression => strcmp("$(step_type)", "script");
+      "is_apt"     expression => strcmp("$(step_type)", "apt"),     scope => "bundle";
+      "is_apt_pin" expression => strcmp("$(step_type)", "apt_pin"), scope => "bundle";
+      "is_sysctl"  expression => strcmp("$(step_type)", "sysctl"),  scope => "bundle";
+      "is_file"    expression => strcmp("$(step_type)", "file"),    scope => "bundle";
+      "is_script"  expression => strcmp("$(step_type)", "script"),  scope => "bundle";
 
-      "has_apt_repository" expression => isvariable("step[apt_repository]");
-      "has_add_apt_repo"   expression => isvariable("step[add_apt_repo]");
+      "has_apt_repository" expression => isvariable("step[apt_repository]"), scope => "bundle";
+      "has_add_apt_repo"   expression => isvariable("step[add_apt_repo]"),   scope => "bundle";
 
   vars:
     is_apt.has_add_apt_repo::
       "add_apt_repo_key_path"  string => "/etc/apt/keyrings/$(step[add_apt_repo][name]).gpg";
       "add_apt_repo_list_path" string => "/etc/apt/sources.list.d/$(step[add_apt_repo][name]).list";
+      # canon_repo_id names the "ready" class below - without this, every
+      #  add_apt_repo step shares one literal class name, so the first
+      #  one processed leaves it stuck true (see scope => "bundle"'s own
+      #  comment above) and every *other* add_apt_repo step's package
+      #  install would fire immediately, before its own repo is actually
+      #  ready.
+      "canon_repo_id" string => canonify("$(step[add_apt_repo][name])");
+
+    is_apt.has_apt_repository::
+      "canon_repo_id" string => canonify("$(step[apt_repository])");
 
     is_apt::
       "apt_i" slist => getindices("step[name]");
@@ -46,23 +79,25 @@ bundle agent lessons_install_step(step, user, home)
     is_sysctl::
       "sysctl_i" slist => getindices("step[name]");
 
-    is_append::
-      "append_i" slist => getindices("step[dest]");
-      # $HOME arrives as the manifest's own literal placeholder text
-      #  (not a real CFEngine variable reference) - substituted for the
-      #  real path here, the same job Puppet's regsubst/Salt's Jinja
-      #  string replace do for their own equivalent 'file'/'append'
-      #  branches.
-      "append_dest[$(append_i)]"
-        string => string_replace("$(step[dest][$(append_i)])", "$HOME", "$(home)");
-      # A nested member (an array here) has to be pulled out into its
-      #  own data variable first - a bracket-indexed sub-path isn't a
-      #  valid bare argument on its own (confirmed directly: cf-promises
-      #  rejected `append_lessons_lines(step[lines])` outright).
-      "append_lines" data => mergedata("[]", "step[lines]");
-
     is_file::
       "file_dest" string => string_replace("$(step[dest])", "$HOME", "$(home)");
+      "file_dir"  string => dirname("$(file_dest)");
+
+  # A dynamic (variable-interpolated) class name can't be spliced
+  #  directly into a compound guard like "a.b_$(x)::" - confirmed
+  #  directly, cf-promises rejects that outright (same failure the
+  #  is_script branch below hit earlier with a per-step class name).
+  #  expression => "$(...)" can still *test* a dynamically-named class
+  #  though, since the interpolation happens before the result is parsed
+  #  as a class expression - so the dynamic part lives here, and the
+  #  packages: guards below only ever reference these two plain,
+  #  static-named classes.
+  classes:
+    is_apt.has_apt_repository::
+      "ppa_ready" expression => "lessons_ppa_added_$(canon_repo_id)", scope => "bundle";
+
+    is_apt.has_add_apt_repo::
+      "add_apt_repo_ready" expression => "lessons_add_apt_repo_ready_$(canon_repo_id)", scope => "bundle";
 
   packages:
     # Plain apt package(s) - no repository of its own to add first.
@@ -78,12 +113,12 @@ bundle agent lessons_install_step(step, user, home)
     #  setup is actually done, so the package install itself waits for
     #  that (CFEngine's own multi-pass convergence resolves this within
     #  one agent run, not a separate one).
-    is_apt.has_apt_repository.lessons_ppa_added::
+    is_apt.has_apt_repository.ppa_ready::
       "$(step[name][$(apt_i)])"
         package_policy => "add",
         package_method => apt_get;
 
-    is_apt.has_add_apt_repo.lessons_add_apt_repo_ready::
+    is_apt.has_add_apt_repo.add_apt_repo_ready::
       "$(step[name][$(apt_i)])"
         package_policy => "add",
         package_method => apt_get;
@@ -96,7 +131,7 @@ bundle agent lessons_install_step(step, user, home)
     is_apt.has_apt_repository::
       "/usr/bin/add-apt-repository -y '$(step[apt_repository])'"
         unless => returnszero("/bin/sh -c \"echo '$(step[apt_repository])' | sed -e 's/^ppa://' | xargs -I{} grep -rqF {} /etc/apt/sources.list.d/\"", "useshell"),
-        classes => results("lessons_ppa_added");
+        classes => results("lessons_ppa_added_$(canon_repo_id)");
 
     # apt's own fetch/signature-verification step runs as the
     #  unprivileged _apt user (sandboxing), even under a root cf-agent -
@@ -111,7 +146,7 @@ bundle agent lessons_install_step(step, user, home)
       #  file itself changes.
       "/usr/bin/apt-get update"
         if => fileexists("$(add_apt_repo_list_path)"),
-        classes => results("lessons_add_apt_repo_ready");
+        classes => results("lessons_add_apt_repo_ready_$(canon_repo_id)");
 
   files:
     # No explicit perms => CFEngine's own default file mode (0600) - too
@@ -176,16 +211,26 @@ bundle agent lessons_install_step(step, user, home)
         content => "#!/bin/bash$(const.n)$(step[cmd])",
         perms => mog("0755", "root", "root");
 
+    # CFEngine auto-creates whatever ancestor directories a nested
+    #  destination below needs, but ONLY the leaf file itself gets this
+    #  bundle's own perms => - confirmed directly that an auto-created
+    #  parent came out root-owned and unreadable by $(user), silently
+    #  breaking anything that later assumed it could write under $(home)
+    #  on its own. Promising the parent directory's own perms explicitly
+    #  - unconditionally, so an already-broken one left over from before
+    #  this fix gets corrected too, the same self-healing approach
+    #  already used for the apt keyring file. (append destinations get
+    #  the same treatment in lessons.cf's own lessons_append_file bundle
+    #  instead - see its own header comment for why appends aren't
+    #  handled here at all.)
     is_file::
+      "$(file_dir)"
+        create => "true",
+        perms => mog("0755", "$(user)", "$(user)");
+
       "$(file_dest)"
         create => "true",
         content => "$(step[content])",
-        perms => mog("0644", "$(user)", "$(user)");
-
-    is_append::
-      "$(append_dest[$(append_i)])"
-        create => "true",
-        edit_line => append_lessons_lines("@(append_lines)"),
         perms => mog("0644", "$(user)", "$(user)");
 }
 

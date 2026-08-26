@@ -25,31 +25,71 @@ TREES = %w[standalone hub].freeze
 #  the two trees never drift into two different data shapes for what is
 #  otherwise the same tree. gates.<area> is a plain on/off switch (all
 #  default true here - a real per-node override would set one to false);
-#  areas.<area>.steps is that area's own step list.
+#  areas.<area>.steps is that area's own step list. appends is a flat
+#  {dest => [lines...]} map, built by extract_appends! below - install_
+#  step.cf's own shared dispatcher bundle only gets called once per real
+#  destination file this way (see extract_appends!'s own comment for why
+#  that's load-bearing, not just tidier).
 def lessons_shape(lessons_data)
   {
     'user' => 'vagrant',
     'common_steps' => lessons_data[COMMON_AREA],
     'gates' => LESSON_AREAS.to_h { |area| [area, true] },
     'areas' => LESSON_AREAS.to_h { |area| [area, { 'steps' => lessons_data[area] }] },
+    'appends' => extract_appends!(lessons_data),
   }
 end
 
-# normalize_for_cfengine!(lessons_data) - forces `name` (apt/sysctl) and
-#  `dest` (append) to always be an array, even a single-element one -
-#  every other generator's own step_to_entry/consolidate_apt leaves a
-#  single-name apt entry (one with its own apt_repository/add_apt_repo,
-#  specifically excluded from consolidate_apt's own multi-name merge) or
-#  a single-destination append entry as a bare string, since Puppet/
-#  Salt/Chef/Ansible each already handle the scalar-or-list distinction
-#  in their own step dispatcher. CFEngine's own dispatcher
-#  (install_step.cf) iterates with getindices() either way, so
-#  guaranteeing a list here - once, for this generator's own output only
-#  - means it never needs a separate scalar branch at all.
+# extract_appends!(lessons_data) - pulls every 'append'-typed step out of
+#  every area (and common_steps) in place, merging its lines into a flat
+#  {dest => [lines...]} map keyed by destination path (deduped/merged
+#  across areas - e.g. a dest two different steps both target ends up
+#  with both steps' own lines, in encounter order). Confirmed directly
+#  this has to happen here, not per-step inside install_step.cf: CFEngine
+#  treats a promise's identity as (bundle, source line, expanded
+#  promiser) - calling the *same* shared dispatcher bundle once per
+#  append step, each time promising the *same* destination path (e.g.
+#  two different steps both appending to .bashrc), only actually applies
+#  the *first* call's own edit_line content; every later call against
+#  that same already-resolved path is silently skipped, no error. One
+#  promise per real destination file - each with the *complete* merged
+#  line list - sidesteps that entirely.
+def extract_appends!(lessons_data)
+  appends = {}
+  lessons_data.each_value do |steps|
+    steps.reject! do |step|
+      next false unless step['type'] == 'append'
+
+      # $HOME resolved here, eagerly, rather than deferred to a runtime
+      #  string_replace the way is_file/is_append used to - lessons_
+      #  shape's own 'user' is already hardcoded 'vagrant' above, so the
+      #  real path is already known now; this also keeps the map's own
+      #  keys plain absolute paths, not something CFEngine would need to
+      #  re-parse a literal '$HOME' out of when using them as a lookup
+      #  key.
+      Array(step['dest']).each do |d|
+        real_dest = d.sub('$HOME', '/home/vagrant')
+        (appends[real_dest] ||= []).concat(Array(step['lines']))
+      end
+      true
+    end
+  end
+  appends
+end
+
+# normalize_for_cfengine!(lessons_data) - forces `name` (apt/sysctl) to
+#  always be an array, even a single-element one - every other
+#  generator's own step_to_entry/consolidate_apt leaves a single-name
+#  apt entry (one with its own apt_repository/add_apt_repo, specifically
+#  excluded from consolidate_apt's own multi-name merge) as a bare
+#  string, since Puppet/Salt/Chef/Ansible each already handle the
+#  scalar-or-list distinction in their own step dispatcher. CFEngine's
+#  own dispatcher (install_step.cf) iterates with getindices() either
+#  way, so guaranteeing a list here - once, for this generator's own
+#  output only - means it never needs a separate scalar branch at all.
 def normalize_for_cfengine!(lessons_data)
   lessons_data.values.flatten.each do |step|
     step['name'] = Array(step['name']) if %w[apt sysctl].include?(step['type'])
-    step['dest'] = Array(step['dest']) if step['type'] == 'append'
   end
 end
 

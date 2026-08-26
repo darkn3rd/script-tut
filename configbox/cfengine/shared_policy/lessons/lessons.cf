@@ -16,7 +16,15 @@ bundle agent lessons
       "home" string => "/home/$(user)";
 
       "common_i" slist => getindices("def.lessons[common_steps]");
-      "common_step" data => mergedata("{}", "def.lessons[common_steps][$(common_i)]");
+
+      # def.lessons[appends] - a flat {dest => [lines...]} map (see
+      #  generate_cfengine.rb's own extract_appends! comment for why
+      #  every step that appends to a given file is pre-merged into one
+      #  entry here, rather than each one calling lessons_install_step
+      #  on its own - CFEngine only actually applies the *first* of
+      #  several separate calls that each promise the same destination
+      #  path, silently dropping the rest).
+      "append_dest_i" slist => getindices("def.lessons[appends]");
 
   classes:
       "gen_scripts_enabled"   expression => strcmp("$(def.lessons[gates][gen_scripts])", "true");
@@ -34,7 +42,10 @@ bundle agent lessons
       #  lessons.packages, not nested under any one of the four gated
       #  areas below - always applied, ungated.
       "lessons common $(common_i)"
-        usebundle => lessons_install_step("@(common_step)", "$(user)", "$(home)");
+        usebundle => lessons_install_step("def.lessons[common_steps][$(common_i)]", "$(user)", "$(home)");
+
+      "lessons append $(append_dest_i)"
+        usebundle => lessons_append_file("$(append_dest_i)", "$(user)", "$(home)");
 
       "gen_scripts"
         usebundle => lessons_gen_scripts("$(user)", "$(home)"),
@@ -51,4 +62,36 @@ bundle agent lessons
       "win_scripts"
         usebundle => lessons_win_scripts("$(user)", "$(home)"),
         if => "win_scripts_enabled";
+}
+
+# lessons_append_file(dest, user, home) - one call per unique destination
+#  path in def.lessons[appends] (see lessons's own header comment on why
+#  the merging happens ahead of time, in the generator, rather than one
+#  call per originating step). dest is already a real absolute path
+#  (generate_cfengine.rb resolves $HOME itself, since 'user' is already
+#  hardcoded 'vagrant' by the time it writes this out) - no string_
+#  replace needed here the way install_step.cf's own is_file/is_append
+#  branches still need for their own, still-templated destinations.
+bundle agent lessons_append_file(dest, user, home)
+{
+  vars:
+      "dir"   string => dirname("$(dest)");
+      "lines" data   => mergedata("[]", "def.lessons[appends][$(dest)]");
+
+  files:
+      "$(dir)"
+        create => "true",
+        perms => mog("0755", "$(user)", "$(user)");
+
+      # $(home)/.config specifically - the one destination currently two
+      #  levels deep (.config/powershell/...), so its own grandparent
+      #  needs the same treatment, not just its immediate parent above.
+      "$(home)/.config"
+        create => "true",
+        perms => mog("0755", "$(user)", "$(user)");
+
+      "$(dest)"
+        create => "true",
+        edit_line => append_lessons_lines("@(lines)"),
+        perms => mog("0644", "$(user)", "$(user)");
 }
