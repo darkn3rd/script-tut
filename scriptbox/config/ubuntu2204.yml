@@ -213,6 +213,18 @@ ubuntu22:
                 golang:
                   version: '1.24.0' # confirm current stable Go before relying on this
               tags: [salt_formula_golang]
+            # Additive, not an alternative to the entry above - pins
+            #  whatever golang-go apt already installed to an exact
+            #  version/priority instead of installing it a different way
+            #  (see configbox/cfengine/README.md's own "Vendoring
+            #  Modules" section). Opt-in only (--select cfengine_apt_pin),
+            #  every other consumer of this manifest never asks for this
+            #  tag and is unaffected.
+            - apt_pin: golang-go
+              pin:
+                version: '2:1.21~*' # confirm the actual installed apt version before relying on this
+                priority: '1001'
+              tags: [cfengine_apt_pin]
         rust:
           packages:
             - script: ubuntu22_rust

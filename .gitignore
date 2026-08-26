@@ -65,6 +65,13 @@ configbox/puppet/.forge-vendor/*
 configbox/salt/.formula-vendor/*
 !configbox/salt/.formula-vendor/.gitkeep
 
+# configbox/cfengine/.module-vendor/ holds a fetched external CFEngine
+# module (e.g. nickanderson/cfengine-apt's own policy/ directory) - fetched
+# on demand, not part of this repo's own source, same reasoning as
+# .berks-vendor/, .galaxy-vendor/, .forge-vendor/, and .formula-vendor/ above.
+configbox/cfengine/.module-vendor/*
+!configbox/cfengine/.module-vendor/.gitkeep
+
 # Locally built Debian packages and their staged binaries; regenerate
 # with `make` (pkgbox/deb) / `update.sh` per package.
 pkgbox/deb/*/vendor/*

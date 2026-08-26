@@ -24,3 +24,7 @@ databag = "configbox/chef/data_bags/lessons/{platform}.json"
 
 [ansible]
 group_vars = "configbox/ansible/provision/group_vars/all/generated.yml"
+
+[cfengine]
+standalone = "configbox/cfengine/standalone/def.json"
+hub        = "configbox/cfengine/hub/def.json"

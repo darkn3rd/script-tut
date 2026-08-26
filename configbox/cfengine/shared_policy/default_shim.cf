@@ -1,0 +1,43 @@
+# default_shim.cf
+#
+# Neither tree here pulls in CFEngine's own standard masterfiles library
+#  (the "Masterfiles Policy Framework"). `mog` is shared - install_step.cf's
+#  own `perms =>` promises use it too (no explicit namespace declared
+#  there, so it lives in this same `default` namespace and just calls
+#  `mog(...)` unqualified). `tidy` exists only for the one vendored module
+#  (../.module-vendor/apt/pin-package.cf), which calls `default:mog(...)`/
+#  `default:tidy` exactly as its own upstream repository wrote it,
+#  unmodified. Rather than either editing that vendored file or pulling in
+#  the entire standard library just for two small bodies, this supplies
+#  minimal stand-ins under the same `default` namespace it already
+#  expects.
+body file control
+{
+    namespace => "default";
+}
+
+body perms mog(m, o, g)
+{
+    mode   => "$(m)";
+    owners => { "$(o)" };
+    groups => { "$(g)" };
+    rxdirs => "false";
+}
+
+body delete tidy
+{
+    dirlinks => "delete";
+    rmdirs   => "true";
+}
+
+# package_module bodies aren't auto-defined either - a promise's own
+#  `package_module => apt_get` still needs a body of that exact name,
+#  even though the apt_get module script itself ships with cf-agent.
+#  query_installed_ifelapsed/query_updates_ifelapsed values match the
+#  standard masterfiles library's own fallback defaults (0/1440).
+body package_module apt_get
+{
+    query_installed_ifelapsed => "0";
+    query_updates_ifelapsed => "1440";
+    interpreter => "$(sys.bindir)/cfengine-selected-python";
+}

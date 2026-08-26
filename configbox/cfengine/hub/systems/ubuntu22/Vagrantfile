@@ -1,0 +1,33 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "cfengine-hub-node-01.test"
+  # dmode/fmode - see ../../../standalone/systems/ubuntu22/Vagrantfile's
+  #  own comment: CFEngine refuses to load a group/world-writable policy
+  #  file, which VirtualBox's own vboxsf shared folders default to.
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut",
+    mount_options: ["dmode=755", "fmode=644"]
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of
+    # guessing that results in hangs or slowness.
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_cfengine_bootstrap.sh"
+
+  # Self-hosted policy hub - the guest assembles its own masterfiles tree
+  #  and bootstraps to itself (127.0.0.1), rather than a second machine
+  #  being involved. See ../../../scripts/ubuntu22_cfengine_hub_
+  #  bootstrap.sh for what that actually does.
+  config.vm.provision "hub",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_cfengine_hub_bootstrap.sh"
+end

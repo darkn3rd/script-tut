@@ -1,0 +1,12 @@
+# compiled_lang.cf - see lessons.cf's own header. One step per
+#  def.lessons[areas][compiled_lang][steps] entry, applied through
+#  install_step.cf's shared dispatcher.
+bundle agent lessons_compiled_lang(user, home)
+{
+  vars:
+      "i" slist => getindices("def.lessons[areas][compiled_lang][steps]");
+      "step" data => mergedata("{}", "def.lessons[areas][compiled_lang][steps][$(i)]");
+
+  methods:
+      "compiled_lang $(i)" usebundle => lessons_install_step("@(step)", "$(user)", "$(home)");
+}

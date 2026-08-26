@@ -1,0 +1,12 @@
+# gen_scripts.cf - see lessons.cf's own header. One step per
+#  def.lessons[areas][gen_scripts][steps] entry, applied through
+#  install_step.cf's shared dispatcher.
+bundle agent lessons_gen_scripts(user, home)
+{
+  vars:
+      "i" slist => getindices("def.lessons[areas][gen_scripts][steps]");
+      "step" data => mergedata("{}", "def.lessons[areas][gen_scripts][steps][$(i)]");
+
+  methods:
+      "gen_scripts $(i)" usebundle => lessons_install_step("@(step)", "$(user)", "$(home)");
+}

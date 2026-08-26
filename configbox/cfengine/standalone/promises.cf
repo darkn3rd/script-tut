@@ -1,0 +1,22 @@
+# promises.cf - standalone tree entry point. No policy hub, no
+#  bootstrap - cf-agent applies this file directly
+#  (`cf-agent --no-lock -Kf promises.cf`), reading its own data straight
+#  out of the def.json sitting right next to it (a CFEngine **augments**
+#  file, auto-merged at parse time into the data variable def.lessons -
+#  see ../shared_policy/lessons/lessons.cf's own header).
+body common control
+{
+    bundlesequence => { "lessons" };
+
+    inputs => {
+        "../shared_policy/default_shim.cf",
+        "../shared_policy/lessons/lessons.cf",
+        "../shared_policy/lessons/install_step.cf",
+        "../shared_policy/lessons/gen_scripts.cf",
+        "../shared_policy/lessons/shell_scripts.cf",
+        "../shared_policy/lessons/compiled_lang.cf",
+        "../shared_policy/lessons/win_scripts.cf",
+        "../.module-vendor/apt/apt-pin-packages.cf",
+        "../.module-vendor/apt/pin-package.cf",
+    };
+}

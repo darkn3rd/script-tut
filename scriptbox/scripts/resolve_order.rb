@@ -1,6 +1,6 @@
 require 'yaml'
 
-PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd sysctl salt_formula pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
+PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd sysctl salt_formula apt_pin pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
 # VERSION_OPS - the only version-constraint operators any downstream
 #  generator actually implements (see parse_version_constraint) - a
@@ -99,6 +99,7 @@ def flatten(node, path = [])
         apt_repository: entry['apt_repository'],
         add_apt_repo: entry['add_apt_repo'],
         formula_pillar: entry['formula_pillar'],
+        pin: entry['pin'],
         version: entry['version'],
         args: entry['args'],
         condition: entry['condition'],
