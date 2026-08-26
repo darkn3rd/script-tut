@@ -4,6 +4,7 @@ require 'json'
 require 'fileutils'
 require 'optparse'
 require_relative 'resolve_order'
+require_relative 'cmpaths' # for cmpath - out_path's own default when omitted
 
 # LESSON_AREAS - the four owning_function values this data bag actually
 #  covers (see resolve_order.rb's FUNCTION_SECTIONS) - deliberately a
@@ -70,6 +71,7 @@ def step_to_entry(step, tree)
   entry[:cmd] = strip_comments(step[:cmd]) if step[:cmd]
   entry[:apt_repository] = step[:apt_repository] if step[:apt_repository]
   entry[:add_apt_repo] = (tree['add_apt_repos'] || {})[step[:add_apt_repo]] if step[:add_apt_repo]
+  entry[:formula_pillar] = step[:formula_pillar] if step[:formula_pillar]
   # parse_version_constraint validates, but its own [op, number] split is
   #  discarded here - the raw string is what's stored, since a data bag
   #  consumer (Chef's own helpers.rb, Ansible's own install_step.yml)
@@ -200,13 +202,14 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   config_path, out_path, select_tags, exclude_tags = parse_databag_args(ARGV)
-  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.json> [--select TAG,TAG] [--exclude TAG,TAG]"
+  if config_path.nil? || config_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> [out.json] [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  out_path ||= cmpath('chef', 'databag', name)
   # Whole tree, not just tree[name] - scripts:/files:/appends: are
   #  themselves top-level RESERVED_KEYS blocks, siblings of tree[name],
   #  not nested inside it, so a <%= $name %> reference in a script body

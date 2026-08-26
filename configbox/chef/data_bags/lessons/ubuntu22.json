@@ -2,6 +2,23 @@
   "id": "ubuntu22",
   "common": [
     {
+      "type": "apt",
+      "name": [
+        "curl",
+        "git",
+        "make",
+        "wget",
+        "gnupg2"
+      ]
+    },
+    {
+      "type": "sysctl",
+      "name": [
+        "net.ipv6.conf.all.disable_ipv6=1",
+        "net.ipv6.conf.default.disable_ipv6=1"
+      ]
+    },
+    {
       "type": "script",
       "name": "ubuntu22_sdkman",
       "cmd": "if [ ! -d \"$HOME/.sdkman\" ]; then\n  curl -s \"https://get.sdkman.io\" | bash\n  sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' \"$HOME/.sdkman/etc/config\"\nfi\nsource \"$HOME/.sdkman/bin/sdkman-init.sh\"\n"
@@ -33,7 +50,6 @@
         "liblzma-dev",
         "libncurses5-dev",
         "libncursesw5-dev",
-        "libreadline6-dev",
         "libreadline-dev",
         "libsqlite3-dev",
         "libssl-dev",
@@ -45,61 +61,13 @@
         "xz-utils",
         "zlib1g-dev",
         "gawk",
-        "php8.1-cli",
-        "tcl8.6"
+        "php8.1-cli"
       ]
     },
     {
       "type": "script",
-      "name": "ubuntu22_rbenv",
-      "cmd": "sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true\ncurl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash\nif [[ -d \"$HOME/.rbenv/plugins/ruby-build\" ]]; then\n  pushd \"$HOME/.rbenv/plugins/ruby-build\" && git pull && popd\nelse\n  git clone https://github.com/rbenv/ruby-build.git \"$HOME/.rbenv/plugins/ruby-build\"\nfi\nexport PATH=\"$HOME/.rbenv/bin:$PATH\"\neval \"$(rbenv init - bash)\"\n"
-    },
-    {
-      "type": "append",
-      "name": "ubuntu22_rbenv_bash",
-      "dest": "$HOME/.bashrc",
-      "lines": [
-        "export PATH=\"$HOME/.rbenv/bin:$PATH\"",
-        "eval \"$(rbenv init - bash)\""
-      ]
-    },
-    {
-      "type": "append",
-      "name": "ubuntu22_rbenv_zsh",
-      "dest": "$HOME/.zshrc",
-      "lines": [
-        "export PATH=\"$HOME/.rbenv/bin:$PATH\"",
-        "eval \"$(rbenv init - zsh)\""
-      ]
-    },
-    {
-      "type": "script",
-      "name": "ubuntu22_pyenv",
-      "cmd": "if [ ! -d \"$HOME/.pyenv\" ]; then\n  curl https://pyenv.run | bash\nfi\nexport PYENV_ROOT=\"$HOME/.pyenv\"\nexport PATH=\"$PYENV_ROOT/bin:$PATH\"\neval \"$(pyenv init - bash)\"\npyenv update\n"
-    },
-    {
-      "type": "append",
-      "name": "ubuntu22_pyenv_bash",
-      "dest": "$HOME/.bashrc",
-      "lines": [
-        "export PYENV_ROOT=\"$HOME/.pyenv\"",
-        "[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"",
-        "eval \"$(pyenv init - bash)\""
-      ]
-    },
-    {
-      "type": "append",
-      "name": "ubuntu22_pyenv_zsh",
-      "dest": "$HOME/.zshrc",
-      "lines": [
-        "export PYENV_ROOT=\"$HOME/.pyenv\"",
-        "[[ -d $PYENV_ROOT/bin ]] && export PATH=\"$PYENV_ROOT/bin:$PATH\"",
-        "eval \"$(pyenv init - zsh)\""
-      ]
-    },
-    {
-      "type": "sdkman",
-      "name": "groovy"
+      "name": "ubuntu22_rvm",
+      "cmd": "mkdir -p ~/.gnupg\nchmod 700 ~/.gnupg\necho 'disable-ipv6' >> ~/.gnupg/dirmngr.conf\ngpgconf --kill dirmngr\ngpg2 \\\n  --keyserver hkps://keyserver.ubuntu.com \\\n  --recv-keys \\\n  409B6B1796C275462A1703113804BB82D39DC0E3 \\\n  7D2BAF1CF37B13E2069D6956105BD0E739499BDB\ncurl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles\nexport PATH=\"$PATH:$HOME/.rvm/bin\"\nsource \"$HOME/.rvm/scripts/rvm\"\n"
     },
     {
       "type": "script",
@@ -127,19 +95,18 @@
       "name": "Switch"
     },
     {
-      "type": "pyenv",
-      "name": "3.14.7",
-      "cmd": "pyenv global 3.14.7"
+      "type": "cpanm",
+      "name": "HTTP::Tiny"
     },
     {
-      "type": "pyenv",
-      "name": "2.7.18",
-      "cmd": "pyenv global 3.14.7 2.7.18"
+      "type": "sdkman",
+      "name": "groovy 5.1.0",
+      "cmd": "sdk default groovy 5.1.0"
     },
     {
-      "type": "rbenv",
+      "type": "rvm",
       "name": "4.0.6",
-      "cmd": "rbenv global 4.0.6"
+      "cmd": "rvm use 4.0.6 --default"
     }
   ],
   "shell_scripts": [
@@ -222,9 +189,14 @@
   ],
   "win_scripts": [
     {
-      "type": "script",
-      "name": "ubuntu22_powershell",
-      "cmd": "wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \\\n  -O packages-microsoft-prod.deb\nsudo DEBIAN_FRONTEND=noninteractive dpkg -i packages-microsoft-prod.deb\nrm packages-microsoft-prod.deb\nsudo apt-get update\nsudo DEBIAN_FRONTEND=noninteractive apt-get install -y powershell\npwsh -NoProfile -Command \"Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber\"\n"
+      "type": "apt",
+      "name": "powershell",
+      "add_apt_repo": {
+        "name": "microsoft-prod",
+        "key_url": "https://packages.microsoft.com/keys/microsoft.asc",
+        "repo_uri": "https://packages.microsoft.com/ubuntu/22.04/prod",
+        "distro_string": "jammy main"
+      }
     }
   ]
 }

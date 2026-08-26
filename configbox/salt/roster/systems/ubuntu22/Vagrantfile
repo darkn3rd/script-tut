@@ -1,0 +1,38 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "salt-roster-node-01.test"
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of
+    # guessing that results in hangs or slowness.
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_salt_ssh_bootstrap.sh"
+
+  # salt-ssh needs no agent on its target at all - it pushes a small
+  #  self-contained package over plain SSH and runs it, nothing left
+  #  behind afterward. Rather than needing a second machine to run
+  #  salt-ssh *from*, this box targets itself: 127.0.0.1, over the
+  #  keypair the bootstrap step above just generated for exactly this.
+  #  ../roster.yaml (regenerate it first - see ../../../README.md's own
+  #  "Applying via roster/" section - with scriptbox/scripts/
+  #  generate_salt.rb --tree roster) is where that connection info and
+  #  every value this run needs both live, already synced in here
+  #  through the repo-wide /var/script-tut share above.
+  config.vm.provision "salt", type: "shell", inline: <<-SHELL
+    salt-ssh -c /var/script-tut/configbox/salt/roster \
+      --roster-file /var/script-tut/configbox/salt/roster/roster.yaml \
+      --ignore-host-keys \
+      ubuntu22 state.apply
+  SHELL
+end

@@ -5,6 +5,7 @@ require 'optparse'
 require_relative 'resolve_order'
 require_relative 'generate_chef_databag' # for step_to_entry/consolidate_apt/root_key/LESSON_AREAS/COMMON_AREA
 require_relative 'generate_ansible_vars' # for deep_stringify_keys
+require_relative 'cmpaths' # for cmpath - out_path's own default when omitted
 
 # generate_puppet.rb - same source of truth (scriptbox/config/*.yml),
 #  same resolved lessons step list as generate_chef_databag.rb and
@@ -161,10 +162,11 @@ def write_enc(name, lessons_data, out_path)
   File.write(out_path, "---\n#{doc.to_yaml.sub(/\A---\n/, '')}", mode: 'wb')
 end
 
-# parse_puppet_args(argv) - <config.yml> <out_path> [--classifier
+# parse_puppet_args(argv) - <config.yml> [out_path] [--classifier
 #  site|hiera|enc] [--select TAG,TAG] [--exclude TAG,TAG]. --select/
 #  --exclude match generate_databag_args's own semantics exactly (see
-#  its own comment) - only --classifier is new here.
+#  its own comment) - only --classifier is new here. out_path is
+#  optional - see cmpaths.rb's own comment for what it defaults to.
 def parse_puppet_args(argv)
   options = { select: [], exclude: [], classifier: 'hiera' }
   OptionParser.new do |opts|
@@ -177,8 +179,8 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   config_path, out_path, options = parse_puppet_args(ARGV)
-  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out_path> [--classifier site|hiera|enc] [--select TAG,TAG] [--exclude TAG,TAG]"
+  if config_path.nil? || config_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> [out_path] [--classifier site|hiera|enc] [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
   unless CLASSIFIERS.include?(options[:classifier])
@@ -188,6 +190,7 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  out_path ||= cmpath('puppet', options[:classifier], name)
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   all_steps = flatten(tree[name])

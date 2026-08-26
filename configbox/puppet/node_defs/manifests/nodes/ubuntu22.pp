@@ -70,7 +70,6 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
           'liblzma-dev',
           'libncurses5-dev',
           'libncursesw5-dev',
-          'libreadline6-dev',
           'libreadline-dev',
           'libsqlite3-dev',
           'libssl-dev',

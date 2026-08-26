@@ -1,0 +1,17 @@
+# salt-ssh's own config-dir file, same guest-absolute-paths reasoning
+#  as ../roster/master. roster_dirs points at ./roster_modules - see
+#  its own lessons_dynamic.py - instead of a plain roster_file: no
+#  file this tree ever reads is meant to sit still between runs.
+file_roots:
+  base:
+    - /var/script-tut/configbox/salt/dynamic/roots/salt
+    - /var/script-tut/configbox/salt/shared_states
+    - /var/script-tut/configbox/salt/.formula-vendor
+
+pillar_roots:
+  base:
+    - /var/script-tut/configbox/salt/dynamic/roots/pillar
+
+roster: lessons_dynamic
+roster_dirs:
+  - /var/script-tut/configbox/salt/dynamic/roster_modules

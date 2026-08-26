@@ -57,7 +57,6 @@ ubuntu22:
               - liblzma-dev
               - libncurses5-dev
               - libncursesw5-dev
-              - libreadline6-dev
               - libreadline-dev
               - libsqlite3-dev
               - libssl-dev
@@ -202,6 +201,18 @@ ubuntu22:
             - apt_repository: ppa:longsleep/golang-backports
               apt: golang-go
               append: ubuntu22_go
+              tags: [default]
+            # Alternative to the plain apt+PPA entry above: a vendored
+            #  Salt formula (see configbox/salt/README.md's own
+            #  "Vendoring Formulas" section) instead of a hand-rolled
+            #  package step - opt-in only (--select salt_formula_golang),
+            #  every other consumer of this manifest never asks for
+            #  this tag and is unaffected.
+            - salt_formula: golang
+              formula_pillar:
+                golang:
+                  version: '1.24.0' # confirm current stable Go before relying on this
+              tags: [salt_formula_golang]
         rust:
           packages:
             - script: ubuntu22_rust

@@ -1,0 +1,37 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "salt-masterless-node-01.test"
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of
+    # guessing that results in hangs or slowness.
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_salt_bootstrap.sh"
+
+  config.vm.synced_folder "../../roots/salt",         "/srv/salt"
+  config.vm.synced_folder "../../../shared_states",   "/srv/salt-shared"
+  config.vm.synced_folder "../../../.formula-vendor", "/srv/salt-formulas"
+  config.vm.synced_folder "../../roots/pillar",       "/srv/pillar"
+
+  # masterless - salt-call --local applies straight against ../../
+  #  minion's own file_roots/pillar_roots (synced above), no master
+  #  involved at all.
+  config.vm.provision "salt", type: "salt" do |salt|
+    salt.masterless    = true
+    salt.minion_config = "../../minion"
+    salt.run_highstate = true
+    salt.verbose       = true
+    salt.log_level     = "debug"
+  end
+end

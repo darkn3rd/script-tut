@@ -1,0 +1,32 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "salt-dynamic-node-01.test"
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of
+    # guessing that results in hangs or slowness.
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_salt_dynamic_bootstrap.sh"
+
+  # No pre-generated roster.yaml here at all - ../master's own
+  #  roster/roster_dirs settings point salt-ssh at ../roster_modules/
+  #  lessons_dynamic.py instead, which it calls fresh on every single
+  #  run (see that file's own header comment). Nothing to regenerate
+  #  by hand before provisioning, unlike ../../roster/.
+  config.vm.provision "apply", type: "shell", inline: <<-SHELL
+    salt-ssh -c /var/script-tut/configbox/salt/dynamic \
+      --ignore-host-keys \
+      ubuntu22 state.apply
+  SHELL
+end

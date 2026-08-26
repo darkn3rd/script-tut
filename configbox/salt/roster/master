@@ -1,0 +1,16 @@
+# salt-ssh's own config-dir file. Guest-absolute paths throughout -
+#  unlike ../static/minion, the actual salt-ssh command this tree runs
+#  is invoked from *inside* the guest (see ../scripts/systems/ubuntu22/
+#  Vagrantfile), targeting itself over SSH, so every path here has to
+#  resolve on that side, not the host's.
+file_roots:
+  base:
+    - /var/script-tut/configbox/salt/roster/roots/salt
+    - /var/script-tut/configbox/salt/shared_states
+    - /var/script-tut/configbox/salt/.formula-vendor
+
+pillar_roots:
+  base:
+    - /var/script-tut/configbox/salt/roster/roots/pillar
+
+roster_file: /var/script-tut/configbox/salt/roster/roster.yaml

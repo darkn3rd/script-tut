@@ -7,3 +7,36 @@ Rake::TestTask.new(:test) do |t|
 end
 
 task default: :test
+
+# generate:* - regenerate a CM tool's own output straight from
+#  ../config/ubuntu2204.yml (the only platform any generator here
+#  covers today), writing to each one's own cmpaths.toml default (see
+#  cmpaths.rb) - the same thing running a generate_*.rb script directly
+#  with out_path omitted already does, just without hand-typing every
+#  --classifier/--tree combination separately each time.
+CM_CONFIG = '../config/ubuntu2204.yml'.freeze
+
+namespace :generate do
+  desc 'Regenerate Puppet hiera/enc/site data'
+  task :puppet do
+    %w[hiera enc site].each { |c| sh "ruby generate_puppet.rb #{CM_CONFIG} --classifier #{c}" }
+  end
+
+  desc 'Regenerate Salt masterless/roster data'
+  task :salt do
+    %w[masterless roster].each { |t| sh "ruby generate_salt.rb #{CM_CONFIG} --tree #{t}" }
+  end
+
+  desc 'Regenerate the Chef data bag'
+  task :chef do
+    sh "ruby generate_chef_databag.rb #{CM_CONFIG}"
+  end
+
+  desc 'Regenerate Ansible group_vars'
+  task :ansible do
+    sh "ruby generate_ansible_vars.rb #{CM_CONFIG}"
+  end
+
+  desc 'Regenerate every CM tool at once'
+  task all: %i[puppet salt chef ansible]
+end

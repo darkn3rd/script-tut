@@ -1,0 +1,26 @@
+# cmpaths.toml
+#
+# Where each CM tool's own scriptbox/scripts/generate_*.rb script
+# writes its generated output - one canonical place instead of typing
+# the same path out by hand on every invocation (and having it silently
+# go stale the moment a directory gets renamed - confirmed directly,
+# that's exactly what happened to Salt's own static/ -> masterless/
+# rename before this file existed). Each generator's own out_path CLI
+# argument is optional now - when omitted, scriptbox/scripts/cmpaths.rb
+# looks it up here instead, substituting {platform} with whatever
+# root_key(tree) resolves the loaded config.yml to.
+
+[puppet]
+hiera = "configbox/puppet/hiera/data/lessons/{platform}.yaml"
+enc   = "configbox/puppet/enc/data/{platform}.yaml"
+site  = "configbox/puppet/node_defs/manifests/nodes/{platform}.pp"
+
+[salt]
+masterless = "configbox/salt/masterless/roots/pillar/lessons/{platform}.sls"
+roster     = "configbox/salt/roster/roster.yaml"
+
+[chef]
+databag = "configbox/chef/data_bags/lessons/{platform}.json"
+
+[ansible]
+group_vars = "configbox/ansible/provision/group_vars/all/generated.yml"

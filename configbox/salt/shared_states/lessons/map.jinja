@@ -1,0 +1,39 @@
+{#- map.jinja
+
+  The one data lookup every other file in this tree uses, so the tree
+  itself never has to know or care how its data actually arrived: a
+  grain (a value pushed in from outside, at connect time) if present,
+  otherwise a pillar (a value looked up locally, from files already
+  sitting on disk) - whichever one carries a real "lessons" value wins.
+  This is the only line that differs between the two ways this tree
+  gets run; everything else below is written once and reused by both.
+
+  lessons_b64, not a plain lessons grain - see generate_salt.rb's own
+  write_roster comment for why the grain-delivery path carries this
+  base64-encoded rather than as a plain mapping (a real, confirmed bug
+  in how salt-ssh re-serializes minion_opts for its own shim, not
+  something this tree can avoid by writing its data differently).
+  Decoded right here, once, so nothing downstream ever has to know
+  encoding happened at all.
+
+  gates.<area> is a plain on/off switch per area (all default true) -
+  flip one off per node/pillar/grain entry to skip that area entirely
+  without touching this tree at all. areas.<area>.steps is that area's
+  own step list; common_steps runs unconditionally, ungated, ahead of
+  every area. #}
+
+{%- set lessons_b64 = salt['grains.get']('lessons_b64', '') %}
+{%- if lessons_b64 %}
+{%- set lessons = lessons_b64 | base64_decode | load_yaml %}
+{%- else %}
+{%- set lessons = salt['pillar.get']('lessons', {}) %}
+{%- endif %}
+{%- do lessons.setdefault('user', 'vagrant') %}
+{%- do lessons.setdefault('common_steps', []) %}
+{%- do lessons.setdefault('gates', {}) %}
+{%- do lessons.gates.setdefault('gen_scripts', True) %}
+{%- do lessons.gates.setdefault('shell_scripts', True) %}
+{%- do lessons.gates.setdefault('compiled_lang', True) %}
+{%- do lessons.gates.setdefault('win_scripts', True) %}
+{%- do lessons.setdefault('areas', {}) %}
+{%- set home = '/home/' ~ lessons.user %}
