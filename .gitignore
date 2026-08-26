@@ -2,6 +2,12 @@
 '~$script_tracker.xlsx'
 .vagrant
 
+# Python bytecode cache - Salt's own Jinja/loader machinery imports
+# configbox/salt/dynamic/roster_modules/lessons_dynamic.py the same way
+# any Python module gets imported, leaving one of these behind.
+__pycache__/
+*.pyc
+
 # lessons/compiled_lang/*/bin/ holds the final, promoted build output;
 # target/ holds intermediate build artifacts (obj files, generated
 # project files, ...) on the way there (see

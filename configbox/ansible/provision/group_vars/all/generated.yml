@@ -3,6 +3,17 @@ lessons:
   ubuntu22:
     id: ubuntu22
     common:
+    - type: apt
+      name:
+      - curl
+      - git
+      - make
+      - wget
+      - gnupg2
+    - type: sysctl
+      name:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
     - type: script
       name: ubuntu22_sdkman
       cmd: |
@@ -32,7 +43,6 @@ lessons:
       - liblzma-dev
       - libncurses5-dev
       - libncursesw5-dev
-      - libreadline6-dev
       - libreadline-dev
       - libsqlite3-dev
       - libssl-dev
@@ -45,57 +55,21 @@ lessons:
       - zlib1g-dev
       - gawk
       - php8.1-cli
-      - tcl8.6
     - type: script
-      name: ubuntu22_rbenv
+      name: ubuntu22_rvm
       cmd: |
-        sudo apt-get remove -y rbenv ruby-build 2>/dev/null || true
-        curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
-        if [[ -d "$HOME/.rbenv/plugins/ruby-build" ]]; then
-          pushd "$HOME/.rbenv/plugins/ruby-build" && git pull && popd
-        else
-          git clone https://github.com/rbenv/ruby-build.git "$HOME/.rbenv/plugins/ruby-build"
-        fi
-        export PATH="$HOME/.rbenv/bin:$PATH"
-        eval "$(rbenv init - bash)"
-    - type: append
-      name: ubuntu22_rbenv_bash
-      dest: "$HOME/.bashrc"
-      lines:
-      - export PATH="$HOME/.rbenv/bin:$PATH"
-      - eval "$(rbenv init - bash)"
-    - type: append
-      name: ubuntu22_rbenv_zsh
-      dest: "$HOME/.zshrc"
-      lines:
-      - export PATH="$HOME/.rbenv/bin:$PATH"
-      - eval "$(rbenv init - zsh)"
-    - type: script
-      name: ubuntu22_pyenv
-      cmd: |
-        if [ ! -d "$HOME/.pyenv" ]; then
-          curl https://pyenv.run | bash
-        fi
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init - bash)"
-        pyenv update
-    - type: append
-      name: ubuntu22_pyenv_bash
-      dest: "$HOME/.bashrc"
-      lines:
-      - export PYENV_ROOT="$HOME/.pyenv"
-      - '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"'
-      - eval "$(pyenv init - bash)"
-    - type: append
-      name: ubuntu22_pyenv_zsh
-      dest: "$HOME/.zshrc"
-      lines:
-      - export PYENV_ROOT="$HOME/.pyenv"
-      - '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"'
-      - eval "$(pyenv init - zsh)"
-    - type: sdkman
-      name: groovy
+        mkdir -p ~/.gnupg
+        chmod 700 ~/.gnupg
+        echo 'disable-ipv6' >> ~/.gnupg/dirmngr.conf
+        gpgconf --kill dirmngr
+        gpg2 \
+          --keyserver hkps://keyserver.ubuntu.com \
+          --recv-keys \
+          409B6B1796C275462A1703113804BB82D39DC0E3 \
+          7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+        curl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles
+        export PATH="$PATH:$HOME/.rvm/bin"
+        source "$HOME/.rvm/scripts/rvm"
     - type: script
       name: ubuntu22_cpan_local_setup
       cmd: |
@@ -114,15 +88,14 @@ lessons:
       name: App::cpanminus
     - type: cpanm
       name: Switch
-    - type: pyenv
-      name: 3.14.7
-      cmd: pyenv global 3.14.7
-    - type: pyenv
-      name: 2.7.18
-      cmd: pyenv global 3.14.7 2.7.18
-    - type: rbenv
+    - type: cpanm
+      name: HTTP::Tiny
+    - type: sdkman
+      name: groovy 5.1.0
+      cmd: sdk default groovy 5.1.0
+    - type: rvm
       name: 4.0.6
-      cmd: rbenv global 4.0.6
+      cmd: rvm use 4.0.6 --default
     shell_scripts:
     - type: apt
       name:
@@ -222,16 +195,13 @@ lessons:
       lines:
       - . "$HOME/.cargo/env.ps1"
     win_scripts:
-    - type: script
-      name: ubuntu22_powershell
-      cmd: |
-        wget -q https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb \
-          -O packages-microsoft-prod.deb
-        sudo DEBIAN_FRONTEND=noninteractive dpkg -i packages-microsoft-prod.deb
-        rm packages-microsoft-prod.deb
-        sudo apt-get update
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y powershell
-        pwsh -NoProfile -Command "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name psake -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber"
+    - type: apt
+      name: powershell
+      add_apt_repo:
+        name: microsoft-prod
+        key_url: https://packages.microsoft.com/keys/microsoft.asc
+        repo_uri: https://packages.microsoft.com/ubuntu/22.04/prod
+        distro_string: jammy main
 scriptbox:
   ubuntu22:
     id: ubuntu22
@@ -240,11 +210,24 @@ scriptbox:
       name:
       - clang
       - libclang-dev
-    - type: script
-      name: ubuntu22_gem_update
-      cmd: "URL=\"https://rubygems.org/api/v1/versions/rubygems-update/latest.json\"\nif
-        [[ \"$(curl -s $URL | grep -oP '\"version\"[: ]*\"\\K[^\"]+')\" != \"$(gem
-        --version)\" ]]; then \n  gem update --system\nfi\n"
     - type: gem
       name: ratatui_ruby
       args: "--platform ruby"
+    - type: rvm
+      name: 4.0.6
+      cmd: rvm use 4.0.6 --default
+    - type: script
+      name: ubuntu22_rvm
+      cmd: |
+        mkdir -p ~/.gnupg
+        chmod 700 ~/.gnupg
+        echo 'disable-ipv6' >> ~/.gnupg/dirmngr.conf
+        gpgconf --kill dirmngr
+        gpg2 \
+          --keyserver hkps://keyserver.ubuntu.com \
+          --recv-keys \
+          409B6B1796C275462A1703113804BB82D39DC0E3 \
+          7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+        curl -sSL https://get.rvm.io | bash -s -- --branch master --ignore-dotfiles
+        export PATH="$PATH:$HOME/.rvm/bin"
+        source "$HOME/.rvm/scripts/rvm"

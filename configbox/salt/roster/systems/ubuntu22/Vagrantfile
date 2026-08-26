@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
   #  generate_salt.rb --tree roster) is where that connection info and
   #  every value this run needs both live, already synced in here
   #  through the repo-wide /var/script-tut share above.
-  config.vm.provision "apply", type: "shell", inline: <<-SHELL
+  config.vm.provision "salt", type: "shell", inline: <<-SHELL
     salt-ssh -c /var/script-tut/configbox/salt/roster \
       --roster-file /var/script-tut/configbox/salt/roster/roster.yaml \
       --ignore-host-keys \

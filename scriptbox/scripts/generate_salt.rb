@@ -2,9 +2,11 @@
 require 'yaml'
 require 'fileutils'
 require 'optparse'
+require 'base64'
 require_relative 'resolve_order'
 require_relative 'generate_chef_databag' # for step_to_entry/consolidate_apt/root_key/LESSON_AREAS/COMMON_AREA
 require_relative 'generate_ansible_vars' # for deep_stringify_keys
+require_relative 'cmpaths' # for cmpath - out_path's own default when omitted
 
 # generate_salt.rb - same source of truth (scriptbox/config/*.yml), same
 #  resolved lessons step list as generate_chef_databag.rb and
@@ -12,15 +14,15 @@ require_relative 'generate_ansible_vars' # for deep_stringify_keys
 #  the shared_states/lessons tree can receive its data - --tree names
 #  exactly one output shape per invocation:
 #
-#  - static: a pillar SLS file (../../configbox/salt/static/roots/
-#    pillar/lessons/<platform>.sls) - looked up the ordinary way by a
-#    minion applying against its own local file_roots/pillar_roots.
+#  - masterless: a pillar SLS file (../../configbox/salt/masterless/
+#    roots/pillar/lessons/<platform>.sls) - looked up the ordinary way
+#    by a minion applying against its own local file_roots/pillar_roots.
 #    Data and states stay separate the whole way through.
 #  - roster: a roster file (../../configbox/salt/roster/roster.yaml)
 #    with every value embedded directly under one host entry's own
 #    minion_opts.grains - everything a run needs sitting in one
 #    generated file, no external lookup at apply time.
-TREES = %w[static roster].freeze
+TREES = %w[masterless roster].freeze
 
 # lessons_shape(lessons_data) - the one nested shape both writers use,
 #  so the two trees never drift into two different data shapes for
@@ -55,8 +57,9 @@ def extract_formula_pillars(lessons_data)
   end
 end
 
-# write_static(lessons_data, out_path) - see TREES's own 'static' entry.
-def write_static(lessons_data, out_path)
+# write_masterless(lessons_data, out_path) - see TREES's own
+#  'masterless' entry.
+def write_masterless(lessons_data, out_path)
   doc = { 'lessons' => lessons_shape(lessons_data) }.merge(extract_formula_pillars(lessons_data))
   FileUtils.mkdir_p(File.dirname(out_path))
   # mode: 'wb' - see ./generate_puppet.rb's own comment: on a native-
@@ -80,8 +83,29 @@ def write_roster(name, lessons_data, out_path)
       'port' => 22,
       'user' => 'vagrant',
       'priv' => '/home/vagrant/.ssh/salt_ssh_id',
+      # sudo: true - confirmed directly this is load-bearing, not
+      #  belt-and-suspenders: even in --local mode, the thin salt-call
+      #  this connects to still writes fileserver/pillar cache under
+      #  /var/cache/salt/minion/, which is root-owned - connecting as
+      #  a plain unprivileged user fails there with a bare
+      #  PermissionError, no matter how correct everything else is.
+      'sudo' => true,
       'minion_opts' => {
-        'grains' => { 'lessons' => lessons_shape(lessons_data) }.merge(extract_formula_pillars(lessons_data)),
+        # lessons_b64, not a plain lessons: grain - confirmed directly:
+        #  salt-ssh re-serializes minion_opts into a flow-style YAML
+        #  literal it embeds straight into the shim script it deploys,
+        #  and that re-serialization doesn't escape embedded double
+        #  quotes correctly inside a flow-style string - several step
+        #  cmd/content bodies (real bash scripts) have exactly that
+        #  shape, which broke the shim's own config parsing outright.
+        #  Base64 has no characters that class of bug can ever choke
+        #  on; shared_states/lessons/map.jinja decodes this back into
+        #  a real mapping before anything else ever touches it. Formula
+        #  pillar keys (golang: etc.) are deliberately NOT wrapped the
+        #  same way - a vendored formula's own map.jinja has no idea
+        #  this encoding scheme exists and looks its own key up as a
+        #  plain grain/pillar value.
+        'grains' => { 'lessons_b64' => Base64.strict_encode64(lessons_shape(lessons_data).to_yaml) }.merge(extract_formula_pillars(lessons_data)),
       },
     },
   }
@@ -89,10 +113,11 @@ def write_roster(name, lessons_data, out_path)
   File.write(out_path, "---\n#{doc.to_yaml.sub(/\A---\n/, '')}", mode: 'wb')
 end
 
-# parse_salt_args(argv) - <config.yml> <out_path> --tree static|roster
-#  [--select TAG,TAG] [--exclude TAG,TAG]. --select/--exclude match
-#  generate_databag_args's own semantics exactly (see its own comment) -
-#  only --tree is new here.
+# parse_salt_args(argv) - <config.yml> [out_path] --tree masterless|
+#  roster [--select TAG,TAG] [--exclude TAG,TAG]. --select/--exclude
+#  match generate_databag_args's own semantics exactly (see its own
+#  comment) - only --tree is new here. out_path is optional - see
+#  cmpaths.rb's own comment for what it defaults to.
 def parse_salt_args(argv)
   options = { select: [], exclude: [], tree: nil }
   OptionParser.new do |opts|
@@ -105,8 +130,8 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   config_path, out_path, options = parse_salt_args(ARGV)
-  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out_path> --tree static|roster [--select TAG,TAG] [--exclude TAG,TAG]"
+  if config_path.nil? || config_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> [out_path] --tree masterless|roster [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
   unless TREES.include?(options[:tree])
@@ -116,6 +141,7 @@ if __FILE__ == $PROGRAM_NAME
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  out_path ||= cmpath('salt', options[:tree], name)
   tree = substitute_variables(tree, tree[name]['variables'] || {})
 
   all_steps = flatten(tree[name])
@@ -139,7 +165,7 @@ if __FILE__ == $PROGRAM_NAME
   lessons_data = deep_stringify_keys(lessons_data)
 
   case options[:tree]
-  when 'static' then write_static(lessons_data, out_path)
+  when 'masterless' then write_masterless(lessons_data, out_path)
   when 'roster' then write_roster(name, lessons_data, out_path)
   end
 

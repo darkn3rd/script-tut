@@ -8,13 +8,26 @@
   This is the only line that differs between the two ways this tree
   gets run; everything else below is written once and reused by both.
 
+  lessons_b64, not a plain lessons grain - see generate_salt.rb's own
+  write_roster comment for why the grain-delivery path carries this
+  base64-encoded rather than as a plain mapping (a real, confirmed bug
+  in how salt-ssh re-serializes minion_opts for its own shim, not
+  something this tree can avoid by writing its data differently).
+  Decoded right here, once, so nothing downstream ever has to know
+  encoding happened at all.
+
   gates.<area> is a plain on/off switch per area (all default true) -
   flip one off per node/pillar/grain entry to skip that area entirely
   without touching this tree at all. areas.<area>.steps is that area's
   own step list; common_steps runs unconditionally, ungated, ahead of
   every area. #}
 
-{%- set lessons = salt['grains.get']('lessons', {}) or salt['pillar.get']('lessons', {}) %}
+{%- set lessons_b64 = salt['grains.get']('lessons_b64', '') %}
+{%- if lessons_b64 %}
+{%- set lessons = lessons_b64 | base64_decode | load_yaml %}
+{%- else %}
+{%- set lessons = salt['pillar.get']('lessons', {}) %}
+{%- endif %}
 {%- do lessons.setdefault('user', 'vagrant') %}
 {%- do lessons.setdefault('common_steps', []) %}
 {%- do lessons.setdefault('gates', {}) %}

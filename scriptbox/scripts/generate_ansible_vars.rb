@@ -3,6 +3,7 @@ require 'yaml'
 require 'fileutils'
 require_relative 'resolve_order'
 require_relative 'generate_chef_databag' # for strip_comments/step_to_entry/consolidate_apt/root_key/LESSON_AREAS/COMMON_AREA
+require_relative 'cmpaths' # for cmpath - out_path's own default when omitted
 
 # generate_ansible_vars.rb - the Ansible equivalent of generate_chef_
 #  databag.rb + generate_scriptbox_databag.rb combined: same source of
@@ -47,13 +48,14 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   config_path, out_path, select_tags, exclude_tags = parse_databag_args(ARGV)
-  if config_path.nil? || config_path.empty? || out_path.nil? || out_path.empty?
-    warn "usage: #{$PROGRAM_NAME} <config.yml> <out.yml> [--select TAG,TAG] [--exclude TAG,TAG]"
+  if config_path.nil? || config_path.empty?
+    warn "usage: #{$PROGRAM_NAME} <config.yml> [out.yml] [--select TAG,TAG] [--exclude TAG,TAG]"
     exit 1
   end
 
   tree = YAML.load_file(config_path)
   name = root_key(tree)
+  out_path ||= cmpath('ansible', 'group_vars', name)
   # Whole tree, not just tree[name] - see generate_chef_databag.rb's
   #  own comment on this same fix (scripts:/files:/appends: are top-
   #  level RESERVED_KEYS blocks, not nested inside tree[name], so a
@@ -127,6 +129,13 @@ if __FILE__ == $PROGRAM_NAME
   }
 
   FileUtils.mkdir_p(File.dirname(out_path))
-  File.write(out_path, deep_stringify_keys(combined).to_yaml)
+  # mode: 'wb' - see generate_puppet.rb's own comment: on a native-
+  #  Windows Ruby, text-mode File.write silently corrupts multi-line
+  #  step 'cmd'/'content' bodies with \r\n. This file carries the exact
+  #  same script bodies as every other generator's own output and had
+  #  been missing this fix - confirmed directly (233 stray \r bytes in
+  #  the file this generator had already written before this line was
+  #  added).
+  File.write(out_path, deep_stringify_keys(combined).to_yaml, mode: 'wb')
   puts "wrote #{out_path}"
 end
