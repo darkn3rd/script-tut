@@ -79,14 +79,20 @@ bundle agent lessons_append_file(dest, user, home)
       "lines" data   => mergedata("[]", "def.lessons[appends][$(dest)]");
 
   files:
-      "$(dir)"
+      # Trailing "/." - without it, create => "true" on a path that
+      #  doesn't exist yet makes a plain *file*, not a directory.
+      #  Confirmed directly: on a genuinely fresh box (nothing pre-
+      #  existing to paper over the gap), this created $(home)/.config
+      #  as an empty 0-byte file, breaking every later promise that
+      #  needed a real directory there.
+      "$(dir)/."
         create => "true",
         perms => mog("0755", "$(user)", "$(user)");
 
       # $(home)/.config specifically - the one destination currently two
       #  levels deep (.config/powershell/...), so its own grandparent
       #  needs the same treatment, not just its immediate parent above.
-      "$(home)/.config"
+      "$(home)/.config/."
         create => "true",
         perms => mog("0755", "$(user)", "$(user)");
 

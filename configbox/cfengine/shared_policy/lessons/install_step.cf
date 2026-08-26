@@ -224,7 +224,13 @@ bundle agent lessons_install_step(step_path, user, home)
     #  instead - see its own header comment for why appends aren't
     #  handled here at all.)
     is_file::
-      "$(file_dir)"
+      # Trailing "/." - see lessons.cf's own lessons_append_file comment:
+      #  without it, create => "true" on a missing path makes a plain
+      #  file, not a directory. Not currently exercised (every is_file
+      #  destination today sits directly under $(home), which always
+      #  already exists) but wrong to leave inconsistent with the fix
+      #  applied everywhere else.
+      "$(file_dir)/."
         create => "true",
         perms => mog("0755", "$(user)", "$(user)");
 
