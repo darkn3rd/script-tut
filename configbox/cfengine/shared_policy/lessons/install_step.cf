@@ -68,8 +68,8 @@ bundle agent lessons_install_step(step, user, home)
     # Plain apt package(s) - no repository of its own to add first.
     is_apt.!has_apt_repository.!has_add_apt_repo::
       "$(step[name][$(apt_i)])"
-        policy => "present",
-        package_module => apt_get;
+        package_policy => "add",
+        package_method => apt_get;
 
     # apt_repository (a PPA) and add_apt_repo (a raw signed-by key + list
     #  file) both still resolve to an ordinary apt install once their own
@@ -80,13 +80,13 @@ bundle agent lessons_install_step(step, user, home)
     #  one agent run, not a separate one).
     is_apt.has_apt_repository.lessons_ppa_added::
       "$(step[name][$(apt_i)])"
-        policy => "present",
-        package_module => apt_get;
+        package_policy => "add",
+        package_method => apt_get;
 
     is_apt.has_add_apt_repo.lessons_add_apt_repo_ready::
       "$(step[name][$(apt_i)])"
-        policy => "present",
-        package_module => apt_get;
+        package_policy => "add",
+        package_method => apt_get;
 
   commands:
     # add-apt-repository refreshes the apt cache itself; unless guards the
@@ -98,8 +98,12 @@ bundle agent lessons_install_step(step, user, home)
         unless => returnszero("/bin/sh -c \"echo '$(step[apt_repository])' | sed -e 's/^ppa://' | xargs -I{} grep -rqF {} /etc/apt/sources.list.d/\"", "useshell"),
         classes => results("lessons_ppa_added");
 
+    # apt's own fetch/signature-verification step runs as the
+    #  unprivileged _apt user (sandboxing), even under a root cf-agent -
+    #  chmod 644 right after creation, or _apt can't read this key at all
+    #  and every fetch against this repo fails with a false NO_PUBKEY.
     is_apt.has_add_apt_repo::
-      "/bin/bash -c \"curl -fsSL '$(step[add_apt_repo][key_url])' | gpg --batch --yes --dearmor -o '$(add_apt_repo_key_path)'\""
+      "/bin/bash -c \"curl -fsSL '$(step[add_apt_repo][key_url])' | gpg --batch --yes --dearmor -o '$(add_apt_repo_key_path)' && chmod 0644 '$(add_apt_repo_key_path)'\""
         unless => fileexists("$(add_apt_repo_key_path)");
 
       # add-apt-repository (above) refreshes the apt cache on its own; a
@@ -110,13 +114,28 @@ bundle agent lessons_install_step(step, user, home)
         classes => results("lessons_add_apt_repo_ready");
 
   files:
+    # No explicit perms => CFEngine's own default file mode (0600) - too
+    #  restrictive for anything apt itself needs to read back, same
+    #  _apt-sandboxing reason as the keyring file's own chmod above.
     is_apt.has_add_apt_repo::
       "/etc/apt/keyrings/."
-        create => "true";
+        create => "true",
+        perms => mog("0755", "root", "root");
 
       "$(add_apt_repo_list_path)"
         create => "true",
-        content => "deb [signed-by=$(add_apt_repo_key_path)] $(step[add_apt_repo][repo_uri]) $(step[add_apt_repo][distro_string])$(const.n)";
+        content => "deb [signed-by=$(add_apt_repo_key_path)] $(step[add_apt_repo][repo_uri]) $(step[add_apt_repo][distro_string])$(const.n)",
+        perms => mog("0644", "root", "root");
+
+      # perms-only, unconditional - the key file's own content is set by
+      #  the commands: promise above, gated by `unless => fileexists(...)`
+      #  so it never re-runs once the file exists. Without this separate
+      #  promise, a key file created by an older/unpatched run stays
+      #  stuck at whatever mode it was first created with, since nothing
+      #  else would ever go back and correct it.
+      "$(add_apt_repo_key_path)"
+        create => "false",
+        perms => mog("0644", "root", "root");
 
   methods:
     # Vendored module (see ../../.module-vendor/apt/) - pins whatever

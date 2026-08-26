@@ -30,14 +30,35 @@ body delete tidy
     rmdirs   => "true";
 }
 
-# package_module bodies aren't auto-defined either - a promise's own
-#  `package_module => apt_get` still needs a body of that exact name,
-#  even though the apt_get module script itself ships with cf-agent.
-#  query_installed_ifelapsed/query_updates_ifelapsed values match the
-#  standard masterfiles library's own fallback defaults (0/1440).
-body package_module apt_get
+# package_method, not package_module - confirmed directly that the
+#  newer package_module protocol's own external module script
+#  (/var/cfengine/modules/packages/apt_get) isn't shipped with a bare
+#  cfengine-community install (only rendered as part of the full
+#  standard masterfiles library, which this tree deliberately doesn't
+#  pull in). package_method is CFEngine's own older, self-contained
+#  mechanism - plain shell command templates cf-agent runs directly, no
+#  external script file needed. Values below are copied verbatim from
+#  the standard masterfiles library's own lib/packages.cf (its
+#  debian_knowledge/common_knowledge bundles), just with their variable
+#  references resolved to literal values so this stays self-contained.
+body package_method apt_get
 {
-    query_installed_ifelapsed => "0";
-    query_updates_ifelapsed => "1440";
-    interpreter => "$(sys.bindir)/cfengine-selected-python";
+    package_changes => "bulk";
+    package_list_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg -l";
+    package_list_name_regex => "^.i\s+([^\s:]+).*";
+    package_list_version_regex => "^.i\s+[^\s]+\s+([^\s]+).*";
+    package_installed_regex => ".i.*";
+    package_name_convention => "$(name)=$(version)";
+    package_list_update_ifelapsed => "240";
+
+    package_add_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_list_update_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get update";
+    package_delete_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes -q remove";
+    package_update_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_patch_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_verify_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg -s";
+    package_noverify_returncode => "1";
+
+    package_version_less_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg --compare-versions '$(v1)' lt '$(v2)'";
+    package_version_equal_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg --compare-versions '$(v1)' eq '$(v2)'";
 }
