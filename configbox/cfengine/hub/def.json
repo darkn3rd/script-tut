@@ -38,27 +38,6 @@
             {
               "type": "apt",
               "name": [
-                "autoconf",
-                "bison",
-                "build-essential",
-                "libbz2-dev",
-                "libdb-dev",
-                "libffi-dev",
-                "libgdbm6",
-                "libgdbm-dev",
-                "liblzma-dev",
-                "libncurses5-dev",
-                "libncursesw5-dev",
-                "libreadline-dev",
-                "libsqlite3-dev",
-                "libssl-dev",
-                "libxml2-dev",
-                "libxmlsec1-dev",
-                "libyaml-dev",
-                "llvm",
-                "tk-dev",
-                "xz-utils",
-                "zlib1g-dev",
                 "gawk",
                 "php8.1-cli"
               ]
@@ -138,6 +117,14 @@
                 "golang-go"
               ],
               "apt_repository": "ppa:longsleep/golang-backports"
+            },
+            {
+              "type": "apt_pin",
+              "name": "golang-go",
+              "pin": {
+                "version": "2:1.26~*",
+                "priority": "1001"
+              }
             },
             {
               "type": "script",

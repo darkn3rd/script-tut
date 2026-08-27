@@ -20,6 +20,17 @@ systemctl enable --now cfengine3 2>/dev/null || systemctl enable --now cf-server
 
 test -f /var/cfengine/policy_server.dat || cf-agent --bootstrap 127.0.0.1
 
+# /var/cfengine/inputs is cf-agent's own actual working copy - separate
+# from masterfiles (what a hub *serves*), and nothing else ever refreshes
+# it from masterfiles on its own. A real CFEngine deployment relies on
+# the standard Masterfiles Policy Framework's own update.cf bundle to
+# pull a fresh copy on every single agent run; we don't include that
+# framework at all, so without this, inputs stays frozen at whatever it
+# was on the very first bootstrap - confirmed directly: a def.json
+# change re-copied into masterfiles here was silently invisible to
+# cf-agent runs afterward, since it never reads masterfiles itself.
+cp -a /var/cfengine/masterfiles/. /var/cfengine/inputs/
+
 # Re-run every provision (not just the first bootstrap) so an updated
 # def.json/policy actually gets picked up on the next `vagrant provision`,
 # not just the very first one.

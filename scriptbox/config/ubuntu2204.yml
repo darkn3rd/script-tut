@@ -222,7 +222,12 @@ ubuntu22:
             #  tag and is unaffected.
             - apt_pin: golang-go
               pin:
-                version: '2:1.21~*' # confirm the actual installed apt version before relying on this
+                # Confirmed directly against the longsleep PPA's own
+                #  actually-served version at build/test time (2:1.26~
+                #  0longsleep1) - a wildcard on the major version, not
+                #  an exact pin, since the PPA publishes new patch
+                #  builds under the same major version regularly.
+                version: '2:1.26~*'
                 priority: '1001'
               tags: [cfengine_apt_pin]
         rust:
