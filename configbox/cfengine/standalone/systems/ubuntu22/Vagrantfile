@@ -1,0 +1,34 @@
+HOST_REPO_PATH = File.realpath("../../../../..", __dir__)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.box_version = "4.3.12"
+  config.vm.hostname = "cfengine-standalone-node-01.test"
+  # dmode/fmode - CFEngine refuses to load a policy file that's group- or
+  #  world-writable; VirtualBox's own vboxsf shared folders default to a
+  #  group-writable mount, which trips that check the moment cf-agent
+  #  tries to read promises.cf straight out of here.
+  config.vm.synced_folder "#{HOST_REPO_PATH}", "/var/script-tut",
+    mount_options: ["dmode=755", "fmode=644"]
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+
+    # Instruct Virtualbox to use HyperV para-virtualization instead of
+    # guessing that results in hangs or slowness.
+    vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  config.vm.provision "bootstrap",
+    type: "shell",
+    path: "../../../scripts/ubuntu22_cfengine_bootstrap.sh"
+
+  # masterless - cf-agent applies ../../promises.cf (and the def.json
+  #  sitting next to it) directly, no policy hub involved at all. No
+  #  Vagrant-native CFEngine provisioner exists, so this is a plain shell
+  #  step.
+  config.vm.provision "apply",
+    type: "shell",
+    inline: "cf-agent --no-lock -Kf /var/script-tut/configbox/cfengine/standalone/promises.cf"
+end

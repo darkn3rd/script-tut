@@ -1,0 +1,270 @@
+# install_step.cf
+#
+# One step from a steps array (see gen_scripts.cf and friends), applied
+#  once per entry by their own iteration loops (`step` - the whole step
+#  data container - and `user`/`home` passed straight through). CFEngine
+#  has no switch/case over a string either; the idiom here is one
+#  "is_<type>" class per possible step[type] value (set via strcmp), then
+#  one packages:/files:/commands:/methods: block per type guarded by
+#  that class - covering every step shape scriptbox/config/*.yml can
+#  currently emit into this tree's own augments file. `append`-typed
+#  steps are handled elsewhere entirely - see lessons.cf's own
+#  lessons_append_file bundle and generate_cfengine.rb's own
+#  extract_appends! for why: they're pre-merged per destination file
+#  before this bundle ever sees them, rather than each appending step
+#  calling in here on its own.
+#
+# generate_cfengine.rb always writes an `apt`/`sysctl` step's own `name`
+#  as a list (even a single package/key=value pair becomes a one-element
+#  list), specifically so every promise below can iterate uniformly
+#  instead of needing a separate scalar-vs-list branch the way a hand-
+#  authored step file would.
+#
+# Add a new step type: add one more "is_<type>" class below, then one
+#  more class-guarded promise block for whatever that type needs to do -
+#  following this same pattern.
+#
+# Takes step_path (a string path INTO def.lessons, e.g. "def.lessons
+#  [areas][gen_scripts][steps][3]"), not the step container itself -
+#  confirmed directly that a caller-side `data =>` variable re-derived
+#  once per value of an *outer* slist only actually resolves for that
+#  slist's first value; every other iteration silently kept the first
+#  one's data. A plain string parameter has no such ambiguity, so the
+#  mergedata() lookup below - now genuinely local to *this* invocation,
+#  not entangled with whatever outer loop the caller used - resolves
+#  fresh and correctly every single time.
+bundle agent lessons_install_step(step_path, user, home)
+{
+  vars:
+      "step" data => mergedata("{}", "$(step_path)");
+      "step_type" string => "$(step[type])";
+
+  # scope => "bundle" on every class below - without it, CFEngine classes
+  #  are global/persistent for the rest of the *entire* cf-agent run, not
+  #  reset between separate invocations of this bundle. Confirmed
+  #  directly: the first step anywhere in the tree that has its own
+  #  add_apt_repo/apt_repository left has_add_apt_repo/has_apt_repository
+  #  stuck "true" for every later step processed afterward (in this or a
+  #  later internal convergence pass), silently breaking every plain
+  #  apt install's own !has_apt_repository.!has_add_apt_repo guard from
+  #  that point on.
+  classes:
+      "is_apt"     expression => strcmp("$(step_type)", "apt"),     scope => "bundle";
+      "is_apt_pin" expression => strcmp("$(step_type)", "apt_pin"), scope => "bundle";
+      "is_sysctl"  expression => strcmp("$(step_type)", "sysctl"),  scope => "bundle";
+      "is_file"    expression => strcmp("$(step_type)", "file"),    scope => "bundle";
+      "is_script"  expression => strcmp("$(step_type)", "script"),  scope => "bundle";
+
+      "has_apt_repository" expression => isvariable("step[apt_repository]"), scope => "bundle";
+      "has_add_apt_repo"   expression => isvariable("step[add_apt_repo]"),   scope => "bundle";
+
+  vars:
+    is_apt.has_add_apt_repo::
+      "add_apt_repo_key_path"  string => "/etc/apt/keyrings/$(step[add_apt_repo][name]).gpg";
+      "add_apt_repo_list_path" string => "/etc/apt/sources.list.d/$(step[add_apt_repo][name]).list";
+      # canon_repo_id names the "ready" class below - without this, every
+      #  add_apt_repo step shares one literal class name, so the first
+      #  one processed leaves it stuck true (see scope => "bundle"'s own
+      #  comment above) and every *other* add_apt_repo step's package
+      #  install would fire immediately, before its own repo is actually
+      #  ready.
+      "canon_repo_id" string => canonify("$(step[add_apt_repo][name])");
+
+    is_apt.has_apt_repository::
+      "canon_repo_id" string => canonify("$(step[apt_repository])");
+
+    is_apt::
+      "apt_i" slist => getindices("step[name]");
+
+    is_sysctl::
+      "sysctl_i" slist => getindices("step[name]");
+
+    is_file::
+      "file_dest" string => string_replace("$(step[dest])", "$HOME", "$(home)");
+      "file_dir"  string => dirname("$(file_dest)");
+
+  # A dynamic (variable-interpolated) class name can't be spliced
+  #  directly into a compound guard like "a.b_$(x)::" - confirmed
+  #  directly, cf-promises rejects that outright (same failure the
+  #  is_script branch below hit earlier with a per-step class name).
+  #  expression => "$(...)" can still *test* a dynamically-named class
+  #  though, since the interpolation happens before the result is parsed
+  #  as a class expression - so the dynamic part lives here, and the
+  #  packages: guards below only ever reference these two plain,
+  #  static-named classes.
+  classes:
+    is_apt.has_apt_repository::
+      "ppa_ready" expression => "lessons_ppa_added_$(canon_repo_id)", scope => "bundle";
+
+    is_apt.has_add_apt_repo::
+      "add_apt_repo_ready" expression => "lessons_add_apt_repo_ready_$(canon_repo_id)", scope => "bundle";
+
+  packages:
+    # Plain apt package(s) - no repository of its own to add first.
+    is_apt.!has_apt_repository.!has_add_apt_repo::
+      "$(step[name][$(apt_i)])"
+        package_policy => "add",
+        package_method => apt_get;
+
+    # apt_repository (a PPA) and add_apt_repo (a raw signed-by key + list
+    #  file) both still resolve to an ordinary apt install once their own
+    #  repository is in place - each is gated on a class the matching
+    #  commands:/files: promise below only sets once its own repository
+    #  setup is actually done, so the package install itself waits for
+    #  that (CFEngine's own multi-pass convergence resolves this within
+    #  one agent run, not a separate one).
+    is_apt.has_apt_repository.ppa_ready::
+      "$(step[name][$(apt_i)])"
+        package_policy => "add",
+        package_method => apt_get;
+
+    is_apt.has_add_apt_repo.add_apt_repo_ready::
+      "$(step[name][$(apt_i)])"
+        package_policy => "add",
+        package_method => apt_get;
+
+  commands:
+    # add-apt-repository refreshes the apt cache itself; unless guards the
+    #  actual PPA slug (not the "ppa:" shorthand, which never appears
+    #  literally in sources.list.d) so this doesn't hit Launchpad's API on
+    #  every single run.
+    is_apt.has_apt_repository::
+      "/usr/bin/add-apt-repository -y '$(step[apt_repository])'"
+        unless => returnszero("/bin/sh -c \"echo '$(step[apt_repository])' | sed -e 's/^ppa://' | xargs -I{} grep -rqF {} /etc/apt/sources.list.d/\"", "useshell"),
+        classes => results("lessons_ppa_added_$(canon_repo_id)");
+
+    # apt's own fetch/signature-verification step runs as the
+    #  unprivileged _apt user (sandboxing), even under a root cf-agent -
+    #  chmod 644 right after creation, or _apt can't read this key at all
+    #  and every fetch against this repo fails with a false NO_PUBKEY.
+    is_apt.has_add_apt_repo::
+      "/bin/bash -c \"curl -fsSL '$(step[add_apt_repo][key_url])' | gpg --batch --yes --dearmor -o '$(add_apt_repo_key_path)' && chmod 0644 '$(add_apt_repo_key_path)'\""
+        unless => fileexists("$(add_apt_repo_key_path)");
+
+      # add-apt-repository (above) refreshes the apt cache on its own; a
+      #  raw key+list file doesn't, so this forces one whenever the list
+      #  file itself changes.
+      "/usr/bin/apt-get update"
+        if => fileexists("$(add_apt_repo_list_path)"),
+        classes => results("lessons_add_apt_repo_ready_$(canon_repo_id)");
+
+  files:
+    # No explicit perms => CFEngine's own default file mode (0600) - too
+    #  restrictive for anything apt itself needs to read back, same
+    #  _apt-sandboxing reason as the keyring file's own chmod above.
+    is_apt.has_add_apt_repo::
+      "/etc/apt/keyrings/."
+        create => "true",
+        perms => mog("0755", "root", "root");
+
+      "$(add_apt_repo_list_path)"
+        create => "true",
+        content => "deb [signed-by=$(add_apt_repo_key_path)] $(step[add_apt_repo][repo_uri]) $(step[add_apt_repo][distro_string])$(const.n)",
+        perms => mog("0644", "root", "root");
+
+      # perms-only, unconditional - the key file's own content is set by
+      #  the commands: promise above, gated by `unless => fileexists(...)`
+      #  so it never re-runs once the file exists. Without this separate
+      #  promise, a key file created by an older/unpatched run stays
+      #  stuck at whatever mode it was first created with, since nothing
+      #  else would ever go back and correct it.
+      "$(add_apt_repo_key_path)"
+        create => "false",
+        perms => mog("0644", "root", "root");
+
+  methods:
+    # Vendored module (see ../../.module-vendor/apt/) - pins whatever
+    #  apt already installed to an exact version/priority, distinct from
+    #  installing it in the first place.
+    is_apt_pin::
+      "" usebundle => apt:package_version_priority_pinned(
+                          "$(step[name])",
+                          "$(step[pin][version])",
+                          "$(step[pin][priority])",
+                          "present");
+
+  commands:
+    # A raw "key=value" sysctl argument (or several) - the same plain
+    #  `sysctl -w` shape every other tool's own sysctl-equivalent
+    #  primitive expects.
+    is_sysctl::
+      "/usr/sbin/sysctl -w '$(step[name][$(sysctl_i)])'"
+        unless => returnszero("/bin/sh -c \"v='$(step[name][$(sysctl_i)])'; k=$${v%%=*}; want=$${v#*=}; [ \\\"$$(sysctl -n $$k)\\\" = \\\"$$want\\\" ]\"", "useshell");
+
+    # Generic script - shell provider always runs via /bin/sh -c, and a
+    #  shebang embedded in a command string is just a comment to sh, not
+    #  an actual interpreter switch. These scripts rely on bash-only
+    #  syntax (source, [[ ]]), so the body is written to a real file with
+    #  its own shebang and executed directly instead.
+    # No ordering class needed here - files: (which writes the script,
+    #  below) evaluates before commands: in CFEngine's own fixed promise-
+    #  type order within a bundle, so the file this references already
+    #  exists by the time this runs, same pass.
+    is_script::
+      "/bin/bash -c \"chown $(user):$(user) /tmp/lessons_$(step[name]).sh && sudo -u $(user) -H env HOME=$(home) /tmp/lessons_$(step[name]).sh\""
+        contain => in_dir("$(home)");
+
+  files:
+    is_script::
+      "/tmp/lessons_$(step[name]).sh"
+        create => "true",
+        content => "#!/bin/bash$(const.n)$(step[cmd])",
+        perms => mog("0755", "root", "root");
+
+    # CFEngine auto-creates whatever ancestor directories a nested
+    #  destination below needs, but ONLY the leaf file itself gets this
+    #  bundle's own perms => - confirmed directly that an auto-created
+    #  parent came out root-owned and unreadable by $(user), silently
+    #  breaking anything that later assumed it could write under $(home)
+    #  on its own. Promising the parent directory's own perms explicitly
+    #  - unconditionally, so an already-broken one left over from before
+    #  this fix gets corrected too, the same self-healing approach
+    #  already used for the apt keyring file. (append destinations get
+    #  the same treatment in lessons.cf's own lessons_append_file bundle
+    #  instead - see its own header comment for why appends aren't
+    #  handled here at all.)
+    is_file::
+      # Trailing "/." - see lessons.cf's own lessons_append_file comment:
+      #  without it, create => "true" on a missing path makes a plain
+      #  file, not a directory. Not currently exercised (every is_file
+      #  destination today sits directly under $(home), which always
+      #  already exists) but wrong to leave inconsistent with the fix
+      #  applied everywhere else.
+      "$(file_dir)/."
+        create => "true",
+        perms => mog("0755", "$(user)", "$(user)");
+
+      "$(file_dest)"
+        create => "true",
+        content => "$(step[content])",
+        perms => mog("0644", "$(user)", "$(user)");
+}
+
+body contain in_dir(d)
+{
+    chdir    => "$(d)";
+    useshell => "useshell";
+}
+
+# results(x) - defined locally rather than assumed to come from
+#  CFEngine's own standard masterfiles library, since this tree's own
+#  promises.cf deliberately inputs only its own bundles plus the one
+#  vendored module (see ../../.module-vendor/apt/) - nothing pulls in
+#  that broader library here. promise_repaired/repair_failed are core
+#  CFEngine classes-body attributes, not stdlib-specific.
+body classes results(x)
+{
+    promise_repaired => { "$(x)" };
+    repair_failed     => { "$(x)_failed" };
+}
+
+bundle edit_line append_lessons_lines(lines)
+{
+  vars:
+      "i" slist => getindices("lines");
+
+  insert_lines:
+      # No location => attribute - insert_lines already appends at the
+      #  end of the file by default when none is given.
+      "$(lines[$(i)])";
+}

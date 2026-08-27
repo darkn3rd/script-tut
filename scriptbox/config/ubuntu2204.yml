@@ -213,6 +213,23 @@ ubuntu22:
                 golang:
                   version: '1.24.0' # confirm current stable Go before relying on this
               tags: [salt_formula_golang]
+            # Additive, not an alternative to the entry above - pins
+            #  whatever golang-go apt already installed to an exact
+            #  version/priority instead of installing it a different way
+            #  (see configbox/cfengine/README.md's own "Vendoring
+            #  Modules" section). Opt-in only (--select cfengine_apt_pin),
+            #  every other consumer of this manifest never asks for this
+            #  tag and is unaffected.
+            - apt_pin: golang-go
+              pin:
+                # Confirmed directly against the longsleep PPA's own
+                #  actually-served version at build/test time (2:1.26~
+                #  0longsleep1) - a wildcard on the major version, not
+                #  an exact pin, since the PPA publishes new patch
+                #  builds under the same major version regularly.
+                version: '2:1.26~*'
+                priority: '1001'
+              tags: [cfengine_apt_pin]
         rust:
           packages:
             - script: ubuntu22_rust

@@ -1,0 +1,24 @@
+# promises.cf - hub tree entry point. Never applied in place - see
+#  ../scripts/ubuntu22_cfengine_hub_bootstrap.sh, which assembles this
+#  file plus def.json, shared_policy/lessons/, and module-vendor/apt/
+#  into /var/cfengine/masterfiles/ (the standard location a CFEngine
+#  policy hub serves policy from) before bootstrapping the guest to
+#  itself (`cf-agent --bootstrap 127.0.0.1`). The `inputs =>` paths below
+#  are written relative to *that* deployed layout, not this file's own
+#  location in the repo.
+body common control
+{
+    bundlesequence => { "lessons" };
+
+    inputs => {
+        "shared_policy/default_shim.cf",
+        "shared_policy/lessons/lessons.cf",
+        "shared_policy/lessons/install_step.cf",
+        "shared_policy/lessons/gen_scripts.cf",
+        "shared_policy/lessons/shell_scripts.cf",
+        "shared_policy/lessons/compiled_lang.cf",
+        "shared_policy/lessons/win_scripts.cf",
+        "module-vendor/apt/apt-pin-packages.cf",
+        "module-vendor/apt/pin-package.cf",
+    };
+}

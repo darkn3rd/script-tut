@@ -27,6 +27,11 @@ namespace :generate do
     %w[masterless roster].each { |t| sh "ruby generate_salt.rb #{CM_CONFIG} --tree #{t}" }
   end
 
+  desc 'Regenerate CFEngine standalone/hub augments'
+  task :cfengine do
+    %w[standalone hub].each { |t| sh "ruby generate_cfengine.rb #{CM_CONFIG} --tree #{t}" }
+  end
+
   desc 'Regenerate the Chef data bag'
   task :chef do
     sh "ruby generate_chef_databag.rb #{CM_CONFIG}"
@@ -38,5 +43,5 @@ namespace :generate do
   end
 
   desc 'Regenerate every CM tool at once'
-  task all: %i[puppet salt chef ansible]
+  task all: %i[puppet salt cfengine chef ansible]
 end

@@ -1,0 +1,64 @@
+# default_shim.cf
+#
+# Neither tree here pulls in CFEngine's own standard masterfiles library
+#  (the "Masterfiles Policy Framework"). `mog` is shared - install_step.cf's
+#  own `perms =>` promises use it too (no explicit namespace declared
+#  there, so it lives in this same `default` namespace and just calls
+#  `mog(...)` unqualified). `tidy` exists only for the one vendored module
+#  (../.module-vendor/apt/pin-package.cf), which calls `default:mog(...)`/
+#  `default:tidy` exactly as its own upstream repository wrote it,
+#  unmodified. Rather than either editing that vendored file or pulling in
+#  the entire standard library just for two small bodies, this supplies
+#  minimal stand-ins under the same `default` namespace it already
+#  expects.
+body file control
+{
+    namespace => "default";
+}
+
+body perms mog(m, o, g)
+{
+    mode   => "$(m)";
+    owners => { "$(o)" };
+    groups => { "$(g)" };
+    rxdirs => "false";
+}
+
+body delete tidy
+{
+    dirlinks => "delete";
+    rmdirs   => "true";
+}
+
+# package_method, not package_module - confirmed directly that the
+#  newer package_module protocol's own external module script
+#  (/var/cfengine/modules/packages/apt_get) isn't shipped with a bare
+#  cfengine-community install (only rendered as part of the full
+#  standard masterfiles library, which this tree deliberately doesn't
+#  pull in). package_method is CFEngine's own older, self-contained
+#  mechanism - plain shell command templates cf-agent runs directly, no
+#  external script file needed. Values below are copied verbatim from
+#  the standard masterfiles library's own lib/packages.cf (its
+#  debian_knowledge/common_knowledge bundles), just with their variable
+#  references resolved to literal values so this stays self-contained.
+body package_method apt_get
+{
+    package_changes => "bulk";
+    package_list_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg -l";
+    package_list_name_regex => "^.i\s+([^\s:]+).*";
+    package_list_version_regex => "^.i\s+[^\s]+\s+([^\s]+).*";
+    package_installed_regex => ".i.*";
+    package_name_convention => "$(name)=$(version)";
+    package_list_update_ifelapsed => "240";
+
+    package_add_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_list_update_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get update";
+    package_delete_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes -q remove";
+    package_update_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_patch_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef --yes install";
+    package_verify_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg -s";
+    package_noverify_returncode => "1";
+
+    package_version_less_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg --compare-versions '$(v1)' lt '$(v2)'";
+    package_version_equal_command => "/usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/dpkg --compare-versions '$(v1)' eq '$(v2)'";
+}
