@@ -358,6 +358,11 @@ module Lessons
           action [:install, :global]
           user node['lessons']['user']
         end
+      when 'noop'
+        # Installs nothing of its own - exists purely to give a meets:/
+        #  needs: pair (or a group of attached script:/file:/append:
+        #  steps) somewhere real to attach to when no single step here is
+        #  itself the thing being installed.
       else
         Chef::Log.warn("lessons: unsupported package type '#{pkg['type']}' for '#{pkg['name']}'")
       end

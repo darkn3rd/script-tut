@@ -405,7 +405,12 @@
   ansible.builtin.shell: >-
     pwsh -NoProfile -Command "{{ step.name }}"
 
+# noop - installs nothing of its own; exists purely to give a meets:/
+#  needs: pair (or a group of attached script:/file:/append: steps)
+#  somewhere real to attach to when no single step here is itself the
+#  thing being installed. Deliberately no task body at all - just kept
+#  out of the "unsupported" allowlist below.
 - name: "unsupported lessons step type"
-  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'asdf_plugin', 'asdf', 'choco_local', 'powershell_package_provider', 'powershell_module', 'powershell_cmd']
+  when: step.type not in ['apt', 'file', 'append', 'script', 'sdkman', 'cpan', 'cpanm', 'pyenv', 'rbenv', 'asdf_plugin', 'asdf', 'choco_local', 'powershell_package_provider', 'powershell_module', 'powershell_cmd', 'noop']
   ansible.builtin.debug:
     msg: "lessons: unsupported package type '{{ step.type }}' for '{{ step.name }}'"
