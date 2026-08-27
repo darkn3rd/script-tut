@@ -48,7 +48,7 @@ itself:
 | Directory     | How it's run                                                                                     | Where its data comes from                                                                                        |
 | ------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `standalone/` | `cf-agent -Kf promises.cf` applied directly - no policy hub involved at all                        | `def.json` sitting right next to `promises.cf` - a CFEngine **augments** file, auto-merged into the data variable `def.lessons` at parse time |
-| `hub/`        | the guest bootstraps to itself (`cf-agent --bootstrap 127.0.0.1`) and runs as its own policy hub, serving policy to itself over `cf-serverd` | its own `def.json`, assembled (along with `promises.cf` and this tree's shared bundles) into `/var/cfengine/masterfiles/` before bootstrapping |
+| `hub/`        | the guest bootstraps to itself (`cf-agent --bootstrap 127.0.0.1`) and runs as its own policy hub, serving policy to itself over `cf-serverd` | its own `def.json`, assembled (along with `promises.cf` and this tree's shared bundles) into `/var/cfengine/masterfiles/` before bootstrapping - and synced into `/var/cfengine/inputs/` (`cf-agent`'s own actual working copy) on *every* provision, not just the first, since nothing else does that without the full standard masterfiles library's own `update.cf` bundle, which this tree doesn't pull in |
 
 Both trees are fed by `scriptbox/scripts/generate_cfengine.rb`, which reads
 the same `scriptbox/config/*.yml` source every other tool in this repo's
