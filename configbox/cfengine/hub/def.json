@@ -21,6 +21,11 @@
           ]
         },
         {
+          "type": "noop",
+          "name": "zsh_baseline",
+          "order": 1
+        },
+        {
           "type": "script",
           "name": "ubuntu22_sdkman",
           "cmd": "if [ ! -d \"$HOME/.sdkman\" ]; then\n  curl -s \"https://get.sdkman.io\" | bash\n  sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/' \"$HOME/.sdkman/etc/config\"\nfi\nsource \"$HOME/.sdkman/bin/sdkman-init.sh\"\n"
@@ -106,12 +111,6 @@
                 "ksh93u+m",
                 "zsh"
               ]
-            },
-            {
-              "type": "file",
-              "name": "ubuntu_default_zshrc",
-              "dest": "$HOME/.zshrc",
-              "content": "# Set up the prompt\n\nautoload -Uz promptinit\npromptinit\nprompt adam1\n\nsetopt histignorealldups sharehistory\n\n# Use emacs keybindings even if our EDITOR is set to vi\nbindkey -e\n\n# Keep 1000 lines of history within the shell and save it to ~/.zsh_history:\nHISTSIZE=1000\nSAVEHIST=1000\nHISTFILE=~/.zsh_history\n\n# Use modern completion system\nautoload -Uz compinit\ncompinit\n\nzstyle ':completion:*' auto-description 'specify: %d'\nzstyle ':completion:*' completer _expand _complete _correct _approximate\nzstyle ':completion:*' format 'Completing %d'\nzstyle ':completion:*' group-name ''\nzstyle ':completion:*' menu select=2\neval \"$(dircolors -b)\"\nzstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}\nzstyle ':completion:*' list-colors ''\nzstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s\nzstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'\nzstyle ':completion:*' menu select=long\nzstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s\nzstyle ':completion:*' use-compctl false\nzstyle ':completion:*' verbose true\n\nzstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'\nzstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'\n"
             }
           ]
         },
@@ -170,7 +169,33 @@
         }
       },
       "appends": {
-        "/home/vagrant/.bashrc": [
+        "/home/vagrant/.zshrc": [
+          "autoload -Uz promptinit",
+          "promptinit",
+          "prompt adam1",
+          "setopt histignorealldups sharehistory",
+          "bindkey -e",
+          "HISTSIZE=1000",
+          "SAVEHIST=1000",
+          "HISTFILE=~/.zsh_history",
+          "autoload -Uz compinit",
+          "compinit",
+          "zstyle ':completion:*' auto-description 'specify: %d'",
+          "zstyle ':completion:*' completer _expand _complete _correct _approximate",
+          "zstyle ':completion:*' format 'Completing %d'",
+          "zstyle ':completion:*' group-name ''",
+          "zstyle ':completion:*' menu select=2",
+          "eval \"$(dircolors -b)\"",
+          "zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}",
+          "zstyle ':completion:*' list-colors ''",
+          "zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s",
+          "zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'",
+          "zstyle ':completion:*' menu select=long",
+          "zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s",
+          "zstyle ':completion:*' use-compctl false",
+          "zstyle ':completion:*' verbose true",
+          "zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'",
+          "zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'",
           "[[ -s \"$HOME/.sdkman/bin/sdkman-init.sh\" ]] && source \"$HOME/.sdkman/bin/sdkman-init.sh\"",
           "eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"",
           "export PATH=$HOME/perl5/bin:$PATH",
@@ -178,7 +203,7 @@
           "export PATH=$GOPATH/bin:$PATH",
           "source \"$HOME/.cargo/env\""
         ],
-        "/home/vagrant/.zshrc": [
+        "/home/vagrant/.bashrc": [
           "[[ -s \"$HOME/.sdkman/bin/sdkman-init.sh\" ]] && source \"$HOME/.sdkman/bin/sdkman-init.sh\"",
           "eval \"$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)\"",
           "export PATH=$HOME/perl5/bin:$PATH",

@@ -103,6 +103,7 @@ def flatten(node, path = [])
         version: entry['version'],
         args: entry['args'],
         condition: entry['condition'],
+        order: entry['order'],
         tags: Array(entry['tags']),
         path: path.join('.')
       }
@@ -139,7 +140,7 @@ def flatten(node, path = [])
         #  own PATH lines to .bashrc regardless of whether asdf was
         #  actually installed would be a real bug, not a harmless extra.
         Array(entry[key]).each do |name|
-          steps << { type: key, name: name, attached_to: entry[type], tags: Array(entry['tags']), path: path.join('.') }
+          steps << { type: key, name: name, attached_to: entry[type], order: entry['order'], tags: Array(entry['tags']), path: path.join('.') }
         end
       end
     end

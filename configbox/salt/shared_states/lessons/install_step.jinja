@@ -98,14 +98,16 @@
   (replace: False - never touch content that's already there) with its
   own directory guard comes first. order: last on the append itself
   (not the dir/touch guards, which are order-independent either way)
-  matters for real: a 'file' step elsewhere in this same run can target
-  the identical path with its own full content, and there's no natural
-  ordering between two steps living in different areas' own files -
-  confirmed directly, an append landing before that kind of full
-  rewrite gets silently wiped by it and never stabilizes, re-adding
-  itself forever. Pinning every append to run dead last guarantees it
-  always lands after any full-content rewrite, wherever that happens
-  to live. #}
+  is the default here because there's no natural ordering between two
+  append steps living in different areas' own files otherwise -
+  confirmed directly, `include:`-pulled area states aren't reliably
+  ordered against this file's own local common_steps loop by textual
+  position alone. step['order'] (a plain optional int a manifest entry
+  can set - see resolve_order.rb's own flatten) overrides that default:
+  a step needing to land before every order: last append (e.g. a shared
+  baseline several other appends' own content depends on already being
+  in place) sets its own low order instead, rather than this macro ever
+  special-casing a step by name. #}
 {%- set dests = [step['dest']] if step['dest'] is string else step['dest'] %}
 {%- for dest in dests %}
 {%- set d = dest | replace('$HOME', home) %}
@@ -128,7 +130,7 @@
   file.append:
     - name: {{ d }}
     - text: {{ step['lines'] }}
-    - order: last
+    - order: {{ step.get('order', 'last') }}
     - require:
       - file: {{ title }}-{{ loop.index0 }}-touch
 {%- endfor %}
@@ -167,6 +169,12 @@
   calling this macro for them at all. This branch only exists so a
   step of this type reaching here some other way is silently skipped
   rather than falling through to the warning below. #}
+
+{%- elif step['type'] == 'noop' %}
+{#- noop - installs nothing of its own; exists purely to give a
+  meets:/needs: pair (or a group of attached script:/file:/append:
+  steps) somewhere real to attach to when no single step here is
+  itself the thing being installed. #}
 
 {%- else %}
 {{ title }}-unsupported:

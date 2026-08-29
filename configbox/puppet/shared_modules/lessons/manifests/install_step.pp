@@ -414,6 +414,12 @@ define lessons::install_step (
       }
     }
 
+    # noop - installs nothing of its own; exists purely to give a
+    #  meets:/needs: pair (or a group of attached script:/file:/append:
+    #  steps) somewhere real to attach to when no single step here is
+    #  itself the thing being installed.
+    'noop': {}
+
     default: {
       notify { "${title}: unsupported step type":
         message => "lessons: unsupported step type '${type}' for '${step_name}'",

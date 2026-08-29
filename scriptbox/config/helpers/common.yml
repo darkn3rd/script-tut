@@ -7,12 +7,17 @@ common:
           local DEST=$1
           local LINE=$2
 
-          [ -f "$DEST" ] && { grep -qxF "$LINE" "$DEST" 2>/dev/null || echo "$LINE" >> "$DEST"; } || true
+          mkdir -p "$(dirname "$DEST")"
+          [ -f "$DEST" ] || touch "$DEST"
+          grep -qxF "$LINE" "$DEST" 2>/dev/null || echo "$LINE" >> "$DEST"
         }
       cmd_powershell: |
         function append_line {
             param([string]$Dest, [string]$Line)
-            if ((Test-Path $Dest) -and -not ((Get-Content $Dest -ErrorAction SilentlyContinue) -contains $Line)) {
+            $dir = Split-Path -Path $Dest -Parent
+            if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+            if (-not (Test-Path $Dest)) { New-Item -ItemType File -Path $Dest -Force | Out-Null }
+            if (-not ((Get-Content $Dest -ErrorAction SilentlyContinue) -contains $Line)) {
                 Add-Content -Path $Dest -Value $Line
             }
         }
