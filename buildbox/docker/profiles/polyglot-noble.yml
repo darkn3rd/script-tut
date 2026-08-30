@@ -7,7 +7,9 @@ base: dotnet-sdk-10-noble
 target:
   lineage: ubuntu
   release: '24.04'
-  architectures: [amd64, arm64]
+  # Prove one complete image first. Every component still records its upstream
+  # architecture support so arm64 can be enabled without redesigning the model.
+  architectures: [amd64]
 
 components:
   - ubuntu-shells
@@ -18,9 +20,9 @@ components:
   - perl-5.044
   - golang-1.27
   - rust
-  - java-17
+  - java-17-openjdk-noble
   - groovy-5.1
-  - php
+  - php-noble
   - powershell
 
 final:

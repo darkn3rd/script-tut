@@ -1,0 +1,27 @@
+schema_version: 1
+
+versions:
+  rust:
+    desired: 1.98.0
+    track: rust_stable
+    source: https://static.rust-lang.org/dist/channel-rust-stable.toml
+
+  powershell:
+    desired: 7.6.5
+    track: github_latest
+    repository: PowerShell/PowerShell
+    asset: powershell-%{version}-linux-x64.tar.gz
+    sha256: b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844
+
+  java:
+    desired: openjdk-17-jdk-headless
+    track: ubuntu_noble
+
+  php:
+    desired: php-cli
+    track: ubuntu_noble
+
+  architecture:
+    desired: amd64
+    track: manual
+    planned: [arm64]

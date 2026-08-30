@@ -13,11 +13,11 @@ smoke tests pass. A generator must reject planned components.
 | `ruby-4.0` | Curated official Ruby source-build logic | `ruby`, `gem`, `bundle` |
 | `perl-5.044` | Curated current `main` Perl source-build logic | `perl`, `cpan` |
 | `golang-1.27` | Verified Go payload/build stage plus CGO dependencies | `go` |
-| `rust` | Curated official Rust image logic; no runtime version switching | `rustc`, `cargo` |
-| `java-17` | Ubuntu OpenJDK 17 or curated Temurin Noble component | `java 17`, `javac 17` |
+| `rust` | Rust 1.98.0 stable toolchain; no runtime version switching | `rustc`, `cargo` |
+| `java-17-openjdk-noble` | apt: `openjdk-17-jdk-headless` | `java 17`, `javac 17` |
 | `groovy-5.1` | Binary distribution; assumes and verifies Java | `groovy 5.1` |
-| `php` | Initially Ubuntu `php-cli`, exact source component later if needed | `php` |
-| `powershell` | Checksummed upstream Linux release archive | `pwsh` |
+| `php-noble` | Ubuntu Noble `php-cli`; version follows the distribution | `php` |
+| `powershell` | PowerShell 7.6.5 checksummed Linux release archive | `pwsh` |
 
 The component identifier names a single selected variant. For example,
 `perl-5.044` uses the current ordinary `main` implementation; the older

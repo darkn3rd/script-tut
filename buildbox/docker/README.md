@@ -59,6 +59,27 @@ Generation must fail if a referenced base or component is missing, still
 marked `planned`, does not support the target architecture, or has an unmet
 capability. It must never silently omit a requested language.
 
+## Desired versions and updates
+
+`desired_versions.yml` separates update intent from component implementation.
+Run:
+
+```bash
+ruby buildbox/docker/check_versions.rb
+```
+
+The checker compares pinned desired versions with authoritative upstream
+channels. `--write` updates only the desired-version file; it does not silently
+rewrite a component, checksum, provenance record, or generated Dockerfile.
+Those changes still require review and a successful image build.
+
+Ubuntu-provided Java and PHP use `track: ubuntu_noble`. They receive the newest
+package revision available from the Noble apt repositories when the image is
+built and therefore have no independent upstream language version for this
+checker to rewrite. Reproducible releases can later record the resolved apt
+package versions in generated build metadata without turning them into desired
+version pins.
+
 ## Component boundary
 
 An upstream Dockerfile is a reference implementation, not an includable
