@@ -1,0 +1,47 @@
+schema_version: 1
+
+components:
+  ubuntu-shells:
+    status: experimental
+    fragment: components/ubuntu-packages/noble/shells.Dockerfile
+  ubuntu-compiled-toolchain:
+    status: experimental
+    fragment: components/ubuntu-packages/noble/compiled-toolchain.Dockerfile
+  tcl:
+    status: experimental
+    fragment: components/ubuntu-packages/noble/tcl.Dockerfile
+  python-3.14:
+    status: experimental
+    stage: components/python/3.14/noble/stage.Dockerfile
+    fragment: components/python/3.14/noble/component.Dockerfile
+  ruby-4.0:
+    status: experimental
+    stage: components/ruby/4.0/noble/stage.Dockerfile
+    fragment: components/ruby/4.0/noble/component.Dockerfile
+  perl-5.044:
+    status: experimental
+    stage: components/perl/5.044/noble/stage.Dockerfile
+    fragment: components/perl/5.044/noble/component.Dockerfile
+  golang-1.27:
+    status: experimental
+    stage: components/golang/1.27/noble/stage.Dockerfile
+    fragment: components/golang/1.27/noble/component.Dockerfile
+  rust:
+    status: experimental
+    stage: components/rust/1.98/noble/stage.Dockerfile
+    fragment: components/rust/1.98/noble/component.Dockerfile
+  java-17-openjdk-noble:
+    status: experimental
+    fragment: components/java/17/openjdk-noble/component.Dockerfile
+    provides: [java]
+  groovy-5.1:
+    status: experimental
+    needs: [java]
+    stage: components/groovy/5.1/java17-noble/stage.Dockerfile
+    fragment: components/groovy/5.1/java17-noble/component.Dockerfile
+  php-noble:
+    status: experimental
+    fragment: components/php/noble/component.Dockerfile
+  powershell:
+    status: experimental
+    fragment: components/powershell/7.6/noble/component.Dockerfile

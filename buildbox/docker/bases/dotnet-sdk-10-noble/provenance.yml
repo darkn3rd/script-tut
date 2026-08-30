@@ -3,7 +3,7 @@ name: dotnet-sdk-10-noble
 kind: base
 version: '10.0'
 variant: noble
-status: planned
+status: experimental
 
 provides:
   - dotnet-sdk 10
