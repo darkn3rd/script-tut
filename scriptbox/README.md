@@ -7,6 +7,13 @@ This area has information about installation and useful scripts.
 * Ruby for any `.rb` scripts
 * Powershell for any `.ps1` scripts
 
+## Justfile Support
+
+You will need to install just to be able to use Justfiles. 
+
+* https://github.com/casey/just
+* https://just.systems/man/en/
+
 ## RatatuiRuby Library
 
 Some scripts will use the [RatatuiRuby](https://www.ratatui-ruby.dev/) TUI library.
