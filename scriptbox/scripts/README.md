@@ -87,6 +87,26 @@ every change - a deliberately-triggered suite, one letter at a time.
 
 This script generates an install script: GNU Bash (`.sh`) for POSIX environments and powershell (`.ps1`) for Windows.  The scripts will vary depending on the options selected. 
 
+## generate_justfile.rb
+
+Generates a resolved Justfile from the same manifest, selection, dependency,
+and command-rendering pipeline as the standalone installer. The generated
+`install` recipe is deliberately one script recipe so exports, sourced version
+manager initialization, shell functions, and working-directory changes remain
+in one interpreter process.
+
+```bash
+./generate_justfile.rb ../config/ubuntu2204.yml \
+  --select rbenv,pyenv,sdkman_groovy \
+  --output ../generated/ubuntu2204.just
+
+just --justfile ../generated/ubuntu2204.just install
+```
+
+Generation checks `config/env.yml` and rejects a manifest that does not match
+the current environment. Native Windows, MSYS2, and Cygwin are separate
+platforms. Use `--allow-host-mismatch` for deliberate cross-generation.
+
 ### Ubuntu 22.04
 
 These are some combinations you would try below:
