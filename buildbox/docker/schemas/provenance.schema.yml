@@ -1,0 +1,49 @@
+# Contract for bases/*/provenance.yml and components/*/provenance.yml.
+schema_version: 1
+
+required:
+  - name
+  - kind
+  - version
+  - status
+  - compatibility
+  - upstream
+  - license
+  - verification
+
+fields:
+  name: string
+  kind:
+    enum: [base, apt_group, component]
+  version: string
+  variant: string_or_null
+  status:
+    enum: [planned, experimental, verified]
+  needs:
+    type: list
+    items: capability
+  provides:
+    type: list
+    items: capability
+  compatibility:
+    lineage: string
+    release: string
+    architectures:
+      type: list
+      items: string
+  upstream:
+    repository: uri
+    commit: git_object_id
+    path: string
+    image: string_or_null
+    digest: string_or_null
+  license:
+    expression: spdx_expression
+    notice: relative_path_or_null
+  fragment:
+    path: relative_path_or_null
+    sha256: hex_sha256_or_null
+  verification:
+    type: list
+    items: command
+  reviewed: iso8601_date_or_null

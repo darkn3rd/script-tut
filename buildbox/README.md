@@ -2,6 +2,12 @@
 
 The area focuses on building systems that includes the following which include baking images, netboot, and bootstrap early-provisioners (kickstart, preseed, cloud-init).
 
+The first concrete design is the tool-first Docker image composer in
+[`docker/README.md`](docker/README.md). It assembles a supported Ubuntu Noble
+base and curated, provenance-tracked language components into a layered
+polyglot development image. Packer will be a sibling technology under
+`buildbox/packer/`, not nested below a platform.
+
 The plan for this guide will be building images:
 
 * Containers Images (OCI)
@@ -100,5 +106,4 @@ These are links that I have come across in this space.  As costs of IaaS go up a
 * [Network booting tools](https://networkboot.org/tools/) - list of the programs that make network booting possible.
 * [Top OS Imaging and Deployment Software: Enterprise Solutions for Mass Deployment ](https://zecurit.com/endpoint-management/os-imaging-deployment-software/)
 * [Automated Patching Solutions Compared: 2026 Buyer's Guide](https://www.automox.com/blog/automated-patching-solutions-compared-2026)
-
 

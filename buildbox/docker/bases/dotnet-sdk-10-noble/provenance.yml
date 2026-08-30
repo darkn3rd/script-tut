@@ -1,0 +1,35 @@
+schema_version: 1
+name: dotnet-sdk-10-noble
+kind: base
+version: '10.0'
+variant: noble
+status: planned
+
+provides:
+  - dotnet-sdk 10
+  - dotnet-runtime 10
+
+compatibility:
+  lineage: ubuntu
+  release: '24.04'
+  architectures: [amd64, arm64]
+
+upstream:
+  repository: https://github.com/dotnet/dotnet-docker
+  commit: null
+  path: README.sdk.md
+  image: mcr.microsoft.com/dotnet/sdk:10.0-noble
+  digest: null
+
+license:
+  expression: MIT
+  notice: null
+
+fragment:
+  path: null
+  sha256: null
+
+verification:
+  - dotnet --info
+
+reviewed: null

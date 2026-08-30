@@ -1,0 +1,29 @@
+schema_version: 1
+name: polyglot-noble
+description: Multi-language development and scripting image on supported Ubuntu Noble
+
+base: dotnet-sdk-10-noble
+
+target:
+  lineage: ubuntu
+  release: '24.04'
+  architectures: [amd64, arm64]
+
+components:
+  - ubuntu-shells
+  - ubuntu-compiled-toolchain
+  - tcl
+  - python-3.14
+  - ruby-4.0
+  - perl-5.044
+  - golang-1.27
+  - rust
+  - java-17
+  - groovy-5.1
+  - php
+  - powershell
+
+final:
+  workdir: /workspace
+  command: [/bin/bash]
+  verify_all: true
