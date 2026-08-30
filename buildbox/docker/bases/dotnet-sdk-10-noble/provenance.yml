@@ -19,7 +19,7 @@ upstream:
   commit: null
   path: README.sdk.md
   image: mcr.microsoft.com/dotnet/sdk:10.0-noble
-  digest: null
+  digest: sha256:e1ffd2a92ae84c1291bc1b6887501f8af98e6331e7af6d4c8d37168c5e87a64c
 
 license:
   expression: MIT
@@ -32,4 +32,4 @@ fragment:
 verification:
   - dotnet --info
 
-reviewed: null
+reviewed: '2026-08-29'
