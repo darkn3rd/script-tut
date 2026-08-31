@@ -68,8 +68,19 @@
         owner: "{{ lessons_user }}"
         mode: '0644'
 
+# interpolate: true (see generate_install_script.rb's own append_lines
+#  comment) has no meaning here - lineinfile writes `line` as plain
+#  Python data, no shell involved, so there's nothing to evaluate a
+#  manifest's own `$(...)`/`$VAR` against. Fail loudly rather than
+#  silently write that text out literally - a step needing real
+#  interpolation has to become a 'script' step instead.
+- name: "append: reject interpolate"
+  when: step.type == 'append' and step.interpolate | default(false)
+  ansible.builtin.fail:
+    msg: "lessons: append '{{ step.name }}' sets interpolate: true, which this role's 'append' task can't honor (lineinfile has no shell to interpolate through) - use a 'script' step instead"
+
 - name: "append"
-  when: step.type == 'append'
+  when: step.type == 'append' and not (step.interpolate | default(false))
   become: true
   vars:
     lessons_append_dests: "{{ ([step.dest] if step.dest is string else step.dest) | map('replace', '$HOME', lessons_home) | list }}"

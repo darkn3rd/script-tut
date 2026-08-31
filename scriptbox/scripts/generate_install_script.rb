@@ -297,20 +297,38 @@ end
 #  grep-guard/`|| true` logic itself lives once in append_line() now,
 #  not re-emitted per line here - see common.yml's own comment for why
 #  each of those pieces matters.
+#
+# interpolate: true (default false, per entry - not per line) switches
+#  from single- to double-quoting, so a line's own `$(...)`/`$VAR` gets
+#  evaluated by the shell running append_line - a live homebrew prefix
+#  (`$(brew --prefix)/bin/bash`, /etc/shells needs the real resolved
+#  path, not the literal text) has no other way to reach the target
+#  machine's own actual value. Off by default because most appends -
+#  msys2/cygwin_purge_windows_path's own tr/grep pipelines, anything
+#  with embedded quotes - need the opposite: written exactly as typed,
+#  none of it evaluated as shell syntax.
 def append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
-      # Lines like msys2/cygwin_purge_windows_path embed their own single
-      #  quotes (tr ':' '\n', grep -vE '^/[a-zA-Z]/', ...). Naively
-      #  interpolating `line` inside a '...' wrapper lets those embedded
-      #  quotes toggle bash's own quote-parsing mid-string, silently
-      #  corrupting what gets written (confirmed directly: produced
-      #  `tr : n` instead of `tr ':' '\n'` in a real generated .bashrc).
-      #  Standard bash single-quote escaping - close, escaped literal
-      #  quote, reopen - keeps the whole line literal regardless of
-      #  what it contains.
-      quoted = "'" + line.gsub("'") { "'\\''" } + "'"
+      quoted = if entry['interpolate']
+                 # Double-quote escaping - only \ and " need it here;
+                 #  $ and ` are deliberately left alone, that's the
+                 #  entire point of this branch existing.
+                 '"' + line.gsub('\\') { '\\\\' }.gsub('"') { '\\"' } + '"'
+               else
+                 # Lines like msys2/cygwin_purge_windows_path embed
+                 #  their own single quotes (tr ':' '\n', grep -vE
+                 #  '^/[a-zA-Z]/', ...). Naively interpolating `line`
+                 #  inside a '...' wrapper lets those embedded quotes
+                 #  toggle bash's own quote-parsing mid-string, silently
+                 #  corrupting what gets written (confirmed directly:
+                 #  produced `tr : n` instead of `tr ':' '\n'` in a real
+                 #  generated .bashrc). Standard bash single-quote
+                 #  escaping - close, escaped literal quote, reopen -
+                 #  keeps the whole line literal regardless of content.
+                 "'" + line.gsub("'") { "'\\''" } + "'"
+               end
       %(append_line "#{dest}" #{quoted})
     end
   end.join("\n")
@@ -326,13 +344,24 @@ end
 #  variables the same way bash's do, so append_line's own $Dest
 #  parameter receives the already-expanded path, not the literal text
 #  "$PROFILE". Line values are escaped for a PowerShell single-quoted
-#  string (a literal quote there is just doubled, not the close/escape/
-#  reopen dance bash needs).
+#  string by default (a literal quote there is just doubled, not the
+#  close/escape/reopen dance bash needs) - unless interpolate: true
+#  (see append_lines' own comment on why this exists at all), which
+#  switches to a double-quoted line the same way, so $variable/$(...)
+#  in the manifest's own text gets evaluated by the shell running
+#  append_line instead of written out literally.
 def powershell_append_lines(step, tree)
   entry = tree['appends'][step[:name]]
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
-      quoted = "'" + line.gsub("'") { "''" } + "'"
+      quoted = if entry['interpolate']
+                 # ` is PowerShell's own escape character - has to be
+                 #  escaped first, before ", or a line containing both
+                 #  would double-escape the quote's own backtick.
+                 '"' + line.gsub('`') { '``' }.gsub('"') { '`"' } + '"'
+               else
+                 "'" + line.gsub("'") { "''" } + "'"
+               end
       %(append_line "#{dest}" #{quoted})
     end
   end.join("\n")

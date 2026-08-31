@@ -1,8 +1,11 @@
 macos:
   global:
     packages:
+      - script: macos_rosetta
       - script: macos_xcode_cli_tools
       - script: macos_homebrew
+      - append: macos_homebrew_zsh
+      - append: macos_homebrew_bash
     lessons:
       gen_scripts:
         awk:
@@ -18,6 +21,7 @@ macos:
             - brew: perl
               meets: perl
               script: macos_cpan_local_setup
+              append: macos_cpan_local_setup
             - cpan: App::cpanminus
             - cpanm: Switch
         php:
@@ -39,7 +43,7 @@ macos:
         bash:
             packages: 
               - brew: bash
-                script: macos_setup_homebrew_bash
+                append: macos_setup_homebrew_bash
         csh:
             packages: 
               - brew: tcsh
@@ -53,7 +57,7 @@ macos:
         zsh:
             packages:
             - brew: zsh
-              script: macos_setup_homebrew_zsh
+              append: macos_setup_homebrew_zsh
       compiled_lang:
         cs:
           packages:
@@ -67,6 +71,7 @@ macos:
             - cask: corretto@17
               meets: java
               script: macos_java_17_home
+              append: macos_java_17_home
         rust:
           packages:
             - brew: rust
@@ -90,44 +95,33 @@ macos:
         - brew: powershell
         - brew: ruby
 scripts:
+  macos_rosetta:
+    type: bash
+    cmd: |
+      [[ "$(uname -m)" == "arm64" ]] && sudo softwareupdate --install-rosetta --agree-to-license
+
   macos_homebrew:
     type: bash
     cmd: |
       script_url="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
       /bin/bash -c "$(curl -fsSL "$script_url")"
 
-      # Applied before the PATH check below, not after - Homebrew's own
-      #  installer does not add itself to the *current* process's PATH, and
-      #  on Apple Silicon (/opt/homebrew) unlike Intel (/usr/local) that
-      #  directory isn't on the default PATH either way, so `command -v
-      #  brew` would otherwise fail here even on a successful install.
-      eval "$(brew --prefix)/bin/brew shellenv"
+      # Bootstrap Homebrew into existing environment
+      BREWCMD="/usr/local/bin/brew"
+      [[ "$(uname -m)" == "arm64" ]] && BREWCMD="/opt/homebrew/bin/brew"
+      eval "$($BREWCMD shellenv zsh)"
 
       if ! command -v brew >/dev/null 2>&1; then
         echo "macos_homebrew: brew not found on PATH after install - stopping" >&2
         exit 1
       fi
-
-      grep -qxF 'eval "$(brew --prefix)/bin/brew shellenv"' ~/.bashrc 2>/dev/null || echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.bashrc
-      grep -qxF 'eval "$(brew --prefix)/bin/brew shellenv"' ~/.zshrc 2>/dev/null || echo 'eval "$(brew --prefix)/bin/brew shellenv"' >> ~/.zshrc
   macos_cpan_local_setup:
     type: bash
     cmd: |
       #  Force ExtUtils::MakeMaker's own prompt() to silently accept
       #    every default answer instead of blocking on stdin.
       PERL_MM_USE_DEFAULT=1 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5" cpan local::lib
-      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.bashrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.bashrc
-      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.bashrc
-      grep -qxF 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' ~/.zshrc 2>/dev/null || echo 'eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"' >> ~/.zshrc
-      grep -qxF 'export PATH=$HOME/perl5/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$HOME/perl5/bin:$PATH' >> ~/.zshrc
 
-      # Direct, not `source ~/.bashrc` - a script run non-interactively
-      # (any provisioner, or even a human running this file with `bash
-      # script.sh`) hits nearly every default .bashrc's own "return if
-      # not interactive" guard before ever reaching the lines just
-      # appended above, so they'd never take effect in this process -
-      # and the very next steps in this same script (cpan:
-      # App::cpanminus, cpanm: Switch) need cpanm on PATH already.
       eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
       export PATH=$HOME/perl5/bin:$PATH
   macos_wine_fix:
@@ -135,48 +129,42 @@ scripts:
     cmd: |
       ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/share/wine" /usr/local/share/wine
       ln -s "/Applications/Wine Stable.app/Contents/Resources/wine/lib/wine" /usr/local/lib/wine
-      grep -qxF 'export MVK_CONFIG_LOG_LEVEL=0' ~/.bashrc 2>/dev/null || echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.bashrc
-      grep -qxF 'export WINEDEBUG=-all' ~/.bashrc 2>/dev/null || echo 'export WINEDEBUG=-all' >> ~/.bashrc
-      grep -qxF 'export MVK_CONFIG_LOG_LEVEL=0' ~/.zshrc 2>/dev/null || echo 'export MVK_CONFIG_LOG_LEVEL=0' >> ~/.zshrc
-      grep -qxF 'export WINEDEBUG=-all' ~/.zshrc 2>/dev/null || echo 'export WINEDEBUG=-all' >> ~/.zshrc
 
-      # Applied immediately too - macos_winetricks_wsh57 runs wine-based
-      #  commands later in this same script and benefits from the
+      # macos_winetricks_wsh57 runs wine-basedvcommands later in this same script and benefits from the
       #  quieter debug output just as much as a future session would.
       export MVK_CONFIG_LOG_LEVEL=0
       export WINEDEBUG=-all
-  macos_setup_homebrew_bash:
-    type: bash
-    cmd: |
-      grep -qxF "$(brew --prefix)/bin/bash" /etc/shells 2>/dev/null || echo "$(brew --prefix)/bin/bash" | sudo tee -a /etc/shells
-  macos_setup_homebrew_zsh:
-    type: bash
-    cmd: |
-      grep -qxF "$(brew --prefix)/bin/zsh" /etc/shells 2>/dev/null || echo "$(brew --prefix)/bin/zsh" | sudo tee -a /etc/shells
   macos_xcode_cli_tools:
     type: bash
     cmd: |
-      touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
-      label=$(softwareupdate -l 2>&1 \
-        | grep -E '^[[:space:]]*\* Command Line Tools' \
-        | sed 's/^[[:space:]]*\* //' \
-        | head -1)
-      if softwareupdate --help 2>&1 | grep -q -- '--agree-to-license'; then
-        sudo softwareupdate -i "$label" --agree-to-license --verbose
-      else
-        sudo softwareupdate -i "$label" --verbose
-      fi
-      rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+      # Run interactive GUI installer 
+      # CLT packages now appear in list with sfotwareupdate -l
+      xcode-select --install
+
+      # new packages available 
+      CLT_LABEL=$(
+        softwareupdate -l 2>&1 |
+        awk -F': ' '
+        /Label: Command Line Tools/ {
+            label = $2
+            version = label
+            sub(/^Command Line Tools for Xcode /, "", version)
+            sub(/-.*/, "", version)
+
+            if (version + 0 > max) {
+                max = version + 0
+                newest = label
+            }
+        }
+        END {
+            print newest
+        }'
+      )
+
+      sudo softwareupdate --install "$CLT_LABEL"
   macos_java_17_home:
     type: bash
     cmd: |
-      grep -qxF 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' ~/.bashrc 2>/dev/null || echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.bashrc
-      grep -qxF 'export PATH=$JAVA_HOME/bin:$PATH' ~/.bashrc 2>/dev/null || echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.bashrc
-      grep -qxF 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' ~/.zshrc 2>/dev/null || echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
-      grep -qxF 'export PATH=$JAVA_HOME/bin:$PATH' ~/.zshrc 2>/dev/null || echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.zshrc
-
-      # Applied immediately too - groovy (needs: java) installs right
-      #  after this in the same script and needs java on PATH already.
       export JAVA_HOME=$(/usr/libexec/java_home -v 17)
       export PATH=$JAVA_HOME/bin:$PATH
   macos_winetricks_wsh57:
@@ -213,6 +201,44 @@ scripts:
         
         popd
 
+appends:
+  # Configure Brew CLI for default zsh
+  macos_homebrew_zsh:
+    dest: $HOME/.zprofile
+    lines:
+      - BREWCMD=$([[ "$(uname -m)" == "arm64" ]] && echo "/opt/homebrew/bin/brew" || echo "/usr/local/bin/brew")
+      - eval "$($BREWCMD shellenv zsh)"
+  # Configure Brew CLI for default bash
+  macos_homebrew_bash:
+    dest: $HOME/.bash_profile
+    lines:
+      - BREWCMD=$([[ "$(uname -m)" == "arm64" ]] && echo "/opt/homebrew/bin/brew" || echo "/usr/local/bin/brew")
+      - eval "$($BREWCMD shellenv bash)"
+  macos_setup_homebrew_bash:
+    dest: /etc/shells
+    interpolate: true
+    lines:
+      - $(brew --prefix)/bin/bash
+  macos_setup_homebrew_zsh:
+    dest: /etc/shells
+    interpolate: true
+    lines:
+      - $(brew --prefix)/bin/zsh
+  macos_java_17_home:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+      - export PATH=$JAVA_HOME/bin:$PATH
+  macos_cpan_local_setup:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+      - export PATH=$HOME/perl5/bin:$PATH
+  macos_wine_fix:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - export MVK_CONFIG_LOG_LEVEL=0
+      - export WINEDEBUG=-all
 
-    
+
 
