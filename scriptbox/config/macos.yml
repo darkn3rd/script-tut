@@ -112,9 +112,7 @@ scripts:
       /bin/bash -c "$(curl -fsSL "$script_url")"
 
       # Bootstrap Homebrew into existing environment
-      BREWCMD="/usr/local/bin/brew"
-      [[ "$(uname -m)" == "arm64" ]] && BREWCMD="/opt/homebrew/bin/brew"
-      eval "$($BREWCMD shellenv zsh)"
+      eval "$(<%= $brew_prefix %>/bin/brew shellenv bash)"
 
       if ! command -v brew >/dev/null 2>&1; then
         echo "macos_homebrew: brew not found on PATH after install - stopping" >&2
