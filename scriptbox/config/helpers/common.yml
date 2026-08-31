@@ -6,10 +6,39 @@ common:
         append_line() {
           local DEST=$1
           local LINE=$2
+          local DIR
+          DIR="$(dirname "$DEST")"
 
-          mkdir -p "$(dirname "$DEST")"
-          [ -f "$DEST" ] || touch "$DEST"
-          grep -qxF "$LINE" "$DEST" 2>/dev/null || echo "$LINE" >> "$DEST"
+          # Auto-detected, not a manifest-level flag: a destination like
+          #  /etc/shells is root-owned on every platform this runs
+          #  against, while every $HOME-relative dest (.bashrc, .zshrc,
+          #  ...) is writable by whoever's running this script - no
+          #  reason to make a manifest author remember to flag the rare
+          #  case when the real filesystem already knows the answer.
+          #  Existing dest checks itself (a read-only file in an
+          #  otherwise-writable dir); a not-yet-existing dest checks its
+          #  parent dir instead, since that's what actually has to accept
+          #  the mkdir/touch/write.
+          local SUDO=""
+          if [ -e "$DEST" ]; then
+            [ -w "$DEST" ] || SUDO="sudo"
+          else
+            [ -w "$DIR" ] || SUDO="sudo"
+          fi
+
+          $SUDO mkdir -p "$DIR"
+          [ -f "$DEST" ] || $SUDO touch "$DEST"
+          if ! grep -qxF "$LINE" "$DEST" 2>/dev/null; then
+            # sudo echo ... >> "$DEST" would NOT actually gain root for
+            #  the redirection - >> is set up by *this* unprivileged
+            #  shell before sudo ever runs. sudo tee -a is the real fix,
+            #  piped rather than prefixed, only when actually needed.
+            if [ -n "$SUDO" ]; then
+              echo "$LINE" | sudo tee -a "$DEST" >/dev/null
+            else
+              echo "$LINE" >> "$DEST"
+            fi
+          fi
         }
       cmd_powershell: |
         function append_line {
