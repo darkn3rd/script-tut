@@ -307,8 +307,14 @@ end
 #  msys2/cygwin_purge_windows_path's own tr/grep pipelines, anything
 #  with embedded quotes - need the opposite: written exactly as typed,
 #  none of it evaluated as shell syntax.
+#
+# sudo: true (default false, per entry) - a destination like /etc/shells
+#  is root-owned; append_line's own internal touch/tee calls need it
+#  passed through as a third argument (see common.yml's own comment on
+#  why this can't just be `sudo append_line ...` from out here instead).
 def append_lines(step, tree)
   entry = tree['appends'][step[:name]]
+  sudo_arg = entry['sudo'] ? ' true' : ''
   Array(entry['dest']).flat_map do |dest|
     Array(entry['lines']).map do |line|
       quoted = if entry['interpolate']
@@ -329,7 +335,7 @@ def append_lines(step, tree)
                  #  keeps the whole line literal regardless of content.
                  "'" + line.gsub("'") { "'\\''" } + "'"
                end
-      %(append_line "#{dest}" #{quoted})
+      %(append_line "#{dest}" #{quoted}#{sudo_arg})
     end
   end.join("\n")
 end

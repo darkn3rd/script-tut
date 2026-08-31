@@ -218,10 +218,12 @@ appends:
       - eval "$(<%= $brew_prefix %>/bin/brew shellenv bash)"
   macos_setup_homebrew_bash:
     dest: /etc/shells
+    sudo: true
     lines:
       - <%= $brew_prefix %>/bin/bash
   macos_setup_homebrew_zsh:
     dest: /etc/shells
+    sudo: true
     lines:
       - <%= $brew_prefix %>/bin/zsh
   macos_java_17_home:

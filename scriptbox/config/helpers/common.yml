@@ -3,28 +3,23 @@ common:
   helpers:
     append_line:
       cmd: |
+        # $3 (SUDO_NEEDED, "true"/empty) - a manifest's own appends: entry
+        #  says so explicitly (sudo: true), decided once at generation
+        #  time - see generate_install_script.rb's own append_lines.
+        #  `sudo append_line ...` from the call site can't work instead:
+        #  sudo execs a fresh subprocess and looks up its argument as an
+        #  external program on PATH - it has no visibility into this
+        #  shell's own function table, so it would just fail outright
+        #  with "command not found". The elevation has to happen on
+        #  append_line's own internal touch/tee calls, from inside.
         append_line() {
           local DEST=$1
           local LINE=$2
+          local SUDO_NEEDED=$3
           local DIR
           DIR="$(dirname "$DEST")"
-
-          # Auto-detected, not a manifest-level flag: a destination like
-          #  /etc/shells is root-owned on every platform this runs
-          #  against, while every $HOME-relative dest (.bashrc, .zshrc,
-          #  ...) is writable by whoever's running this script - no
-          #  reason to make a manifest author remember to flag the rare
-          #  case when the real filesystem already knows the answer.
-          #  Existing dest checks itself (a read-only file in an
-          #  otherwise-writable dir); a not-yet-existing dest checks its
-          #  parent dir instead, since that's what actually has to accept
-          #  the mkdir/touch/write.
           local SUDO=""
-          if [ -e "$DEST" ]; then
-            [ -w "$DEST" ] || SUDO="sudo"
-          else
-            [ -w "$DIR" ] || SUDO="sudo"
-          fi
+          [ "$SUDO_NEEDED" = "true" ] && SUDO="sudo"
 
           $SUDO mkdir -p "$DIR"
           [ -f "$DEST" ] || $SUDO touch "$DEST"
