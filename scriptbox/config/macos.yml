@@ -1,4 +1,6 @@
 macos:
+  variables:
+    brew_prefix: "<%= RbConfig::CONFIG['host_cpu'] == 'x86_64' ? '/usr/local' : '/opt/homebrew' %>"
   global:
     packages:
       - script: macos_rosetta
@@ -11,6 +13,7 @@ macos:
         awk:
           packages:
             - brew: gawk
+              append: macos_brew_gawk
         groovy:
           packages:
             - brew: groovy
@@ -39,7 +42,9 @@ macos:
       shell_scripts:
         packages: 
             - brew: bc
-            - brew: getopt
+              append: macos_brew_bc
+            - brew: gnu-getopt
+              append: macos_brew_gnu-getopt
         bash:
             packages: 
               - brew: bash
@@ -181,49 +186,44 @@ scripts:
   macos_wine_coreutils:
     type: bash
     cmd: |
-        pushd $HOME/Downloads
+      pushd $HOME/Downloads
 
-        # Download coreutils
-        curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
-        
-        # Verify checksum
-        ACTUAL_SHA=$(shasum -a 256 coreutils-2026.6.16-x64.exe | cut -f1 -d' ')
-        EXPECTED_SHA="f862b1aa433310420ae20f9b1384f3f974a26ba98ae37ac548061116a3ef6c62"
-        
-        if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-          echo "ERROR: CHECKSUM MISMATCH - DO NOT USE THIS FILE" >&2
-          exit 1
-        fi
-        echo "CHECKSUM OK"
-        
-        # install coreutils 
-        wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
-        
-        popd
-
+      # Download coreutils
+      curl -LO https://github.com/microsoft/coreutils/releases/download/v2026.6.16/coreutils-2026.6.16-x64.exe
+      
+      # Verify checksum
+      ACTUAL_SHA=$(shasum -a 256 coreutils-2026.6.16-x64.exe | cut -f1 -d' ')
+      EXPECTED_SHA="f862b1aa433310420ae20f9b1384f3f974a26ba98ae37ac548061116a3ef6c62"
+      
+      if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+        echo "ERROR: CHECKSUM MISMATCH - DO NOT USE THIS FILE" >&2
+        exit 1
+      fi
+      echo "CHECKSUM OK"
+      
+      # install coreutils 
+      wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+      
+      popd
 appends:
   # Configure Brew CLI for default zsh
   macos_homebrew_zsh:
     dest: $HOME/.zprofile
     lines:
-      - BREWCMD=$([[ "$(uname -m)" == "arm64" ]] && echo "/opt/homebrew/bin/brew" || echo "/usr/local/bin/brew")
-      - eval "$($BREWCMD shellenv zsh)"
+      - eval "$(<%= $brew_prefix %>/bin/brew shellenv zsh)"
   # Configure Brew CLI for default bash
   macos_homebrew_bash:
     dest: $HOME/.bash_profile
     lines:
-      - BREWCMD=$([[ "$(uname -m)" == "arm64" ]] && echo "/opt/homebrew/bin/brew" || echo "/usr/local/bin/brew")
-      - eval "$($BREWCMD shellenv bash)"
+      - eval "$(<%= $brew_prefix %>/bin/brew shellenv bash)"
   macos_setup_homebrew_bash:
     dest: /etc/shells
-    interpolate: true
     lines:
-      - $(brew --prefix)/bin/bash
+      - <%= $brew_prefix %>/bin/bash
   macos_setup_homebrew_zsh:
     dest: /etc/shells
-    interpolate: true
     lines:
-      - $(brew --prefix)/bin/zsh
+      - <%= $brew_prefix %>/bin/zsh
   macos_java_17_home:
     dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
     lines:
@@ -239,6 +239,17 @@ appends:
     lines:
       - export MVK_CONFIG_LOG_LEVEL=0
       - export WINEDEBUG=-all
-
+  macos_brew_gawk:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - PATH="<%= $brew_prefix %>/opt/gawk/libexec/gnubin:$PATH"
+  macos_brew_bc:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - PATH="<%= $brew_prefix %>/opt/bc/bin:$PATH"
+  macos_brew_gnu-getopt:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - PATH="<%= $brew_prefix %>/opt/gnu-getopt/bin:$PATH"
 
 
