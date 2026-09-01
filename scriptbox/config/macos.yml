@@ -1,6 +1,11 @@
 macos:
   variables:
     brew_prefix: "<%= RbConfig::CONFIG['host_cpu'] == 'x86_64' ? '/usr/local' : '/opt/homebrew' %>"
+    python3_ver: 3.14
+    ruby4_ver: 4.0
+    php_ver: 8.5
+    tcl_ver: 9
+    go_ver: 1.27
   global:
     packages:
       - script: macos_rosetta
@@ -8,11 +13,16 @@ macos:
       - script: macos_homebrew
       - append: macos_homebrew_zsh
       - append: macos_homebrew_bash
+      - brew: grep
+        append: macos_brew_gnu_grep
+        script: macos_brew_gnu_grep
+        meets: gnu_grep
     lessons:
       gen_scripts:
         awk:
           packages:
             - brew: gawk
+              script: macos_brew_gawk
               append: macos_brew_gawk
         groovy:
           packages:
@@ -29,21 +39,47 @@ macos:
             - cpanm: Switch
         php:
           packages:
-            - brew: php
+            # Dependencies 
+            # - apr
+            # - apr-util
+            # - argon2
+            # - autoconf
+            # - curl
+            # - freetds
+            # - gd
+            # - gmp
+            # - icu4c@78
+            # - libpq
+            # - libsodium
+            # - libzip
+            # - net-snmp
+            # - oniguruma
+            # - openldap
+            # - openssl@3
+            # - pcre2
+            # - sqlite
+            # - tidy-html5
+            # - unixodbc
+            # - gettext
+            - brew: php@<%= $php_ver %>
         python3:
           packages:
-            - brew: python3
+            - brew: python@<%= $python3_ver %>
         ruby:
           packages:
-            - brew: ruby
+            - brew: ruby@<%= $ruby4_ver %>
+            - append: macos_brew_ruby4
+              meets: ruby4
         tcl:
           packages:
-            - brew: tcl-tk
+            - brew: tcl-tk@<%= $tcl_ver %>
       shell_scripts:
         packages: 
             - brew: bc
+              script: macos_brew_bc
               append: macos_brew_bc
             - brew: gnu-getopt
+              script: macos_brew_gnu-getopt
               append: macos_brew_gnu-getopt
         bash:
             packages: 
@@ -54,7 +90,7 @@ macos:
               - brew: tcsh
         ksh:
             packages: 
-              - brew: ksh
+              - brew: ksh93
         posix:
             packages:
               - brew: dash-shell
@@ -69,7 +105,8 @@ macos:
             - cask: dotnet-sdk
         go:
           packages:
-            - brew: go
+            - brew: go@<%= $go_ver %>
+              append: macos_go
         java:
           packages:
             - tap: homebrew/cask-versions
@@ -79,26 +116,49 @@ macos:
               append: macos_java_17_home
         rust:
           packages:
+            # Dependencies
+            # - libgit2
+            # - libssh2
+            # - llvm@22
+            # - openssl@3
+            # - pkgconf
+            # - sqlite
+            # Zsh Completions: 
+            #  /opt/homebrew/share/zsh/site-functions
+            # Link this toolchain with `rustup` under the name `system` with:
+            #  rustup toolchain link system "$(brew --prefix rust)"
             - brew: rust
       win_scripts:
         packages:
           - cask: wine-stable
             script: macos_wine_fix
+            tag: wine
           - brew: winetricks
             script: macos_winetricks_wsh57
+            tag: wine
           - script: macos_wine_coreutils
+            tag: wine
         powershell:
           packages:
+           # * Bottle requires building from source (downloads dotnet 10.x in source form)
+           # * Cask has the official, self-contained Microsoft version of PowerShell that has the embedded .NET runtime 
             - brew: powershell
     cibox:
       packages: 
         - brew: act
         - brew: colima
         - brew: docker
+    scriptbox:
+      packages:
+        - script: macos_gem_update
+          needs: ruby4, gnu_grep
+        - gem: ratatui_ruby
+          needs: ruby >= 3.2
     testbox:
       packages:
         - brew: powershell
         - brew: ruby
+
 scripts:
   macos_rosetta:
     type: bash
@@ -203,6 +263,30 @@ scripts:
       wine coreutils-2026.6.16-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
       
       popd
+  macos_gem_update:
+    type: bash
+    cmd: |
+      chmod -R u+w <%= $brew_prefix %>/lib/ruby/gems/4.0.0/plugins/
+
+      URL="https://rubygems.org/api/v1/versions/rubygems-update/latest.json"
+      if [[ "$(curl -s $URL | grep -oP '"version"[: ]*"\K[^"]+')" != "$(gem --version)" ]]; then 
+        gem update --system
+      fi
+  macos_brew_gnu_grep:
+    cmd: |
+      PATH="<%= $brew_prefix %>/opt/grep/libexec/gnubin:$PATH"
+  macos_brew_gawk:
+    cmd: |
+      PATH="<%= $brew_prefix %>/opt/gawk/libexec/gnubin:$PATH"
+  macos_brew_bc:
+    cmd: |
+      PATH="<%= $brew_prefix %>/opt/bc/bin:$PATH"
+  macos_brew_gnu-getopt:
+    cmd: |
+      PATH="<%= $brew_prefix %>/opt/gnu-getopt/bin:$PATH"
+
+
+
 appends:
   # Configure Brew CLI for default zsh
   macos_homebrew_zsh:
@@ -251,5 +335,16 @@ appends:
     dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
     lines:
       - PATH="<%= $brew_prefix %>/opt/gnu-getopt/bin:$PATH"
-
-
+  macos_brew_ruby4:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - PATH="<%= $brew_prefix %>/lib/ruby/gems/4.0.0/bin:$PATH"
+  macos_brew_gnu_grep:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - PATH="<%= $brew_prefix %>/opt/grep/libexec/gnubin:$PATH"
+  macos_go:
+    dest: ["$HOME/.bashrc", "$HOME/.zshrc"]
+    lines:
+      - export GOPATH=$(go env GOPATH)
+      - export PATH=$GOPATH/bin:$PATH
