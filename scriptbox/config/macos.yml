@@ -142,7 +142,7 @@ macos:
           packages:
            # * Bottle requires building from source (downloads dotnet 10.x in source form)
            # * Cask has the official, self-contained Microsoft version of PowerShell that has the embedded .NET runtime 
-            - brew: powershell
+            - cask: darkn3rd/tools/powershell
     cibox:
       packages: 
         - brew: act
