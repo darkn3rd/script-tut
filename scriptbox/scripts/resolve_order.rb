@@ -1,4 +1,5 @@
 require 'yaml'
+require 'erb'
 
 PACKAGE_TYPES = %w[brew cask tap cpan cpanm system apt pyenv rbenv rvm sdkman asdf asdf_plugin choco choco_cyg choco_local feature gem pacman path cyg cmd sysctl salt_formula apt_pin pipx powershell_package_provider powershell_module powershell_cmd noop].freeze
 
@@ -568,6 +569,27 @@ VARIABLE_REF = /<%=\s*\$(\w+)\s*%>/.freeze
 #  since it has more than one dot; but `retries: 3` would parse as an
 #  Integer) - always coerced to a String on substitution since it's
 #  being spliced into one.
+#
+# Two unrelated things both spelled `<%= ... %>`, on purpose: a
+#  *reference* (`<%= $name %>`, VARIABLE_REF's own syntax, matched by
+#  the gsub below) is never templated - just a literal name lookup, so
+#  `$PATH` sitting right next to one in the same string (e.g. `PATH="<%=
+#  $brew_prefix %>/opt/gawk/libexec/gnubin:$PATH"`) is never touched,
+#  whatever it contains. A variable's own *definition* in the
+#  variables: block, on the other hand, is run through a real
+#  ERB.new(...).result here, every time it's looked up - genuine Ruby,
+#  evaluated on whatever machine runs this generator (RbConfig::CONFIG,
+#  ENV, anything else in scope), not the eventual target - e.g.
+#  `brew_prefix: "<%= RbConfig::CONFIG['host_cpu'] == 'x86_64' ? '/usr/
+#  local/' : '/opt/homebrew/' %>"` resolves once per reference to a
+#  plain, already-final string before VARIABLE_REF ever splices it in.
+#  A value with no ERB tags at all (`ruby_ver: 4.0.6`) passes through
+#  ERB unchanged - it's a no-op for plain text, not just for expressions.
+#  Re-evaluated on every reference rather than cached once - harmless
+#  (a pure function of the string plus this process's own stable state,
+#  same result every time within one generator run) and far simpler
+#  than threading a resolved-vars cache through every one of this
+#  function's own recursive calls for no real benefit.
 def substitute_variables(value, vars)
   case value
   when String
@@ -575,7 +597,7 @@ def substitute_variables(value, vars)
       name = Regexp.last_match(1)
       raise "unknown variable '#{name}' referenced as '<%= $#{name} %>' - not defined in this manifest's own variables: block" unless vars.key?(name)
 
-      vars[name].to_s
+      ERB.new(vars[name].to_s).result
     end
   when Hash
     value.transform_values { |v| substitute_variables(v, vars) }

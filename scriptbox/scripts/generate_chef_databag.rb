@@ -97,6 +97,17 @@ def step_to_entry(step, tree)
     append = (tree['appends'] || {})[step[:name]]
     entry[:dest] = append['dest']
     entry[:lines] = append['lines']
+    # Passed through, not acted on - Chef's own append_if_no_line,
+    #  Ansible's lineinfile, and Puppet's file_line all write `line` as
+    #  inert Ruby/Python/Puppet data with no shell involved at all (see
+    #  generate_install_script.rb's own append_lines comment on why this
+    #  flag exists in the first place - it's meaningless without a real
+    #  shell downstream to do the evaluating). Carried into the data bag
+    #  anyway so a consumer that reaches an interpolate: true step it
+    #  can't honor has something to check and reject loudly against,
+    #  rather than silently writing the manifest's own literal `$(...)`
+    #  text into the target file.
+    entry[:interpolate] = true if append['interpolate']
   end
 
   entry

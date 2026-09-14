@@ -145,6 +145,17 @@ module Lessons
         #  directory gap as 'file' above - append_if_no_line creates the
         #  destination file itself if missing, which needs the directory
         #  to already exist.
+        #
+        # interpolate: true (see generate_install_script.rb's own
+        #  append_lines comment) has no meaning here - append_if_no_line
+        #  writes `line` as plain Ruby content, no shell involved, so
+        #  there's nothing to evaluate a manifest's own `$(...)`/`$VAR`
+        #  against. Fail loudly rather than silently write that text out
+        #  literally - a step needing real interpolation has to become a
+        #  'script' step instead, the same way it was before append:
+        #  existed at all.
+        raise "lessons: append '#{pkg['name']}' sets interpolate: true, which the Chef 'append' case can't honor (append_if_no_line has no shell to interpolate through) - use a 'script' step instead" if pkg['interpolate']
+
         home = Etc.getpwnam(node['lessons']['user']).dir
         Array(pkg['dest']).each do |dest|
           real_dest = dest.sub('$HOME', home)

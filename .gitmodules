@@ -1,0 +1,3 @@
+[submodule "pkgbox/tap/darkn3rd/homebrew-tools"]
+	path = pkgbox/tap/darkn3rd/homebrew-tools
+	url = git@github.com:darkn3rd/homebrew-tools.git

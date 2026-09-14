@@ -125,6 +125,16 @@ define lessons::install_step (
     }
 
     'append': {
+      # interpolate: true (see generate_install_script.rb's own
+      #  append_lines comment) has no meaning here - file_line writes
+      #  `line` as plain Puppet data, no shell involved, so there's
+      #  nothing to evaluate a manifest's own `$(...)`/`$VAR` against.
+      #  Fail loudly rather than silently write that text out literally -
+      #  a step needing real interpolation has to become a 'script' step
+      #  instead.
+      if 'interpolate' in $step and $step['interpolate'] {
+        fail("lessons::install_step '${title}': append '${step_name}' sets interpolate: true, which this case can't honor (file_line has no shell to interpolate through) - use a 'script' step instead")
+      }
       $raw_dests = $step['dest'] =~ String ? { true => [$step['dest']], default => $step['dest'] }
       $dests = $raw_dests.map |$d| { regsubst($d, '\$HOME', $home) }
       $dests.each |$d| {
