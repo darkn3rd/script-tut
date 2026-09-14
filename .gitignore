@@ -20,6 +20,14 @@ lessons/compiled_lang/*/target/*
 !lessons/compiled_lang/*/target/.gitkeep
 *.out
 
+# `conan install` (see lessons/compiled_lang/c/README.md's "Package
+# Management (Conan)" section) generates these next to conanfile.txt -
+# machine-specific (absolute paths, detected profile), never the
+# conanfile.txt itself.
+lessons/compiled_lang/*/conandeps.mk
+lessons/compiled_lang/*/conan*.sh
+lessons/compiled_lang/*/deactivate_conan*.sh
+
 # scriptbox/generated/ holds gen_installer.rb's output (<platform>_install.sh),
 # regenerated on demand from config/*.yml - see scriptbox/generated/README.md.
 scriptbox/generated/*

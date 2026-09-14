@@ -128,6 +128,7 @@ AREAS = [
       #  tag with the "strawberryperl" package, but its own Tags do
       #  include "gcc" (`choco list strawberryperl --by-tags-only` finds
       #  it, unambiguously among what's actually installed).
+      { name: 'C',     bin: %w[gcc clang cc],    version: :flag,    tools: %w[make] },
       { name: 'C++',   bin: %w[g++ clang++ cl gcc], version: :flag,  tools: %w[make] },
       { name: 'C#',    bin: %w[dotnet],          version: :flag,    tools: %w[make] },
       { name: 'Go',    bin: %w[go],              version: :go,      tools: %w[make] },

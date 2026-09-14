@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # compile_check.rb - attempts to build every lessons/compiled_lang area
-#  (cpp, cs, go, java, rust) via its own Makefile/Makefile.win, and
+#  (c, cpp, cs, go, java, rust) via its own Makefile/Makefile.win, and
 #  reports a Success/Failure summary alongside each language's own
 #  resolved compiler and version - reusing verify_commands.rb's own
 #  detection (AREAS, resolve_language) rather than re-implementing it,
@@ -18,6 +18,7 @@ require_relative 'verify_commands'
 #  from AREAS itself, since verify_commands.rb has no reason to know
 #  about this project's lesson directory layout.
 LANG_DIRS = {
+  'C' => 'c',
   'C++' => 'cpp',
   'C#' => 'cs',
   'Go' => 'go',

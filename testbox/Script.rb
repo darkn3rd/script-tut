@@ -121,6 +121,7 @@ class ScriptBase
     :rs     => "rustc --version 2>&1",
     :cpp    => "g++ --version 2>&1",
     :cs     => "dotnet --version 2>&1",
+    :c      => "gcc --version 2>&1",
   }
 
   # Languages whose version can't be had from a simple "cmd --version"
@@ -151,6 +152,7 @@ class ScriptBase
     :rs     => "Rust",
     :cpp    => "C++",
     :cs     => "C#",
+    :c      => "C",
   }
 
   # compiler binary for each compiled language - see @@compiled_languages
@@ -163,6 +165,7 @@ class ScriptBase
     :go   => "go",
     :rs   => "rustc",
     :cpp  => "g++",
+    :c    => "gcc",
     # Not "csc": a bare csc needs either a hand-built ~240-file BCL
     #  reference list (fragile) or Mono (an extra dependency, plus its
     #  compiled .exe needs a wrapper to run on real POSIX). cs/Makefile
@@ -837,7 +840,7 @@ class ScriptBase
   #  behaves identically regardless of which shell captured `raw`.
   def self.extract_version(raw, lang)
     case lang
-    when :awk, :php, :bash, :zsh, :cpp
+    when :awk, :php, :bash, :zsh, :cpp, :c
       raw.lines.first.to_s.strip
     when :pl
       raw[/v\d\.\d{1,2}\.\d/].to_s

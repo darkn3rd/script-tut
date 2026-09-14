@@ -34,7 +34,7 @@ The **ScriptBox** area contains tools and scripts that may be useful in this tut
 
 * `generate_install_sh.rb` - generates an installer script for your environment, such as Ubuntu 22.04. 
 * `validate_commands.rb` - validate installation or availability of all languages used in this guide 
-* `compile_check.rb` - will test the Makefiles in parallel (threads) for C++, C#, Java, Go, Rust.
+* `compile_check.rb` - will test the Makefiles in parallel (threads) for C, C++, C#, Java, Go, Rust.
 * `run_all_tests.ps1` - will run all the tests using the test harness (`TestBox.psm1`) with `psake`
 * `run_all_tests.rb` - will run all the tests the test harness (`Script.rb`) with `rake`
 
@@ -83,6 +83,7 @@ These are the languages supported.
   * 📜 PowerShell (pwsh)
   * 📜 VBScript (WSH)³
 * **Compiled Languages**:
+  * 🔧 C
   * ➕ C++
   * 🎼 C#⁴
   * 🦫 Go

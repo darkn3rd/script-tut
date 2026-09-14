@@ -1,0 +1,66 @@
+# PowerShell/cmd.exe-native counterpart to ./Makefile - see
+# ../java/Makefile.win for the full rationale. Use it explicitly with
+# `make -f Makefile.win`. The default ./Makefile stays untouched and
+# POSIX-only.
+#
+# Arch detection here uses PROCESSOR_ARCHITECTURE (a native Windows
+# environment variable - AMD64/ARM64/x86), not `uname -m`: cmd.exe has
+# no uname at all, unlike ./Makefile's POSIX shell.
+
+SHELL := cmd.exe
+
+EXE := .exe
+
+ARCH ?= $(PROCESSOR_ARCHITECTURE)
+
+CC := gcc
+CFLAGS := -std=c17 -O2 -Wall -Wextra -static-libgcc
+
+CFLAGS_AMD64 := -march=native
+CFLAGS_ARM64 := -march=armv8-a
+CFLAGS += $(CFLAGS_$(ARCH))
+
+LDLIBS := -lm
+
+CONAN_LIB_FLAG := -l
+CONAN_INCLUDE_DIR_FLAG := -I
+CONAN_LIB_DIR_FLAG := -L
+CONAN_DEFINE_FLAG := -D
+-include conandeps.mk
+# See ../Makefile's identical comment - conandeps.mk's own variables
+#  already have these flag prefixes baked in.
+CFLAGS += $(CONAN_INCLUDE_DIRS)
+LDLIBS += $(CONAN_LIB_DIRS) $(CONAN_LIBS)
+
+OBJDIR := target/win_$(ARCH)
+
+# See ../Makefile's identical exclusion comment - extra.conan_cjson.c
+#  only links once `conan install` has produced conandeps.mk.
+SRC := $(filter-out src/extra.conan_cjson.c,$(wildcard src/*.c))
+BIN := $(addprefix bin/,$(notdir $(SRC:.c=$(EXE))))
+CONAN_BIN := bin/extra.conan_cjson$(EXE)
+
+.PHONY: all clean conan
+all: $(BIN)
+
+conan: $(CONAN_BIN)
+
+.SECONDARY:
+
+bin:
+	-mkdir bin
+
+$(OBJDIR):
+	-mkdir $(OBJDIR)
+
+$(OBJDIR)/%.o: src/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+bin/%$(EXE): $(OBJDIR)/%.o | bin
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
+clean:
+	-del /Q /F $(subst /,\,$(BIN)) $(subst /,\,$(CONAN_BIN)) >NUL 2>&1
+	-rmdir /S /Q target >NUL 2>&1
+	-mkdir target
+	-type nul >target\.gitkeep
